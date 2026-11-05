@@ -118,9 +118,11 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
      * <p><b>Flags.</b> Each name has {@code OF_} or {@code PF_} put in front and is resolved with
      * {@code valueOf}, which like C's {@code lookup_flag} compares case-sensitively. C's lookup
      * starts at table index 1, so the {@code NONE} entry at the head of both flag tables can never
-     * match; here {@code OF_NONE}, {@code OF_MAX} and {@code PF_NONE} are refused as sentinels
-     * (the {@code PlayerFlag} enum has no {@code PF_MAX}, so that name falls to the unknown-flag
-     * arm). Repeated {@code obj-flags:} and {@code player-flags:} lines accumulate, as in C.
+     * match; here {@code OF_NONE} and {@code PF_NONE} are refused as sentinels. {@code OF_MAX}
+     * loads, because C's object-flag table ends with a {@code MAX} entry that the lookup finds.
+     * The player-flag table has no {@code MAX}, and the {@code PlayerFlag} enum has no
+     * {@code PF_MAX}, so that name falls to the unknown-flag arm. Repeated {@code obj-flags:} and
+     * {@code player-flags:} lines accumulate, as in C.
      *
      * <p><b>Titles.</b> C's {@code title[]} holds ten entries, and the eleventh
      * {@code title:} line is {@code PARSE_ERROR_TOO_MANY_ENTRIES}. Ten or fewer are kept in file
@@ -138,13 +140,15 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
      *   <li>a stat or skill name does not resolve, or a stat or skill value has no digit;</li>
      *   <li>the hit die, experience, maximum attacks, minimum weight or strength multiplier has no
      *       digit;</li>
-     *   <li>an object flag or player flag is unknown or a sentinel; or</li>
+     *   <li>an object flag is unknown or {@code NONE}, or a player flag is unknown or
+     *       {@code NONE}; or</li>
      *   <li>the class has more than ten titles.</li>
      * </ul>
      * Faults inside the nested equipment and magic records are thrown by those assemblers.
      *
      * <p>Function assemble coded before 260915, commented in full on 261028 (soft errors made
-     * fatal by 261028), updated on 261105 for the removal of the soft-error path.
+     * fatal by 261028), updated on 261105 for the removal of the soft-error path and to accept
+     * {@code OF_MAX}.
      *
      * @param records  the raw class records, in file order
      * @param filename the class file being read, for the error messages
@@ -222,7 +226,7 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
                 String flagString = "OF_" + oFlag;
                 try {
                     ObjectFlag flag = ObjectFlag.valueOf(flagString);
-                    if (flag == ObjectFlag.OF_NONE || flag == ObjectFlag.OF_MAX) {
+                    if (flag == ObjectFlag.OF_NONE) {
                         String msg = "Player class starting at line: " + line + " of file: " + filename + " has " +
                                 "an illegal sentinel object flag value: " + flagString;
                         logger.fatal(msg);

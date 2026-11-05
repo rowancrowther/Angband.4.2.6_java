@@ -141,7 +141,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             for (String flag : record.flagList()) {
                 try {
                     ObjectFlag oFlag = ObjectFlag.valueOf("OF_" + flag);
-                    if (oFlag != ObjectFlag.OF_NONE && oFlag != ObjectFlag.OF_MAX)
+                    if (oFlag != ObjectFlag.OF_NONE)
                         flags.on(oFlag);
                     else {
                         String message = "Artifact at line: "+ line + " of file: " + filename + " has " +

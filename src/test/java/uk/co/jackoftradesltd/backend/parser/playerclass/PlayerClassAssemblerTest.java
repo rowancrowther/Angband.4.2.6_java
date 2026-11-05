@@ -347,14 +347,20 @@ class PlayerClassAssemblerTest {
     // ---- flags ---------------------------------------------------------------------------------
 
     @ParameterizedTest(name = "obj-flags:{0} is refused")
-    @ValueSource(strings = {"NOTAFLAG", "NONE", "MAX", "OF_SUST_STR", "sust_str", "Sust_Str", " SUST_STR", ""})
+    @ValueSource(strings = {"NOTAFLAG", "NONE", "OF_SUST_STR", "sust_str", "Sust_Str", " SUST_STR", ""})
     void anUnknownObjectFlagStopsTheLoad(String flag) {
         // NONE: C's table holds "NONE" at index 0 and lookup_flag starts at index 1, so it never
-        // matches. MAX is not in the table at all. OF_SUST_STR would be looked up as written, and
-        // streq is case-sensitive.
+        // matches. OF_SUST_STR would be looked up as written, and streq is case-sensitive. MAX is
+        // not refused: see anObjectFlagMaxLoads.
         DataFileParseException e = stops(withOFlags(flag));
 
         assertNames(e, "Player class starting at line: " + LINE + " of file: " + FILE, "object flag value: OF_" + flag);
+    }
+
+    @Test
+    @DisplayName("obj-flags:MAX loads: C's object-flag table ends with MAX, which lookup_flag finds")
+    void anObjectFlagMaxLoads() {
+        assertTrue(one(withOFlags("MAX")).getoFlags().has(ObjectFlag.OF_MAX));
     }
 
     @ParameterizedTest(name = "player-flags:{0} is refused")
@@ -387,10 +393,10 @@ class PlayerClassAssemblerTest {
     }
 
     @Test
-    @DisplayName("every object flag in list-object-flags.h resolves")
+    @DisplayName("every object flag in list-object-flags.h bar NONE resolves, MAX included")
     void everyRealObjectFlagResolves() {
         for (ObjectFlag flag : ObjectFlag.values()) {
-            if (flag == ObjectFlag.OF_NONE || flag == ObjectFlag.OF_MAX)
+            if (flag == ObjectFlag.OF_NONE)
                 continue;
             String bare = flag.name().substring("OF_".length());
             assertTrue(one(withOFlags(bare)).getoFlags().has(flag), flag::name);

@@ -241,10 +241,12 @@ class ShapeReaderTest {
     }
 
     @Test
-    void theMaxNameIsRefusedForObjectFlagsAsCsTableHasNone() {
-        // list_obj_flag_names is "NONE", the OF() entries, then NULL: there is no "MAX".
-        assertTrue(loadFails("of-max.txt", shape("a", "obj-flags:MAX\n"))
-                .getMessage().contains("illegal sentinel object flag value: MAX"));
+    void theMaxNameLoadsForObjectFlagsAsCsTableHoldsIt() throws IOException {
+        // list_obj_flag_names is "NONE", the OF() entries (OF(MAX) among them), then NULL, and
+        // lookup_flag finds MAX.
+        PlayerShape s = byName(load("of-max.txt", shape("a", "obj-flags:MAX\n")).items(), "a");
+
+        assertTrue(s.getFlags().has(ObjectFlag.OF_MAX));
     }
 
     // ---- record-count + hard (fail-closed) errors ------------------------

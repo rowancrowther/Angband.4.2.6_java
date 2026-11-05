@@ -269,7 +269,7 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 
 Each group is one helper (or one policy) and then one pass over its users.
 
-### Message lookup (`message_lookup_by_name`)
+### Message lookup (`message_lookup_by_name`) [<span style="color:#006400">**CLOSED**</span> 26-11-05]
 
 - A: `blowmethod/BlowMethodAssembler.java` `msg:`.
 - A: `summon/SummonAssembler.java` `msgt:`.
@@ -277,17 +277,17 @@ Each group is one helper (or one policy) and then one pass over its users.
 - A: `projection/ProjectionAssembler.java` `msgt:`, which also has the numeric path one constant late.
 - Case-insensitive, with a numeric form, and no name `NONE`. Do the lookup helper first, then the four call sites.
 
-### `NONE` and `MAX` sentinels accepted by `valueOf`
+### `NONE` and `MAX` sentinels accepted by `valueOf` [<span style="color:#006400">**CLOSED**</span> 26-11-05: `NONE` is refused everywhere C refuses it, and `MAX` follows C's tables, which carry it for object flags and kind flags only.]
 
-- A: `slay/SlayAssembler.java` and `brand/BrandAssembler.java` race flags.
-- A: `egoitem/EgoItemAssembler.java` and `shape/ShapeAssembler.java` elements and modifiers.
-- A: `objectproperty/ObjectPropertyAssembler.java` `code:`, which also has the missing-`code:` case.
-- A: `body/BodyAssembler.java` slot types.
-- A: `playerrace/PlayerRaceAssembler.java` flags and resists, plus its race index and missing-history parts.
-- A: `playerproperty/PlayerPropertyAssembler.java` `code:MAX`, plus its element-record `code:` and `value:` parts.
-- A: `realm/RealmAssembler.java` `stat:`, which is also case-sensitive and drops a realm with no `stat:`.
-- A: `trap/TrapAssembler.java` `flags:MAX` and `save:MAX` are a smaller part of the trap entry.
-- One lookup helper that starts past the sentinel would serve all of them.
+- A: `slay/SlayAssembler.java` and `brand/BrandAssembler.java` race flags. [<span style="color:#006400">**CLOSED**</span> 26-11-05]
+- A: `egoitem/EgoItemAssembler.java` and `shape/ShapeAssembler.java` elements and modifiers. [<span style="color:#006400">**CLOSED**</span> 26-11-05: both sentinels refused for elements and modifiers; `OF_MAX` and `KF_MAX` load for flags, as C's tables carry them.]
+- A: `objectproperty/ObjectPropertyAssembler.java` `code:`, which also has the missing-`code:` case. [<span style="color:#006400">**CLOSED**</span> 26-11-05]
+- A: `body/BodyAssembler.java` slot types. [<span style="color:#006400">**CLOSED**</span> 26-11-05]
+- A: `playerrace/PlayerRaceAssembler.java` flags and resists, plus its race index and missing-history parts. [<span style="color:#006400">**CLOSED**</span> 26-11-05: `OF_MAX` loads.]
+- A: `playerproperty/PlayerPropertyAssembler.java` `code:MAX`, plus its element-record `code:` and `value:` parts. [<span style="color:#006400">**CLOSED**</span> 26-11-05: an object `code:MAX` loads, as C's `code_index_in_array` finds it.]
+- A: `realm/RealmAssembler.java` `stat:`, which is also case-sensitive and drops a realm with no `stat:`. [<span style="color:#006400">**CLOSED**</span> 26-11-05]
+- A: `trap/TrapAssembler.java` `flags:MAX` and `save:MAX` are a smaller part of the trap entry. [<span style="color:#006400">**CLOSED**</span> 26-11-05: `flags:MAX` is refused and `save:MAX` loads, as C's `trap_flags` has no `MAX` and `list_obj_flag_names` does.]
+- One lookup helper that starts past the sentinel would serve all of them. [<span style="color:#006400">**CLOSED**</span> 26-11-05: not written; each assembler carries its own inline check.]
 
 ### `grab_element_flag` (`IGNORE_` and `HATES_`)
 

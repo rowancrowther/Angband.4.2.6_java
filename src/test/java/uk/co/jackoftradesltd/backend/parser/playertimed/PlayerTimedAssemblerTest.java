@@ -311,9 +311,11 @@ class PlayerTimedAssemblerTest {
     }
 
     @Test
-    @DisplayName("MAX is refused for objects and elements, but C's timed effect list holds it")
+    @DisplayName("MAX loads for objects, is refused for elements, and C's timed effect list holds it")
     void maxIsRefusedWhereCsListLacksIt() {
-        assertStopsTheLoad(withFails(fail("1", "MAX")), "has an illegal object flag sentinel value: MAX");
+        // list_obj_flag_names ends with MAX, so lookup_flag finds it; the element list has none.
+        assertEquals(ObjectFlag.OF_MAX,
+                assembleOne(withFails(fail("1", "MAX"))).getFail().get(0).getObjFlagCode());
         assertStopsTheLoad(withFails(fail("2", "MAX")), "has an illegal resist element sentinel value: MAX");
         assertEquals(TimedEffect.TMD_MAX,
                 assembleOne(withFails(fail("5", "MAX"))).getFail().get(0).getEffectCode());
@@ -430,14 +432,15 @@ class PlayerTimedAssemblerTest {
     }
 
     @Test
-    @DisplayName("an unknown or sentinel flag-synonym: stops the load")
+    @DisplayName("an unknown or NONE flag-synonym: stops the load, and MAX loads")
     void anUnknownFlagSynonymStopsTheLoad() {
         assertStopsTheLoad(fields("", "", "", "", "", "", "", "", "NOTAFLAG", "1", "", List.of()),
                 "has an illegal object flag synonym value: NOTAFLAG");
+        // C refuses idx <= OF_NONE; MAX is in obj_flags and is above it.
         assertStopsTheLoad(fields("", "", "", "", "", "", "", "", "NONE", "1", "", List.of()),
                 "has an illegal object flag synonym sentinel value: NONE");
-        assertStopsTheLoad(fields("", "", "", "", "", "", "", "", "MAX", "1", "", List.of()),
-                "has an illegal object flag synonym sentinel value: MAX");
+        assertEquals(ObjectFlag.OF_MAX,
+                assembleOne(fields("", "", "", "", "", "", "", "", "MAX", "1", "", List.of())).getoFlagDup());
     }
 
     // ---- lower-bound ------------------------------------------------------

@@ -74,10 +74,12 @@ import java.util.List;
  *       where C holds {@code NULL} and tests the pointer before printing;</li>
  *   <li>{@code flags:} resolve to {@link TrapEnum} ({@code TRF_}) and {@code save:} to
  *       {@link ObjectFlag} ({@code OF_}) — two distinct flag vocabularies. Both are matched
- *       case-exactly, as C's {@code lookup_flag()} matches with {@code streq}. Both sentinels are
- *       refused: C's {@code trap_flags} and {@code list_obj_flag_names} tables hold
+ *       case-exactly, as C's {@code lookup_flag()} matches with {@code streq}. {@code NONE} is
+ *       refused for both: C's {@code trap_flags} and {@code list_obj_flag_names} tables hold
  *       {@code "NONE"} at index 0, which {@code lookup_flag()} never reaches because it starts at
- *       {@code FLAG_START} (1), and neither table holds {@code MAX};</li>
+ *       {@code FLAG_START} (1). {@code MAX} is refused for {@code flags:}, as {@code trap_flags}
+ *       has no such entry, but loads for {@code save:}, because {@code list_obj_flag_names} ends
+ *       with {@code "MAX"} and {@code lookup_flag()} finds it;</li>
  *   <li>primary and extra effects are delegated to {@link EffectAssembler}; and
  *       {@code trapKindIndex} is assigned by file position from 0, matching the {@code tidx} that
  *       {@code finish_parse_trap()} gives each kind as it walks its reversed list down from
@@ -87,14 +89,16 @@ import java.util.List;
  *
  * <p><b>Error policy:</b> every bad value is fatal, as it is in C, which stops the load at the
  * first handler that returns an error. A negative {@code appear:} number, unreadable
- * {@code visibility:} dice, an unknown or sentinel flag or save flag, and a bad effect block (thrown
+ * {@code visibility:} dice, an unknown or sentinel flag, an unknown or {@code NONE} save flag, and a
+ * bad effect block (thrown
  * from inside {@link EffectAssembler}) each log a fatal message and throw a
  * {@link DataFileParseException}, so no record is dropped and no index is skipped. Hard
  * grammar/lexer errors are handled upstream by {@code GrammarDriver}.
  *
  * <p>Class TrapAssembler coded before 260915, commented in full on 261030 (first commented 260915,
  * updated 261020 for the zeroed defaults; rewritten 261030 once soft errors became fatal and the
- * sentinels were refused; updated on 261105 for the removal of the soft-error path).
+ * sentinels were refused; updated on 261105 for the removal of the soft-error path and to let
+ * {@code save:MAX} load).
  *
  * @author Rowan Crowther
  */
@@ -129,8 +133,9 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
      * @param filename the data file the records came from, for error messages
      * @return the assembled trap kinds, in source order, indexed from 0
      * @throws DataFileParseException if any appear number is negative or not a number, the
-     *                                visibility dice cannot be read, a flag or save flag is unknown
-     *                                or a sentinel, or an effect block fails to resolve
+     *                                visibility dice cannot be read, a flag is unknown or a
+     *                                sentinel, a save flag is unknown or {@code NONE}, or an
+     *                                effect block fails to resolve
      */
     @Override
     public List<TrapKind> assemble(@NotNull List<TrapParseRecord> records,
@@ -219,7 +224,7 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
             for (String flag : record.saveFlags()) {
                 try {
                     ObjectFlag objFlag = ObjectFlag.valueOf("OF_" + flag);
-                    if (objFlag == ObjectFlag.OF_MAX || objFlag == ObjectFlag.OF_NONE) {
+                    if (objFlag == ObjectFlag.OF_NONE) {
                         String message = "Trap starting at line: " + line + " of file: " + filename + " has " +
                                 "an illegal sentinel trap save value: " + flag;
                         logger.fatal(message);

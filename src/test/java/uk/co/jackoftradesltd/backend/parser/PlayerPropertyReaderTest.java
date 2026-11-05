@@ -887,9 +887,10 @@ class PlayerPropertyReaderTest {
     }
 
     @Test
-    void codeMaxIsRejectedForAnObjectRecordAsInC() {
-        // C's list_obj_flag_names holds NONE and the real flags, with no MAX.
-        assertAssemblerRefuses("type:object\ncode:MAX\nname:A\n", "illegal sentinel object flag value: MAX");
+    void codeMaxIsValidForAnObjectRecordAsInC() throws IOException {
+        // C's list_obj_flag_names holds NONE, the real flags and MAX, and code_index_in_array
+        // starts at index 0.
+        assertEquals(ObjectFlag.OF_MAX, load("type:object\ncode:MAX\nname:A\n").items().get(0).getoCode());
     }
 
     @Test

@@ -373,8 +373,10 @@ class TrapAssemblerTest {
     }
 
     @Test
-    void saveFlagMaxThrows() {
-        assertThrowsFor(withFlags(List.of(), List.of("MAX")));
+    void saveFlagMaxLoads() {
+        // list_obj_flag_names ends with "MAX" (OF(MAX) in list-object-flags.h), so lookup_flag finds it
+        TrapKind kind = one(withFlags(List.of(), List.of("MAX")));
+        assertTrue(kind.getSaveFlags().has(ObjectFlag.OF_MAX));
     }
 
     // --- effects ---

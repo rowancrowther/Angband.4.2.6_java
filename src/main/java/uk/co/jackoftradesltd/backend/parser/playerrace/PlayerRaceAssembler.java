@@ -83,10 +83,12 @@ public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, Lis
      * with {@code RES_} and its remainder is resolved against {@code ELEM_}; only elements the race
      * names get an entry, so the resist map is sparse, and an element left out reads as 0.
      *
-     * <p>C's flag and element tables start past their {@code NONE} entry and have no {@code MAX}, so
-     * {@code OF_NONE}, {@code OF_MAX}, {@code PF_NONE}, {@code ELEM_NONE} and {@code ELEM_MAX} are
-     * refused here although the Java enums carry them. {@code PF_MAX} is not in {@code PlayerFlag}
-     * and fails as an unknown name.
+     * <p>C's flag and element tables start past their {@code NONE} entry, so
+     * {@code OF_NONE}, {@code PF_NONE}, {@code ELEM_NONE} and {@code ELEM_MAX} are refused here
+     * although the Java enums carry them. {@code OF_MAX} loads: C's object-flag table ends with a
+     * {@code MAX} entry, which {@code lookup_flag} finds. The player-flag and element tables have
+     * no {@code MAX}, and {@code PF_MAX} is not in {@code PlayerFlag}, so it fails as an unknown
+     * name.
      *
      * <p>The history chart is looked up by number through {@link PlayerRegistry}. A number that
      * names no chart gives a null history, which is what C's {@code findchart} stores. The body is
@@ -95,7 +97,8 @@ public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, Lis
      * is how {@code finish_parse_p_race} numbers {@code ridx}.
      *
      * <p>Function assemble coded before 260915, updated on 261029 to match C on the race index,
-     * history, sentinels, resist prefix and absent stat and skill lines, commented in full on 261029.
+     * history, sentinels, resist prefix and absent stat and skill lines, and on 261105 to accept
+     * {@code OF_MAX}, commented in full on 261105.
      *
      * @param records  the raw race records, in file order
      * @param filename the file being read, named in every error message
@@ -166,7 +169,7 @@ public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, Lis
             for (String oFlag : record.objectFlags()) {
                 try {
                     ObjectFlag flag = ObjectFlag.valueOf("OF_" + oFlag);
-                    if (flag == ObjectFlag.OF_NONE || flag == ObjectFlag.OF_MAX) {
+                    if (flag == ObjectFlag.OF_NONE) {
                         String msg = "Player race starting at line: " + line + " of file: " + filename + " has " +
                                 "an illegal sentinel object flag value: " + oFlag;
                         logger.fatal(msg);

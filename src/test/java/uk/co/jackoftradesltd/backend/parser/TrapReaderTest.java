@@ -682,9 +682,11 @@ class TrapReaderTest {
     }
 
     @Test
-    void saveMaxStopsTheLoadAsInC() {
-        assertThrows(DataFileParseException.class,
-                () -> load("save-max.txt", "name:a:b\nsave:MAX\n"));
+    void saveMaxLoadsAsInC() throws Exception {
+        // save: reads list_obj_flag_names, which ends with MAX; flags: reads trap_flags, which does not.
+        TrapKind t = load("save-max.txt", "name:a:b\nsave:MAX\n").items().getFirst();
+
+        assertTrue(t.getSaveFlags().has(ObjectFlag.OF_MAX));
     }
 
     /**

@@ -85,9 +85,8 @@ import java.util.List;
  * {@link DataFileParseException} that names the record's source line and the file. These are
  * refused, each as C refuses it:
  * <ul>
- *   <li>a {@code code} that is not in the flag list for the record's type (object flags with
- *       {@code OF_MAX} refused as well, since C's list ends before it; {@code NONE} is in both
- *       of C's lists and loads);</li>
+ *   <li>a {@code code} that is not in the flag list for the record's type ({@code NONE} is in
+ *       both of C's lists and loads, and {@code MAX} is in the object list and loads);</li>
  *   <li>any {@code code} on an {@code element} record;</li>
  *   <li>a {@code value:} or a {@code bindui} aux that is not a number;</li>
  *   <li>a {@code bindui} value that is neither {@code special} nor a decimal number, or that
@@ -134,9 +133,9 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      * <ol>
      *   <li>the {@code type} picks the property type;</li>
      *   <li>a non-empty {@code code} is looked up as {@code PF_<code>} for a {@code player}
-     *       record or {@code OF_<code>} for an {@code object} record. {@code OF_MAX} is refused
-     *       and {@code NONE} is accepted for both, as C's two lists do. A code on an
-     *       {@code element} record is refused;</li>
+     *       record or {@code OF_<code>} for an {@code object} record. {@code NONE} is accepted for
+     *       both, and {@code OF_MAX} for an {@code object} record, as C's two lists do. A code on
+     *       an {@code element} record is refused;</li>
      *   <li>each {@code bindui} gives a {@link PlayerProperty.BindUI}: the aux is a flag when
      *       non-zero ({@code 00} and {@code -0} are not), {@code special} gives value 0 with the
      *       special flag, and any other value is read in base 10 and refused at {@code INT_MAX}
@@ -155,7 +154,7 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      * <p>Every refusal logs at {@code fatal} and throws, so no record is skipped.
      *
      * <p>Function assemble coded before 260915, commented in full on 261029, updated on 261105 for
-     * the removal of the soft-error path.
+     * the removal of the soft-error path and on 261105 to accept {@code OF_MAX}.
      *
      * @param records  the raw parse records, in file order, from the grammar.
      * @param filename the file being read, quoted in each message.
@@ -186,12 +185,7 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
                 if (ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT) {
                     try {
                         oFlag = ObjectFlag.valueOf("OF_" + record.code());
-                        if (oFlag == ObjectFlag.OF_MAX) {
-                            String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
-                                    "an illegal sentinel object flag value: " + record.code();
-                            logger.fatal(msg);
-                            throw new DataFileParseException(msg);
-                        }
+                        
                     } catch (IllegalArgumentException e) {
                         String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
                                 "an illegal object flag value: " + record.code();

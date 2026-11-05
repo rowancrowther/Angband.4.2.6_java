@@ -699,11 +699,12 @@ class PlayerRaceReaderTest {
     }
 
     @Test
-    void objectFlagMaxIsRejectedAsCRejectsIt() {
-        // The object-flag table has no MAX entry, so the name matches nothing.
-        DataFileParseException e = rejects("of-max.txt", race("M", "history:1\nobj-flags:MAX\n"));
+    void objectFlagMaxLoadsAsCAcceptsIt() throws Exception {
+        // The object-flag table ends with a MAX entry, which lookup_flag finds.
+        PlayerRace r = load("of-max.txt", race("M", "history:1\nobj-flags:MAX\n")).items().get(0);
 
-        assertTrue(e.getMessage().contains("illegal sentinel object flag value: MAX"), e::getMessage);
+        Flag<ObjectFlag> of = field(r, "oFlags");
+        assertTrue(of.has(ObjectFlag.OF_MAX));
     }
 
     @Test

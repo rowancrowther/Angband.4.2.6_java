@@ -258,7 +258,7 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
                         case 1:
                             // object flag
                             ObjectFlag objectFlag = ObjectFlag.valueOf("OF_" + failValue);
-                            if (objectFlag == ObjectFlag.OF_NONE || objectFlag == ObjectFlag.OF_MAX) {
+                            if (objectFlag == ObjectFlag.OF_NONE) {
                                 String message = "Player timed starting at line: " + line + " of file: " + filename + " has " +
                                         "an illegal object flag sentinel value: " + failValue;
                                 logger.fatal(message);
@@ -391,7 +391,7 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
                 exactlySyn = exactVal != 0;
                 try {
                     synFlag = ObjectFlag.valueOf("OF_" + record.flagSynonymFlag());
-                    if (synFlag == ObjectFlag.OF_NONE || synFlag == ObjectFlag.OF_MAX) {
+                    if (synFlag == ObjectFlag.OF_NONE) {
                         String message = "Player timed starting at line: " + line + " of file: " + filename + " has " +
                                 "an illegal object flag synonym sentinel value: " + record.flagSynonymFlag();
                         logger.fatal(message);

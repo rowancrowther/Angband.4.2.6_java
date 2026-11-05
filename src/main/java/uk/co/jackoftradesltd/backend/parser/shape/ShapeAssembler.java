@@ -91,8 +91,10 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
      *
      * <p>Each {@code obj-flags:} and {@code player-flags:} name is resolved against
      * {@link ObjectFlag} and {@link PlayerFlag} with the prefix put back, case-exactly as C's
-     * {@code streq} compares. {@code NONE} is refused for both and {@code MAX} for the object
-     * flags, since C's lookup starts past the {@code NONE} slot and the tables have no {@code MAX}.
+     * {@code streq} compares. {@code NONE} is refused for both, since C's lookup starts past the
+     * {@code NONE} slot. {@code MAX} loads for the object flags, because C's object-flag table
+     * ends with a {@code MAX} entry that the lookup finds; the player-flag table has none, and
+     * {@code PF_MAX} is not in {@link PlayerFlag}, so it fails as an unknown name.
      * Each {@code values:} entry whose name starts {@code RES_} sets the resistance level of that
      * element; any other name is an {@link ObjectModifier} (the stats first, then the modifiers),
      * and its figure is read as a decimal. The {@code NONE} and {@code MAX} names are refused for
@@ -103,7 +105,8 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
      * C keeps in {@code z_info->shape_max} is taken from the size of this list by
      * {@code PlayerRegistry.setPlayerShape}.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261029.
+     * <p>Function assemble coded before 260915, updated on 261105 to accept {@code OF_MAX},
+     * commented in full on 261105.
      *
      * @param records  the raw shape records captured by the grammar
      * @param filename the data file the records came from, for the error messages
@@ -145,7 +148,7 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
                 ObjectFlag objectFlag;
                 try {
                     objectFlag = ObjectFlag.valueOf("OF_" + oFlag);
-                    if (objectFlag == ObjectFlag.OF_NONE || objectFlag == ObjectFlag.OF_MAX) {
+                    if (objectFlag == ObjectFlag.OF_NONE) {
                         String message = "Shape starting at line: " + line + " of file: " + filename + " has " +
                                 "an illegal sentinel object flag value: " + oFlag;
                         logger.fatal(message);

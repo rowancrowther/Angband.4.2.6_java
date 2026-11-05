@@ -38,8 +38,8 @@ import java.util.List;
 
 /**
  * First stage of the {@code ui_entry_renderer.txt} pipeline: drives the ANTLR-generated
- * {@link UIEntryRendererLexer} and {@link UIEntryRendererGrammar}, checks the declared
- * {@code record-count}, and hands the raw text of each record to the
+ * {@link UIEntryRendererLexer} and {@link UIEntryRendererGrammar}, and hands the raw text of each
+ * record to the
  * {@link UIEntryRendererAssembler} as a {@link UIEntryRendererParseRecord}. It implements the
  * shared {@link Reader} contract and is the thin handwritten boundary between the generated
  * grammar code and the game.
@@ -52,17 +52,19 @@ import java.util.List;
  * is different: this class and the grammar do the parsing, holding text only, while the assembler
  * does the {@code code} and {@code sign} lookups, the {@code ndigit} range check and the defaulting.
  *
- * <p>Errors travel two ways. A grammar or lexer error is fail-closed: {@code errorCatcher.throwIfAny()}
- * in {@link #extract} aborts the read and the caller gets an empty list plus the collected
- * messages. A {@code record-count} mismatch is soft: it is appended to the error list and the
- * records still flow through to the assembler.
+ * <p>Every error is fatal, as in C, where {@code run_parser} quits on the first bad line. A grammar
+ * or lexer error makes {@code errorCatcher.throwIfAny()} in {@link #extract} throw a
+ * {@code ParseCancellationException} before any record is built. A record the assembler refuses
+ * throws a {@code DataFileParseException}. Either way nothing is returned, so no partial list of
+ * renderers ever reaches the caller.
  *
  * <p>The directives C accepts that this reader cannot carry ({@code combine}, {@code units},
  * {@code combined-renderer}), the fixed directive order, the mandatory {@code code} and the missing
  * merge of a repeated {@code name} are recorded under "Things not to drop" in
  * {@code docs/precis/260929.md}; none of them is reached by the shipped file.
  *
- * <p>Class UIEntryRendererReader coded before 260929, commented in full on 260929.
+ * <p>Class UIEntryRendererReader coded before 260929, commented in full on 260929, updated on
+ * 261105 for the removal of the soft-error path and the {@code record-count:} header.
  *
  * @author Rowan Crowther
  */
@@ -77,19 +79,18 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
 
     /**
      * Runs the grammar's {@code file} rule and turns each parsed record into a
-     * {@link UIEntryRendererParseRecord}. The order is: parse, {@code errorCatcher.throwIfAny()}
-     * (fail-closed on any lexer or grammar error), compare the declared {@code record-count}
-     * against the number of records with {@link GrammarDriver#checkRecordCount} (soft: appends to
-     * {@code errors} and carries on), then convert every record.
+     * {@link UIEntryRendererParseRecord}. The order is: parse, then
+     * {@code errorCatcher.throwIfAny()}, which throws on any lexer or grammar error, then convert
+     * every record. Rows are only converted once the parse is clean.
      *
-     * <p>The count compared is the number of {@code name:} blocks parsed, not the number of distinct
-     * renderers, so a file that repeats a {@code name} counts each block.
-     *
-     * <p>Function extract coded before 260929, commented in full on 260929.
+     * <p>Function extract coded before 260929, commented in full on 260929, updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header.
      *
      * @param parser       the generated grammar positioned at the start of the file
      * @param errorCatcher collects lexer and grammar errors; a non-empty catcher aborts the read
      * @return one parse record per record in the file, in file order
+     * @throws org.antlr.v4.runtime.misc.ParseCancellationException if the parse raised any lexer or
+     *                                                              grammar error
      */
     private static List<UIEntryRendererParseRecord> extract(
             @NotNull UIEntryRendererGrammar parser,
@@ -138,12 +139,12 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
     }
 
     /**
-     * Reads {@code filename} and returns only the resolved renderers, discarding the error list.
-     * It is exactly {@code parseWithResults(filename).items()}, so a fail-closed grammar error
-     * gives an empty list here and the reason is visible only through the logger. Callers that
-     * need the messages use {@link #parseWithResults}.
+     * Reads {@code filename} and returns the resolved renderers. It is exactly
+     * {@code parseWithResults(filename).items()}, and any grammar, lexer or assembler error
+     * throws out of it, as from {@link #parseWithResults}.
      *
-     * <p>Function parse coded before 260929, commented in full on 260929.
+     * <p>Function parse coded before 260929, commented in full on 260929, updated on 261105 for the
+     * removal of the soft-error path.
      *
      * @param filename the path of the data file, normally {@code lib/gamedata/ui_entry_renderer.txt}
      * @return the renderers read from the file, in file order, never null
@@ -159,18 +160,23 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
     /**
      * Reads {@code filename} through {@link GrammarDriver#run}, wiring in the generated lexer and
      * grammar, {@link #extract} as the record extractor and a new {@link UIEntryRendererAssembler}
-     * as the second stage, and returns both the renderers and every error message.
+     * as the second stage, and returns the renderers wrapped in a {@link ParseResult}.
      *
-     * <p>A hard grammar or lexer error gives an empty item list. A {@code record-count} mismatch
-     * or an assembler rejection (unknown {@code code}, unknown {@code sign}, {@code ndigit} below
-     * 1) is soft: it adds a message and the valid records still come through in file order.
+     * <p>Every error is fatal. A grammar or lexer error throws a
+     * {@code ParseCancellationException} from {@link #extract}. An assembler rejection, such as an
+     * unknown {@code code}, an unknown {@code sign} or an {@code ndigit} below 1, throws a
+     * {@code DataFileParseException}. A result is only returned when every record loaded.
      *
-     * <p>Function parseWithResults coded before 260929, commented in full on 260929.
+     * <p>Function parseWithResults coded before 260929, commented in full on 260929, updated on
+     * 261105 for the removal of the soft-error path.
      *
      * @param filename the path of the file being parsed
-     * @return a {@link ParseResult} holding the {@link UIEntryRenderer} list and the errors
-     * raised during the parse and assembly
+     * @return a {@link ParseResult} holding every {@link UIEntryRenderer} in the file, in file order
      * @throws IOException when the file cannot be read or does not exist
+     * @throws org.antlr.v4.runtime.misc.ParseCancellationException if the parse raised any lexer or
+     *                                                              grammar error
+     * @throws uk.co.jackoftradesltd.channel.parser.DataFileParseException if the assembler refuses
+     *                                                                      a record
      */
     @NotNull
     @CheckReturnValue

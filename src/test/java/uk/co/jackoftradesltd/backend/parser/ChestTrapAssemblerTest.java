@@ -259,6 +259,149 @@ class ChestTrapAssemblerTest {
         refused(magic);
     }
 
+    @Test
+    void aHexDestroyOrMagicIsReadInBaseZero() {
+        // strtol(..., 0): 0x10 is 16, so true; 0x0 is 0, so false; a bare 0x reads the 0 and stops,
+        // so also false (the handler runs, val is 0).
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(4, flags(ChestTrapCode.SUMMON, "5", "0x10", "0x0", 18));
+        records.set(5, flags(ChestTrapCode.PARALYZE, "6", "0x", "0X1F", 22));
+
+        List<ChestTrap> traps = assemble(records);
+
+        assertTrue(traps.get(4).isDestroy());
+        assertFalse(traps.get(4).isMagic());
+        assertFalse(traps.get(5).isDestroy());
+        assertTrue(traps.get(5).isMagic());
+    }
+
+    @Test
+    void destroyAndMagicStopAtTheFirstCharacterThatIsNotADigitOfTheBase() {
+        // strtol stops at the first non-digit and ignores the rest: 5abc is 5 (true); 08 reads the
+        // 0 and stops at the 8, which is not octal (false); 0abc reads the 0 (false).
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(4, flags(ChestTrapCode.SUMMON, "5", "5abc", "08", 18));
+        records.set(5, flags(ChestTrapCode.PARALYZE, "6", "0abc", "1 2", 22));
+
+        List<ChestTrap> traps = assemble(records);
+
+        assertTrue(traps.get(4).isDestroy());
+        assertFalse(traps.get(4).isMagic());
+        assertFalse(traps.get(5).isDestroy());
+        assertTrue(traps.get(5).isMagic());
+    }
+
+    @Test
+    void destroyAndMagicSkipLeadingWhitespaceAndAcceptAPlusSign() {
+        // strtol skips leading whitespace and takes one + or -.
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(4, flags(ChestTrapCode.SUMMON, "5", " 1", "\t+1", 18));
+        records.set(5, flags(ChestTrapCode.PARALYZE, "6", "+0", " -0", 22));
+
+        List<ChestTrap> traps = assemble(records);
+
+        assertTrue(traps.get(4).isDestroy());
+        assertTrue(traps.get(4).isMagic());
+        assertFalse(traps.get(5).isDestroy());
+        assertFalse(traps.get(5).isMagic());
+    }
+
+    @Test
+    void aSignWithNoDigitsOrOnlyWhitespaceInDestroyOrMagicEndsTheLoad() {
+        // strtol reads nothing (z == tok), so PARSE_ERROR_NOT_NUMBER: "-", "+", "- 1", "--1", "  ".
+        for (String bad : new String[]{"-", "+", "- 1", "--1", "  "}) {
+            List<ChestTrapParseRecord> destroy = validFile();
+            destroy.set(6, flags(ChestTrapCode.EXPLODE, "7", bad, "", 26));
+            DataFileParseException e = refused(destroy);
+            assertTrue(e.getMessage().contains("invalid destroy value"), bad + ": " + e.getMessage());
+
+            List<ChestTrapParseRecord> magic = validFile();
+            magic.set(4, flags(ChestTrapCode.SUMMON, "5", "", bad, 18));
+            e = refused(magic);
+            assertTrue(e.getMessage().contains("invalid magic value"), bad + ": " + e.getMessage());
+        }
+    }
+
+    @Test
+    void aDestroyOrMagicTooBigForAnIntEndsTheLoadWhereCWraps() {
+        // Accepted deviation (numbers outside the int range are refused): C keeps the low 32 bits,
+        // so 4294967296 is 0 (false) and 2147483648 is INT_MIN (true); Java loads neither.
+        for (String big : new String[]{"4294967296", "2147483648", "99999999999999999999"}) {
+            List<ChestTrapParseRecord> destroy = validFile();
+            destroy.set(6, flags(ChestTrapCode.EXPLODE, "7", big, "", 26));
+            refused(destroy);
+
+            List<ChestTrapParseRecord> magic = validFile();
+            magic.set(4, flags(ChestTrapCode.SUMMON, "5", "", big, 18));
+            refused(magic);
+        }
+    }
+
+    @Test
+    void aDestroyErrorNamesTheRecordLineAndTheOffendingText() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(6, flags(ChestTrapCode.EXPLODE, "7", "yes", "", 26));
+
+        DataFileParseException e = refused(records);
+
+        assertTrue(e.getMessage().contains("line: 26"), e::getMessage);
+        assertTrue(e.getMessage().contains("file: test.txt"), e::getMessage);
+        assertTrue(e.getMessage().contains("yes"), e::getMessage);
+    }
+
+    @Test
+    void aHexPlusSignedOrPaddedLevelIsReadAsStrtolBaseZeroReadsIt() {
+        // 0x10 is 16, +7 is 7, " 25" is 25 (leading whitespace skipped).
+        List<ChestTrapParseRecord> hex = validFile();
+        hex.set(6, record(ChestTrapCode.EXPLODE, "0x10", 26));
+        assertEquals(16, assemble(hex).get(6).getLevel());
+
+        List<ChestTrapParseRecord> plus = validFile();
+        plus.set(6, record(ChestTrapCode.EXPLODE, "+7", 26));
+        assertEquals(7, assemble(plus).get(6).getLevel());
+
+        List<ChestTrapParseRecord> padded = validFile();
+        padded.set(6, record(ChestTrapCode.EXPLODE, " 25", 26));
+        assertEquals(25, assemble(padded).get(6).getLevel());
+    }
+
+    @Test
+    void aLevelThatIsOnlyASignOrWhitespaceEndsTheLoad() {
+        // strtol reads no digits: PARSE_ERROR_NOT_NUMBER.
+        for (String bad : new String[]{"-", "+", "  ", "- 5"}) {
+            List<ChestTrapParseRecord> records = validFile();
+            records.set(6, record(ChestTrapCode.EXPLODE, bad, 26));
+            refused(records);
+        }
+    }
+
+    @Test
+    void destroyAndMagicAreDecidedIndependentlyWhenOnlyOneIsPresent() {
+        // parse_chest_trap_destroy and parse_chest_trap_magic are separate handlers: a record that
+        // names one leaves the other at mem_zalloc's false.
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(4, flags(ChestTrapCode.SUMMON, "5", "", "1", 18));
+        records.set(6, flags(ChestTrapCode.EXPLODE, "7", "1", "", 26));
+
+        List<ChestTrap> traps = assemble(records);
+
+        assertFalse(traps.get(4).isDestroy());
+        assertTrue(traps.get(4).isMagic());
+        assertTrue(traps.get(6).isDestroy());
+        assertFalse(traps.get(6).isMagic());
+    }
+
+    @Test
+    void aDescendingLevelMessageQuotesTheLevelNotTheCode() {
+        List<ChestTrapParseRecord> records = validFile();
+        records.set(4, record(ChestTrapCode.SUMMON, "1", 18));
+
+        String message = refused(records).getMessage();
+
+        assertTrue(message.contains("invalid level value: 1 "), message);
+        assertFalse(message.contains("SUMMON"), message);
+    }
+
     // ---- code: ------------------------------------------------------------
 
     @Test

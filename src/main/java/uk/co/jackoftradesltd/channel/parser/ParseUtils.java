@@ -149,12 +149,19 @@ public class ParseUtils {
      * two apart.
      *
      * <p>It does not refuse a negative number: {@code ActivationAssembler.assemble} rejects a
-     * leading {@code -} on {@code aim:} and {@code power:} first (C's {@code strtoul} path refuses
-     * it as {@code PARSE_ERROR_NOT_NUMBER}), so only {@code level:} arrives here negative.
+     * leading {@code -} on {@code power:} first (C's {@code strtoul} path refuses it as
+     * {@code PARSE_ERROR_NOT_NUMBER}), so only {@code level:} arrives here negative. {@code aim:}
+     * does not come here at all; it is read by {@link #isTrue(String)}.
      *
-     * <p>Function parseIntString coded on 261022, commented in full on 261028 (leading
+     * <p>Whitespace is skipped only in front of the sign, as {@code strtol} skips it: {@code " 5"}
+     * and {@code "\t-5"} read as 5 and -5, while {@code "- 5"} and {@code "+ 5"} throw, because
+     * the space after the sign is not a digit. A zero prefix makes the {@code 0} itself the digit
+     * read, so {@code "-0x"} and {@code "-08"} give 0, and {@code "-0"} gives 0 (not a negative
+     * zero, which an {@code int} does not have).
+     *
+     * <p>Function parseIntString coded on 261022, commented in full on 261107 (leading
      * {@code +} read 261024, prefix and whitespace rewritten 261025, lone sign made fatal
-     * 261028).
+     * 261028, whitespace and prefix examples added 261107).
      *
      * @param type     the kind of record being read, for the message ({@code "Activation"},
      *                 {@code "Artifact"})
@@ -342,8 +349,15 @@ public class ParseUtils {
      * caller chooses HEX or OCTAL only after seeing the prefix, so the text without one is a
      * programming error and not data.
      *
+     * <p>Unlike the other forms, this one does not skip leading whitespace: {@code strtol} would,
+     * but the caller is documented to have removed it already, so {@code " 5"} in
+     * {@link Radix#DECIMAL} finds no digit and throws, and a sign followed by a space throws too.
+     * The lexer never produces whitespace, so this is not reachable from a data file. In
+     * {@link Radix#BINARY}, which is not a base C reads, text such as {@code 2} passes the decimal
+     * check and then has no binary digit, so it gives 0 and does not throw.
+     *
      * <p>Function parseIntString (with radix) coded before 261025, commented in full on 261107
-     * (callers corrected 261107).
+     * (callers corrected 261107, whitespace and binary behaviour noted 261107).
      *
      * @param type     the kind of record being read, for the message ({@code "Flavour"})
      * @param string   the raw text from the parse record, with any leading whitespace already
@@ -536,7 +550,11 @@ public class ParseUtils {
      * deal with that before calling, as {@code DungeonProfileAssembler} does for {@code min-level:}
      * and {@code alloc:}.
      *
-     * <p>Function parseIntString (with default) coded on 261023, commented in full on 261023.
+     * <p>Only text of length zero gives {@code def}: text of nothing but whitespace is passed on and
+     * throws, as the five-argument form does, because {@code strtol} reads no digits from it.
+     *
+     * <p>Function parseIntString (with default) coded on 261023, commented in full on 261107
+     * (whitespace-only text noted 261107).
      *
      * @param type     the kind of record being read, for the message ({@code "Dungeon profile"})
      * @param string   the raw text from the parse record, not {@code null}

@@ -528,14 +528,11 @@ class ActivationReaderTest {
     }
 
     @Test
-    void aNegativeAimStopsTheLoadAsInC() throws IOException {
-        // "aim uint aim": the same refusal as power.
-        String path = tempFile("negaim.txt", record("aim:-1\n"));
-
-        DataFileParseException thrown = assertThrows(DataFileParseException.class,
-                () -> new ActivationReader().parseWithResults(path));
-
-        assertTrue(thrown.getMessage().contains("aim"), thrown.getMessage());
+    void aLeadingMinusOnAimIsReadAsASignHereWhereCStopsTheLoad() throws Exception {
+        // Accepted deviation 261107. C: "aim uint aim", and parser.c refuses a uint token that starts
+        // with '-', even -0. Here the sign is read: -1 is non-zero so true, -0 is zero so false.
+        assertTrue(aim(loadOne(record("aim:-1\n"))));
+        assertFalse(aim(loadOne(record("aim:-0\n"))));
     }
 
     @Test

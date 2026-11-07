@@ -10,9 +10,11 @@
 // into a BlowMethodParseRecord; the 0/1 -> boolean conversion and the message-name
 // lookup both happen in BlowMethodAssembler.
 //
-// Verified against the real data (19 records): the eight directives always appear in
-// the fixed order below, so the blow rule is a sequence rather than a set. act: is the
-// only repeating directive (INSULT and MOAN ship eight apiece; most methods ship one).
+// The real data (19 records) always gives the eight directives in the same order, but C
+// does not require it: each directive is its own handler, so after name: the others may
+// come in any order, any may be missing, and act: and desc: may repeat. The blow rule is
+// therefore a name: followed by a set of directives, as C reads them. act: normally
+// repeats (INSULT and MOAN ship eight apiece; most methods ship one).
 parser grammar BlowMethodGrammar;
 
 options { tokenVocab = BlowMethodLexer; }
@@ -25,7 +27,7 @@ options { tokenVocab = BlowMethodLexer; }
 }
 
 // name: opens a record. The line number is captured here (rather than anywhere else in
-// the block) so that a soft error raised later by the assembler can point at the line
+// the block) so that an error raised later by the assembler can point at the line
 // the reader would recognize as the start of the offending method.
 name
         returns[String nameStr, int line]
@@ -87,41 +89,48 @@ desc
 // directive still has a defined value, the rule body overwrites those locals as each
 // directive matches, and @after assembles the immutable parse record in one go.
 //
-// The seeded defaults matter for msg: only - every other directive is mandatory here, so
-// its local is always overwritten. msgInit starts as "" (not null), which is the
+// Every directive after name: is optional, as in C, where a missing line leaves the
+// mem_zalloc'd zero. The seeded defaults carry that. cut/stun/miss/phys start as null,
+// which the assembler reads as false. msgInit starts as "" (not null), which is the
 // omitted-line case; a bare "msg:" instead assigns null over it. Both are handled
 // downstream, but they are genuinely different values arriving in the same field.
 //
-// act: is the sole repeating directive, so actInit is a list appended to on each match,
-// preserving file order. C prepends instead (parse_meth_act_msg pushes onto the head of
-// meth->messages), so its list ends up reversed - immaterial, since selection is a
-// random index over the whole set rather than anything order-dependent.
+// act: may repeat, so actInit is a list appended to on each match, preserving file order.
+// C prepends instead (parse_meth_act_msg pushes onto the head of meth->messages), so its
+// list ends up reversed, and mon-blows.c picks a message by walking randint0(num_messages)
+// steps along it. The order matters to that pick, so BlowMethodAssembler reverses the list.
+//
+// desc: may repeat too. C's parse_meth_desc does string_append, so the lines join end to
+// end with nothing between them; descInit does the same. A record with no desc: carries
+// "" where C holds NULL.
+//
+// A repeated cut:/stun:/miss:/phys:/msg: line overwrites the earlier one, as C's handlers do.
 blow
         returns[BlowMethodParseRecord record]
         @init {
             String nameInit = "";
-            String cutInit = "";
-            String stunInit = "";
-            String missInit = "";
-            String physInit = "";
+            String cutInit = null;
+            String stunInit = null;
+            String missInit = null;
+            String physInit = null;
             String msgInit = "";
             List<String> actInit = new ArrayList<>();
-            String descInit = "";
+            StringBuilder descInit = new StringBuilder();
             int line = 0;
         }
         @after {
             $record = new BlowMethodParseRecord(nameInit,
                 cutInit, stunInit, missInit, physInit,
-                msgInit, actInit, descInit, line);
+                msgInit, actInit, descInit.toString(), line);
         }
         :   name { line     = $name.line; nameInit = $name.nameStr.trim(); }
-            cut  { cutInit  = $cut.cutVal; }
-            stun { stunInit = $stun.stunVal; }
-            miss { missInit = $miss.missVal; }
-            phys { physInit = $phys.physVal; }
-            (msg { msgInit  = $msg.msgStr; })?
-            (act { actInit.add($act.actStr); })*
-            desc { descInit = $desc.descStr; }
+        (   cut  { cutInit  = $cut.cutVal; }
+        |   stun { stunInit = $stun.stunVal; }
+        |   miss { missInit = $miss.missVal; }
+        |   phys { physInit = $phys.physVal; }
+        |   msg { msgInit  = $msg.msgStr; }
+        |   act { actInit.add($act.actStr); }
+        |   desc { descInit.append($desc.descStr); } )*
         ;
 
 // Entry rule: one or more blow-method blocks.

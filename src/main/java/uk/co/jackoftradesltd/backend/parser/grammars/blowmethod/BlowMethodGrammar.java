@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowMethodGrammar.g4 by ANTLR 4.13.2
+// Generated from BlowMethodGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.blowmethod;
 
 import org.antlr.v4.runtime.*;
@@ -532,29 +532,47 @@ public class BlowMethodGrammar extends Parser {
 		public NameContext name() {
 			return getRuleContext(NameContext.class,0);
 		}
-		public CutContext cut() {
-			return getRuleContext(CutContext.class,0);
+		public List<CutContext> cut() {
+			return getRuleContexts(CutContext.class);
 		}
-		public StunContext stun() {
-			return getRuleContext(StunContext.class,0);
+		public CutContext cut(int i) {
+			return getRuleContext(CutContext.class,i);
 		}
-		public MissContext miss() {
-			return getRuleContext(MissContext.class,0);
+		public List<StunContext> stun() {
+			return getRuleContexts(StunContext.class);
 		}
-		public PhysContext phys() {
-			return getRuleContext(PhysContext.class,0);
+		public StunContext stun(int i) {
+			return getRuleContext(StunContext.class,i);
 		}
-		public DescContext desc() {
-			return getRuleContext(DescContext.class,0);
+		public List<MissContext> miss() {
+			return getRuleContexts(MissContext.class);
 		}
-		public MsgContext msg() {
-			return getRuleContext(MsgContext.class,0);
+		public MissContext miss(int i) {
+			return getRuleContext(MissContext.class,i);
+		}
+		public List<PhysContext> phys() {
+			return getRuleContexts(PhysContext.class);
+		}
+		public PhysContext phys(int i) {
+			return getRuleContext(PhysContext.class,i);
+		}
+		public List<MsgContext> msg() {
+			return getRuleContexts(MsgContext.class);
+		}
+		public MsgContext msg(int i) {
+			return getRuleContext(MsgContext.class,i);
 		}
 		public List<ActContext> act() {
 			return getRuleContexts(ActContext.class);
 		}
 		public ActContext act(int i) {
 			return getRuleContext(ActContext.class,i);
+		}
+		public List<DescContext> desc() {
+			return getRuleContexts(DescContext.class);
+		}
+		public DescContext desc(int i) {
+			return getRuleContext(DescContext.class,i);
 		}
 		public BlowContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -580,13 +598,13 @@ public class BlowMethodGrammar extends Parser {
 		enterRule(_localctx, 16, RULE_blow);
 
 		            String nameInit = "";
-		            String cutInit = "";
-		            String stunInit = "";
-		            String missInit = "";
-		            String physInit = "";
+		            String cutInit = null;
+		            String stunInit = null;
+		            String missInit = null;
+		            String physInit = null;
 		            String msgInit = "";
 		            List<String> actInit = new ArrayList<>();
-		            String descInit = "";
+		            StringBuilder descInit = new StringBuilder();
 		            int line = 0;
 		        
 		int _la;
@@ -596,53 +614,77 @@ public class BlowMethodGrammar extends Parser {
 			setState(53);
 			((BlowContext)_localctx).name = name();
 			 line     = ((BlowContext)_localctx).name.line; nameInit = ((BlowContext)_localctx).name.nameStr.trim(); 
-			setState(55);
-			((BlowContext)_localctx).cut = cut();
-			 cutInit  = ((BlowContext)_localctx).cut.cutVal; 
-			setState(57);
-			((BlowContext)_localctx).stun = stun();
-			 stunInit = ((BlowContext)_localctx).stun.stunVal; 
-			setState(59);
-			((BlowContext)_localctx).miss = miss();
-			 missInit = ((BlowContext)_localctx).miss.missVal; 
-			setState(61);
-			((BlowContext)_localctx).phys = phys();
-			 physInit = ((BlowContext)_localctx).phys.physVal; 
-			setState(66);
+			setState(78);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==MSG) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 508L) != 0)) {
 				{
-				setState(63);
-				((BlowContext)_localctx).msg = msg();
-				 msgInit  = ((BlowContext)_localctx).msg.msgStr; 
+				setState(76);
+				_errHandler.sync(this);
+				switch (_input.LA(1)) {
+				case CUT:
+					{
+					setState(55);
+					((BlowContext)_localctx).cut = cut();
+					 cutInit  = ((BlowContext)_localctx).cut.cutVal; 
+					}
+					break;
+				case STUN:
+					{
+					setState(58);
+					((BlowContext)_localctx).stun = stun();
+					 stunInit = ((BlowContext)_localctx).stun.stunVal; 
+					}
+					break;
+				case MISS:
+					{
+					setState(61);
+					((BlowContext)_localctx).miss = miss();
+					 missInit = ((BlowContext)_localctx).miss.missVal; 
+					}
+					break;
+				case PHYS:
+					{
+					setState(64);
+					((BlowContext)_localctx).phys = phys();
+					 physInit = ((BlowContext)_localctx).phys.physVal; 
+					}
+					break;
+				case MSG:
+					{
+					setState(67);
+					((BlowContext)_localctx).msg = msg();
+					 msgInit  = ((BlowContext)_localctx).msg.msgStr; 
+					}
+					break;
+				case ACT:
+					{
+					setState(70);
+					((BlowContext)_localctx).act = act();
+					 actInit.add(((BlowContext)_localctx).act.actStr); 
+					}
+					break;
+				case DESC:
+					{
+					setState(73);
+					((BlowContext)_localctx).desc = desc();
+					 descInit.append(((BlowContext)_localctx).desc.descStr); 
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 				}
-			}
-
-			setState(73);
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			while (_la==ACT) {
-				{
-				{
-				setState(68);
-				((BlowContext)_localctx).act = act();
-				 actInit.add(((BlowContext)_localctx).act.actStr); 
 				}
-				}
-				setState(75);
+				setState(80);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(76);
-			((BlowContext)_localctx).desc = desc();
-			 descInit = ((BlowContext)_localctx).desc.descStr; 
 			}
 			_ctx.stop = _input.LT(-1);
 
 			            ((BlowContext)_localctx).record =  new BlowMethodParseRecord(nameInit,
 			                cutInit, stunInit, missInit, physInit,
-			                msgInit, actInit, descInit, line);
+			                msgInit, actInit, descInit.toString(), line);
 			        
 		}
 		catch (RecognitionException re) {
@@ -696,22 +738,22 @@ public class BlowMethodGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(82); 
+			setState(84); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(79);
+				setState(81);
 				((FileContext)_localctx).blow = blow();
 				 _localctx.records.add(((FileContext)_localctx).blow.record); 
 				}
 				}
-				setState(84); 
+				setState(86); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==NAME );
-			setState(86);
+			setState(88);
 			match(EOF);
 			}
 		}
@@ -727,7 +769,7 @@ public class BlowMethodGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\rY\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\r[\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000"+
@@ -737,43 +779,46 @@ public class BlowMethodGrammar extends Parser {
 		"\u0001\u0005\u0003\u0005,\b\u0005\u0001\u0006\u0001\u0006\u0001\u0006"+
 		"\u0001\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\b\u0001"+
 		"\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001"+
-		"\b\u0001\b\u0001\b\u0003\bC\b\b\u0001\b\u0001\b\u0001\b\u0005\bH\b\b\n"+
-		"\b\f\bK\t\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001\t\u0001\t\u0004\tS\b"+
-		"\t\u000b\t\f\tT\u0001\t\u0001\t\u0001\t\u0000\u0000\n\u0000\u0002\u0004"+
-		"\u0006\b\n\f\u000e\u0010\u0012\u0000\u0000R\u0000\u0014\u0001\u0000\u0000"+
-		"\u0000\u0002\u0018\u0001\u0000\u0000\u0000\u0004\u001c\u0001\u0000\u0000"+
-		"\u0000\u0006 \u0001\u0000\u0000\u0000\b$\u0001\u0000\u0000\u0000\n(\u0001"+
-		"\u0000\u0000\u0000\f-\u0001\u0000\u0000\u0000\u000e1\u0001\u0000\u0000"+
-		"\u0000\u00105\u0001\u0000\u0000\u0000\u0012R\u0001\u0000\u0000\u0000\u0014"+
-		"\u0015\u0005\u0001\u0000\u0000\u0015\u0016\u0005\f\u0000\u0000\u0016\u0017"+
-		"\u0006\u0000\uffff\uffff\u0000\u0017\u0001\u0001\u0000\u0000\u0000\u0018"+
-		"\u0019\u0005\u0002\u0000\u0000\u0019\u001a\u0005\t\u0000\u0000\u001a\u001b"+
-		"\u0006\u0001\uffff\uffff\u0000\u001b\u0003\u0001\u0000\u0000\u0000\u001c"+
-		"\u001d\u0005\u0003\u0000\u0000\u001d\u001e\u0005\t\u0000\u0000\u001e\u001f"+
-		"\u0006\u0002\uffff\uffff\u0000\u001f\u0005\u0001\u0000\u0000\u0000 !\u0005"+
-		"\u0004\u0000\u0000!\"\u0005\t\u0000\u0000\"#\u0006\u0003\uffff\uffff\u0000"+
-		"#\u0007\u0001\u0000\u0000\u0000$%\u0005\u0005\u0000\u0000%&\u0005\t\u0000"+
-		"\u0000&\'\u0006\u0004\uffff\uffff\u0000\'\t\u0001\u0000\u0000\u0000(+"+
-		"\u0005\u0006\u0000\u0000)*\u0005\f\u0000\u0000*,\u0006\u0005\uffff\uffff"+
-		"\u0000+)\u0001\u0000\u0000\u0000+,\u0001\u0000\u0000\u0000,\u000b\u0001"+
-		"\u0000\u0000\u0000-.\u0005\u0007\u0000\u0000./\u0005\f\u0000\u0000/0\u0006"+
-		"\u0006\uffff\uffff\u00000\r\u0001\u0000\u0000\u000012\u0005\b\u0000\u0000"+
-		"23\u0005\f\u0000\u000034\u0006\u0007\uffff\uffff\u00004\u000f\u0001\u0000"+
-		"\u0000\u000056\u0003\u0000\u0000\u000067\u0006\b\uffff\uffff\u000078\u0003"+
-		"\u0002\u0001\u000089\u0006\b\uffff\uffff\u00009:\u0003\u0004\u0002\u0000"+
-		":;\u0006\b\uffff\uffff\u0000;<\u0003\u0006\u0003\u0000<=\u0006\b\uffff"+
-		"\uffff\u0000=>\u0003\b\u0004\u0000>B\u0006\b\uffff\uffff\u0000?@\u0003"+
-		"\n\u0005\u0000@A\u0006\b\uffff\uffff\u0000AC\u0001\u0000\u0000\u0000B"+
-		"?\u0001\u0000\u0000\u0000BC\u0001\u0000\u0000\u0000CI\u0001\u0000\u0000"+
-		"\u0000DE\u0003\f\u0006\u0000EF\u0006\b\uffff\uffff\u0000FH\u0001\u0000"+
-		"\u0000\u0000GD\u0001\u0000\u0000\u0000HK\u0001\u0000\u0000\u0000IG\u0001"+
-		"\u0000\u0000\u0000IJ\u0001\u0000\u0000\u0000JL\u0001\u0000\u0000\u0000"+
-		"KI\u0001\u0000\u0000\u0000LM\u0003\u000e\u0007\u0000MN\u0006\b\uffff\uffff"+
-		"\u0000N\u0011\u0001\u0000\u0000\u0000OP\u0003\u0010\b\u0000PQ\u0006\t"+
-		"\uffff\uffff\u0000QS\u0001\u0000\u0000\u0000RO\u0001\u0000\u0000\u0000"+
-		"ST\u0001\u0000\u0000\u0000TR\u0001\u0000\u0000\u0000TU\u0001\u0000\u0000"+
-		"\u0000UV\u0001\u0000\u0000\u0000VW\u0005\u0000\u0000\u0001W\u0013\u0001"+
-		"\u0000\u0000\u0000\u0004+BIT";
+		"\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001"+
+		"\b\u0001\b\u0001\b\u0001\b\u0005\bM\b\b\n\b\f\bP\t\b\u0001\t\u0001\t\u0001"+
+		"\t\u0004\tU\b\t\u000b\t\f\tV\u0001\t\u0001\t\u0001\t\u0000\u0000\n\u0000"+
+		"\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0000\u0000Y\u0000\u0014\u0001"+
+		"\u0000\u0000\u0000\u0002\u0018\u0001\u0000\u0000\u0000\u0004\u001c\u0001"+
+		"\u0000\u0000\u0000\u0006 \u0001\u0000\u0000\u0000\b$\u0001\u0000\u0000"+
+		"\u0000\n(\u0001\u0000\u0000\u0000\f-\u0001\u0000\u0000\u0000\u000e1\u0001"+
+		"\u0000\u0000\u0000\u00105\u0001\u0000\u0000\u0000\u0012T\u0001\u0000\u0000"+
+		"\u0000\u0014\u0015\u0005\u0001\u0000\u0000\u0015\u0016\u0005\f\u0000\u0000"+
+		"\u0016\u0017\u0006\u0000\uffff\uffff\u0000\u0017\u0001\u0001\u0000\u0000"+
+		"\u0000\u0018\u0019\u0005\u0002\u0000\u0000\u0019\u001a\u0005\t\u0000\u0000"+
+		"\u001a\u001b\u0006\u0001\uffff\uffff\u0000\u001b\u0003\u0001\u0000\u0000"+
+		"\u0000\u001c\u001d\u0005\u0003\u0000\u0000\u001d\u001e\u0005\t\u0000\u0000"+
+		"\u001e\u001f\u0006\u0002\uffff\uffff\u0000\u001f\u0005\u0001\u0000\u0000"+
+		"\u0000 !\u0005\u0004\u0000\u0000!\"\u0005\t\u0000\u0000\"#\u0006\u0003"+
+		"\uffff\uffff\u0000#\u0007\u0001\u0000\u0000\u0000$%\u0005\u0005\u0000"+
+		"\u0000%&\u0005\t\u0000\u0000&\'\u0006\u0004\uffff\uffff\u0000\'\t\u0001"+
+		"\u0000\u0000\u0000(+\u0005\u0006\u0000\u0000)*\u0005\f\u0000\u0000*,\u0006"+
+		"\u0005\uffff\uffff\u0000+)\u0001\u0000\u0000\u0000+,\u0001\u0000\u0000"+
+		"\u0000,\u000b\u0001\u0000\u0000\u0000-.\u0005\u0007\u0000\u0000./\u0005"+
+		"\f\u0000\u0000/0\u0006\u0006\uffff\uffff\u00000\r\u0001\u0000\u0000\u0000"+
+		"12\u0005\b\u0000\u000023\u0005\f\u0000\u000034\u0006\u0007\uffff\uffff"+
+		"\u00004\u000f\u0001\u0000\u0000\u000056\u0003\u0000\u0000\u00006N\u0006"+
+		"\b\uffff\uffff\u000078\u0003\u0002\u0001\u000089\u0006\b\uffff\uffff\u0000"+
+		"9M\u0001\u0000\u0000\u0000:;\u0003\u0004\u0002\u0000;<\u0006\b\uffff\uffff"+
+		"\u0000<M\u0001\u0000\u0000\u0000=>\u0003\u0006\u0003\u0000>?\u0006\b\uffff"+
+		"\uffff\u0000?M\u0001\u0000\u0000\u0000@A\u0003\b\u0004\u0000AB\u0006\b"+
+		"\uffff\uffff\u0000BM\u0001\u0000\u0000\u0000CD\u0003\n\u0005\u0000DE\u0006"+
+		"\b\uffff\uffff\u0000EM\u0001\u0000\u0000\u0000FG\u0003\f\u0006\u0000G"+
+		"H\u0006\b\uffff\uffff\u0000HM\u0001\u0000\u0000\u0000IJ\u0003\u000e\u0007"+
+		"\u0000JK\u0006\b\uffff\uffff\u0000KM\u0001\u0000\u0000\u0000L7\u0001\u0000"+
+		"\u0000\u0000L:\u0001\u0000\u0000\u0000L=\u0001\u0000\u0000\u0000L@\u0001"+
+		"\u0000\u0000\u0000LC\u0001\u0000\u0000\u0000LF\u0001\u0000\u0000\u0000"+
+		"LI\u0001\u0000\u0000\u0000MP\u0001\u0000\u0000\u0000NL\u0001\u0000\u0000"+
+		"\u0000NO\u0001\u0000\u0000\u0000O\u0011\u0001\u0000\u0000\u0000PN\u0001"+
+		"\u0000\u0000\u0000QR\u0003\u0010\b\u0000RS\u0006\t\uffff\uffff\u0000S"+
+		"U\u0001\u0000\u0000\u0000TQ\u0001\u0000\u0000\u0000UV\u0001\u0000\u0000"+
+		"\u0000VT\u0001\u0000\u0000\u0000VW\u0001\u0000\u0000\u0000WX\u0001\u0000"+
+		"\u0000\u0000XY\u0005\u0000\u0000\u0001Y\u0013\u0001\u0000\u0000\u0000"+
+		"\u0004+LNV";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

@@ -30,6 +30,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ChestTrapCode;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Turns each {@link ChestTrapParseRecord} parsed from {@code chest_trap.txt} into a
@@ -55,7 +56,7 @@ import java.util.List;
  * {@link DataFileParseException} at the first record that has it. No partial list is ever
  * returned.
  *
- * <p>Class ChestTrapAssembler coded before 260915, commented in full on 261023.
+ * <p>Class ChestTrapAssembler coded before 260915, commented in full on 261107 (previously 261023).
  *
  * @author Rowan Crowther
  */
@@ -64,7 +65,7 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
      * The logger this assembler writes to: a fatal message, with the same text, just before each
      * {@link DataFileParseException} it throws.
      *
-     * <p>Field logger coded before 260915, commented in full on 261023.
+     * <p>Field logger coded before 260915, commented in full on 261107 (previously 261023).
      */
     private static final Logger logger = LogManager.getLogger(ChestTrapAssembler.class);
 
@@ -86,20 +87,28 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
      *       first record's is compared against 0, so a negative first level ends the load. An
      *       absent {@code level:} gives 0, the value C's {@code mem_zalloc} leaves.</li>
      *   <li><strong>The effects</strong>, when the record has any, go to
-     *       {@link EffectAssembler#assemble}. A {@code null} back means a block failed to resolve
-     *       and ends the load, as an error from {@code grab_effect_data} ends it in C. A record
+     *       {@link EffectAssembler#assemble}. A block that fails to resolve makes that method throw
+     *       {@link DataFileParseException}, which ends the load as an error from
+     *       {@code grab_effect_data} ends it in C; it never returns {@code null}. A record
      *       with no effect block, such as {@code locked}, gets an empty list where C leaves
      *       {@code effect} {@code NULL}.</li>
      *   <li><strong>{@code destroy:} and {@code magic:}</strong> are true for any non-zero value,
      *       as {@code parse_chest_trap_destroy} and {@code parse_chest_trap_magic} test
-     *       {@code if (val)}, and false when absent.</li>
+     *       {@code if (val)}, and false when absent. An absent directive arrives as {@code ""}
+     *       and is skipped, leaving false as C's {@code mem_zalloc} does, which is what lets
+     *       {@code locked}, with neither line, load. A value that is not a number, including a
+     *       present but malformed {@code null}, goes to {@link ParseUtils#isTrue(String)}, which
+     *       answers empty, and ends the load.</li>
      *   <li><strong>{@code msg:} and {@code msg-death:}</strong> are copied as they are, with
      *       {@code ""} when absent where C leaves {@code NULL}. Code that reads them must treat
      *       {@code ""} as C's {@code if (trap->msg)} treats {@code NULL}: no message.</li>
      * </ul>
      *
-     * <p>A value too big for an {@code int} is clamped to {@link Integer#MAX_VALUE} where C wraps
-     * it, the accepted deviation recorded in {@link ParseUtils}.
+     * <p>A {@code level:} too big for an {@code int} is clamped to {@link Integer#MAX_VALUE} (or
+     * {@link Integer#MIN_VALUE}) where C wraps it to the low 32 bits, the accepted deviation
+     * recorded in {@link ParseUtils}. A {@code destroy:} or {@code magic:} too big for an
+     * {@code int} is not clamped: {@link ParseUtils#isTrue(String)} cannot read it, answers empty,
+     * and the load ends, where C wraps it and sets the flag unless the low 32 bits are zero.
      *
      * <p>The {@code null} guards on the code, {@code destroy:} and {@code magic:} cover a
      * directive that was present but malformed, which the grammar passes on as {@code null}. They
@@ -108,7 +117,8 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
      * {@link NullPointerException} rather than {@link DataFileParseException}.
      *
      * <p>Function assemble coded before 260915, rewritten for the load-ending errors on 261023,
-     * commented in full on 261023.
+     * absent and malformed {@code destroy:} and {@code magic:} corrected on 261107, oversized
+     * {@code destroy:} and {@code magic:} corrected on 261107, commented in full on 261107.
      *
      * @param records  the raw {@link ChestTrapParseRecord}s, in file order, expected in
      *                 {@link ChestTrapCode} declaration order
@@ -117,8 +127,10 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
      * @throws DataFileParseException on a code that is missing, names no {@link ChestTrapCode}
      *                                constant or is out of declaration order; on more or fewer
      *                                records than there are constants; on a level lower than the
-     *                                one before it; on a number with no leading digits; or on an
-     *                                effect block that fails to resolve
+     *                                one before it; on a {@code level:} with no leading digits; on
+     *                                a {@code destroy:} or {@code magic:} that is not a number or is
+     *                                too big for an {@code int}; or on an effect block that fails
+     *                                to resolve
      */
     @Override
     public List<ChestTrap> assemble(@NotNull List<ChestTrapParseRecord> records,
@@ -166,7 +178,7 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
             int level = ParseUtils.parseIntString("Chest trap", record.level(), line, filename, "level");
             if (level < previousLevel) {
                 String message = "Chest Trap starting at line: " + line + " of file: " + filename + " has " +
-                        "an invalid level value: " + record.code() + " level values must not descend";
+                        "an invalid level value: " + record.level() + " level values must not descend";
                 logger.fatal(message);
                 throw new DataFileParseException(message);
             }
@@ -174,29 +186,29 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
             List<Effect> effects = new ArrayList<>();
             if (record.effect() != null && !record.effect().isEmpty()) {
                 effects = EffectAssembler.assemble(record.effect(), filename);
-                if (effects == null) {
+            }
+            boolean destroy = false;
+            if (record.destroy() == null || !record.destroy().isEmpty()) {
+                Optional<Boolean> destroyVal = ParseUtils.isTrue(record.destroy());
+                if (destroyVal.isEmpty()) {
                     String message = "Chest Trap starting at line: " + line + " of file: " + filename + " has " +
-                            "no valid effects";
+                            "an invalid destroy value: " + record.destroy();
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }
+                destroy = destroyVal.get();
             }
-            if (record.destroy() == null) {
-                String message = "Chest Trap starting at line: " + line + " of file: " + filename + " has " +
-                        "an invalid destroy value: null";
-                logger.fatal(message);
-                throw new DataFileParseException(message);
+            boolean magic = false;
+            if (record.magic() == null ||  !record.magic().isEmpty()) {
+                Optional<Boolean> magicVal = ParseUtils.isTrue(record.magic());
+                if (magicVal.isEmpty()) {
+                    String message = "Chest Trap starting at line: " + line + " of file: " + filename + " has " +
+                            "an invalid magic value: " + record.magic();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                magic = magicVal.get();
             }
-            int destroyInt = ParseUtils.parseIntString("Chest trap", record.destroy(), line, filename, "destroy");
-            boolean destroy = destroyInt != 0;
-            if (record.magic() == null) {
-                String message = "Chest Trap starting at line: " + line + " of file: " + filename + " has " +
-                        "an invalid magic value: null";
-                logger.fatal(message);
-                throw new DataFileParseException(message);
-            }
-            int magicInt = ParseUtils.parseIntString("Chest trap", record.magic(), line, filename, "magic");
-            boolean magic = magicInt != 0;
             String msg = record.msg() == null ? "" : record.msg();
             String msgDeath = record.msgDeath() == null ? "" : record.msgDeath();
 

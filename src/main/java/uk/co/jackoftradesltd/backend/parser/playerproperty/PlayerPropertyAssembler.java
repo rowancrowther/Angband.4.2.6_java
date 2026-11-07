@@ -35,6 +35,7 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Second stage of the {@code player_property.txt} pipeline: turns the raw string
@@ -88,7 +89,10 @@ import java.util.List;
  *   <li>a {@code code} that is not in the flag list for the record's type ({@code NONE} is in
  *       both of C's lists and loads, and {@code MAX} is in the object list and loads);</li>
  *   <li>any {@code code} on an {@code element} record;</li>
- *   <li>a {@code value:} or a {@code bindui} aux that is not a number;</li>
+ *   <li>a {@code value:} or a {@code bindui} aux that is not a number. Both are {@code int}
+ *       fields to C's parser, which reads them with {@code strtol} in base 0 ({@code 0x1}, {@code 010}
+ *       and {@code +1} are numbers); the aux goes through {@link ParseUtils#isTrue(String)}, which
+ *       answers only whether the figure is non-zero;</li>
  *   <li>a {@code bindui} value that is neither {@code special} nor a decimal number, or that
  *       is {@code INT_MAX} or beyond.</li>
  * </ul>
@@ -113,7 +117,8 @@ import java.util.List;
  * {@code TYPE_VALUE} token admits only {@code player}, {@code object} and {@code element}.
  * Only a hand-built {@link PlayerPropertyParseRecord} gets there.
  *
- * <p>Class PlayerPropertyAssembler coded before 260915, commented in full on 261029.
+ * <p>Class PlayerPropertyAssembler coded before 260915, commented in full on 261107 (the aux and
+ * {@code value:} reading described that day).
  *
  * @author Rowan Crowther
  */
@@ -122,7 +127,7 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      * Sink for the {@code fatal} line logged just before each {@link DataFileParseException} is
      * thrown, so the message reaches the log as well as the caller.
      *
-     * <p>Field logger coded before 260915, commented in full on 261029.
+     * <p>Field logger coded before 260915, commented in full on 261107.
      */
     private static final Logger logger = LogManager.getLogger(PlayerPropertyAssembler.class);
 
@@ -136,8 +141,10 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      *       record or {@code OF_<code>} for an {@code object} record. {@code NONE} is accepted for
      *       both, and {@code OF_MAX} for an {@code object} record, as C's two lists do. A code on
      *       an {@code element} record is refused;</li>
-     *   <li>each {@code bindui} gives a {@link PlayerProperty.BindUI}: the aux is a flag when
-     *       non-zero ({@code 00} and {@code -0} are not), {@code special} gives value 0 with the
+     *   <li>each {@code bindui} gives a {@link PlayerProperty.BindUI}, named by the grammar's entry
+     *       name followed by its {@code <TAG>} (C keeps the two as one symbol): the aux is a flag
+     *       when non-zero, read by {@link ParseUtils#isTrue(String)} with {@code strtol} base 0 rules
+     *       ({@code 00} and {@code -0} are not, {@code 0x1} and {@code -1} are), {@code special} gives value 0 with the
      *       special flag, and any other value is read in base 10 and refused at {@code INT_MAX}
      *       or {@code INT_MIN} (the negative limit is the accepted deviation in the class
      *       block);</li>
@@ -153,7 +160,7 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      *
      * <p>Every refusal logs at {@code fatal} and throws, so no record is skipped.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261029, updated on 261105 for
+     * <p>Function assemble coded before 260915, commented in full on 261107, updated on 261105 for
      * the removal of the soft-error path and on 261105 to accept {@code OF_MAX}.
      *
      * @param records  the raw parse records, in file order, from the grammar.
@@ -226,8 +233,14 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
             
             List<PlayerProperty.BindUI> bindings = new ArrayList<>();
             for (List<String> b : record.bindui()) {
-                int auxVal = ParseUtils.parseIntString("Player property", b.get(2), line, filename, "aux part of bindui");
-                boolean aux = auxVal != 0;
+                Optional<Boolean> auxVal = ParseUtils.isTrue(b.get(2));
+                if (auxVal.isEmpty()) {
+                    String msg = "Player property starting at line: " + line + " of file: " + filename + " has " +
+                            "an invalid bindui auxiliary value: " + b.get(2);
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
+                boolean aux = auxVal.get();
                 int value;
                 String b3 = b.get(3);
                 boolean special = b3.equals("special");
@@ -310,7 +323,12 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      * <p>The bindings are re-suffixed in the order {@code pp} holds them, which is file order (the
      * accepted deviation in the class block; C walks its reversed list).
      *
-     * <p>Function spreadPlayerPropertyOut coded on 260924, commented in full on 261029.
+     * <p>The tag is the element's constant name without its {@code ELEM_} prefix, which is what
+     * {@code list_element_names} holds ({@code ELEM_HOLY_ORB} tags as {@code <HOLY_ORB>}). The
+     * caller visits every {@link ElementEnum} but {@code ELEM_NONE} and {@code ELEM_MAX}, which
+     * is the twenty-five entries C's loop covers.
+     *
+     * <p>Function spreadPlayerPropertyOut coded on 260924, commented in full on 261107.
      *
      * @param pp the template property for one {@code type:element} record, carrying that
      *           record's own name/description/bindings/value ahead of expansion

@@ -28,10 +28,7 @@ import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Assembles the raw {@link ObjectPropertyParseRecord}s parsed from {@code object_property.txt}
@@ -51,8 +48,9 @@ import java.util.Map;
  * {@link DataFileParseException} naming the record's line and the file; no record is skipped. The
  * cases are an unrecognized {@code type:},
  * {@code subtype:} or {@code id-type:}, a {@code code:} that names nothing in the table its type
- * selects, a {@code type-mult:} tval that resolves to nothing, and a number that
- * {@link ParseUtils#parseIntString} cannot read.
+ * selects, a {@code type-mult:} tval that resolves to nothing, a number that
+ * {@link ParseUtils#parseIntString} cannot read, and a {@code bindui:} aux figure that
+ * {@link ParseUtils#isTrue} cannot read.
  *
  * <p>The checks run in a different order from C's, which meets the lines of a record in file
  * order: here the type is checked first, then the subtype and id-type, the code, the two numbers,
@@ -71,6 +69,13 @@ import java.util.Map;
  * only {@code flag} records carry them in the shipped data. This class does the same: it does
  * not reject a {@code subtype:} or {@code id-type:} on a stat, a modifier or an element. An absent
  * line gives {@code OFT_NONE} or {@code OFID_NONE}, the zero C's zero-filled allocation leaves.
+ * Both are matched exactly, as C's {@code streq} chains match them: {@code sustain},
+ * {@code protection}, {@code misc ability}, {@code light}, {@code melee}, {@code bad},
+ * {@code dig}, {@code throw} and {@code curse-only} for the subtype, and {@code on effect},
+ * {@code timed} and {@code on wield} for the id-type. The empty token reaches the lookup as the
+ * record's "absent" value and resolves to the {@code _NONE} constant, which is listed first and so
+ * is found before {@code OFT_MAX}, whose text is also empty; the {@code _MAX} constant therefore
+ * cannot be produced.
  *
  * <p><b>Code.</b> The table is chosen by the type: {@code stat} and {@code mod} read
  * {@code obj_mods}, {@code flag} reads {@code obj_flags}, and {@code ignore}, {@code resistance},
@@ -92,8 +97,9 @@ import java.util.Map;
  * {@code tval_find_idx}, so a number, a display name in any case and either spelling of "armour"
  * all resolve. {@link TValue#fromName} also falls back to the Java constant name, so a key such as
  * {@code drag armor} or {@code soft_armor} resolves where {@code tval_find_idx} returns -1 and C
- * ends the load; the shipped data writes only the display names. Only the tvals the record names are stored; {@link ObjectProperty#getTypeMult}
- * supplies the default of 1 that C writes into every slot before the first line is read. Accepted
+ * ends the load; the shipped data writes only the display names. Only the tvals the record names
+ * are stored; {@link ObjectProperty#getTypeMult} supplies the default of 1 that C writes into
+ * every slot before the first line is read. Accepted
  * deviation ("A {@code type-mult:} tval written twice under two spellings can keep the earlier
  * line, where C keeps the later one" in {@code docs/Accepted_Deviations.md}): the record keeps one
  * figure per spelling, so a tval named by two spellings with the first spelling repeated after the
@@ -103,10 +109,15 @@ import java.util.Map;
  * straight onto the named {@code struct ui_entry} and drops the bind silently if no entry has that
  * name. This class cannot do that, because no UI entry exists yet when the file is read, so it
  * only builds the {@link ObjectProperty.UIBinding} (entry name with its {@code <TAG>} folded in,
- * optional literal value, and the aux flag as {@code aux != 0}) and leaves the matching to
- * {@code GameConstants}. The parse record carries one {@code bindui:} line, so a record that
- * repeats the directive keeps only the last, where C binds every line; no shipped record repeats
- * it. C also binds with the {@code index} the property holds when the {@code bindui:} line is
+ * optional literal value, and the aux flag) and leaves the matching to
+ * {@code GameConstants}. The aux figure is read by {@link ParseUtils#isTrue}, which answers
+ * whether {@code strtol} base 0 would read a non-zero number, so {@code 1}, {@code -1},
+ * {@code 0x10} and {@code 010} are aux and {@code 0}, {@code 00}, {@code 08} and {@code 0x} are
+ * not; a figure with no readable digit ends the load. The optional value is read by
+ * {@link ParseUtils#parseIntString} like the other numbers, and a missing value stays
+ * {@code null}, C's {@code parser_hasval} false. The parse record carries one {@code bindui:}
+ * line, so a record that repeats the directive keeps only the last, where C binds every line; no
+ * shipped record repeats it. C also binds with the {@code index} the property holds when the {@code bindui:} line is
  * read, so a line above {@code code:} would bind index 0; this class always uses the final
  * {@code code:}. No shipped record puts {@code bindui:} above {@code code:}.
  *
@@ -116,8 +127,9 @@ import java.util.Map;
  * deviation (decided 261009, "for the time being"): the list here is base 0, has no blank slot,
  * and its size is the record count.
  *
- * <p>Class ObjectPropertyAssembler coded before 260915, commented in full on 261102, updated on
- * 261105 for the removal of the soft-error path.
+ * <p>Class ObjectPropertyAssembler coded before 260915, commented in full on 261107 (updated on
+ * 261105 for the removal of the soft-error path; aux reading and the list of fatal cases
+ * completed 261107; subtype and id-type token lists added 261107).
  *
  * @author Rowan Crowther
  */
@@ -135,7 +147,8 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
      * type, subtype and id-type tokens to their enums, the code to a
      * {@link ObjectPropertyTypeWrapper} against the table the type selects, the integer fields to
      * {@code int}s, the {@code type-mult:} lines to a {@link TValue} map, and, when the record has
-     * a {@code bindui:} line, the one {@link ObjectProperty.UIBinding}. An unresolvable field ends
+     * a {@code bindui:} line, the one {@link ObjectProperty.UIBinding} (its aux flag read by
+     * {@link ParseUtils#isTrue}). An unresolvable field ends
      * the load with a {@link DataFileParseException} (see the class comment for the cases and for
      * every place the result differs from C).
      *
@@ -143,13 +156,14 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
      * data file gives no {@code adjective:}, {@code neg-adjective:}, {@code msg:} or {@code desc:}
      * line the property holds the empty string, where C leaves a {@code NULL} pointer.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261028.
+     * <p>Function assemble coded before 260915, commented in full on 261107 (aux reading added
+     * 261107).
      *
      * @param records  the raw records extracted by the grammar, in file order
      * @param filename the file the records came from, named in the message of each failure
      * @return the resolved properties, in file order
-     * @throws DataFileParseException if a type, subtype, id-type, code, tval or number cannot be
-     *                                resolved
+     * @throws DataFileParseException if a type, subtype, id-type, code, tval, number or aux figure
+     *                                cannot be resolved
      */
     @Override
     public List<ObjectProperty> assemble(@NotNull List<ObjectPropertyParseRecord> records,
@@ -301,8 +315,14 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
             List<ObjectProperty.UIBinding> boundEntries = new ArrayList<>();
             if (!record.bindui().isEmpty()) {
                 // aux is the mandatory second param; C treats any non-zero value as the aux flag.
-                int auxValue = ParseUtils.parseIntString("Object property", record.aux(), line, filename, "aux");
-                boolean isAux = auxValue != 0;
+                Optional<Boolean> auxVal = ParseUtils.isTrue(record.aux());
+                if (auxVal.isEmpty()) {
+                    String msg = "Object property starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal auxiliary value: " + record.aux();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
+                boolean isAux = auxVal.get();
                 // value is the optional third param: null means "send the property's natural
                 // value" (C's parser_hasval == false), a number means "send this literal value".
                 Integer value = null;

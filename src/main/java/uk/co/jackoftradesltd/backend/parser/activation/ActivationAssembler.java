@@ -29,6 +29,7 @@ import uk.co.jackoftradesltd.middle.effect.Effect;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Turns the raw {@link ActivationParseRecord}s produced by the grammar into resolved
@@ -55,15 +56,18 @@ import java.util.List;
  *   <li>A leading {@code 0} means octal, digits {@code 0} to {@code 7}; anything else is decimal.
  *       Reading stops at the first character that is not a digit of that base, so {@code 08} is 0,
  *       {@code 019} is 1 and {@code 12abc} is 12. Text with no digits at all stops the load.</li>
- *   <li>{@code aim:} and {@code power:} are {@code uint} in C, so a leading {@code -} stops the
- *       load, even for {@code -0}. {@code level:} is an {@code int} and may be negative.</li>
+ *   <li>{@code power:} is a {@code uint} in C, so a leading {@code -} stops the load, even for
+ *       {@code -0}. {@code level:} is an {@code int} and may be negative. {@code aim:} is also a
+ *       {@code uint} in C, but here its sign is read and not refused (see the accepted deviations
+ *       below).</li>
  *   <li>{@code aim:} is true for any non-zero number, as {@code val ? true : false} makes it.
  *       An absent {@code aim:}, {@code level:} or {@code power:} is false or 0, as C's
- *       {@code mem_zalloc} leaves it.</li>
+ *       {@code mem_zalloc} leaves it. The empty text of an absent {@code aim:} is never handed to
+ *       {@link ParseUtils#isTrue(String)}, which would call it not a number.</li>
  * </ul>
  *
  * <p><b>Error policy.</b> The first bad record stops the load: a number that cannot be read, a
- * negative {@code aim:} or {@code power:}, or an effect {@link EffectAssembler} cannot resolve
+ * negative {@code power:}, or an effect {@link EffectAssembler} cannot resolve
  * throws {@link DataFileParseException}, as C's {@code print_error} in {@code datafile.c} quits.
  * Nothing is skipped. Records are checked in
  * file order, and within a record {@code aim:}, then {@code level:}, then {@code power:}, then the
@@ -92,20 +96,30 @@ import java.util.List;
  *
  * <p><b>Accepted deviations</b> (all in {@code docs/Accepted_Deviations.md}, section Activation):
  * <ul>
- *   <li>A number too big for its C type is clamped to {@code Integer.MIN_VALUE} or
- *       {@code Integer.MAX_VALUE}, where C keeps the low 32 bits. This covers {@code aim:},
- *       {@code level:} and {@code power:}.</li>
+ *   <li>A {@code level:} or {@code power:} too big for its C type is clamped to
+ *       {@code Integer.MIN_VALUE} or {@code Integer.MAX_VALUE}, where C keeps the low 32 bits.</li>
+ *   <li>An {@code aim:} outside the {@code int} range ({@code 2147483648}, {@code 4294967296}) stops
+ *       the load, where C keeps the low 32 bits and reads {@code 4294967296} as 0, so false. This is
+ *       the 261027 refusal of out-of-range numbers, made by {@link ParseUtils#isTrue(String)}.</li>
+ *   <li>A leading {@code -} on {@code aim:} is read as a sign and not refused (accepted 261107):
+ *       {@code aim:-1} loads as true and {@code aim:-0} as false, where C stops the load on
+ *       any {@code uint} token that starts with {@code -}. {@code aim:-} with no digit and
+ *       {@code aim:-abc} are still refused.</li>
  *   <li>Every message names the line of the record's {@code name:}, where C names the line of the
  *       directive that failed.</li>
  *   <li>A record with two faults reports the first the assembler reaches, in the order above, not
  *       the one nearest the top of the block.</li>
  * </ul>
  * The list is also base 0 and holds only real records, the accepted base-0 deviation, so each
- * activation's index is one lower than C's {@code activations[]} slot.
+ * activation's index is one lower than C's {@code activations[]} slot. For the same reason there is
+ * no counter to port: C's {@code finish_parse_act} sets {@code z_info->act_max} to the record count
+ * plus one for the blank slot 0, and here the count is simply the size of the returned list.
  *
  * <p>Class ActivationAssembler coded before 260915, commented in full on 261102 (error policy
  * brought into line with {@link EffectAssembler} throwing, outstanding notes added), updated on
- * 261105 for the removal of the soft-error path.
+ * 261105 for the removal of the soft-error path, updated on 261107 for the absent {@code aim:}
+ * guard and the two {@code aim:} deviations, re-checked against {@code obj-init.c} and
+ * {@code parser.c} on 261107 (the {@code act_max} note added).
  *
  * @author Rowan Crowther
  */
@@ -132,14 +146,26 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
      * and {@code finish_parse_act} ({@code obj-init.c}) copies that list into {@code activations[]}
      * from the head: the last record in {@code activation.txt} comes first, as {@code activations[1]}.
      * Each activation is then numbered by its place in that list, from 0 where C counts from 1.
+     * The {@code 0} handed to the {@link Activation} constructor is only a placeholder: the index
+     * is not known until the list is complete, so the second loop sets the real one with
+     * {@link Activation#setIndex(int)}, as {@code finish_parse_act} sets {@code index} when it
+     * copies each node.
+     *
+     * <p>An absent {@code aim:} (empty text) leaves {@code aim} false without calling
+     * {@link ParseUtils#isTrue(String)}; any other text that does not read as a number stops the
+     * load, as does a negative {@code power:}. A {@code power:} whose first character is
+     * {@code -} is refused before it is read, as C refuses a {@code uint} token that starts with
+     * {@code -}; the {@code power < 0} test after it catches only the white-space case described in
+     * the class block, so for text the lexer can produce it never fires.
      *
      * <p>Function assemble coded before 260915, commented in full on 261102, updated on 261022 to
-     * stop the load on a bad record.
+     * stop the load on a bad record, updated on 261107 for the absent {@code aim:} guard, re-checked
+     * and expanded on 261107 (placeholder index and the two {@code power:} tests explained).
      *
      * @param records  the raw activation records captured by the grammar
      * @param filename the file the records came from, named in every stop-the-load message
      * @return the assembled activations, in reverse file order (C's {@code activations[]} order)
-     * @throws DataFileParseException if a number cannot be read, {@code aim:} or {@code power:} is negative,
+     * @throws DataFileParseException if a number cannot be read, {@code power:} is negative,
      *                                or an effect does not resolve (thrown by {@link EffectAssembler})
      */
     @Override
@@ -152,15 +178,14 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
             String name = record.name();
             boolean aim = false;
             if (!record.aim().isEmpty()) {
-                if (record.aim().charAt(0) == '-') {
-                    String message = "Invalid value for aim: for Activation beginning at " +
-                            "line: " + line + " of file: " + filename + " value is: '" +
-                            record.aim() + "'";
+                Optional<Boolean> aimVal = ParseUtils.isTrue(record.aim());
+                if (aimVal.isEmpty()) {
+                    String message = "Activation beginning at " + "line: " + line + " of file: " + filename + " has " +
+                            "an invalid aim value: '" + record.aim() + "'";
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }
-                int aimValue = ParseUtils.parseIntString("Activation", record.aim(), line, filename, "aim");
-                aim = aimValue != 0;
+                aim = aimVal.get();
             }
             int level = 0;
             if (!record.level().isEmpty()) {

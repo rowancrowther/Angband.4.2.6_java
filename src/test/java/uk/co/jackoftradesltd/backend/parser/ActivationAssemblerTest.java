@@ -195,6 +195,48 @@ class ActivationAssemblerTest {
     }
 
     @Test
+    void aHexPrefixSelectsBaseSixteenAsInC() throws Exception {
+        // strtol/strtoul base 0: "0x" or "0X" selects base 16. The lexer never lets one through,
+        // so these reach the assembler only when the records are built by hand.
+        assertEquals(16, level(one("", "0x10", "")));
+        assertEquals(31, level(one("", "0X1F", "")));
+        assertEquals(255, level(one("", "0xff", "")));
+        assertEquals(-5, level(one("", "-0x5", "")));
+        assertEquals(16, one("", "", "0x10").getPower());
+        assertEquals(16, one("", "", "+0x10").getPower());
+        assertEquals(1, level(one("", "0x1g", "")));
+        assertEquals(Integer.MAX_VALUE, level(one("", "0x7fffffff", "")));
+        assertTrue(aim(one("0x1", "", "")));
+        assertTrue(aim(one("0x10", "", "")));
+        assertTrue(aim(one("-0x1", "", "")));
+        assertFalse(aim(one("0x0", "", "")));
+    }
+
+    @Test
+    void aHexPrefixWithNoDigitsReadsTheLeadingZeroAsInC() throws Exception {
+        // glibc strtol("0x", &z, 0) reads the 0 and leaves z at the x, so z != tok and the value
+        // is 0; "0xg" is the same. Neither is a refusal.
+        assertEquals(0, level(one("", "0x", "")));
+        assertEquals(0, level(one("", "0xg", "")));
+        assertEquals(0, level(one("", "-0x", "")));
+        assertEquals(0, one("", "", "0x").getPower());
+        assertEquals(0, one("", "", "0xg").getPower());
+        assertFalse(aim(one("0x", "", "")));
+        assertFalse(aim(one("0xg", "", "")));
+        assertFalse(aim(one("0X", "", "")));
+        // "00x5": the second 0 is an octal digit and the x stops the read, so the value is 0.
+        assertEquals(0, level(one("", "00x5", "")));
+        assertFalse(aim(one("00x5", "", "")));
+    }
+
+    @Test
+    void aNegativeHexPowerStopsTheLoadAsInC() {
+        // parser.c refuses a uint token that starts with '-' before the base is looked at.
+        assertTrue(stopMessage("", "", "-0x1").contains("negative power"));
+        assertTrue(stopMessage("", "", "-0x").contains("negative power"));
+    }
+
+    @Test
     void aDigitFromAnotherScriptIsNotADigitAsInC() throws Exception {
         // Arabic-Indic digits: Character.isDigit is true for them, but strtol stops at the first byte.
         assertEquals(1, level(one("", "1٢", "")));
@@ -221,11 +263,21 @@ class ActivationAssemblerTest {
     }
 
     @Test
-    void aNegativeAimStopsTheLoadAsInC() {
-        // "aim uint aim": same refusal as power.
-        String message = stopMessage("-1", "", "");
-        assertTrue(message.contains("aim"), message);
-        assertTrue(stopMessage("-0", "", "").contains("aim"));
+    void aLeadingMinusOnAimIsReadAsASignHereWhereCStopsTheLoad() throws Exception {
+        // Accepted deviation 261107. C: "aim uint aim", and parser.c refuses a uint token that starts
+        // with '-', even -0. Here the sign is read, so a non-zero number is true and zero is false.
+        assertTrue(aim(one("-1", "", "")));
+        assertTrue(aim(one("-010", "", "")));
+        assertFalse(aim(one("-0", "", "")));
+        assertFalse(aim(one("-08", "", "")));
+    }
+
+    @Test
+    void aMinusOnAimWithNoNumberStillStopsTheLoad() {
+        // No digit for strtoul to read, so C's z == tok test refuses these too.
+        assertTrue(stopMessage("-", "", "").contains("aim"));
+        assertTrue(stopMessage("-abc", "", "").contains("aim"));
+        assertTrue(stopMessage("abc", "", "").contains("aim"));
     }
 
     @Test
@@ -304,7 +356,7 @@ class ActivationAssemblerTest {
     void aRecordWithSeveralFaultsReportsAimThenLevelThenPower() {
         // Accepted deviation: C reports the fault nearest the top of the block; the assembler
         // checks aim:, then level:, then power:, whatever order the lines came in.
-        assertTrue(stopMessage("-1", "high", "-3").contains("aim"));
+        assertTrue(stopMessage("abc", "high", "-3").contains("aim"));
         assertTrue(stopMessage("0", "high", "-3").contains("invalid level"));
         assertTrue(stopMessage("0", "5", "-3").contains("negative power"));
     }
@@ -332,9 +384,17 @@ class ActivationAssemblerTest {
     }
 
     @Test
-    void anAimTooBigForAnUnsignedIntIsTrueHereWhereCWrapsToFalse() throws Exception {
-        // Accepted deviation. C: strtoul gives 4294967296, narrowed to unsigned int it is 0, so false.
-        assertTrue(aim(one("4294967296", "", "")));
+    void anAimOutsideTheIntRangeStopsTheLoadHereWhereCWraps() {
+        // Accepted deviation 261027. C: strtoul gives 4294967296, narrowed to unsigned int it is 0,
+        // so false; 2147483648 stays non-zero, so true. Here both are refused.
+        assertTrue(stopMessage("4294967296", "", "").contains("invalid aim value"));
+        assertTrue(stopMessage("2147483648", "", "").contains("invalid aim value"));
+        assertTrue(stopMessage("0777777777777", "", "").contains("invalid aim value"));
+    }
+
+    @Test
+    void anAimAtTheTopOfTheIntRangeIsTrue() throws Exception {
+        assertTrue(aim(one("2147483647", "", "")));
     }
 
     @Test

@@ -360,6 +360,20 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-22. Decided to keep one line per record. Related to the ordering entry above, which also
   names this as its revisit trigger.
 
+### A leading `-` on `aim:` is read as a sign, not refused as C refuses it
+
+- **Java:** `ActivationAssembler.assemble` (`backend/parser/activation/`), through `ParseUtils.isTrue`. **C:**
+  `parse_act_aim` (`obj-init.c`), registered as `aim uint aim`, with the `PARSE_T_UINT` branch of `parser_parse()` in
+  `parser.c`.
+- **Differs:** C refuses any `uint` token whose first character is `-` (`*tok == '-'`) as `PARSE_ERROR_NOT_NUMBER`, even
+  `-0`, so `aim:-1` stops the load. Java has no such test for `aim:` (it has one for `power:`), and `isTrue` reads the
+  sign and then the digits: `aim:-1` loads as aim true and `aim:-0` loads as aim false. `aim:-` with no digit, and
+  `aim:-abc`, are still refused, because `isTrue` finds no number.
+- **Reach:** hand-edited files only. No shipped record has a `-` on `aim:`, and a negative aim has no meaning.
+- **Revisit:** if a modded file ever needs the load to stop on a negative `aim:`, add the same first-character test
+  that `power:` has.
+- **Accepted:** 2026-11-07. Decided to leave it.
+
 ## Artifact
 
 ### A special artifact's kind takes the artifact's finished level, where C's is 0
@@ -791,6 +805,23 @@ recorded here as the summary states them; fill in the detail when you next touch
   files only, and a priority that low has no visible effect beyond ordering.
 - **Revisit:** if `ParseUtils` is changed to clamp after the sign, since the assembler then needs no workaround.
 - **Accepted:** 2026-11-02.
+
+## Summon
+
+### An unresolved `fallback:` keeps the record with a `null` fallback, where C fails in `strcmp`
+
+- **Java:** `SummonAssembler.assemble`, second pass. **C:** `finish_parse_summon` and `summon_name_to_idx`
+  (`mon-summon.c`).
+- **Differs:** `finish_parse_summon` adds 1 to `summon_max` before it links the fallbacks, so `summons` ends in a blank
+  slot whose `name` is NULL. `summon_name_to_idx` guards its argument (`name &&`) but not that field, so a non-NULL
+  fallback name that matches no real summon reaches `strcmp(name, NULL)`: undefined behaviour, in practice a crash.
+  Java keeps the summon, leaves its fallback `null` and reports nothing.
+- **Agrees:** a fallback that names a summon (earlier, later, itself, or the first of two with the same name), exact
+  and case-sensitive, and a summon with no `fallback:` line, which C passes as NULL and so reads as -1.
+- **Why:** a defined result is better than C's undefined one, and an earlier note that C stores -1 silently was wrong.
+- **Reach:** none from shipped data. Both `fallback:` lines in `summon.txt` name `HI_UNDEAD`.
+- **Revisit:** if a modded `summon.txt` names a fallback that does not exist and a load error is wanted instead.
+- **Accepted:** 2026-11-07. Marked in the `SummonAssembler` Javadoc.
 
 ## Pending your decision
 

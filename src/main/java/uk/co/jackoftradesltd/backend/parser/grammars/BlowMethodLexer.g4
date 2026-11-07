@@ -50,9 +50,9 @@ DESC
         ;
 
 // Value of cut:/stun:/miss:/phys:. C reads these with parser_getuint, which rejects a
-// leading '-'; the '-'? here is more permissive than the original. Harmless for the
-// shipped data (every value is 0 or 1) but note that the assembler tests non-zero, so
-// a negative would read as TRUE rather than being rejected.
+// leading '-'; the '-'? here is more permissive than the original. The shipped data never
+// has one (every value is 0 or 1), and BlowMethodAssembler refuses it, so a negative ends
+// the load there as it does in C.
 INTEGER
         :   '-'? ('0'..'9')+
         ;

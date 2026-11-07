@@ -210,7 +210,8 @@ class ObjectPropertyAssemblerTest {
 
     /** C: PARSE_ERROR_INVALID_SUBTYPE. The match is exact, so case and the abbreviation both fail. */
     @ParameterizedTest
-    @ValueSource(strings = {"Sustain", "sust", "misc", "curse_only", "max", " bad"})
+    @ValueSource(strings = {"Sustain", "sust", "misc", "curse_only", "max", " bad", "sustain ", "SUSTAIN",
+            "OFT_SUST", "OFT_NONE", "OFT_MAX", "none", "misc  ability"})
     void anUnrecognizedSubtypeEndsTheLoad(String subtype) {
         assertStopsTheLoad(record("flag", subtype, "", "FEATHER"), "an illegal subtype value: " + subtype);
     }
@@ -234,7 +235,8 @@ class ObjectPropertyAssemblerTest {
 
     /** C: PARSE_ERROR_INVALID_ID_TYPE. */
     @ParameterizedTest
-    @ValueSource(strings = {"normal", "On Effect", "on  effect", "wield", "none"})
+    @ValueSource(strings = {"normal", "On Effect", "on  effect", "wield", "none", "timed ", "TIMED",
+            "OFID_TIMED", "OFID_NONE", "onwield"})
     void anUnrecognizedIdTypeEndsTheLoad(String idType) {
         assertStopsTheLoad(record("flag", "", idType, "FEATHER"), "an illegal id type value: " + idType);
     }
@@ -515,9 +517,30 @@ class ObjectPropertyAssemblerTest {
         assertEquals(List.of(), one(noBindui).getBoundEntries());
     }
 
-    @Test
-    void anUnreadableAuxEndsTheLoad() {
-        assertStopsTheLoad(withBindui("entry", "", null, "x"), "an invalid aux value: x");
+    /**
+     * C: {@code parser_getint(p, "aux") != 0} is {@code strtol} base 0, so the {@code 0x} and
+     * {@code 0} prefixes choose hex and octal, a leading {@code +} is read, and a prefix with no
+     * digit after it still reads the {@code 0} (so {@code 08} and {@code 0x} are zero).
+     */
+    @ParameterizedTest
+    @CsvSource({"0x10, true", "0X1, true", "0x0, false", "0x, false", "08, false", "+1, true",
+            "+0, false", "007, true", "00, false"})
+    void auxReadsThePrefixesAndSignsStrtolBaseZeroReads(String aux, boolean expected) {
+        assertEquals(expected, one(withBindui("entry", "", null, aux)).getBoundEntries().getFirst().aux());
+    }
+
+    /** C: a figure with no digit at all is PARSE_ERROR_NOT_NUMBER, which ends the load. */
+    @ParameterizedTest
+    @ValueSource(strings = {"x", "-", "+", "abc", "+-1"})
+    void anUnreadableAuxEndsTheLoad(String aux) {
+        assertStopsTheLoad(withBindui("entry", "", null, aux), "an illegal auxiliary value: " + aux);
+    }
+
+    /** C: uival is parser_getint too, so hex, octal and a sign are read as strtol base 0 reads them. */
+    @ParameterizedTest
+    @CsvSource({"0x10, 16", "010, 8", "-3, -3", "+4, 4", "08, 0"})
+    void aBinduiValueIsReadAsStrtolBaseZeroReadsIt(String text, int expected) {
+        assertEquals(expected, one(withBindui("entry", "", text, "0")).getBoundEntries().getFirst().value());
     }
 
     @Test

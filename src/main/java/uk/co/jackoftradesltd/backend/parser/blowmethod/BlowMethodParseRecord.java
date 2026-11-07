@@ -35,15 +35,30 @@ import java.util.List;
  * was absent entirely - the grammar's seeded default), or {@code null} (a bare
  * {@code msg:} with no text). The last two are both "no message type given" and both
  * mean {@code MSG_GENERIC}, which is why the assembler's guard has to tolerate a null.
+ * <p>
+ * <strong>{@code cut}, {@code stun}, {@code miss} and {@code phys} are {@code null} when the
+ * record never named them</strong>, as C's directives may come in any order and any of them
+ * may be missing. The assembler reads a {@code null} as false, the {@code mem_zalloc}'d zero.
+ * The grammar can no longer produce {@code ""} for them, but a record built by hand may
+ * carry it, and the assembler reads that as absent too.
+ *
+ * <p>Record BlowMethodParseRecord coded before 260915, commented in full on 261107 (absent
+ * flags, repeated {@code desc:} lines and the free directive order noted 261107).
  *
  * @param name the method's code, e.g. {@code "HIT"}, {@code "BITE"}
- * @param cut  whether the blow can cause cuts, as raw text; any non-zero is true
- * @param stun whether the blow can stun, as raw text; any non-zero is true
- * @param miss whether a miss is announced to the player, as raw text
- * @param phys whether the blow does physical damage, as raw text
+ * @param cut  whether the blow can cause cuts, as raw text; any non-zero is true, {@code null}
+ *             if no {@code cut:} line was read
+ * @param stun whether the blow can stun, as raw text, {@code null} if no {@code stun:} line was
+ *             read
+ * @param miss whether a miss is announced to the player, as raw text, {@code null} if no
+ *             {@code miss:} line was read
+ * @param phys whether the blow does physical damage, as raw text, {@code null} if no
+ *             {@code phys:} line was read
  * @param msg  the message-channel name, or {@code ""}/{@code null} if none was given
- * @param act  the flavour action strings narrating the blow, in file order; may be empty
- * @param desc the short description used in monster lore
+ * @param act  the flavour action strings narrating the blow, in file order (C holds them
+ *             reversed, and the assembler reverses them); may be empty
+ * @param desc the short description used in monster lore, with repeated {@code desc:} lines
+ *             joined end to end as C's {@code string_append} does; {@code ""} if there was none
  * @param line the line {@code name:} appeared on, for error reporting
  * @author Rowan Crowther
  */

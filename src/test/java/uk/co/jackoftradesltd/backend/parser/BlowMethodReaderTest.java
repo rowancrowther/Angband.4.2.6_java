@@ -37,19 +37,26 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code BlowMethodLexer}/{@code BlowMethodGrammar} -&gt; {@code BlowMethodParseRecord} -&gt;
  * {@code BlowMethodAssembler} -&gt; {@link BlowMethod}.
  * <p>
- * The interesting boundaries here are all on the assembler side. {@code blow_methods.txt} is
- * structurally simple - eight fixed directives, only {@code act:} repeating - so the tests
- * concentrate on the two places where C semantics have to be reproduced by hand:
+ * The interesting boundaries here are mostly on the assembler side. {@code blow_methods.txt} is
+ * structurally simple - a {@code name:} followed by directives that C reads in any order, with
+ * {@code act:} and {@code desc:} able to repeat - so the tests concentrate on the places where
+ * C semantics have to be reproduced by hand:
  * <ul>
  *   <li>the <em>truthiness</em> of {@code cut:}/{@code stun:}/{@code miss:}/{@code phys:}
  *       ([C] {@code mon-init.c} does {@code val ? true : false}, so any non-zero is true, not
- *       just {@code 1}); and</li>
+ *       just {@code 1}), and a flag that is never named, which stays false;</li>
  *   <li>the <em>optional</em> {@code msg:} directive ([C] registers it as {@code "msg ?str msg"},
- *       and a record that omits it keeps the zeroed {@code msgt}, i.e. {@code MSG_GENERIC}).</li>
+ *       and a record that omits it keeps the zeroed {@code msgt}, i.e. {@code MSG_GENERIC});</li>
+ *   <li>the <em>order</em> of the list and of each record's {@code act:} lines, both of which C
+ *       fills from the head; and</li>
+ *   <li>the <em>joining</em> of repeated {@code desc:} lines.</li>
  * </ul>
  * The {@code msg:} directive has two distinct "absent" shapes in this grammar - the line missing
  * entirely, and a bare {@code msg:} with no text - because {@code FREE_TEXT_EOL} lets the lexer
  * pop back out of an empty free-text run. Both must land on {@code MSG_GENERIC}.
+ *
+ * <p>Class BlowMethodReaderTest coded before 261104, commented in full on 261107 (the records
+ * C accepts but the grammar once refused, and the {@code act:} order, tested 261107).
  *
  * @author Rowan Crowther
  */
@@ -125,15 +132,17 @@ class BlowMethodReaderTest {
     }
 
     @Test
-    void repeatedActLinesAllAccumulateInOrder() throws IOException {
+    void repeatedActLinesAllAccumulateInReverseFileOrderAsCPushesThem() throws IOException {
         ParseResult<BlowMethod> result = new BlowMethodReader().parseWithResults(REAL_FILE);
 
         BlowMethod insult = result.items().stream()
                 .filter(m -> m.getName().equals("INSULT")).findFirst().orElseThrow();
 
+        // The file gives "insults {target}!" first and "moons {target}!!!" last. C pushes each
+        // act: on the head of meth->messages, so the last line is the head of its list.
         assertEquals(8, insult.getBlowMessage().size(), "INSULT ships eight act: lines");
-        assertEquals("insults {target}!", insult.getBlowMessage().get(0), "file order preserved");
-        assertEquals("moons {target}!!!", insult.getBlowMessage().get(7));
+        assertEquals("moons {target}!!!", insult.getBlowMessage().get(0), "last file line first");
+        assertEquals("insults {target}!", insult.getBlowMessage().get(7), "first file line last");
     }
 
     @Test
@@ -200,16 +209,18 @@ class BlowMethodReaderTest {
     }
 
     @Test
-    void actLinesWithinARecordStayInFileOrderWhileTheRecordsReverse() throws IOException {
-        // Only the records reverse. C also reverses each record's act: list (parse_meth_act_msg
-        // pushes on the head), and mon-blows.c walks randint0(num_messages) steps along it, so
-        // the same random number picks a different message here. Pinned as a known difference.
+    void actLinesWithinARecordReverseAsTheRecordsDo() throws IOException {
+        // The records reverse, and so does each record's act: list: parse_meth_act_msg pushes on
+        // the head, and mon-blows.c walks randint0(num_messages) steps along that list, so the
+        // order decides which message a given random number picks. A record's lines never mix
+        // with its neighbour's.
         String body = "name:ONE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:a\nact:b\ndesc:one\n"
                 + "name:TWO\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:c\nact:d\ndesc:two\n";
         ParseResult<BlowMethod> result = load("acts.txt", body);
 
         assertEquals(List.of("TWO", "ONE"), names(result.items()));
-        assertEquals(List.of("a", "b"), byName(result.items(), "ONE").getBlowMessage());
+        assertEquals(List.of("b", "a"), byName(result.items(), "ONE").getBlowMessage());
+        assertEquals(List.of("d", "c"), byName(result.items(), "TWO").getBlowMessage());
     }
 
     // ---- The reader's own contract ---------------------------------------
@@ -225,15 +236,17 @@ class BlowMethodReaderTest {
 
     /**
      * A syntax error is thrown from both entry points: {@code parse} no longer hides it as an
-     * empty list.
+     * empty list. The input is a {@code cut:} line before any {@code name:}, which the grammar
+     * cannot start a record with; a record that only lacks directives is no longer an error.
      *
-     * <p>Function bothEntryPointsThrowOnASyntaxError coded on 261104, commented in full on 261104.
+     * <p>Function bothEntryPointsThrowOnASyntaxError coded on 261104, commented in full on 261107
+     * (input changed 261107, as {@code name:POKE} then {@code cut:0} is now a whole record).
      * It replaces parseDropsTheErrorsSoASyntaxErrorLooksLikeAnEmptyList.
      */
     @Test
     void bothEntryPointsThrowOnASyntaxError() throws IOException {
         Path file = tempDir.resolve("broken.txt");
-        Files.writeString(file, "name:POKE\ncut:0\n");
+        Files.writeString(file, "cut:0\n");
 
         assertThrows(ParseCancellationException.class, () -> new BlowMethodReader().parse(file.toString()));
         assertThrows(ParseCancellationException.class, () -> new BlowMethodReader().parseWithResults(file.toString()));
@@ -248,23 +261,75 @@ class BlowMethodReaderTest {
 
     }
 
-    // ---- Where the grammar is stricter than C (docs/grammar_issues.md) ---
+    // ---- Records as C reads them: any order, any directive missing -------
 
     @Test
-    void repeatedDescIsAHardErrorHereWhereCAppendsTheLines() throws IOException {
-        // [C] parse_meth_desc does string_append, so two desc: lines would join. The grammar
-        // closes a record on its one desc:, so the second is a syntax error.
-        String twice = "name:POKE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:po\ndesc:ke\n";
-        assertThrows(ParseCancellationException.class, () -> load("desc-twice.txt", twice));
+    void repeatedDescLinesAreJoinedAsCStringAppendDoes() throws IOException {
+        // [C] src/tests/parse/blowm.c test_desc0: "desc:hit" then "desc: something" gives
+        // "hit something" - string_append joins the lines with nothing added between them, so
+        // the space comes from the second value.
+        String twice = "name:POKE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:hit\ndesc: something\n";
+        ParseResult<BlowMethod> result = load("desc-twice.txt", twice);
 
+        assertEquals("hit something", result.items().get(0).getDesc());
     }
 
     @Test
-    void nameOnlyRecordIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        // [C] src/tests/parse/blowm.c test_name0: a bare name: leaves every flag false and
-        // desc NULL, and parses without error.
-        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:POKE\n"));
+    void nameOnlyRecordLoadsWithEveryFlagFalseAsInC() throws IOException {
+        // [C] src/tests/parse/blowm.c test_name0: a bare name: leaves every flag false, msgt 0
+        // and no messages, and parses without error.
+        ParseResult<BlowMethod> result = load("name-only.txt", "name:POKE\n");
 
+        assertEquals(1, result.items().size());
+        BlowMethod poke = result.items().get(0);
+        assertEquals("POKE", poke.getName());
+        assertFalse(poke.isCut());
+        assertFalse(poke.isStun());
+        assertFalse(poke.isMiss());
+        assertFalse(poke.isPhys());
+        assertEquals(MessageType.MSG_GENERIC, poke.getMesgT());
+        assertTrue(poke.getBlowMessage().isEmpty());
+    }
+
+    @Test
+    void aFlagLineLeftOutDoesNotDisturbTheOthers() throws IOException {
+        // Each flag has its own handler in C, so naming one leaves the rest at zero.
+        ParseResult<BlowMethod> result = load("lone-flags.txt",
+                "name:CUTTER\ncut:1\n" + "name:STUNNER\nstun:1\n"
+                        + "name:MISSER\nmiss:1\n" + "name:HITTER\nphys:1\n");
+
+        BlowMethod cutter = byName(result.items(), "CUTTER");
+        assertTrue(cutter.isCut());
+        assertFalse(cutter.isStun());
+        assertFalse(cutter.isMiss());
+        assertFalse(cutter.isPhys());
+
+        BlowMethod stunner = byName(result.items(), "STUNNER");
+        assertFalse(stunner.isCut());
+        assertTrue(stunner.isStun());
+        assertFalse(stunner.isMiss());
+        assertFalse(stunner.isPhys());
+
+        BlowMethod misser = byName(result.items(), "MISSER");
+        assertFalse(misser.isCut());
+        assertFalse(misser.isStun());
+        assertTrue(misser.isMiss());
+        assertFalse(misser.isPhys());
+
+        BlowMethod hitter = byName(result.items(), "HITTER");
+        assertFalse(hitter.isCut());
+        assertFalse(hitter.isStun());
+        assertFalse(hitter.isMiss());
+        assertTrue(hitter.isPhys());
+    }
+
+    @Test
+    void aLaterLineOfTheSameFlagWinsAsInC() throws IOException {
+        // Each cut: line assigns, so the last one decides.
+        ParseResult<BlowMethod> result = load("flag-twice.txt", "name:POKE\ncut:1\ncut:0\nstun:0\nstun:1\n");
+
+        assertFalse(result.items().get(0).isCut());
+        assertTrue(result.items().get(0).isStun());
     }
 
     @Test
@@ -355,24 +420,32 @@ class BlowMethodReaderTest {
         assertTrue(poke.isStun());
     }
 
-    // ---- record-count header (soft) --------------------------------------
-
-    // ---- Hard (fail-closed) parse errors: empty result + errors ----------
+    // ---- Directive order and missing directives --------------------------
 
     @Test
-    void missingDescIsAHardError() throws IOException {
-        // desc is mandatory and closes the block, so dropping it leaves the blow rule unmatched.
+    void missingDescLoadsAsCAcceptsIt() throws IOException {
+        // [C] has no handler that requires desc:, so a record without one loads, with desc NULL.
         String noDesc = "name:POKE\ncut:0\nstun:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:pokes {target}\n";
-        assertThrows(ParseCancellationException.class, () -> load("no-desc.txt", noDesc));
+        ParseResult<BlowMethod> result = load("no-desc.txt", noDesc);
 
+        assertEquals(1, result.items().size());
+        assertEquals(List.of("pokes {target}"), result.items().get(0).getBlowMessage());
     }
 
     @Test
-    void outOfOrderDirectivesAreAHardError() throws IOException {
-        // The blow rule is a fixed sequence, not a set - stun: before cut: cannot match.
-        String swapped = "name:POKE\nstun:0\ncut:0\nmiss:1\nphys:1\nmsg:MON_HIT\nact:p\ndesc:poke\n";
-        assertThrows(ParseCancellationException.class, () -> load("swapped.txt", swapped));
+    void directivesAfterNameLoadInAnyOrderAsCReadsThem() throws IOException {
+        // Each directive is its own handler in C, so stun: before cut: and desc: first are fine.
+        String swapped = "name:POKE\ndesc:poke\nstun:1\ncut:0\nphys:1\nmiss:0\nact:p\nmsg:MON_HIT\n";
+        ParseResult<BlowMethod> result = load("swapped.txt", swapped);
 
+        BlowMethod poke = result.items().get(0);
+        assertFalse(poke.isCut());
+        assertTrue(poke.isStun());
+        assertFalse(poke.isMiss());
+        assertTrue(poke.isPhys());
+        assertEquals(MessageType.MSG_MON_HIT, poke.getMesgT());
+        assertEquals(List.of("p"), poke.getBlowMessage());
+        assertEquals("poke", poke.getDesc());
     }
 
     @Test

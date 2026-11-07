@@ -31,6 +31,7 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Turns the raw {@link SummonParseRecord}s produced by {@code SummonGrammar} into resolved
@@ -47,19 +48,27 @@ import java.util.List;
  * ({@code PARSE_ERROR_INVALID_FLAG}). {@code race-flag:NONE} is one of these: {@code lookup_flag} in
  * {@code datafile.c} starts at {@code FLAG_START} and so never matches the {@code NONE} row.
  *
- * <p><strong>An unresolved {@code fallback:} is not a fault.</strong> {@code finish_parse_summon}
- * sets each {@code fallback} to {@code summon_name_to_idx(fallback_name)}, which gives -1 for a name
- * that matches nothing, and nothing is reported. Here the {@link Summon} is kept with a {@code null}
- * fallback and its {@link Summon#getFallbackName} still holds the text. Names are matched exactly and
- * case-sensitively, and when two summons share a name the first in the file wins, as in C.
+ * <p><strong>An unresolved {@code fallback:} is not a fault here (accepted deviation, decided
+ * 261107).</strong> {@code finish_parse_summon} sets each {@code fallback} to
+ * {@code summon_name_to_idx(fallback_name)}, which gives -1 for a summon with no {@code fallback:}
+ * line, because its {@code fallback_name} is NULL and the {@code name &&} guard skips the search. A
+ * name that is present but matches no summon is different. {@code finish_parse_summon} adds 1 to
+ * {@code summon_max} before the fallback loop, so {@code summons} ends in a blank slot whose
+ * {@code name} is NULL, and {@code summon_name_to_idx} guards its argument but not that field. The
+ * search therefore ends in {@code strcmp(name, NULL)}, which is undefined behaviour and in practice a
+ * crash, never a quiet -1. Here the {@link Summon} is kept with a {@code null} fallback and its
+ * {@link Summon#getFallbackName} still holds the text. This cannot bite today: both {@code fallback:}
+ * lines in the shipped {@code summon.txt} name {@code HI_UNDEAD}, which resolves. Do not flag. Names
+ * are matched exactly and case-sensitively, and when two summons share a name the first in the file
+ * wins, as in C.
  *
  * <p><strong>{@code uniques:} is true for any non-zero number.</strong> {@code parse_summon_unique}
  * reads an {@code int} with {@code parser_getint} and sets {@code unique_allowed} when it is non-zero,
  * so {@code 2}, {@code -1} and the octal {@code 010} are all true and {@code 0} and {@code 00} are
- * false. The text is read by {@link ParseUtils#parseIntString}, which follows C's base 0 rules but
- * clamps a figure outside the range of an {@code int} where C wraps it (an accepted deviation; see
- * {@code docs/Accepted_Deviations.md}), so {@code uniques:4294967296} is 0 and false in C and
- * non-zero and true here.
+ * false. The text is read by {@link ParseUtils#isTrue}, which follows C's base 0 rules but refuses a
+ * figure outside the range of an {@code int} where C wraps it (an accepted deviation, decided
+ * 261027; see {@code docs/Accepted_Deviations.md}), so {@code uniques:4294967296} is 0 and false in C
+ * and stops the load here.
  *
  * <p><strong>Absent and ordered values.</strong> An omitted {@code race-flag:} arrives from the
  * grammar as empty text and gives {@link MonsterRaceFlag#RF_NONE}, C's zero. The {@code base:} lines
@@ -68,8 +77,8 @@ import java.util.List;
  * holds only real records, with no blank slot at the end and so no counterpart of {@code summon_max};
  * this is the accepted deviation recorded on {@code MonsterRegistry}.
  *
- * <p>Class SummonAssembler coded before 260915, commented in full on 261029, updated on 261105 for
- * the removal of the soft-error path.
+ * <p>Class SummonAssembler coded before 260915, commented in full on 261107 (updated on 261105 for
+ * the removal of the soft-error path; the unresolved-fallback account corrected on 261107).
  *
  * @author Rowan Crowther
  */
@@ -77,7 +86,7 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
     /**
      * Receives the fatal message before each {@link DataFileParseException} is thrown.
      *
-     * <p>Field logger coded before 260915, commented in full on 261029.
+     * <p>Field logger coded before 260915, commented in full on 261107.
      */
     private final static Logger logger = LogManager.getLogger(SummonAssembler.class);
 
@@ -91,19 +100,28 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
      * summon exists, because a {@code fallback:} may name a summon defined later in the file, which is
      * what {@code finish_parse_summon} in {@code mon-summon.c} does after the chain has been copied into
      * the {@code summons} array. It looks each non-empty fallback name up with the equivalent of
-     * {@code summon_name_to_idx} and links the first match; a name that matches nothing leaves the
-     * fallback {@code null} without a report, as C stores -1.
+     * {@code summon_name_to_idx} and links the first match. A non-empty name that matches nothing leaves
+     * the fallback {@code null} without a report; C has no such outcome, because its search runs into the
+     * blank last slot of {@code summons} and fails in {@code strcmp} (an accepted deviation, recorded in
+     * the class block).
      * <p>
-     * The class block records the rules for {@code uniques:}, the sentinel race flag and the order of
-     * the bases.
+     * The class block records the rules for {@code uniques:}, the sentinel race flag, the order of
+     * the bases and the unresolved fallback.
+     * <p>
+     * Faults are reported in the order C meets them. Within a record the checks run {@code msgt:},
+     * {@code uniques:}, {@code base:}, {@code race-flag:}, which is the order of the lines in
+     * {@code summon.txt} (the grammar fixes it), and the records run in file order, so the first fault
+     * in the file is the one thrown, as C's first parser error ends the load. Nothing is read after it,
+     * and the second pass never runs for a file that faulted in the first.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261029.
+     * <p>Function assemble coded before 260915, commented in full on 261107.
      *
      * @param records  the raw parse records, in file order
      * @param filename the file the records were read from, named in the message of a fault
      * @return the assembled summons in file order, with fallback references linked where they resolve
      * @throws DataFileParseException if a {@code msgt:}, {@code base:} or {@code race-flag:} does not
-     *                                resolve, or a {@code uniques:} figure has no digits
+     *                                resolve, or a {@code uniques:} figure has no digits or is outside
+     *                                the range of an {@code int}
      */
     @Override
     public List<Summon> assemble(@NotNull List<SummonParseRecord> records,
@@ -122,8 +140,14 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
                 logger.fatal(message);
                 throw new DataFileParseException(message);
             }
-            int uniqueTag = ParseUtils.parseIntString("Summon", record.uniques(), line, filename, "unique boolean");
-            boolean uniques = uniqueTag != 0;
+            Optional<Boolean> unique = ParseUtils.isTrue(record.uniques());
+            if (unique.isEmpty()) {
+                String message = "Summon starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal unique value: " + record.uniques();
+                logger.fatal(message);
+                throw new DataFileParseException(message);                
+            }
+            boolean uniques = unique.get();
             List<MonsterBase> bases = new ArrayList<>();
             for (String base : record.bases()) {
                 MonsterBase monsterBase = MonsterRegistry.lookupMonsterBase(base);
@@ -168,7 +192,8 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
         }
 
         // Second pass: link fallback references now that every summon exists. An unresolvable name
-        // is no fault, as in C, where it stores -1: the summon is kept with a null fallback.
+        // is no fault here: the summon is kept with a null fallback. C does not do this (its search
+        // runs into the blank last slot and fails in strcmp); accepted deviation, see the class block.
         for (Summon summon : summons) {
             if (!summon.getFallbackName().isEmpty()) {
                 String fallbackName = summon.getFallbackName();

@@ -28,6 +28,7 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.combat.BlowMethod;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -49,12 +50,17 @@ import static org.junit.jupiter.api.Assertions.*;
  *       {@code message.c}. Every row of {@link #msgValuesC} was checked against a small C program
  *       built from the real {@code list-message.h}, with {@code strtoul} and a case-blind compare
  *       standing in for {@code my_stricmp};</li>
+ *   <li>a flag the record never named, which {@code mem_zalloc} leaves false (see
+ *       {@code test_name0} in {@code src/tests/parse/blowm.c});</li>
  *   <li>the list order from {@code parse_meth_name} and {@code finish_parse_meth}: the last
  *       record in the file is {@code blow_methods[1]};</li>
+ *   <li>the order of each record's {@code act:} lines, which {@code parse_meth_act_msg} pushes
+ *       on the head, so the last line in the file is first;</li>
  *   <li>the stop-the-load policy: C's first parser error ends the whole file.</li>
  * </ul>
  *
- * <p>Class BlowMethodAssemblerTest coded on 261023, commented in full on 261023.
+ * <p>Class BlowMethodAssemblerTest coded on 261023, commented in full on 261107 (absent flags,
+ * the out-of-range refusal and the {@code act:} reversal tested 261107).
  *
  * @author Rowan Crowther
  */
@@ -104,7 +110,7 @@ class BlowMethodAssemblerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"1", "2", "7", "01", "010", "4294967295"})
+    @ValueSource(strings = {"1", "2", "7", "01", "010", "2147483647"})
     void anyNonZeroFlagIsTrue(String value) {
         BlowMethod m = withFlags(value, value, value, value);
         assertTrue(m.isCut());
@@ -124,11 +130,81 @@ class BlowMethodAssemblerTest {
         assertFalse(m.isPhys());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"2147483648", "4294967295", "4294967296"})
+    void aFlagOutsideTheIntRangeEndsTheLoadWhereCWraps(String value) {
+        // Accepted deviation "out-of-int-range numbers are refused" (261027): C keeps the low
+        // 32 bits, so 4294967296 is 0 (false) and 2147483648 and 4294967295 are non-zero (true)
+        // there. Java refuses all three. Pinned so a change to the refusal is noticed.
+        assertThrows(DataFileParseException.class, () -> withFlags(value, "0", "0", "0"));
+        assertThrows(DataFileParseException.class, () -> withFlags("0", value, "0", "0"));
+        assertThrows(DataFileParseException.class, () -> withFlags("0", "0", value, "0"));
+        assertThrows(DataFileParseException.class, () -> withFlags("0", "0", "0", value));
+    }
+
     @Test
-    void aFlagTooBigForAnIntIsClampedTrueWhereCWrapsToZero() {
-        // Accepted deviation recorded on ParseUtils: C's unsigned int keeps the low 32 bits,
-        // so 4294967296 is 0 and false there. Pinned so a change to the clamp is noticed.
-        assertTrue(withFlags("4294967296", "0", "0", "0").isCut());
+    void anAbsentFlagIsFalse() {
+        // The grammar leaves a flag the record never named as null. C leaves it at the
+        // mem_zalloc'd zero (src/tests/parse/blowm.c test_name0: a bare name: is all false).
+        BlowMethod m = withFlags(null, null, null, null);
+        assertFalse(m.isCut());
+        assertFalse(m.isStun());
+        assertFalse(m.isMiss());
+        assertFalse(m.isPhys());
+    }
+
+    @Test
+    void anEmptyFlagIsFalseLikeAnAbsentOne() {
+        // The grammar cannot produce "", but a hand-built record can.
+        BlowMethod m = withFlags("", "", "", "");
+        assertFalse(m.isCut());
+        assertFalse(m.isStun());
+        assertFalse(m.isMiss());
+        assertFalse(m.isPhys());
+    }
+
+    @Test
+    void eachFlagIsGuardedByItsOwnField() {
+        // A flag that is present must be read even when its neighbours are absent, and an
+        // absent one must not be read because its neighbour is present.
+        BlowMethod m = withFlags(null, "1", null, "1");
+        assertFalse(m.isCut());
+        assertTrue(m.isStun());
+        assertFalse(m.isMiss());
+        assertTrue(m.isPhys());
+
+        m = withFlags("1", null, "1", null);
+        assertTrue(m.isCut());
+        assertFalse(m.isStun());
+        assertTrue(m.isMiss());
+        assertFalse(m.isPhys());
+    }
+
+    @Test
+    void aBadFlagAmongAbsentOnesStillEndsTheLoad() {
+        assertThrows(DataFileParseException.class, () -> withFlags(null, "-1", null, null));
+        assertThrows(DataFileParseException.class, () -> withFlags(null, null, null, "-0"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {" ", "-", "+"})
+    void flagTextThatIsPresentButHasNoDigitsEndsTheLoad(String value) {
+        // Present text is never read as absent: strtoul reads no characters, so
+        // PARSE_ERROR_NOT_NUMBER, and a leading '-' is refused outright.
+        assertThrows(DataFileParseException.class, () -> withFlags(value, "0", "0", "0"));
+        assertThrows(DataFileParseException.class, () -> withFlags("0", value, "0", "0"));
+        assertThrows(DataFileParseException.class, () -> withFlags("0", "0", value, "0"));
+        assertThrows(DataFileParseException.class, () -> withFlags("0", "0", "0", value));
+    }
+
+    @Test
+    void aBadFlagErrorNamesTheFieldTheFileTheLineAndTheValue() {
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> one(rec("POKE", "0", "-1", "0", "0", "MON_HIT", 42)));
+        assertTrue(e.getMessage().contains("line: 42"), e::getMessage);
+        assertTrue(e.getMessage().contains(FILE), e::getMessage);
+        assertTrue(e.getMessage().contains("stun"), e::getMessage);
+        assertTrue(e.getMessage().contains("-1"), e::getMessage);
     }
 
     @ParameterizedTest
@@ -219,11 +295,45 @@ class BlowMethodAssemblerTest {
     }
 
     @Test
-    void nameActAndDescArePassedThrough() {
+    void nameAndDescArePassedThrough() {
         BlowMethod m = withMsg("MON_HIT");
         assertEquals("POKE", m.getName());
-        assertEquals(List.of("first", "second"), m.getBlowMessage());
         assertEquals("desc of POKE", m.getDesc());
+    }
+
+    @Test
+    void actLinesAreReversedAsParseMethActMsgPushesThemOnTheHead() {
+        // The record holds "first", "second" in file order. C's list is "second", "first".
+        BlowMethod m = withMsg("MON_HIT");
+        assertEquals(List.of("second", "first"), m.getBlowMessage());
+    }
+
+    @Test
+    void threeActLinesComeBackLastFirst() {
+        List<String> acts = new ArrayList<>(List.of("a", "b", "c"));
+        BlowMethodParseRecord record = new BlowMethodParseRecord("POKE", "0", "0", "0", "0",
+                "MON_HIT", acts, "poke", 2);
+
+        BlowMethod m = new BlowMethodAssembler().assemble(List.of(record), FILE).getFirst();
+
+        assertEquals(List.of("c", "b", "a"), m.getBlowMessage());
+        assertEquals(List.of("a", "b", "c"), acts, "the record's own list is left alone");
+    }
+
+    @Test
+    void noActLinesGiveAnEmptyList() {
+        BlowMethodParseRecord record = new BlowMethodParseRecord("POKE", "0", "0", "0", "0",
+                "MON_HIT", List.of(), "poke", 2);
+
+        assertTrue(one(record).getBlowMessage().isEmpty());
+    }
+
+    @Test
+    void aLoneActLineIsUnchanged() {
+        BlowMethodParseRecord record = new BlowMethodParseRecord("POKE", "0", "0", "0", "0",
+                "MON_HIT", List.of("only"), "poke", 2);
+
+        assertEquals(List.of("only"), one(record).getBlowMessage());
     }
 
     @Test
@@ -236,5 +346,37 @@ class BlowMethodAssemblerTest {
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> new BlowMethodAssembler().assemble(records, FILE));
         assertTrue(e.getMessage().contains("BOGUS_ONE"), e::getMessage);
+    }
+
+    @Test
+    void withTwoBadValuesInOneRecordTheFixedCheckOrderPicksTheReportedOne() {
+        // C would report whichever line comes first in the file; the assembler sees a finished
+        // record, so it checks cut, stun, miss, phys, msg in that order. The load ends either way.
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> one(rec("POKE", "x", "y", "0", "0", "MON_HIT", 2)));
+        assertTrue(e.getMessage().contains("cut"), e::getMessage);
+
+        e = assertThrows(DataFileParseException.class,
+                () -> one(rec("POKE", "0", "y", "0", "z", "MON_HIT", 2)));
+        assertTrue(e.getMessage().contains("stun"), e::getMessage);
+
+        e = assertThrows(DataFileParseException.class,
+                () -> one(rec("POKE", "0", "0", "0", "z", "BOGUS", 2)));
+        assertTrue(e.getMessage().contains("phys"), e::getMessage);
+    }
+
+    @Test
+    void aBadValueInALaterRecordEndsTheLoadAndReturnsNothing() {
+        List<BlowMethodParseRecord> records = List.of(
+                rec("GOOD", "1", "1", "1", "1", "MON_HIT", 2),
+                rec("BAD", "-1", "0", "0", "0", "MON_HIT", 10));
+
+        assertThrows(DataFileParseException.class,
+                () -> new BlowMethodAssembler().assemble(records, FILE));
+    }
+
+    @Test
+    void noRecordsGiveAnEmptyList() {
+        assertTrue(new BlowMethodAssembler().assemble(List.of(), FILE).isEmpty());
     }
 }

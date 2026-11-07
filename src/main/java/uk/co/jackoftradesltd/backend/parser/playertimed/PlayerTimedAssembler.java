@@ -43,6 +43,7 @@ import uk.co.jackoftradesltd.middle.player.enums.TimedEffectReasonType;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * Resolves the raw {@link PlayerTimedParseRecord}s captured from {@code player_timed.txt} into
@@ -82,16 +83,20 @@ import java.util.Locale;
  * <p><b>Deviations from C:</b> the names {@code NONE} and {@code MAX} are refused, where C's name
  * list ends in {@code MAX} and so accepts it and then indexes past the array. The {@code PY_FOOD_*}
  * thresholds that C sets while parsing the {@code FOOD} grades are set from the finished effect in
- * {@code PlayerRegistry.setPlayerTimedEffects}, not here. The {@code effect-yx}, {@code effect-dice},
- * {@code effect-expr} and {@code effect-msg} directives are not part of the record this assembler
- * receives.
+ * {@code PlayerRegistry.setPlayerTimedEffects}, not here. The record this assembler receives holds at
+ * most one {@code on-begin-effect:} and one {@code on-end-effect:}, each an {@code EffectParseRecord}
+ * carrying the effect name, its sub-type and, for the end effect only, the {@code effect-dice:} value.
+ * C appends an effect for every such line, and also reads {@code radius}, {@code other},
+ * {@code effect-yx:}, {@code effect-expr:} and {@code effect-msg:}. The shipped {@code player_timed.txt}
+ * has three effect lines, in three different records, and one {@code effect-dice:}, so it needs none
+ * of those.
  *
  * <p><b>Load-order dependency:</b> the {@code ATT_*} statuses resolve a brand/slay code through
  * {@link ObjectRegistry#lookupBrandCode}/{@link ObjectRegistry#lookupSlay}, so {@code brand.txt} and
  * {@code slay.txt} must already be loaded when this runs.
  *
- * <p>Class PlayerTimedAssembler coded before 260915, commented in full on 261029, updated on 261105
- * for the removal of the soft-error path.
+ * <p>Class PlayerTimedAssembler coded before 260915, commented in full on 261107 (updated on 261105
+ * for the removal of the soft-error path).
  *
  * @author Rowan Crowther
  */
@@ -118,15 +123,34 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
      * {@code NONSTACKING}.
      *
      * <p>The {@code resist:} element and the {@code msgt:} name are matched without regard to case, as
-     * C's {@code proj_name_to_idx} and {@code message_lookup_by_name} do; the other names are
-     * case-sensitive. A name is refused if it is unknown, if it is a {@code NONE} or {@code MAX}
-     * sentinel that C's list does not hold (a {@code fail:5} naming {@code MAX} gets through, as it does
-     * in C's list), or if a number does not parse. The messages read "Player timed starting at line: N
-     * of file: F has ... value: X".
+     * C's {@code proj_name_to_idx} and {@code message_lookup_by_name} do (the second also takes a
+     * message number, which {@link MessageType#lookupByName} follows); the other names are
+     * case-sensitive. A name is refused if it is unknown or if a number does not parse. The messages
+     * read "Player timed starting at line: N of file: F has ... value: X"; a number that does not
+     * parse is refused by {@link ParseUtils#parseIntString} instead, which words it "Player timed
+     * beginning at line: N of file: F has an invalid ... value: X".
+     *
+     * <p>The {@code NONE} and {@code MAX} sentinels follow what C's lookups let through:
+     * <ul>
+     *   <li>{@code name:}, {@code resist:}, {@code fail:2} and {@code fail:3} refuse both. C's element
+     *       list holds neither, and {@code proj_name_to_idx} either misses or gives an index at or past
+     *       {@code ELEM_MAX}; the {@code name:} refusal of {@code MAX} is the deviation in the class
+     *       comment.</li>
+     *   <li>{@code fail:1}, {@code fail:4} and {@code flag-synonym:} refuse {@code NONE}.
+     *       C's object-flag list holds it in slot 0, but {@code lookup_flag} starts at
+     *       {@code FLAG_START} and so passes over it, and the flag-synonym test is {@code idx <= OF_NONE}.
+     *       The player-flag list also holds it in slot 0, with the same result.</li>
+     *   <li>{@code fail:1} and {@code flag-synonym:} accept {@code MAX}, as C's object-flag list ends with
+     *       it; the player-flag list has no {@code MAX}.</li>
+     *   <li>{@code fail:5} refuses {@code NONE}, which C's timed-effect list does not hold, and accepts
+     *       {@code MAX}, which that list ends with.</li>
+     * </ul>
+     * The {@code flag-synonym:} exactness is any integer, non-zero meaning exact, as C's
+     * {@code parser_getint(...) != 0}; {@link ParseUtils#isTrue} reads it.
      *
      * <p>See the class comment for how a repeated name, the fail order and the defaults behave.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261029.
+     * <p>Function assemble coded before 260915, commented in full on 261107.
      *
      * @param records  the parsed timed-effect records, in file order
      * @param filename the data file's name, for the error messages
@@ -384,11 +408,20 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
                     throw new DataFileParseException(message);
                 }
             }
-            int exactVal = ParseUtils.parseIntString("Player timed", record.flagSynonymValue(), line, filename, "exact synonym value");
-            boolean exactlySyn = updatePrevious ? previous.isoFlagExactlySyn() : exactVal != 0;
+            Optional<Boolean> parsedFlagSyn = Optional.of(false);
+            if (!record.flagSynonymValue().isEmpty()) {
+                parsedFlagSyn = ParseUtils.isTrue(record.flagSynonymValue());
+                if (parsedFlagSyn.isEmpty()) {
+                    String message = "Player timed starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal flag synonym value: " + record.flagSynonymValue();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+            }
+            boolean exactlySyn = updatePrevious ? previous.isoFlagExactlySyn() : parsedFlagSyn.get();
             ObjectFlag synFlag = updatePrevious ? previous.getoFlagDup() : ObjectFlag.OF_NONE;
             if (!record.flagSynonymFlag().isEmpty()) {
-                exactlySyn = exactVal != 0;
+                exactlySyn = parsedFlagSyn.get();
                 try {
                     synFlag = ObjectFlag.valueOf("OF_" + record.flagSynonymFlag());
                     if (synFlag == ObjectFlag.OF_NONE) {

@@ -28,6 +28,7 @@ import uk.co.jackoftradesltd.middle.enums.MessageType;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Turns the raw {@link BlowMethodParseRecord}s the grammar produced into domain
@@ -51,8 +52,9 @@ import java.util.List;
  * and starts its records at 1, so {@code z_info->blow_methods_max} is one more than the
  * record count. The list returned here holds only the real records, from index 0.
  *
- * <p>Class BlowMethodAssembler coded before 260915, commented in full on 261023, updated on 261105
- * for the removal of the soft-error path.
+ * <p>Class BlowMethodAssembler coded before 260915, commented in full on 261107, updated on 261105
+ * for the removal of the soft-error path and on 261107 for the optional flags and the
+ * {@code act:} order.
  *
  * @author Rowan Crowther
  */
@@ -61,7 +63,7 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      * The logger this assembler writes to: a fatal message, with the same text, just before
      * each {@link DataFileParseException} it throws.
      *
-     * <p>Field logger coded before 260915, commented in full on 261023.
+     * <p>Field logger coded before 260915, commented in full on 261107.
      */
     private final static Logger logger = LogManager.getLogger(BlowMethodAssembler.class);
 
@@ -75,17 +77,25 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      * <p>Field by field, against [C] {@code mon-init.c}:
      * <ul>
      *   <li><strong>{@code cut:}, {@code stun:}, {@code miss:} and {@code phys:}</strong>
-     *       are read by
-     *       {@link ParseUtils#parseIntString(String, String, int, String, String)}, as
-     *       C's {@code parser_getuint} reads them with {@code strtoul} in base 0, and then
+     *       are each read by {@link ParseUtils#isTrue(String)}, as C's
+     *       {@code parser_getuint} reads them with {@code strtoul} in base 0, and then
      *       stored as {@code val ? true : false}. So any non-zero value is true, and
      *       {@code cut:00} is false, as octal 0. A leading {@code -} ends the load, as
-     *       {@code parser_getuint} refuses one with {@code PARSE_ERROR_NOT_NUMBER}; the
-     *       grammar's {@code INTEGER} token lets one through, so the check is made here. A
-     *       figure too big for an {@code int} is clamped where C wraps it into its
-     *       {@code unsigned int} and then its {@code int}, the accepted deviation recorded
-     *       on {@link ParseUtils}: {@code cut:4294967296} is 0, and so false, in C,
-     *       but true here.</li>
+     *       {@code parser_parse} refuses one with {@code PARSE_ERROR_NOT_NUMBER}; the
+     *       grammar's {@code INTEGER} token lets one through, so
+     *       {@link ParseUtils#minusFound(String)} makes the check here, on the raw text, which
+     *       is why {@code -0} is refused although its value is 0. A figure outside the range of
+     *       an {@code int} ends the load too, where C wraps it into its 32-bit
+     *       {@code unsigned int}: {@code cut:4294967296} is 0, and so false, in C, and
+     *       {@code cut:4294967295} is non-zero, and so true. This is the accepted deviation
+     *       "out-of-{@code int}-range numbers are refused", recorded on {@link ParseUtils}.</li>
+     *   <li><strong>A flag the record never named is false.</strong> The directives may come
+     *       in any order and any of them may be missing, as in C, where a missing line leaves
+     *       the {@code mem_zalloc}'d zero. The grammar seeds each flag as {@code null} and
+     *       the guard on each flag, {@code null} or empty, is the port of that zero. Each flag
+     *       is guarded by its own field, so a record with {@code cut:0} and no {@code stun:}
+     *       gives {@code stun} false and no error. Text that is present is never skipped:
+     *       whitespace or a lone sign is still refused.</li>
      *   <li><strong>{@code msg:} is optional and defaults to {@code MSG_GENERIC}.</strong>
      *       C registers it as {@code "msg ?str msg"} and assigns {@code msgt} only when
      *       {@code parser_hasval} is true, leaving the {@code mem_zalloc}'d zero -
@@ -101,23 +111,34 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      *       give {@code MSG_MON_HIT}. A value it cannot resolve ends the load, as
      *       {@code parse_meth_message_type} returns
      *       {@code PARSE_ERROR_INVALID_MESSAGE}.</li>
-     *   <li><strong>{@code act:}</strong> strings are passed on in file order, as the
-     *       grammar collects them. C's {@code parse_meth_act_msg} pushes each onto the head
-     *       of {@code meth->messages}, so its list is in reverse file order, and
+     *   <li><strong>{@code act:}</strong> strings are reversed, as C holds them. The grammar
+     *       collects them in file order, but C's {@code parse_meth_act_msg} pushes each onto
+     *       the head of {@code meth->messages}, so its list is in reverse file order, and
      *       {@code mon-blows.c} picks one by walking {@code randint0(num_messages)} steps
-     *       along it: the same random number picks a different message here.</li>
+     *       along it. Reversing here makes the same random number pick the same message. The
+     *       record's own list is not changed: {@code reversed()} is a view of it.</li>
      *   <li><strong>{@code name:} and {@code desc:}</strong> are copied as the parse record
-     *       holds them.</li>
+     *       holds them. The grammar has already joined repeated {@code desc:} lines, as C's
+     *       {@code parse_meth_desc} does with {@code string_append}, and a record with no
+     *       {@code desc:} carries {@code ""} where C holds {@code NULL}.</li>
+     *   <li><strong>Which error is reported first.</strong> C meets the directives in file order
+     *       and ends the load at the first bad one. Here each record's values are checked in a
+     *       fixed order - {@code cut:}, {@code stun:}, {@code miss:}, {@code phys:}, then
+     *       {@code msg:} - after the grammar has read the whole record, so a record with two bad
+     *       values can report a different one from C. The load ends either way, with no
+     *       {@link BlowMethod} returned; only the text of the exception differs.</li>
      * </ul>
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915, rewritten for
-     * the load-ending errors, base 0 flags and C's message lookup on 261023.
+     * <p>Function assemble coded before 260915, commented in full on 261107, rewritten for
+     * the load-ending errors, base 0 flags and C's message lookup on 261023, absent flags,
+     * the leading {@code -} check, out-of-range refusal and the {@code act:} reversal on 261107, error order noted 261107.
      *
      * @param records  the raw parse records, in file order
      * @param filename the name of the data file, used in the error messages
      * @return the assembled blow methods, in reverse file order
-     * @throws DataFileParseException on a flag with a leading {@code -} or no digits, or a
-     *                                {@code msg:} that names no message type
+     * @throws DataFileParseException on a flag with a leading {@code -}, no digits or a figure
+     *                                outside the range of an {@code int}, or a {@code msg:}
+     *                                that names no message type
      */
     @Override
     public List<BlowMethod> assemble(@NotNull List<BlowMethodParseRecord> records,
@@ -125,40 +146,65 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
         List<BlowMethod> methods = new ArrayList<>();
 
         for (BlowMethodParseRecord record : records) {
+            // Line number
             int line = record.line();
+            
+            // Name of blow method
             String name = record.name();
-            int cutValue = ParseUtils.parseIntString("Blow method", record.cut(), line, filename, "cut");
-            if (ParseUtils.minusFound(record.cut())) {
-                String message = "Blow method beginning at line: " + line + " of file: " + filename
-                        + " has an invalid cut value: " + record.cut();
-                logger.fatal(message);
-                throw new DataFileParseException(message);
+            
+            // Blow - method can create a cut
+            boolean cut = false;
+            if (record.cut() != null && !record.cut().isEmpty()) {
+                Optional<Boolean> cutVal = ParseUtils.isTrue(record.cut());
+                if (cutVal.isEmpty() || ParseUtils.minusFound(record.cut())) {
+                    String message = "Blow method beginning at line: " + line + " of file: " + filename
+                            + " has an invalid cut value: " + record.cut();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                cut = cutVal.get();
             }
-            boolean cut = cutValue != 0;
-            int stunValue = ParseUtils.parseIntString("Blow method", record.stun(), line, filename, "stun");
-            if (ParseUtils.minusFound(record.stun())) {
-                String message = "Blow method beginning at line: " + line + " of file: " + filename
-                        + " has an invalid stun value: " + record.stun();
-                logger.fatal(message);
-                throw new DataFileParseException(message);
+            
+            // Stun - method can stun
+            boolean stun = false;
+            if (record.stun() != null && !record.stun().isEmpty()) {
+                Optional<Boolean> stunVal = ParseUtils.isTrue(record.stun());
+                if (ParseUtils.minusFound(record.stun()) || stunVal.isEmpty()) {
+                    String message = "Blow method beginning at line: " + line + " of file: " + filename
+                            + " has an invalid stun value: " + record.stun();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                stun = stunVal.get();
             }
-            boolean stun = stunValue != 0;
-            int missValue = ParseUtils.parseIntString("Blow method", record.miss(), line, filename, "miss");
-            if (ParseUtils.minusFound(record.miss())) {
-                String message = "Blow method beginning at line: " + line + " of file: " + filename
-                        + " has an invalid miss value: " + record.miss();
-                logger.fatal(message);
-                throw new DataFileParseException(message);
+            
+            // Miss - method can miss
+            boolean miss = false;
+            if (record.miss() != null && !record.miss().isEmpty()) {
+                Optional<Boolean> missVal = ParseUtils.isTrue(record.miss());
+                if (ParseUtils.minusFound(record.miss()) || missVal.isEmpty()) {
+                    String message = "Blow method beginning at line: " + line + " of file: " + filename
+                            + " has an invalid miss value: " + record.miss();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                miss = missVal.get();
             }
-            boolean miss = missValue != 0;
-            int physValue = ParseUtils.parseIntString("Blow method", record.phys(), line, filename, "phys");
-            if (ParseUtils.minusFound(record.phys())) {
-                String message = "Blow method beginning at line: " + line + " of file: " + filename
-                        + " has an invalid physValue: " + record.phys();
-                logger.fatal(message);
-                throw new DataFileParseException(message);
+            
+            // Phys - method is physical
+            boolean phys = false;
+            if (record.phys() != null && !record.phys().isEmpty()) {
+                Optional<Boolean> physVal = ParseUtils.isTrue(record.phys());
+                if (ParseUtils.minusFound(record.phys()) || physVal.isEmpty()) {
+                    String message = "Blow method beginning at line: " + line + " of file: " + filename
+                            + " has an invalid physValue: " + record.phys();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                phys = physVal.get();
             }
-            boolean phys = physValue != 0;
+            
+            // Message type
             MessageType msgT = MessageType.MSG_GENERIC;
             if (record.msg() != null && !record.msg().isEmpty()) {
                 msgT = MessageType.lookupByName(record.msg());
@@ -169,7 +215,11 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
                     throw new DataFileParseException(message);
                 }
             }
-            List<String> act = record.act();
+            
+            // Act flavour text narrating the blows
+            List<String> act = record.act().reversed();
+            
+            // Description
             String desc = record.desc();
 
             methods.addFirst(new BlowMethod(name, cut, stun, miss, phys, msgT, act, desc));

@@ -219,7 +219,9 @@ class SummonReaderTest {
 
     @Test
     void unresolvableFallbackIsSilentAndTheRecordStillLoads() throws IOException {
-        // finish_parse_summon stores summon_name_to_idx() = -1 for an unknown name, with no error.
+        // ACCEPTED DEVIATION (261107): C's summon_name_to_idx() runs past the last real summon into
+        // the blank slot finish_parse_summon adds (name NULL) and fails in strcmp(name, NULL), so
+        // C never reaches -1 for an unknown name. Here the record loads with a null fallback.
         ParseResult<Summon> result =
                 load("bad-fallback.txt", summon("MONSTER", "SUM_MONSTER", "0",
                         "fallback:NOSUCH", "test"));
@@ -386,9 +388,10 @@ class SummonReaderTest {
     }
 
     @Test
-    void anUnresolvedFallbackKeepsTheRecordWhereCStoresMinusOneSilently() throws IOException {
-        // finish_parse_summon back-patches fallback = summon_name_to_idx(name), -1 for no match,
-        // with no error. Here the record is kept and nothing is reported.
+    void anUnresolvedFallbackKeepsTheRecordWhereCFailsInStrcmp() throws IOException {
+        // ACCEPTED DEVIATION (261107): finish_parse_summon back-patches fallback =
+        // summon_name_to_idx(name); for a name matching no summon that search reaches the blank
+        // last slot (name NULL) and C fails in strcmp. Here the record is kept, nothing reported.
         ParseResult<Summon> result = load("fb.txt",
                 summon("A", "SUM_MONSTER", "0", "fallback:NOSUCH", "a"));
 

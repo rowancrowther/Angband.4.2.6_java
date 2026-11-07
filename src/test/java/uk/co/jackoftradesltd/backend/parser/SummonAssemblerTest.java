@@ -52,8 +52,8 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>{@code parse_summon_unique} reads an {@code int} with {@code parser_getint}
  *       ({@code strtol}, base 0) and sets {@code unique_allowed} when it is non-zero, so
  *       {@code 2}, {@code -1} and the octal {@code 010} are true and {@code 0}, {@code 00} and
- *       {@code -0} are false. A figure too big for 32 bits is wrapped in C and clamped here, the
- *       accepted deviation recorded in {@code docs/Accepted_Deviations.md};</li>
+ *       {@code -0} are false. A figure too big for 32 bits is wrapped in C and refused here, the
+ *       accepted deviation of 261027 recorded in {@code docs/Accepted_Deviations.md};</li>
  *   <li>{@code parse_summon_base} uses {@code lookup_monster_base}, which compares with
  *       {@code streq} (exact case), and returns {@code PARSE_ERROR_INVALID_MONSTER_BASE} for a
  *       miss. Each base is pushed on the head of a list, so C holds them in reverse; only
@@ -62,12 +62,16 @@ import static org.junit.jupiter.api.Assertions.*;
  *       {@code RF_} prefix, compared with {@code streq} from {@code FLAG_START} (1), so
  *       {@code NONE} at index 0 is never matched and there is no {@code MAX} row;</li>
  *   <li>{@code finish_parse_summon} gives each summon the index {@code summon_name_to_idx} finds for
- *       its fallback name: exact match, the first summon of that name wins, and -1, with no error,
- *       for a name that matches nothing or for none at all;</li>
+ *       its fallback name: exact match, the first summon of that name wins, and -1 for none at all
+ *       (a NULL {@code fallback_name} is skipped by the {@code name &&} guard). A name that is
+ *       present but matches nothing is not -1 in C: the search reaches the blank last slot that
+ *       {@code summon_max += 1} adds, whose name is NULL, and fails in {@code strcmp}. Java keeps the
+ *       record with a null fallback; the accepted deviation of 261107;</li>
  *   <li>the stop-the-load policy: C's first parser error ends the whole file.</li>
  * </ul>
  *
- * <p>Class SummonAssemblerTest coded on 261029, commented in full on 261029.
+ * <p>Class SummonAssemblerTest coded on 261029, commented in full on 261029 (unresolved-fallback
+ * account corrected and two fallback cases added on 261107).
  *
  * @author Rowan Crowther
  */
@@ -199,11 +203,14 @@ class SummonAssemblerTest {
     }
 
     @Test
-    void aFigureTooBigForAnIntIsClampedHereWhereCWrapsIt() {
-        // strtol gives 4294967296 and the int field keeps the low 32 bits, 0, so C reads false. The
-        // clamp makes it 2147483647, true. Accepted deviation, "An integer too big for its C type is
-        // clamped, where C wraps it".
-        assertTrue(one(record("A", "SUM_MONSTER", "4294967296", List.of(), "", "")).isUniquesAllowed());
+    void aFigureOutsideTheIntRangeStopsTheLoadWhereCWrapsIt() {
+        // strtol gives 4294967296 and the int field keeps the low 32 bits, 0, so C reads false.
+        // ACCEPTED DEVIATION (decided 261027): a number outside the int range is refused here.
+        // 2147483648 is the first figure over INT_MAX; C would read it as INT_MIN, non-zero.
+        for (String text : List.of("4294967296", "2147483648")) {
+            DataFileParseException e = refused(record("A", "SUM_MONSTER", text, List.of(), "", ""));
+            assertTrue(e.getMessage().contains("unique value: " + text), e.getMessage());
+        }
     }
 
     @Test
@@ -319,7 +326,9 @@ class SummonAssemblerTest {
     @ParameterizedTest
     @ValueSource(strings = {"NOSUCH", "hi_undead", "HI_UNDEAD ", "HI"})
     void anUnresolvedFallbackIsSilentAndTheRecordIsKept(String fallback) {
-        // summon_name_to_idx is streq and gives -1 for a miss; finish_parse_summon reports nothing.
+        // ACCEPTED DEVIATION (261107): summon_name_to_idx is streq over summons[0..summon_max), and
+        // summon_max includes the blank last slot (name NULL), so C fails in strcmp(name, NULL)
+        // for a miss. Java keeps the record with a null fallback and reports nothing.
         List<Summon> summons = assemble(List.of(
                 plain("HI_UNDEAD"),
                 record("A", "SUM_MONSTER", "0", List.of(), "", fallback)));
@@ -327,6 +336,31 @@ class SummonAssemblerTest {
         assertEquals(2, summons.size());
         assertNull(summons.get(1).getFallback());
         assertEquals(fallback, summons.get(1).getFallbackName());
+    }
+
+    @Test
+    void anUnresolvedFallbackDoesNotStopLaterFallbacksLinking() {
+        // Each summon is linked on its own; one miss leaves the others untouched.
+        List<Summon> summons = assemble(List.of(
+                plain("HI_UNDEAD"),
+                record("A", "SUM_MONSTER", "0", List.of(), "", "NOSUCH"),
+                record("B", "SUM_MONSTER", "0", List.of(), "", "HI_UNDEAD")));
+
+        assertNull(summons.get(1).getFallback());
+        assertSame(summons.get(0), summons.get(2).getFallback());
+    }
+
+    @Test
+    void aFallbackChainLinksOneStepAtATime() {
+        // C stores one index per summon and never follows the chain at load time.
+        List<Summon> summons = assemble(List.of(
+                record("A", "SUM_MONSTER", "0", List.of(), "", "B"),
+                record("B", "SUM_MONSTER", "0", List.of(), "", "C"),
+                plain("C")));
+
+        assertSame(summons.get(1), summons.get(0).getFallback());
+        assertSame(summons.get(2), summons.get(1).getFallback());
+        assertNull(summons.get(2).getFallback());
     }
 
     // ---- Stopping the load -------------------------------------------------
@@ -341,6 +375,45 @@ class SummonAssemblerTest {
         DataFileParseException baseFirst = refused(
                 record("A", "SUM_MONSTER", "0", List.of("no such base"), "NOTAFLAG", ""));
         assertTrue(baseFirst.getMessage().contains("monster base"), baseFirst.getMessage());
+    }
+
+    @Test
+    void aUniquesFaultIsReportedBeforeABadBaseOrRaceFlag() {
+        // parse_summon_unique runs before parse_summon_base and parse_summon_race_flag.
+        DataFileParseException e = refused(
+                record("A", "SUM_MONSTER", "abc", List.of("no such base"), "NOTAFLAG", ""));
+        assertTrue(e.getMessage().contains("unique value: abc"), e.getMessage());
+    }
+
+    @Test
+    void aRaceFlagFaultComesAfterTheBasesResolve() {
+        // parse_summon_race_flag is the last line handled, so with good bases it is the fault reported.
+        DataFileParseException e = refused(
+                record("A", "SUM_MONSTER", "0", List.of(BASE), "NOTAFLAG", ""));
+        assertTrue(e.getMessage().contains("race flag value: NOTAFLAG"), e.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "0x10, true",
+            "0X10, true",
+            "0x0, false",
+            "+5, true",
+            "+0, false",
+            "-010, true"})
+    void uniquesFollowsStrtolBaseZeroForHexAndSignedForms(String text, boolean expected) {
+        // parser_getint is strtol with base 0: 0x prefix is hex, a leading sign is allowed, and the
+        // result is non-zero exactly when unique_allowed is set.
+        assertEquals(expected, one(record("A", "SUM_MONSTER", text, List.of(), "", "")).isUniquesAllowed());
+    }
+
+    @Test
+    void theDescriptionIsCarriedThroughUnchanged() {
+        // parse_summon_desc copies the text with string_make.
+        SummonParseRecord withDesc = new SummonParseRecord("A", "SUM_MONSTER", "0", List.of(), "", "",
+                "an undead  thing, or two", 7);
+
+        assertEquals("an undead  thing, or two", one(withDesc).getDescription());
     }
 
     @Test

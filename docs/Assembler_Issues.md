@@ -70,16 +70,17 @@ Found 2026-10-17 during `/port backend/parser/SummonReader.java`. [<span style="
   `imports/Flags.g4` still requires an upper-case first letter, so `lookupByName`'s case-blind and numeric paths cannot
   be reached from `summon.txt`.
 
-## `summon/SummonAssembler.java`: an unresolved `fallback:` is an error here, silent in C
+## `summon/SummonAssembler.java`: an unresolved `fallback:` keeps the record, where C fails in `strcmp`
 
-Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SummonReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-07: accepted deviation, entered in `docs/Accepted_Deviations.md` under "Summon". The 26-10-17 account below was wrong about C and has been corrected.]
 
-- `finish_parse_summon` in `mon-summon.c` sets each summon's `fallback` to `summon_name_to_idx(fallback_name)`, which
-  is -1 for a name that matches nothing. There is no error.
-- `SummonAssembler.java` adds `"Invalid fallback name: ..."` to the soft errors and keeps the summon with a `null`
-  fallback. The record survives, but the error makes `MonsterDataLoader.loadSummons` report the file as carrying errors.
-- Stricter than C rather than wrong, and the shipped file's two fallbacks both resolve. Pinned by
-  `SummonReaderTest.anUnresolvedFallbackKeepsTheRecordWhereCStoresMinusOneSilently`.
+- `finish_parse_summon` in `mon-summon.c` sets each summon's `fallback` to `summon_name_to_idx(fallback_name)`. That is
+  -1 only for a summon with no `fallback:` line (NULL name, skipped by the `name &&` guard).
+- For a name that matches nothing, the search runs into the blank last slot that `summon_max += 1` adds. Its `name` is
+  NULL, so `streq` becomes `strcmp(name, NULL)`: undefined behaviour, in practice a crash. C is not silent here.
+- `SummonAssembler.java` no longer reports anything (the soft-error path was removed 2026-11-04) and keeps the summon
+  with a `null` fallback. The shipped file's two fallbacks both resolve. Pinned by
+  `SummonReaderTest.anUnresolvedFallbackKeepsTheRecordWhereCFailsInStrcmp`.
 
 ## `summon/SummonAssembler.java`: `base:` order is file order, C's is reversed
 

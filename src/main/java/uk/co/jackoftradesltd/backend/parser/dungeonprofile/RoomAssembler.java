@@ -108,6 +108,7 @@ public class RoomAssembler implements Assembler<DungeonProfileParseRecord.Room, 
             int height = ParseUtils.parseIntString("Room profile", record.height(), line, filename, "height");
             int width = ParseUtils.parseIntString("Room profile", record.width(), line, filename, "width");
             int level = ParseUtils.parseIntString("Room profile", record.level(), line, filename, "level");
+            // ParseUtils.parseIntString used for pit as the value is specifically 1, and not non-zero!
             int pitInt = ParseUtils.parseIntString("Room profile", record.pit(), line, filename, "pit");
             boolean pit = pitInt == 1;
             int rarity = ParseUtils.parseIntString("Room profile", record.rarity(), line, filename, "rarity");

@@ -68,7 +68,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * One accepted deviation is pinned as well: a number outside the {@code int} range is clamped where
  * C keeps the low 32 bits.
  *
- * <p>Class ObjectBaseAssemblerTest coded on 261028, commented in full on 261028.
+ * <p>Class ObjectBaseAssemblerTest coded on 261028, commented in full on 261028 (empty and blank
+ * colours, padded colour names, flags that start like an element keyword and repeated flags added
+ * on 261107, with the {@code NONE} message spelling moved to "sentinel").
  *
  * @author Rowan Crowther
  */
@@ -239,6 +241,36 @@ class ObjectBaseAssemblerTest {
                 one(record("S~", "sword", text, List.of(), "10", "40")).getAttr());
     }
 
+    /**
+     * {@code color_text_to_attr} compares the whole text with {@code my_stricmp}, so padding spaces
+     * make a name that matches nothing, and the answer is white. A colour name that is not white
+     * is used so that a trimmed match (which would give red) is told apart from the default.
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {" red", "red ", " light red", "light  red"})
+    void aPaddedColourNameMatchesNothingSoIsWhite(String text) {
+        assertEquals(ColourEnum.COLOUR_WHITE,
+                one(record("S~", "sword", text, List.of(), "10", "40")).getAttr());
+    }
+
+    /**
+     * A record with no {@code graphics:} line never reaches {@code parse_object_base_graphics}, so
+     * {@code attr} stays at the zero copied from the defaults: {@code COLOUR_DARK}. The grammar
+     * hands over the empty string for it.
+     */
+    @Test
+    void aRecordWithNoColourIsDark() {
+        assertEquals(ColourEnum.COLOUR_DARK,
+                one(record("S~", "sword", "", List.of(), "10", "40")).getAttr());
+    }
+
+    /** {@code color_char_to_attr} answers dark for a space without searching the table. */
+    @Test
+    void aSingleSpaceColourIsDark() {
+        assertEquals(ColourEnum.COLOUR_DARK,
+                one(record("S~", "sword", " ", List.of(), "10", "40")).getAttr());
+    }
+
     // ---- Element flags (grab_element_flag) ----------------------------------
 
     @Test
@@ -319,23 +351,43 @@ class ObjectBaseAssemblerTest {
         assertRefused(withFlags(flag), "illegal flag value");
     }
 
-    /** {@code element_names} has exactly the elements: not the placeholder, not the count. */
+    /**
+     * {@code element_names} has exactly the elements: not the placeholder, not the count. The
+     * assembler hands the word to {@code ParseUtils.grabElementFlag}, which answers {@code false},
+     * and no other table has it, so it ends the load with the general flag message.
+     *
+     * <p>Method thePlaceholderAndCountAreNotElements coded before 261105, commented in full on
+     * 261105 (message expectation moved to "illegal flag value" on 261105).
+     */
     @ParameterizedTest
     @ValueSource(strings = {"HATES_NONE", "HATES_MAX", "IGNORE_NONE", "IGNORE_MAX"})
     void thePlaceholderAndCountAreNotElements(String flag) {
-        assertRefused(withFlags(flag), "illegal sentinel element flag value");
+        assertRefused(withFlags(flag), "illegal flag value");
     }
 
-    /** The element name must equal C's exactly: {@code streq}, so no case folding. */
+    /**
+     * The element name must equal C's exactly: {@code streq}, so no case folding. The message is the
+     * general flag one, because the word is refused by every table.
+     *
+     * <p>Method anElementNameThatIsNotExactlyOneIsRefused coded before 261105, commented in full on
+     * 261105 (message expectation moved to "illegal flag value" on 261105).
+     */
     @ParameterizedTest
     @ValueSource(strings = {"HATES_acid", "HATES_Acid", "HATES_", "HATES_ACID ", "HATES_WATERY"})
     void anElementNameThatIsNotExactlyOneIsRefused(String flag) {
-        assertRefused(withFlags(flag), "illegal hates element flag value");
+        assertRefused(withFlags(flag), "illegal flag value");
     }
 
+    /**
+     * An {@code IGNORE_} word whose element does not exist ends the load with the general flag
+     * message.
+     *
+     * <p>Method anUnknownIgnoreElementIsRefused coded before 261105, commented in full on 261105
+     * (message expectation moved to "illegal flag value" on 261105).
+     */
     @Test
     void anUnknownIgnoreElementIsRefused() {
-        assertRefused(withFlags("IGNORE_SPAM"), "illegal ignore element flag value");
+        assertRefused(withFlags("IGNORE_SPAM"), "illegal flag value");
     }
 
     // ---- Kind and object flags (grab_flag) ----------------------------------
@@ -365,6 +417,37 @@ class ObjectBaseAssemblerTest {
         assertTrue(base.getElementMap().isEmpty());
     }
 
+    /**
+     * The only flags in C's two tables that start with the letter of an element keyword and carry an
+     * underscore are {@code HOLD_LIFE}, {@code IMPAIR_*} and {@code INSTA_ART}. {@code grab_element_flag}
+     * refuses each: {@code HOLD} is not a prefix of {@code HATES}, {@code INSTA} is not a prefix of
+     * {@code IGNORE}, and the part after the underscore is not an element. They must still reach the
+     * flag tables.
+     */
+    @Test
+    void flagsThatStartLikeAnElementKeywordAreStillFlags() {
+        ObjectBase base = one(withFlags("HOLD_LIFE", "IMPAIR_MANA", "INSTA_ART"));
+
+        assertEquals(Set.of(ObjectFlag.OF_HOLD_LIFE, ObjectFlag.OF_IMPAIR_MANA),
+                Set.copyOf(base.getFlags().toList()));
+        assertEquals(Set.of(ObjectKindFlag.KF_INSTA_ART), Set.copyOf(base.getKindFlags().toList()));
+        assertTrue(base.getElementMap().isEmpty());
+    }
+
+    /**
+     * {@code grab_flag} and {@code grab_element_flag} only OR the bit in, and {@code grab_flag}
+     * returns 0 whether or not it was already set, so a repeated token is accepted.
+     */
+    @Test
+    void aRepeatedFlagIsAccepted() {
+        ObjectBase base = one(withFlags("SHOW_DICE", "SHOW_DICE", "FEATHER", "FEATHER",
+                "HATES_ACID", "HATES_ACID"));
+
+        assertEquals(Set.of(ObjectKindFlag.KF_SHOW_DICE), Set.copyOf(base.getKindFlags().toList()));
+        assertEquals(Set.of(ObjectFlag.OF_FEATHER), Set.copyOf(base.getFlags().toList()));
+        assertEquals(Set.of(ElementInfoEnum.EL_INFO_HATES), bitsOn(base, ElementEnum.ELEM_ACID));
+    }
+
     @Test
     void allThreeKindsOfFlagCanShareOneRecord() {
         ObjectBase base = one(withFlags("HATES_ACID", "IGNORE_ELEC", "SHOW_MULT", "REGEN"));
@@ -387,7 +470,7 @@ class ObjectBaseAssemblerTest {
     /** {@code lookup_flag} starts past index 0, so the {@code NONE} placeholder never matches. */
     @Test
     void theNoneFlagIsRefused() {
-        assertRefused(withFlags("NONE"), "illegal sentinal object/object kind flag value");
+        assertRefused(withFlags("NONE"), "illegal sentinel object/object kind flag value");
     }
 
     /** {@code MAX} is in both tables after the placeholder, so both counts come on. */

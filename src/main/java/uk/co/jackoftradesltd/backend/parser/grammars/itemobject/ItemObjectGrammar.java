@@ -14,7 +14,6 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ItemObjectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.itemobject;
 
@@ -27,6 +26,7 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import uk.co.jackoftradesltd.backend.parser.curse.FullCurseDataParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
 import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectParseRecord;
 
@@ -1216,8 +1216,7 @@ public class ItemObjectGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class CurseContext extends ParserRuleContext {
-		public String curseName;
-		public String cursePower;
+		public FullCurseDataParseRecord curseData;
 		public Token n;
 		public Token p;
 		public TerminalNode CURSE() { return getToken(ItemObjectGrammar.CURSE, 0); }
@@ -1258,8 +1257,9 @@ public class ItemObjectGrammar extends Parser {
 			setState(174);
 			((CurseContext)_localctx).p = match(CURSE_INT);
 
-			                ((CurseContext)_localctx).curseName =  ((CurseContext)_localctx).n.getText();
-			                ((CurseContext)_localctx).cursePower =  ((CurseContext)_localctx).p.getText();
+			                String curseName  = ((CurseContext)_localctx).n.getText();
+			                String cursePower = ((CurseContext)_localctx).p.getText();
+			                ((CurseContext)_localctx).curseData =  new FullCurseDataParseRecord(curseName, cursePower, "0");
 			            
 			}
 		}
@@ -1627,19 +1627,19 @@ public class ItemObjectGrammar extends Parser {
 		            String pileChanceInit = "";
 		            String pileItemsInit = "";
 		            String powerInit = "";
-		            String msgInit = "";
-		            String visMsgInit = "";
+		            String msgInit = null;
+		            String visMsgInit = null;
 		            List<EffectParseRecord> effectsInit = new ArrayList<>();
 		            List<String> flagListInit = new ArrayList<>();
 		            Map<String, String> valuesInit = new HashMap<>();
 		            List<String> brandInit = new ArrayList<>();
 		            List<String> slayInit = new ArrayList<>();
-		            Map<String, String> curseInit = new HashMap<>();
+		            List<FullCurseDataParseRecord> curseInit = new ArrayList<>();
 		            String pValInit = "";
 		            StringBuilder dsb = new StringBuilder();
 		            StringBuilder msb = new StringBuilder();
 		            StringBuilder vsb = new StringBuilder();
-		            String descInit = "";
+		            String descInit = null;
 		            String timeInit = "";
 		        
 		int _la;
@@ -1800,7 +1800,7 @@ public class ItemObjectGrammar extends Parser {
 					{
 					setState(245);
 					((ItemObjectContext)_localctx).curse = curse();
-					 curseInit.put(((ItemObjectContext)_localctx).curse.curseName, ((ItemObjectContext)_localctx).curse.cursePower); 
+					 curseInit.add(((ItemObjectContext)_localctx).curse.curseData); 
 					}
 					break;
 				case PVAL:
@@ -1835,9 +1835,9 @@ public class ItemObjectGrammar extends Parser {
 			}
 			_ctx.stop = _input.LT(-1);
 
-			            descInit = dsb.toString();
-			            msgInit = msb.toString();
-			            visMsgInit = vsb.toString();
+			            descInit = dsb.isEmpty() ? null : dsb.toString();
+			            msgInit = msb.isEmpty() ? null : msb.toString();
+			            visMsgInit = vsb.isEmpty() ? null : vsb.toString();
 			            ((ItemObjectContext)_localctx).object =  new ItemObjectParseRecord(nameInit, glyphInit, colourInit, typeInit,
 			                    levelInit, weightInit, costInit, atBaseInit, atTohInit, atTodInit,
 			                    arBaseInit, arToaInit, alCommonInit, alLowerInit, alUpperInit,

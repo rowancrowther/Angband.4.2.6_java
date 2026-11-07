@@ -4,6 +4,7 @@ options { tokenVocab = ArtifactLexer; }
 
 @header {
     import uk.co.jackoftradesltd.backend.parser.artifact.ArtifactParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.curse.FullCurseDataParseRecord;
 
     import java.util.List;
     import java.util.ArrayList;
@@ -17,10 +18,12 @@ name
         ;
 
 baseObject
-        returns[String tVal, String sVal]
+        returns[ArtifactParseRecord.ArtifactBaseObjectParseRecord objectBase]
         :   BASE_OBJECT t=STRING_BETWEEN_COLONS
             DELIM_COLON s=STRING_BETWEEN_COLONS
-            { $tVal = $t.getText(); $sVal = $s.getText(); }
+            { String tVal = $t.getText(); 
+              String sVal = $s.getText(); 
+              $objectBase = new ArtifactParseRecord.ArtifactBaseObjectParseRecord(tVal, sVal, ""); }
         ;
 
 graphics
@@ -119,12 +122,11 @@ slay
         ;
 
 curse
-        returns[Map<String, String> curseMap]
-        @init {
-            $curseMap = new HashMap<>();
-        }
+        returns[FullCurseDataParseRecord curseData]
         :   CURSE k=STRING_BETWEEN_COLONS DELIM_COLON v=DELIM_INTEGER {
-            $curseMap.put($k.getText(), $v.getText()); }
+            String curseName = $k.getText();
+            String cursePower = $v.getText();
+            $curseData = new FullCurseDataParseRecord(curseName, cursePower, "0"); }
         ;
 
 desc
@@ -136,10 +138,9 @@ artifact
         returns[ArtifactParseRecord artifactRecord]
         @init {
             String nameInit = "";
-            String tValueInit = "";
-            String sValueInit = "";
             String glyphInit = "";
             String colourInit = "";
+            List<ArtifactParseRecord.ArtifactBaseObjectParseRecord> objectBaseInit = new ArrayList<>();
             String levelInit = "";
             String weightInit = "";
             String costInit = "";
@@ -158,34 +159,28 @@ artifact
             Map<String, String> valuesMapInit = new HashMap<>();
             List<String> brandInit = new ArrayList<>();
             List<String> slayInit = new ArrayList<>();
-            Map<String, String> curseInit = new HashMap<>();
-            String descInit = "";
+            List<FullCurseDataParseRecord> curseInit = new ArrayList<>();
+            String descInit = null;
             int line = 0;
             StringBuilder msgSB = new StringBuilder();
             StringBuilder descSB = new StringBuilder();
-            boolean levelFirst = true;
-            boolean levelSeen = false;
-            boolean baseSeen = false;
-            String baseObjectLevel = "";
         }
         @after {
             msgInit = msgSB.toString();
-            descInit = descSB.toString();
-            $artifactRecord = new ArtifactParseRecord(nameInit, tValueInit, sValueInit,
+            descInit = descSB.isEmpty() ? null : descSB.toString();
+            $artifactRecord = new ArtifactParseRecord(nameInit, objectBaseInit,
                 glyphInit, colourInit, levelInit, weightInit, costInit, commonnessInit,
                 minInit, maxInit, baseDamageInit, tohInit, todInit, baseACInit, toaInit,
                 flagListInit, activationInit, timeInit, msgInit, valuesMapInit,
-                brandInit, slayInit, curseInit, descInit, levelFirst, baseObjectLevel, line);
+                brandInit, slayInit, curseInit, descInit, line);
         }
         :   name { line = $name.line; nameInit = $name.nameStr; }
-        (   baseObject { tValueInit = $baseObject.tVal; sValueInit = $baseObject.sVal; 
-                if (levelSeen && !baseSeen) levelFirst = true;
-                else if (!levelSeen) levelFirst = false; 
-                baseSeen = true; 
-                baseObjectLevel = levelInit; }
+        (   baseObject { if ($baseObject.objectBase != null) {
+                            String tValueInit = $baseObject.objectBase.tValue(); 
+                            String sValueInit = $baseObject.objectBase.sValue();
+                            objectBaseInit.add(new ArtifactParseRecord.ArtifactBaseObjectParseRecord(tValueInit, sValueInit, levelInit)); }}
         |   graphics { glyphInit = $graphics.glyph; colourInit = $graphics.colour; }
-        |   level { levelInit = $level.levelVal; 
-                levelSeen = true; }
+        |   level { levelInit = $level.levelVal; }
         |   weight { weightInit = $weight.weightVal; }
         |   cost { costInit = $cost.costVal; }
         |   alloc { commonnessInit = $alloc.commonness;
@@ -203,7 +198,7 @@ artifact
         |   values { valuesMapInit.putAll($values.valueMap); }
         |   brand { brandInit.add($brand.brandLine); }
         |   slay { slayInit.add($slay.slayLine); }
-        |   curse { curseInit.putAll($curse.curseMap); }
+        |   curse { curseInit.add($curse.curseData); }
         |   desc { descSB.append($desc.descLine); }
         )+;
 

@@ -19,7 +19,6 @@ package uk.co.jackoftradesltd.middle.magic;
 
 import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
@@ -95,7 +94,7 @@ class MagicBookTest {
 
     private static ObjectBase base(TValue tval, String name) {
         return new ObjectBase(tval, name, ColourEnum.COLOUR_RED,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), -1, -1, new Flag<>(ObjectFlag.class));
+                new Flag<>(ObjectKindFlag.class), new java.util.HashMap<>(), -1, -1, new Flag<>(ObjectFlag.class));
     }
 
     /**

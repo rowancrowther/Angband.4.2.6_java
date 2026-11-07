@@ -470,7 +470,7 @@ class ArtifactReaderTest {
         assertStops("bad-tval.txt", "name:BadTval\nbase-object:notatval:Thing\n",
                 "unknown base-obj tvalue: notatval");
         assertStops("bad-flag.txt", "name:BadFlag\nflags:NOTAFLAG\n",
-                "unknown flag: NOTAFLAG");
+                "unknown ignore/hates flag: NOTAFLAG");
         assertStops("bad-modifier.txt", "name:BadModifier\nvalues:NOTAMOD[1]\n",
                 "unknown modifier/element name: NOTAMOD");
         // RES_ is stripped before the ELEM_ lookup, so the message echoes the bare element name.
@@ -494,7 +494,7 @@ class ArtifactReaderTest {
         DataFileParseException e = assertThrows(DataFileParseException.class, () ->
                 load("two-bad-flags.txt", "name:DoublyBad\nflags:NOTAFLAG | ALSONOTAFLAG\n"));
 
-        assertTrue(e.getMessage().contains("unknown flag: NOTAFLAG"), e::getMessage);
+        assertTrue(e.getMessage().contains("unknown ignore/hates flag: NOTAFLAG"), e::getMessage);
         assertFalse(e.getMessage().contains("ALSONOTAFLAG"), e::getMessage);
     }
 
@@ -709,7 +709,7 @@ class ArtifactReaderTest {
     @Test
     void aBadRecordEndsTheLoadSoNoListComesBack() {
         assertStops("skip.txt", "name:A\n" + BASE + "name:Bad\n" + BASE + "flags:NOTAFLAG\n" + "name:C\n" + BASE,
-                "unknown flag: NOTAFLAG");
+                "unknown ignore/hates flag: NOTAFLAG");
     }
 
     @Test
@@ -1020,11 +1020,22 @@ class ArtifactReaderTest {
         assertHardError("sval-number.txt", "name:X\nbase-object:sword:1\n");
     }
 
+    /**
+     * {@code parse_artifact_curse} stores a power only above zero and never clears one, so
+     * {@code curse:air swing:30} then {@code curse:air swing:0} leaves the 30 in C. The grammar now
+     * hands over every {@code curse:} line in file order and the assembler ignores a power of 0 or
+     * below, so the 30 survives here too.
+     *
+     * <p>Method aLaterCurseWithNoPowerLeavesAnEarlierOneAsInC coded before 261105, commented in full
+     * on 261105 (was aLaterCurseWithNoPowerErasesAnEarlierOneHereWhereCKeepsIt; flipped to the C
+     * behaviour on 261105 when the curse lines became a list).
+     */
     @Test
-    void aLaterCurseWithNoPowerErasesAnEarlierOneHereWhereCKeepsIt() throws IOException {
-        // The grammar keeps one power per name, the last, and the assembler then drops a zero; C
-        // stores only powers above zero, so the 30 survives the 0.
-        assertEquals(0, loadClean("curse-then-zero.txt", "curse:air swing:30\ncurse:air swing:0\n").getCurses().size());
+    void aLaterCurseWithNoPowerLeavesAnEarlierOneAsInC() throws IOException {
+        Artifact artifact = loadClean("curse-then-zero.txt", "curse:air swing:30\ncurse:air swing:0\n");
+
+        assertEquals(1, artifact.getCurses().size());
+        assertEquals(30, artifact.getCurses().values().iterator().next().getPower());
     }
 
     // ---- Where the assembler differs from C ------------------------------
@@ -1082,7 +1093,7 @@ class ArtifactReaderTest {
     void aRecordWithNoBaseObjectStopsTheLoadHereWhereCKeepsItWithTvalZero() {
         // parse_artifact_name zeroes the record, so tval and sval stay 0. (weight:, cost:, graphics:,
         // act: and time: would then assert on a missing kind; level: and the rest do not.)
-        assertStops("no-base.txt", "name:X\nlevel:3\n", "unknown object type");
+        assertStops("no-base.txt", "name:X\nlevel:3\n", "no assigned bases");
     }
 
     /**
@@ -1186,6 +1197,42 @@ class ArtifactReaderTest {
         } finally {
             phial.getActivations().clear();
             phial.getActivations().addAll(original);
+        }
+    }
+
+    /**
+     * {@code parse_artifact_graphics} sets the kind's colour with {@code color_text_to_attr} when the
+     * colour is longer than one character and {@code color_char_to_attr} when it is one. The text match
+     * ignores case ({@code my_stricmp}); the character match does not, so {@code G} is light green and
+     * {@code g} is green. The Phial's kind is a special light, so it carries {@code KF_INSTA_ART} and
+     * takes the line.
+     *
+     * <p>C answers white for a colour it does not know. The lexer refuses one before the assembler
+     * runs, so that fallback is not reachable from a file and the last case here is a syntax error.
+     *
+     * <p>Method theGraphicsColourIsMatchedAsCMatchesItAndAnUnknownOneIsASyntaxError coded on 261107,
+     * commented in full on 261107.
+     */
+    @Test
+    void theGraphicsColourIsMatchedAsCMatchesItAndAnUnknownOneIsASyntaxError() throws Exception {
+        ObjectKind phial = ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Phial");
+        AngbandDisplayCharacter original = kindField(phial, "character");
+
+        try {
+            String[][] cases = {
+                    {"Green", "COLOUR_GREEN"},
+                    {"green", "COLOUR_GREEN"},
+                    {"G", "COLOUR_LIGHT_GREEN"},
+                    {"g", "COLOUR_GREEN"}};
+            for (String[] c : cases) {
+                load("phial-colour.txt", "name:X\nbase-object:light:Phial\ngraphics:~:" + c[0] + "\n");
+                AngbandDisplayCharacter glyph = kindField(phial, "character");
+                assertEquals('~', glyph.getNarrowCharacter(), c[0]);
+                assertEquals(c[1], glyph.getAttributeColour().name(), "graphics colour " + c[0]);
+            }
+            assertHardError("phial-bad-colour.txt", "name:X\nbase-object:light:Phial\ngraphics:~:Nosuchcolour\n");
+        } finally {
+            phial.setCharacter(original);
         }
     }
 

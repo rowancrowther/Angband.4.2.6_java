@@ -26,91 +26,137 @@ import org.junit.jupiter.params.provider.ValueSource;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for {@link ElementEnum#lookup(String)}, the port of the {@code streq} search of
+ * Unit tests for {@link ElementEnum#lookup(String)}, which stands in for the {@code streq} search of
  * {@code element_names} in {@code grab_element_flag} ({@code obj-init.c}).
  *
  * <p>The expected values are worked out from the C, not from the Java. {@code element_names} is the
  * 25 names of {@code list-elements.h}, in that order, from {@code ACID} to {@code ARROW}, with no
  * {@code NONE} and no {@code MAX}; the loop runs {@code i < ELEM_MAX} and compares with
  * {@code streq}, so a name matches only if every byte is identical. Nothing is trimmed, folded or
- * partially matched. The Java-only placeholders {@code ELEM_NONE} and {@code ELEM_MAX} are an
+ * partially matched.
+ *
+ * <p>The Java search takes the constant's whole name, {@code ELEM_} included, because
+ * {@code ParseUtils.grabElementFlag} and {@code ItemObjectAssembler} put the prefix back on the
+ * text they cut from the data file. So the bare C name finds nothing here, and every test below
+ * spells the prefix. The Java-only placeholders {@code ELEM_NONE} and {@code ELEM_MAX} are an
  * accepted divergence: C finds nothing for {@code "NONE"} and {@code "MAX"}, lookup finds the
  * placeholder and the caller refuses it.
+ *
+ * <p>Class ElementEnumLookupTest coded before 261105, commented in full on 261105 (moved from the
+ * bare-name form to the whole-constant-name form on 261105).
  *
  * @author Rowan Crowther
  */
 class ElementEnumLookupTest {
 
-    /** Name text and expected constant for each of the 25 names in {@code list-elements.h}. */
-    @ParameterizedTest(name = "[{index}] lookup(\"{0}\") gives {1}")
+    /**
+     * Constant name for each of the 25 names in {@code list-elements.h}, found by that same text.
+     *
+     * <p>Method everyRealElementIsFoundByItsConstantName coded before 261105, commented in full on
+     * 261105.
+     */
+    @ParameterizedTest(name = "[{index}] lookup(\"{0}\") gives \"{0}\"")
     @CsvSource({
-            "ACID,ELEM_ACID", "ELEC,ELEM_ELEC", "FIRE,ELEM_FIRE", "COLD,ELEM_COLD",
-            "POIS,ELEM_POIS", "LIGHT,ELEM_LIGHT", "DARK,ELEM_DARK", "SOUND,ELEM_SOUND",
-            "SHARD,ELEM_SHARD", "NEXUS,ELEM_NEXUS", "NETHER,ELEM_NETHER", "CHAOS,ELEM_CHAOS",
-            "DISEN,ELEM_DISEN", "WATER,ELEM_WATER", "ICE,ELEM_ICE", "GRAVITY,ELEM_GRAVITY",
-            "INERTIA,ELEM_INERTIA", "FORCE,ELEM_FORCE", "TIME,ELEM_TIME", "PLASMA,ELEM_PLASMA",
-            "METEOR,ELEM_METEOR", "MISSILE,ELEM_MISSILE", "MANA,ELEM_MANA",
-            "HOLY_ORB,ELEM_HOLY_ORB", "ARROW,ELEM_ARROW"
+            "ELEM_ACID", "ELEM_ELEC", "ELEM_FIRE", "ELEM_COLD",
+            "ELEM_POIS", "ELEM_LIGHT", "ELEM_DARK", "ELEM_SOUND",
+            "ELEM_SHARD", "ELEM_NEXUS", "ELEM_NETHER", "ELEM_CHAOS",
+            "ELEM_DISEN", "ELEM_WATER", "ELEM_ICE", "ELEM_GRAVITY",
+            "ELEM_INERTIA", "ELEM_FORCE", "ELEM_TIME", "ELEM_PLASMA",
+            "ELEM_METEOR", "ELEM_MISSILE", "ELEM_MANA",
+            "ELEM_HOLY_ORB", "ELEM_ARROW"
     })
-    void everyRealElementIsFoundByItsBareName(String name, ElementEnum expected) {
-        assertSame(expected, ElementEnum.lookup(name));
+    void everyRealElementIsFoundByItsConstantName(String name) {
+        assertSame(ElementEnum.valueOf(name), ElementEnum.lookup(name));
     }
 
-    /** The one name with an underscore of its own is found whole. */
+    /**
+     * The one name with an underscore of its own is found whole.
+     *
+     * <p>Method holyOrbKeepsItsOwnUnderscore coded before 261105, commented in full on 261105.
+     */
     @Test
     void holyOrbKeepsItsOwnUnderscore() {
-        assertSame(ElementEnum.ELEM_HOLY_ORB, ElementEnum.lookup("HOLY_ORB"));
-        assertNull(ElementEnum.lookup("ORB"));
-        assertNull(ElementEnum.lookup("HOLY"));
+        assertSame(ElementEnum.ELEM_HOLY_ORB, ElementEnum.lookup("ELEM_HOLY_ORB"));
+        assertNull(ElementEnum.lookup("ELEM_ORB"));
+        assertNull(ElementEnum.lookup("ELEM_HOLY"));
     }
 
-    /** The accepted divergence: names C's list lacks resolve to the placeholders. */
+    /**
+     * The accepted divergence: names C's list lacks resolve to the placeholders.
+     *
+     * <p>Method placeholdersAreFoundWhereCFindsNothing coded before 261105, commented in full on
+     * 261105.
+     */
     @Test
     void placeholdersAreFoundWhereCFindsNothing() {
-        assertSame(ElementEnum.ELEM_NONE, ElementEnum.lookup("NONE"));
-        assertSame(ElementEnum.ELEM_MAX, ElementEnum.lookup("MAX"));
+        assertSame(ElementEnum.ELEM_NONE, ElementEnum.lookup("ELEM_NONE"));
+        assertSame(ElementEnum.ELEM_MAX, ElementEnum.lookup("ELEM_MAX"));
     }
 
-    /** The comparison is {@code streq}: case-sensitive for ASCII letters. */
+    /**
+     * The comparison is {@code streq}: case-sensitive for ASCII letters, prefix included.
+     *
+     * <p>Method caseMustMatchExactly coded before 261105, commented in full on 261105.
+     */
     @ParameterizedTest(name = "[{index}] lookup(\"{0}\") finds nothing")
-    @ValueSource(strings = {"fire", "Fire", "fIRE", "acid", "holy_orb", "Holy_Orb", "none", "max"})
+    @ValueSource(strings = {"elem_fire", "Elem_Fire", "ELEM_fire", "ELEM_Fire", "ELEM_fIRE", "ELEM_acid",
+            "ELEM_holy_orb", "ELEM_Holy_Orb", "ELEM_none", "ELEM_max"})
     void caseMustMatchExactly(String name) {
         assertNull(ElementEnum.lookup(name));
     }
 
-    /** No trimming, prefixes, suffixes or partial names: {@code streq} wants every byte. */
+    /**
+     * No trimming, prefixes, suffixes or partial names: {@code streq} wants every byte. The bare C
+     * name is in this list, because the Java search wants the {@code ELEM_} prefix too.
+     *
+     * <p>Method anythingButTheWholeNameFindsNothing coded before 261105, commented in full on 261105.
+     */
     @ParameterizedTest(name = "[{index}] lookup(\"{0}\") finds nothing")
-    @ValueSource(strings = {" FIRE", "FIRE ", " FIRE ", "\tFIRE", "FIRE\n", "FIR", "FIREX", "FIRE_",
-            "_FIRE", "ELEM_FIRE", "ELEM_", "PROJ_FIRE", "RES_FIRE", "LIGHTS", "LIGH", "ACID|ELEC",
-            "ACID ELEC", "HOLY_ORB ", "HOLY ORB", "HOLY-ORB"})
+    @ValueSource(strings = {"FIRE", "HOLY_ORB", "NONE", "MAX", " ELEM_FIRE", "ELEM_FIRE ", " ELEM_FIRE ",
+            "\tELEM_FIRE", "ELEM_FIRE\n", "ELEM_FIR", "ELEM_FIREX", "ELEM_FIRE_", "ELEM__FIRE",
+            "ELEM_ELEM_FIRE", "ELEM_", "ELEM", "PROJ_FIRE", "RES_FIRE", "ELEM_LIGHTS", "ELEM_LIGH",
+            "ELEM_ACID|ELEM_ELEC", "ELEM_ACID ELEM_ELEC", "ELEM_HOLY_ORB ", "ELEM_HOLY ORB",
+            "ELEM_HOLY-ORB"})
     void anythingButTheWholeNameFindsNothing(String name) {
         assertNull(ElementEnum.lookup(name));
     }
 
-    /** Empty text is no element name; a null name gives null rather than throwing. */
+    /**
+     * Empty text is no element name. A null name also finds nothing and does not throw.
+     *
+     * <p>Method emptyAndNullFindNothing coded before 261105, commented in full on 261105.
+     */
     @ParameterizedTest(name = "[{index}] lookup({0}) finds nothing")
     @NullAndEmptySource
     void emptyAndNullFindNothing(String name) {
         assertNull(ElementEnum.lookup(name));
     }
 
-    /** Non-element names that are valid in other lists the elements are locked to. */
+    /**
+     * Words that are valid in other lists the elements are locked to, with and without the prefix.
+     *
+     * <p>Method unrelatedWordsFindNothing coded before 261105, commented in full on 261105.
+     */
     @ParameterizedTest(name = "[{index}] lookup(\"{0}\") finds nothing")
-    @ValueSource(strings = {"DEFAULT", "IGNORE", "HATES", "BASE", "HIGH", "SPELL", "MIXED"})
+    @ValueSource(strings = {"DEFAULT", "IGNORE", "HATES", "BASE", "HIGH", "SPELL", "MIXED",
+            "ELEM_DEFAULT", "ELEM_IGNORE", "ELEM_HATES", "ELEM_BASE", "ELEM_HIGH", "ELEM_SPELL",
+            "ELEM_MIXED"})
     void unrelatedWordsFindNothing(String name) {
         assertNull(ElementEnum.lookup(name));
     }
 
     /**
-     * Cross-check against the C list: exactly 25 names are found, none for the placeholders'
-     * ELEM_ prefix alone, and each found constant's own name is its search text with {@code ELEM_}.
+     * Cross-check against the C list: every constant is found by its own name, 25 of them are real
+     * elements, and the enum holds those 25 plus the two placeholders.
+     *
+     * <p>Method exactlyTwentyFiveRealNamesAreFoundAndEachRoundTrips coded before 261105, commented in
+     * full on 261105.
      */
     @Test
     void exactlyTwentyFiveRealNamesAreFoundAndEachRoundTrips() {
         int found = 0;
         for (ElementEnum e : ElementEnum.values()) {
-            String bare = e.name().substring("ELEM_".length());
-            assertSame(e, ElementEnum.lookup(bare));
+            assertSame(e, ElementEnum.lookup(e.name()));
             if (e != ElementEnum.ELEM_NONE && e != ElementEnum.ELEM_MAX) found++;
         }
         assertEquals(25, found);

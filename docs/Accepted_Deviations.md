@@ -383,6 +383,42 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-22. The constructor Javadoc still says the level is copied "as C does", which is true of C's
   intent but not of its value; to be corrected to point here.
 
+### A record with no `base-object:` line is refused, where C loads it as tval 0
+
+- **Java:** `ArtifactAssembler.assemble`, which throws "has no assigned bases" when the record has no
+  `base-object:` line. **C:** `parse_artifact_name` and `parse_artifact_base_object` (`obj-init.c`).
+- **Differs:** C zero-fills the new artifact in `parse_artifact_name`, so `tval` and `sval` start at 0.
+  `parse_artifact_base_object` is the only handler that sets them, and nothing at the end of a record checks that it
+  ran, so an artifact with no `base-object:` line loads with tval 0. Java ends the load with a clear error instead.
+- **Also read:** `lookup_kind` (`obj-util.c`) prints "No object: 0:0" and returns `NULL` when no kind has that tval and
+  sval. What the later handlers (weight, cost, graphics, `act:`, `time:`) do with that `NULL` was not traced.
+- **Reach:** none from shipped data. `artifact.txt` has 138 `name:` lines and 138 `base-object:` lines, so every
+  record has one (checked 2026-11-05). A hand-edited or modded file only, and there the throw names the artifact.
+- **Revisit:** if a modded `artifact.txt` is expected to omit `base-object:`. Loading it as tval 0 needs a null-safe
+  path through the kind lookup, the special-kind test and the glyph handling that follow it in `assemble`.
+- **Accepted:** 2026-11-06. Marked in the `assemble` Javadoc.
+
+### A numeric `base-object:` sval that names no kind would fail on a `NullPointerException`, but the grammar never passes one
+
+- **Java:** `ArtifactAssembler.assemble` (the base-object loop and the lookup after it), with
+  `ObjectRegistry.lookupObjectKind(TValue, String)` and `ObjectRegistry.addObjectKind`. **C:**
+  `parse_artifact_base_object` (`obj-init.c`) and `lookup_sval` (`obj-util.c`).
+- **Differs:** for `base-object:light:99`, `lookup_sval` reads an all-digit name as the sval itself and returns 99
+  without needing a kind. C sets `a->sval = 99`, makes no dummy kind and loads the artifact. Given the same sval,
+  Java's lookup returns `null` when no kind has sval 99, so the loop makes a dummy kind named `"99"`, which
+  `addObjectKind` registers under the next free sval. The lookup after the loop asks for sval 99 again, gets `null`,
+  and the special-kind test throws a `NullPointerException` rather than a `DataFileParseException`. A numeric sval that
+  does name a kind resolves to the same kind in both.
+- **Reach:** none from a file. The lexer reads a number between the colons as `DELIM_INTEGER`, which the `baseObject`
+  rule does not take, so a numeric sval is a syntax error before the assembler runs
+  (`ArtifactReaderTest.aNumericTvalOrSvalInBaseObjectIsASyntaxErrorHereWhereCAcceptsIt`; see `grammar_issues.md`). Only
+  an `ArtifactParseRecord` built by hand reaches the assembler with one. Shipped `artifact.txt` has one numeric line,
+  `#base-object:amulet:55`, and it is commented out (checked 2026-11-07).
+- **Revisit:** if the grammar is changed to take a numeric sval. Then a numeric reference that finds no kind ends the
+  load with a clear error, or is carried as a bare sval as C carries it.
+- **Accepted:** 2026-11-07. Marked in the `assemble` Javadoc. Found in the stage 1 check of `/port
+  ArtifactAssembler.java`, which first reported it as reachable from a modded file; the grammar had already closed it.
+
 ## Chest trap
 
 ### `chest_trap.txt` must match `ChestTrapCode` record for record, with levels that never descend
@@ -592,6 +628,41 @@ recorded here as the summary states them; fill in the detail when you next touch
   branch refuses every name.
 - **Accepted:** 2026-10-29, during the `SlayAssembler` port pass. Marked in the `SlayAssembler` Javadoc. Pinned by
   `SlayAssemblerTest.aBaseThatMatchesALoadedMonsterBaseResolvesHereWhereCRefusesEveryBase`.
+
+## Tval
+
+### `TValue.changeArmour` rewrites the first `armour` in any case, where C rewrites the first lowercase one
+
+- **Java:** `TValue.changeArmour`, reached from `TValue.fromName(String)` and so from `findIndex`, `tValSValCount` and
+  `tvalSvalList`. **C:** `de_armour` (`obj-tval.c`), as called from `tval_find_idx`.
+- **Differs:** C finds the first lowercase `armour` with `strstr`, rewrites it to `armor` and drops the rest of the
+  text. Java finds the first `armour` in any case (`toUpperCase().indexOf("ARMOUR")`) after a guard that only tests for
+  a lowercase one, so when a capitalised `Armour` comes before a lowercase `armour` it rewrites the wrong one.
+  `"soft Armour armour"` is `"soft Armour armor"` in C, which matches no tval (-1), and `"soft Armor"` in Java, which
+  matches `TV_SOFT_ARMOR`. A name containing a character whose upper-case form is longer (`"ß armour"`) shifts the index
+  and throws `StringIndexOutOfBoundsException`, where C returns -1. Text with no lowercase `armour`, and text with only
+  lowercase ones, behave as in C.
+- **Reach:** none from shipped data. Every tval field that uses the British spelling writes it in lowercase
+  (`soft armour`, `hard armour`, checked 2026-11-07 in `lib/gamedata`); the capitalised `Armour` there sits in object
+  names, which never reach `fromName`.
+- **Revisit:** if a modded file writes a tval with a capital and then a second `armour` after it, or non-ASCII text can
+  reach `fromName`.
+- **Accepted:** 2026-11-07, during the `TValue` port pass.
+
+### `TValue.fromName` also accepts a constant's identifier, where C accepts only a number or a display name
+
+- **Java:** `TValue.fromName(String)` (the last step, after the display-name loop). **C:** `tval_find_idx`
+  (`obj-tval.c`).
+- **Differs:** C accepts a number or a case-insensitive match on the `string_name` column of `list-tvals.h`, and
+  returns -1 for anything else. Java adds a third form: the constant's name without `TV_`, in any case, with spaces
+  read as underscores. `"digging"`, `"drag_armor"`, `"SOFT_ARMOR"` and `"soft_armor"` are -1 in C and a tval in Java,
+  so a typo like that loads where C ends the load. `"TV_SWORD"` still resolves to nothing in both.
+- **Why:** a convenience for port-side callers that hold a constant's name. It is marked in the `fromName` Javadoc.
+- **Reach:** none from shipped data. No tval field in `lib/gamedata` uses an underscore, `digging` or `drag armor`
+  (checked 2026-11-07). Hand-edited files only.
+- **Revisit:** if the data-file parsers are meant to be as strict as C about tval text, or if no port-side caller turns
+  out to need the identifier form.
+- **Accepted:** 2026-11-07, during the `TValue` port pass.
 
 ## UI entry
 

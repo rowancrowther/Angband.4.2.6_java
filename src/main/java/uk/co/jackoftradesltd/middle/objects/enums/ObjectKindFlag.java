@@ -19,6 +19,8 @@ package uk.co.jackoftradesltd.middle.objects.enums;
 
 import org.jetbrains.annotations.Contract;
 
+import java.util.Arrays;
+
 /**
  * Flags applied to an object <em>kind</em> (the template), to an ego item or to an artifact's
  * kind — never to an individual object. They control random generation (the extra sustain, power
@@ -31,18 +33,19 @@ import org.jetbrains.annotations.Contract;
  * <p>The constants are {@code KF_NONE} (index 0, as in every C flag list), the fourteen flags
  * below and the {@code KF_MAX} count sentinel. The data-file spelling is the constant's name
  * without the {@code KF_} prefix, which is how the object, ego and object-base assemblers resolve
- * a {@code flags:} token ({@code ObjectKindFlag.valueOf("KF_" + token)}).
+ * a {@code flags:} token: {@link #lookup} ({@code lookup("KF_" + token)}) in the object-kind
+ * assembler, and {@code valueOf("KF_" + token)} in the ego and object-base assemblers.
  *
  * <p>The {@code IGNORE_FIRE}, {@code IGNORE_ACID}, {@code IGNORE_ELEC} and {@code IGNORE_COLD}
  * tokens that share the {@code flags:} line are <em>not</em> kind flags. C's
  * {@code grab_element_flag} ({@code obj-init.c}) turns them into {@code EL_INFO_IGNORE} on the
- * record's per-element info. The object-kind and ego-item assemblers do the same, so the tokens
- * have no constant here; the object-base assembler does not yet handle them, and none of the
- * shipped {@code object_base.txt} uses one.
+ * record's per-element info. The object-base, object-kind, ego-item and artifact assemblers do the
+ * same, through {@code ParseUtils.grabElementFlag}, so the tokens have no constant here.
  * An earlier version of this enum carried four {@code KF_IGNORE_*} constants to swallow them;
  * those are gone, and the commented-out lines below mark where they were.
  *
- * <p>Enum ObjectKindFlag coded before 261012, commented in full on 261012.
+ * <p>Enum ObjectKindFlag coded before 261012, commented in full on 261012, element-flag paragraph
+ * corrected on 261105, lookup paragraph added on 261107.
  *
  * @author Rowan Crowther
  */
@@ -202,6 +205,37 @@ public enum ObjectKindFlag {
     @Contract(pure = true)
     ObjectKindFlag(String flag) {
         this.flag = flag;
+    }
+
+    /**
+     * Resolves a {@code KF_}-prefixed constant name to its kind flag, or {@code null} when the name
+     * is not a kind flag. This is the Java side of C's {@code lookup_flag} ({@code datafile.c}) run
+     * over the {@code kind_flags} name table in {@code obj-init.c}, which {@code grab_flag} uses for
+     * each {@code flags:} token of an object kind, object base or ego item. C returns
+     * {@code FLAG_END} (0) for "not found" and the assembler turns that into an invalid-flag error;
+     * here {@code null} is the "not found" result, and the caller raises the error.
+     *
+     * <p>Two C details carry over. {@code lookup_flag} starts its search at {@code FLAG_START}
+     * (1), so slot 0 is never matched: {@code "KF_NONE"} returns {@code null}, as {@code "NONE"}
+     * is "not found" in C. The name table is built from the whole list, so its last entry is
+     * {@code MAX}: {@code "KF_MAX"} returns {@link #KF_MAX}, as {@code "MAX"} resolves to flag 15
+     * in C. The match is exact and case-sensitive ({@code streq} in C), and a {@code null} or
+     * unprefixed name ({@code "EASY_KNOW"}) is simply not found. Unlike {@code valueOf}, nothing
+     * is thrown for an unknown name.
+     *
+     * <p>Rejecting the {@code NONE} and {@code MAX} sentinels is the caller's job, not this
+     * method's: {@code ItemObjectAssembler} rejects {@code NONE} before it calls here, and
+     * {@code ObjectBaseAssembler} handles both tokens itself.
+     *
+     * <p>Method lookup coded before 261107, commented in full on 261107.
+     *
+     * @param flag the constant name including its {@code KF_} prefix, e.g. {@code "KF_GOOD"}
+     * @return the matching kind flag, or {@code null} for {@code KF_NONE} or any unknown name
+     */
+    public static ObjectKindFlag lookup(String flag) {
+        ObjectKindFlag result = Arrays.stream(ObjectKindFlag.values()).filter(okf -> okf.name().equals(flag)).findFirst().orElse(null);
+        if (result == ObjectKindFlag.KF_NONE) return null;
+        return result;
     }
 
     /**

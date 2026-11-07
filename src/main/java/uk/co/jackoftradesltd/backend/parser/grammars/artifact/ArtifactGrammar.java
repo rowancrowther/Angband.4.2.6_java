@@ -14,7 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ArtifactGrammar.g4 by ANTLR 4.13.2
+// Generated from ArtifactGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.artifact;
 
 import org.antlr.v4.runtime.*;
@@ -27,6 +27,7 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftradesltd.backend.parser.artifact.ArtifactParseRecord;
+import uk.co.jackoftradesltd.backend.parser.curse.FullCurseDataParseRecord;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -192,8 +193,7 @@ public class ArtifactGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class BaseObjectContext extends ParserRuleContext {
-		public String tVal;
-		public String sVal;
+		public ArtifactParseRecord.ArtifactBaseObjectParseRecord objectBase;
 		public Token t;
 		public Token s;
 		public TerminalNode BASE_OBJECT() { return getToken(ArtifactGrammar.BASE_OBJECT, 0); }
@@ -235,7 +235,9 @@ public class ArtifactGrammar extends Parser {
 			match(DELIM_COLON);
 			setState(47);
 			((BaseObjectContext)_localctx).s = match(STRING_BETWEEN_COLONS);
-			 ((BaseObjectContext)_localctx).tVal =  ((BaseObjectContext)_localctx).t.getText(); ((BaseObjectContext)_localctx).sVal =  ((BaseObjectContext)_localctx).s.getText(); 
+			 String tVal = ((BaseObjectContext)_localctx).t.getText(); 
+			              String sVal = ((BaseObjectContext)_localctx).s.getText(); 
+			              ((BaseObjectContext)_localctx).objectBase =  new ArtifactParseRecord.ArtifactBaseObjectParseRecord(tVal, sVal, ""); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1134,7 +1136,7 @@ public class ArtifactGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class CurseContext extends ParserRuleContext {
-		public Map<String, String> curseMap;
+		public FullCurseDataParseRecord curseData;
 		public Token k;
 		public Token v;
 		public TerminalNode CURSE() { return getToken(ArtifactGrammar.CURSE, 0); }
@@ -1163,9 +1165,6 @@ public class ArtifactGrammar extends Parser {
 	public final CurseContext curse() throws RecognitionException {
 		CurseContext _localctx = new CurseContext(_ctx, getState());
 		enterRule(_localctx, 32, RULE_curse);
-
-		            ((CurseContext)_localctx).curseMap =  new HashMap<>();
-		        
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
@@ -1178,7 +1177,9 @@ public class ArtifactGrammar extends Parser {
 			setState(147);
 			((CurseContext)_localctx).v = match(DELIM_INTEGER);
 
-			            _localctx.curseMap.put(((CurseContext)_localctx).k.getText(), ((CurseContext)_localctx).v.getText()); 
+			            String curseName = ((CurseContext)_localctx).k.getText();
+			            String cursePower = ((CurseContext)_localctx).v.getText();
+			            ((CurseContext)_localctx).curseData =  new FullCurseDataParseRecord(curseName, cursePower, "0"); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1391,10 +1392,9 @@ public class ArtifactGrammar extends Parser {
 		enterRule(_localctx, 36, RULE_artifact);
 
 		            String nameInit = "";
-		            String tValueInit = "";
-		            String sValueInit = "";
 		            String glyphInit = "";
 		            String colourInit = "";
+		            List<ArtifactParseRecord.ArtifactBaseObjectParseRecord> objectBaseInit = new ArrayList<>();
 		            String levelInit = "";
 		            String weightInit = "";
 		            String costInit = "";
@@ -1413,15 +1413,11 @@ public class ArtifactGrammar extends Parser {
 		            Map<String, String> valuesMapInit = new HashMap<>();
 		            List<String> brandInit = new ArrayList<>();
 		            List<String> slayInit = new ArrayList<>();
-		            Map<String, String> curseInit = new HashMap<>();
-		            String descInit = "";
+		            List<FullCurseDataParseRecord> curseInit = new ArrayList<>();
+		            String descInit = null;
 		            int line = 0;
 		            StringBuilder msgSB = new StringBuilder();
 		            StringBuilder descSB = new StringBuilder();
-		            boolean levelFirst = true;
-		            boolean levelSeen = false;
-		            boolean baseSeen = false;
-		            String baseObjectLevel = "";
 		        
 		int _la;
 		try {
@@ -1442,11 +1438,10 @@ public class ArtifactGrammar extends Parser {
 					{
 					setState(156);
 					((ArtifactContext)_localctx).baseObject = baseObject();
-					 tValueInit = ((ArtifactContext)_localctx).baseObject.tVal; sValueInit = ((ArtifactContext)_localctx).baseObject.sVal; 
-					                if (levelSeen && !baseSeen) levelFirst = true;
-					                else if (!levelSeen) levelFirst = false; 
-					                baseSeen = true; 
-					                baseObjectLevel = levelInit; 
+					 if (((ArtifactContext)_localctx).baseObject.objectBase != null) {
+					                            String tValueInit = ((ArtifactContext)_localctx).baseObject.objectBase.tValue(); 
+					                            String sValueInit = ((ArtifactContext)_localctx).baseObject.objectBase.sValue();
+					                            objectBaseInit.add(new ArtifactParseRecord.ArtifactBaseObjectParseRecord(tValueInit, sValueInit, levelInit)); }
 					}
 					break;
 				case GRAPHICS:
@@ -1461,7 +1456,6 @@ public class ArtifactGrammar extends Parser {
 					setState(162);
 					((ArtifactContext)_localctx).level = level();
 					 levelInit = ((ArtifactContext)_localctx).level.levelVal; 
-					                levelSeen = true; 
 					}
 					break;
 				case WEIGHT:
@@ -1557,7 +1551,7 @@ public class ArtifactGrammar extends Parser {
 					{
 					setState(201);
 					((ArtifactContext)_localctx).curse = curse();
-					 curseInit.putAll(((ArtifactContext)_localctx).curse.curseMap); 
+					 curseInit.add(((ArtifactContext)_localctx).curse.curseData); 
 					}
 					break;
 				case DESC:
@@ -1579,12 +1573,12 @@ public class ArtifactGrammar extends Parser {
 			_ctx.stop = _input.LT(-1);
 
 			            msgInit = msgSB.toString();
-			            descInit = descSB.toString();
-			            ((ArtifactContext)_localctx).artifactRecord =  new ArtifactParseRecord(nameInit, tValueInit, sValueInit,
+			            descInit = descSB.isEmpty() ? null : descSB.toString();
+			            ((ArtifactContext)_localctx).artifactRecord =  new ArtifactParseRecord(nameInit, objectBaseInit,
 			                glyphInit, colourInit, levelInit, weightInit, costInit, commonnessInit,
 			                minInit, maxInit, baseDamageInit, tohInit, todInit, baseACInit, toaInit,
 			                flagListInit, activationInit, timeInit, msgInit, valuesMapInit,
-			                brandInit, slayInit, curseInit, descInit, levelFirst, baseObjectLevel, line);
+			                brandInit, slayInit, curseInit, descInit, line);
 			        
 		}
 		catch (RecognitionException re) {

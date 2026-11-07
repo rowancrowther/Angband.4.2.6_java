@@ -21,7 +21,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
@@ -74,7 +73,7 @@ class ObjectRegistryCReferenceTest {
 
     private static ObjectBase base(TValue tval, String name) {
         return new ObjectBase(tval, name, ColourEnum.COLOUR_WHITE,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), -1, -1, new Flag<>(ObjectFlag.class));
+                new Flag<>(ObjectKindFlag.class), new java.util.HashMap<>(), -1, -1, new Flag<>(ObjectFlag.class));
     }
 
     /**

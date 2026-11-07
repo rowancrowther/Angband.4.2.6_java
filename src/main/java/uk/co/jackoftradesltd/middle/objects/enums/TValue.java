@@ -27,6 +27,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -420,8 +421,10 @@ public enum TValue {
      *
      * <p>British spellings are rewritten first by {@link #changeArmour(String)}, so
      * {@code "dragon armour"} reaches {@link #TV_DRAG_ARMOR}. The data files use the British
-     * spelling 23 times across the three body armours, including three artifacts in
-     * {@code artifact.txt}. The rewrite has to come before the name match, as C calls
+     * spelling 23 times across the three body armours: 13 {@code base-object:} lines in
+     * {@code artifact.txt}, 7 {@code normal:} lines in {@code store.txt}, and 3 {@code equip:}
+     * lines in {@code class.txt} and {@code old_class.txt}. The rewrite has to come before the
+     * name match, as C calls
      * {@code de_armour} before looping over {@code tval_names[]}: the identifier match cannot
      * rescue {@code "dragon armour"}, because the constant is {@code DRAG_ARMOR}.
      *
@@ -430,13 +433,16 @@ public enum TValue {
      * no tval at all returns {@code null}, which is this port's equivalent of C returning
      * {@code -1}. This method logs nothing; reporting a bad name is left to the caller.
      *
-     * <p>Known differences from C, none reachable from a data file: the identifier form above
-     * is extra; {@link Integer#parseInt(String)} also reads non-ASCII Unicode digits, which
-     * {@code strtoul} does not; and C copies the name into a 40-character buffer before the
-     * armour rewrite, which only matters for longer input.
+     * <p>Known differences from C, none reachable from a data file. Two are accepted deviations
+     * (261107, registered in {@code docs/Accepted_Deviations.md} under "Tval"): the identifier
+     * form above is extra, so a typo such as {@code "digging"} resolves here where C returns
+     * {@code -1}; and {@link #changeArmour(String)} can rewrite the wrong {@code armour} when a
+     * capitalised one comes first. The others are that {@link Integer#parseInt(String)} also
+     * reads non-ASCII Unicode digits, which {@code strtoul} does not, and that C copies the name
+     * into a 40-character buffer before the armour rewrite, which only matters for longer input.
      *
      * <p>Function fromName coded before 260827, updated on 261002 to match C's armour rewrite
-     * and whitespace rules, commented in full on 261002.
+     * and whitespace rules, commented in full on 261107.
      *
      * @param name the tval text to resolve: a number, a display name, or an identifier
      * @return the matching {@link TValue}, or {@code null} if the text resolves to no tval
@@ -462,13 +468,9 @@ public enum TValue {
                 return value;
         }
 
-        toSearch = "TV_" + toSearch.toUpperCase().replace(" ", "_");
-
-        try {
-            return TValue.valueOf(toSearch);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
+        String target = "TV_" + toSearch.toUpperCase().replace(" ", "_");
+        
+        return Arrays.stream(TValue.values()).filter(tv -> tv.name().equals(target)).findFirst().orElse(null);
     }
 
     /**
@@ -476,7 +478,10 @@ public enum TValue {
      * name like {@code "dragon armour"} matches the American display names. The port of C's
      * {@code de_armour} ({@code obj-tval.c}).
      *
-     * <p>C's behaviour is kept exactly:
+     * <p>C's {@code de_armour} copies the name into a 40-character buffer, finds the first
+     * lowercase {@code "armour"} with {@code strstr}, and overwrites its {@code "ur"} with
+     * {@code "r"} and a terminator. This port matches that for every input that has only
+     * lowercase {@code "armour"}, or none:
      * <ul>
      *     <li>Only lowercase {@code "armour"} triggers the rewrite, as C's {@code strstr} is
      *     case-sensitive. {@code "Dragon Armour"} is left alone and does not resolve.</li>
@@ -488,7 +493,17 @@ public enum TValue {
      *
      * <p>Text with no lowercase {@code "armour"} is returned unchanged.
      *
-     * <p>Function changeArmour coded on 261002, commented in full on 261002.
+     * <p><b>Accepted deviation (261107, "Tval" in {@code docs/Accepted_Deviations.md}).</b>
+     * After the guard for a lowercase {@code "armour"}, the position is found with
+     * {@code toUpperCase().indexOf("ARMOUR")}, which matches in any case. That is why the
+     * {@code "RMOUR"} branch exists, and it is not in C. When a capitalised {@code "Armour"}
+     * comes before a lowercase {@code "armour"}, the wrong one is rewritten:
+     * {@code "soft Armour armour"} becomes {@code "soft Armor"} and resolves to
+     * {@link #TV_SOFT_ARMOR}, where C gives {@code "soft Armour armor"} and {@code -1}. Upper-casing
+     * can also change the length of the text ({@code "ß armour"}), which throws a
+     * {@link StringIndexOutOfBoundsException}. No data file spells a tval that way.
+     *
+     * <p>Function changeArmour coded on 261002, commented in full on 261107.
      *
      * @param name the tval text as given
      * @return the text with its first {@code armour} rewritten, or {@code name} unchanged

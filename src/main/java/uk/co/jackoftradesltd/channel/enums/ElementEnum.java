@@ -40,7 +40,13 @@ import java.util.Arrays;
  * {@link #ELEM_NONE} and {@link #ELEM_MAX} are answers that lookup can give and C's search cannot;
  * a caller that parses data files must refuse them itself.
  *
- * <p>Enum ElementEnum coded before 260817, commented in full on 261105.
+ * <p>Each constant is built with three flags, in the order {@code isBase}, {@code isHigh},
+ * {@code hasResistRune}. The four base elements (acid to cold) are base and resistable; poison to
+ * disenchantment are "high" and resistable; water to arrow are none of the three, and so are the
+ * two placeholders. The flags stand in for the ordinal ranges C delimits in {@code src/object.h}
+ * with {@code ELEM_BASE_MIN}/{@code ELEM_BASE_MAX} and {@code ELEM_HIGH_MIN}/{@code ELEM_HIGH_MAX}.
+ *
+ * <p>Enum ElementEnum coded before 260817, commented in full on 261107.
  *
  * @author Rowan Crowther
  */
@@ -78,6 +84,10 @@ public enum ElementEnum {
      * cold) that objects can ignore/be affected by as a group. Ports the ordinal range C fixes with
      * {@code ELEM_BASE_MIN}/{@code ELEM_BASE_MAX} ({@code src/object.h}) into a per-constant flag;
      * used e.g. when a dungeon spellbook is set to ignore every base element.
+     *
+     * <p>Exposed via {@link #isBase()}.
+     *
+     * <p>Field isBase coded before 260817, commented in full on 261107.
      */
     private final boolean isBase;
 
@@ -107,13 +117,22 @@ public enum ElementEnum {
      * <p>Ports C's {@code ELEM_HIGH_MAX} bound, which relies on the {@code ELEM_*} constants being
      * ordered so that everything resistable comes first. Making it a per-constant flag rather than
      * an ordinal comparison keeps this port independent of that ordering.
+     *
+     * <p>Exposed via {@link #isHasResistRune()}.
+     *
+     * <p>Field hasResistRune coded before 260817, commented in full on 261107.
      */
     private final boolean hasResistRune;
 
     /**
-     * <p>Constructor ElementEnum coded before 260817, commented in full on 260817.
+     * Builds one element constant from its three classification flags. The flags are supplied per
+     * constant rather than computed from {@link #ordinal()}, so that they hold whatever the
+     * declaration order, in place of the ordinal ranges C delimits in {@code src/object.h}. The
+     * values are never changed after construction.
      *
-     * @param isBase        whether this element is one of the four base (physical) damage types
+     * <p>Constructor ElementEnum coded before 260817, commented in full on 261107.
+     *
+     * @param isBase       whether this element is one of the four base (physical) damage types
      * @param isHigh        whether this element is one of the resistable elements above the base four
      * @param hasResistRune whether objects can resist this element
      */
@@ -192,6 +211,11 @@ public enum ElementEnum {
      * "how is this element delivered?", which is a property of the element, not of the
      * projection it resolves to.
      *
+     * <p>The placeholders resolve too: {@link #ELEM_NONE} gives {@link ProjectionEnum#PROJ_NONE}
+     * and {@link #ELEM_MAX} gives {@link ProjectionEnum#PROJ_MAX}, since both enums carry them.
+     *
+     * <p>Method getProjectionEnum coded before 261107, commented in full on 261107.
+     *
      * @return the matching projection, or {@code null} if no constant of that name exists, which
      * means the two enums have drifted apart
      */
@@ -204,29 +228,33 @@ public enum ElementEnum {
     }
 
     /**
-     * Finds the element whose name is {@code name} with the {@code ELEM_} prefix left off:
-     * {@code "FIRE"} gives {@link #ELEM_FIRE} and {@code "HOLY_ORB"} gives {@link #ELEM_HOLY_ORB}.
-     * Ports the {@code streq} search of {@code element_names} in {@code obj-init.c}, function
-     * {@code grab_element_flag()}, so the comparison is exact and case-sensitive: {@code "fire"}
-     * finds nothing.
+     * Finds the element whose constant name is exactly {@code flag}, {@code ELEM_} prefix included:
+     * {@code "ELEM_FIRE"} gives {@link #ELEM_FIRE} and {@code "ELEM_HOLY_ORB"} gives
+     * {@link #ELEM_HOLY_ORB}. Stands in for the {@code streq} search of {@code element_names} in
+     * {@code obj-init.c}, function {@code grab_element_flag()}, so the comparison is exact and
+     * case-sensitive: {@code "ELEM_fire"} finds nothing.
+     *
+     * <p>C's names have no prefix, so a caller that has cut the element text from a data-file word
+     * puts {@code ELEM_} back on the front before the call, as {@code ParseUtils.grabElementFlag} and
+     * {@code ItemObjectAssembler} do. The bare C name finds nothing here: {@code "FIRE"} gives
+     * {@code null}.
      *
      * <p>Unlike C's name list, the search can return the placeholders {@link #ELEM_NONE} and
-     * {@link #ELEM_MAX}, because the constants exist here; {@code lookup("NONE")} gives
+     * {@link #ELEM_MAX}, because the constants exist here; {@code lookup("ELEM_NONE")} gives
      * {@link #ELEM_NONE}. The caller must refuse them, as {@code ParseUtils.grabElementFlag} does.
      *
      * <p>The text is taken as given, so the same inputs that find nothing in C find nothing here:
-     * the empty string, a lower-case or mixed-case name, a name with leading or trailing space, and
-     * a name that still carries its {@code ELEM_} prefix ({@code "ELEM_FIRE"} is looked for as
-     * {@code ELEM_ELEM_FIRE}). A {@code null} argument also gives {@code null}; C never reaches the
-     * search with a null name. Each name is unique, so the order of the constants does not affect
-     * the answer.
+     * the empty string, a lower-case or mixed-case name, and a name with leading or trailing space.
+     * A {@code null} argument also gives {@code null}; C never reaches the search with a null name.
+     * Each name is unique, so the order of the constants does not affect the answer.
      *
-     * <p>Method lookup coded before 261105, commented in full on 261105.
+     * <p>Method lookup coded before 261105, commented in full on 261105, rewritten for the whole
+     * constant name on 261105.
      *
-     * @param flag the element name without its {@code ELEM_} prefix
+     * @param flag the constant name of the element, {@code ELEM_} prefix included
      * @return the matching constant, or {@code null} if there is none
      */
     public static ElementEnum lookup(String flag) {
-        return Arrays.stream(ElementEnum.values()).filter(e -> e.name().equals("ELEM_" + flag)).findFirst().orElse(null);
+        return Arrays.stream(ElementEnum.values()).filter(e -> e.name().equals(flag)).findFirst().orElse(null);
     }
 }

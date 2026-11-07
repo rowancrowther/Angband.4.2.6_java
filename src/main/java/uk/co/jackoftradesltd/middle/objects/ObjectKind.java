@@ -17,7 +17,6 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
@@ -56,13 +55,21 @@ import java.util.*;
  * the rest; C's single {@code activation} pointer becomes a list; and C's quark-numbered
  * autoinscriptions become plain strings, {@code null} for none.
  *
- * <p>There are four constructors, one per way C builds a kind. The no-argument one is an empty
- * shell that {@link #copy} fills in. The ten-argument one follows {@code write_book_kind} in
- * {@code init.c}. The long one takes fields the object loader has already resolved
- * ({@code parse_object_*} and {@code finish_parse_object} in {@code obj-init.c}). The artifact one
- * follows {@code write_dummy_object_record} in {@code obj-init.c}.
+ * <p>There are three live constructors. The no-argument one is an empty shell: {@link #copy} fills
+ * it in, and so do the flavour and artifact assemblers, field by field through the setters. The
+ * ten-argument one follows {@code write_book_kind} in {@code init.c}. The long one takes fields
+ * the object loader has already resolved ({@code parse_object_*} and {@code finish_parse_object}
+ * in {@code obj-init.c}).
  *
- * <p>Class ObjectKind coded before 261008, commented in full on 261008.
+ * <p>A fourth constructor, once the port of {@code write_dummy_object_record} in
+ * {@code obj-init.c}, is commented out further down. The kind that backs a special artifact is
+ * now built by {@code ArtifactAssembler} from the no-argument shell, using {@link #setBase},
+ * {@link #setTval}, {@link #setsValueName}, {@link #setLevel}, {@link #setElInfo},
+ * {@link #setFlag}, {@link #setKindFlag}, {@link #setCharacter} and, once the kind is
+ * registered, {@link #setSpecialArtifactKind}.
+ *
+ * <p>Class ObjectKind coded before 261008, commented in full on 261008, constructor paragraph
+ * rewritten on 261107 once the artifact constructor was replaced by setters.
  *
  * @author Rowan Crowther
  */
@@ -441,7 +448,12 @@ public class ObjectKind {
      * {@code PlayerKnowledge.knowObject} makes the player aware of a
      * non-jewellery special artifact outright rather than waiting for its runes to be read.
      *
-     * <p>Field isSpecialArtifactKind coded before 260817, commented in full on 260817.
+     * <p>Every constructor clears it. {@code ArtifactAssembler} sets it through
+     * {@link #setSpecialArtifactKind} after registering the kind, by comparing the kind's index with
+     * {@code ObjectRegistry.getObjectBaseKindMax()}.
+     *
+     * <p>Field isSpecialArtifactKind coded before 260817, commented in full on 260817, setter
+     * described on 261107 once the artifact constructor was replaced by setters.
      */
     private boolean isSpecialArtifactKind;
 
@@ -449,25 +461,34 @@ public class ObjectKind {
      * The recharge/effect timing dice from the kind's {@code time:} line — C's {@code kind->time}.
      * Dice rather than a settled figure: {@link ObjectUtils#objectPrep} rolls each item's own value
      * from it. A kind with no {@code time:} line holds a zero {@link Random}, as C's zeroed
-     * {@code random_value} does: the loader passes one, and so do the partly-specified and artifact
-     * constructors. The fully-specified constructor stores what it is given, so passing a zero
-     * {@link Random} rather than {@code null} is the caller's job; the no-argument constructor
-     * leaves the field {@code null} until {@link #setTime} is called.
+     * {@code random_value} does: the loader passes one, and the no-argument and partly-specified
+     * constructors create one. The fully-specified constructor stores what it is given, so passing a
+     * zero {@link Random} rather than {@code null} is the caller's job. {@link #setTime} replaces it.
      *
      * <p>Field time retyped from a dice string to {@link Random} and moved off {@link Effect} onto the
-     * kind on 261008.
+     * kind on 261008, constructor behaviour corrected on 261107 (the no-argument constructor gives a
+     * zero {@link Random}, not {@code null}).
      */
     private Random time;
 
     /**
      * Builds an empty object kind with fresh, empty collections, for {@link #copy} to fill in.
      *
-     * <p>No C original: C copies a struct with {@code memcpy}. Only the flag sets, the element map,
-     * the activation and effect lists, and the brand, slay and curse collections are created here.
-     * Everything else — the dice, {@link #modifiers}, the display character — is left {@code null}
-     * or zero, so a kind built this way is not usable until every field has been assigned.
+     * <p>No C original: C copies a struct with {@code memcpy}. The flag sets, the ignore set, the
+     * element and modifier maps, the activation and effect lists, and the brand, slay and curse
+     * collections are created empty here, and every dice field ({@code toH}, {@code toD},
+     * {@code toA}, {@code pVal}, {@code baseDamage}, {@code time}, {@code charge},
+     * {@code stackSize}) is a zero {@link Random}. The kind is not marked as a special-artifact kind.
+     * The name, text, base, tval, sval names, display character, flavour, notes and messages are
+     * left {@code null}, and every number is zero, so the shell is not usable until those have been
+     * assigned. {@link #copy} cannot run on it until a display character is set.
      *
-     * <p>Constructor ObjectKind() coded before 261008, commented in full on 261008.
+     * <p>Besides {@link #copy}, the callers are {@code FlavourKindAssembler}, which builds a
+     * throwaway kind for an unresolved {@code fixed:} flavour, and {@code ArtifactAssembler}, which
+     * builds the kind behind a special artifact.
+     *
+     * <p>Constructor ObjectKind() coded before 261008, commented in full on 261008, rewritten on
+     * 261107 (the old text said the dice and the modifier map were left {@code null}).
      */
     public ObjectKind() {
         elInfo = new HashMap<>();
@@ -479,7 +500,16 @@ public class ObjectKind {
         slays = new HashSet<>();
         curses = new TreeMap<>(Curse.CURSE_ORDER);
         ignore = new Flag<>(IgnoreFlag.class);
+        modifiers = new HashMap<>();
         isSpecialArtifactKind = false;
+        toA = Random.Zero();
+        toH = Random.Zero();
+        toD = Random.Zero();
+        baseDamage = Random.Zero();
+        time = Random.Zero();
+        charge = Random.Zero();
+        stackSize = Random.Zero();
+        pVal = Random.Zero();
     }
 
     /**
@@ -492,12 +522,17 @@ public class ObjectKind {
      * of the four base elements and {@code KF_GOOD}. The dice fields are zero {@link Random}s, and
      * {@code ignore} is an empty set, as C's zeroed bytes are.
      *
+     * <p>C also writes a red {@code '*'} as the default glyph ("graphics should be overwritten"); this
+     * constructor takes the glyph as its {@code adc} argument instead and stores it as given, so a
+     * caller that passes {@code null} leaves a kind that {@link #copy} cannot copy.
+     *
      * <p>Nothing in {@code src/main} calls this constructor: the spell-book loader fills the same
      * fields itself and goes through the long constructor. It is what the test fixtures use to make
      * a minimal kind. Unlike C it takes the cost, level and allocation range as arguments, and it
      * leaves the sval to {@link ObjectRegistry#addObjectKind}.
      *
-     * <p>Constructor ObjectKind(adc, cost, ...) coded before 261008, commented in full on 261008.
+     * <p>Constructor ObjectKind(adc, cost, ...) coded before 261008, commented in full on 261008,
+     * default-glyph difference from C added on 261107.
      *
      * @param adc        display character
      * @param cost       base cost
@@ -711,74 +746,6 @@ public class ObjectKind {
     }
 
     /**
-     * Synthesizes the kind that backs a special (instanced) artifact — the port of C's
-     * {@code write_dummy_object_record} ({@code obj-init.c}), which {@code parse_artifact_base_object}
-     * calls when an artifact's {@code base-object:} sval names no kind in {@code object.txt}.
-     *
-     * <p>As C does, it starts from a zeroed kind and sets: the name {@code "& <sval>~"}, a level,
-     * the base's tval, a copy of the base's object flags, kind flags and element
-     * info, {@link ObjectKindFlag#KF_INSTA_ART} on top of the kind flags, and a red {@code '*'}
-     * glyph that {@link #setCharacter} replaces when the artifact's {@code graphics:} line is read.
-     * The dice fields are zero {@link Random}s and the kind is marked as a special-artifact kind
-     * (see {@link #isSpecialArtifactKind}).
-     *
-     * <p>C also counts the new kind into the base's {@code num_svals} and hands the sval back to the
-     * artifact. Here that is {@link ObjectRegistry#addObjectKind}'s job, which the caller must run
-     * on the result.
-     *
-     * <p>The level copied here is the artifact's final one, which is not C's. C copies
-     * {@code art->level} while it reads the {@code base-object:} line, so a {@code level:} line
-     * after it never reaches the kind. The caller, {@link
-     * uk.co.jackoftradesltd.backend.parser.artifact.ArtifactAssembler#assemble}, overwrites it
-     * through {@link #setLevel} with the level in force at that line.
-     *
-     * <p>Constructor ObjectKind(artifact, ...) coded before 261008, commented in full on 261008
-     * (the C original was misnamed {@code write_special_kinds}/{@code special_item}), level note
-     * added on 261023.
-     *
-     * @param artifact the artifact this kind is being created for
-     * @param sValName the sub-type name to give the kind
-     * @param base     the base whose flags, kind flags, element info and tval are inherited
-     */
-    public ObjectKind(Artifact artifact, String sValName, ObjectBase base) {
-        this.flags = new Flag<>(ObjectFlag.class);
-        this.flags.copyFrom(base.getFlags());
-        Flag<ObjectKindFlag> copy = new Flag<>(ObjectKindFlag.class);
-        copy.copyFrom(base.getKindFlags());
-        this.kindFlags = copy;
-        this.modifiers = new HashMap<>();
-        this.elInfo = new HashMap<>();
-        this.brands = new HashSet<>();
-        this.slays = new HashSet<>();
-        this.curses = new TreeMap<>(Curse.CURSE_ORDER);
-        this.activations = new ArrayList<>();
-        this.effect = new ArrayList<>();
-        this.sValueName = sValName;
-        this.name = "& " + sValName + "~";
-        this.tValue = base.gettVal();
-        this.level = artifact.getLevel();
-        this.ignore = new Flag<>(IgnoreFlag.class);
-        this.kindFlags.on(ObjectKindFlag.KF_INSTA_ART);
-        for (ElementEnum ee : base.getElementMap().keySet()) {
-            ElementInfo oldEi = base.getElementMap().get(ee);
-            ElementInfo newEi = oldEi.copy();
-            this.elInfo.put(ee, newEi);
-        }
-        this.character = new AngbandDisplayCharacter('*', ColourEnum.COLOUR_RED);
-        this.base = base;
-        this.isSpecialArtifactKind = true;
-
-        this.toH = Random.Zero();
-        this.toD = Random.Zero();
-        this.toA = Random.Zero();
-        this.baseDamage = Random.Zero();
-        this.time = Random.Zero();
-        this.charge = Random.Zero();
-        this.stackSize = Random.Zero();
-        this.pVal = Random.Zero();
-    }
-
-    /**
      * Sets the kind's default display glyph and colour — C's {@code kind->d_char} and
      * {@code kind->d_attr}, which C also writes after the fact: {@code parse_artifact_graphics}
      * sets them on a special artifact's kind.
@@ -840,6 +807,44 @@ public class ObjectKind {
      */
     public void setsVal(int sVal) {
         this.sVal = sVal;
+    }
+
+    /**
+     * Sets the sub-type name and rebuilds the kind's name from it, the port of the
+     * {@code strnfmt(mod_name, sizeof(mod_name), "& %s~", name)} in C's
+     * {@code write_dummy_object_record} ({@code obj-init.c}), which names the kind behind a special
+     * artifact after the sval its {@code base-object:} line gave.
+     *
+     * <p>This runs the other way round from the long constructor, which derives
+     * {@link #sValueName} from the name with {@link #stripToRawSval}: here the bare name is given
+     * and {@link #name} becomes {@code "& <sValueName>~"}, so any earlier name is overwritten. Nothing
+     * is checked, and {@link #sVal} is untouched. The one caller is {@code ArtifactAssembler}.
+     *
+     * <p>Function setsValueName commented in full on 261107.
+     *
+     * @param sValueName the bare sub-type name, without the {@code &} and {@code ~} markers
+     */
+    public void setsValueName(String sValueName) {
+        this.sValueName = sValueName;
+        this.name = "& " + sValueName + "~";
+    }
+
+    /**
+     * Replaces the per-element info map, the port of the {@code memcpy} of {@code kb_info[tval].el_info}
+     * into the kind in C's {@code write_dummy_object_record} ({@code obj-init.c}), which gives a
+     * special artifact's kind the element information of its base.
+     *
+     * <p>The map is stored as given, not copied, so the caller owns the {@link ElementInfo} values:
+     * {@code ArtifactAssembler} passes a map of copies of the base's entries, so the base is not
+     * shared. C's array holds an entry for every element; the map holds only those passed (see
+     * {@link #getElInfo}).
+     *
+     * <p>Function setElInfo commented in full on 261107.
+     *
+     * @param elInfo the element info to give the kind
+     */
+    public void setElInfo(Map<ElementEnum, ElementInfo> elInfo) {
+        this.elInfo = elInfo;
     }
 
     /**
@@ -956,10 +961,12 @@ public class ObjectKind {
      * Returns the kind flags ({@code KF_*}) — the port of reading C's {@code kind->kind_flags}, as
      * {@code kf_has} does.
      *
-     * <p>A read-only view, because the set is final once the kind is built. It already includes the
-     * base's kind flags, so {@code KF_EASY_KNOW} on a base shows up here for every kind of that base.
+     * <p>A read-only view, so a caller cannot alter the set. The kind itself still adds to it after
+     * construction: {@link #setKindFlag} turns one flag on, as {@code ArtifactAssembler} does for a
+     * special artifact's kind. The set already includes the base's kind flags, so
+     * {@code KF_EASY_KNOW} on a base shows up here for every kind of that base.
      *
-     * <p>Function getKindFlags commented in full on 261008.
+     * <p>Function getKindFlags commented in full on 261008, "final once built" corrected on 261107.
      *
      * @return a read-only view of the kind flags set on this kind
      */
@@ -1137,8 +1144,14 @@ public class ObjectKind {
      * taken to be ignoring this one, so the pile they were stepping over does not reappear under a
      * name. See {@link IgnoreFlag}.
      *
+     * <p>Two differences from C. {@code kind_ignore_when_aware} ({@code obj-ignore.c}) only ever ORs
+     * the bit in, while this takes a boolean and clears the bit when given {@code false}. C also
+     * raises {@code player->upkeep->notice |= PN_IGNORE} straight after; this carries none of it,
+     * and leaves it to the caller as {@link #setIgnoreFlag} does.
+     *
      * <p>Function setIgnoredAware commented in full on 261008 (the caller named as
-     * {@code Player.flavourAware} corrected to {@code PlayerKnowledge.flavourAware}).
+     * {@code Player.flavourAware} corrected to {@code PlayerKnowledge.flavourAware}), differences
+     * from C added on 261107.
      *
      * @param ignoredAware whether to ignore identified items of this kind
      */
@@ -1151,18 +1164,35 @@ public class ObjectKind {
      * Reports whether this kind exists to back a special artifact, the port of C's
      * {@code obj->kind->kidx >= z_info->ordinary_kind_max} test. C reads the answer off the kind's
      * position, because the artifact kinds are appended after the ordinary ones; the port reads the
-     * flag the artifact constructor set (see {@link #isSpecialArtifactKind}).
+     * flag {@link #setSpecialArtifactKind} stored (see {@link #isSpecialArtifactKind}).
      *
      * <p>A kind of this sort is its own artifact rather than a template many items share, so there
      * is nothing to be unsure of once it is in hand: {@code knowObject} makes the player aware of a
      * non-jewellery special artifact outright rather than waiting for its runes to be read.
      *
-     * <p>Function isSpecialArtifactKind commented in full on 261008.
+     * <p>Function isSpecialArtifactKind commented in full on 261008, setter named on 261107 in place
+     * of the artifact constructor.
      *
      * @return {@code true} if this kind is a special artifact
      */
     public boolean isSpecialArtifactKind() {
         return isSpecialArtifactKind;
+    }
+
+    /**
+     * Records whether this kind exists solely to back a special artifact. C has no field for it: it
+     * asks {@code kidx >= z_info->ordinary_kind_max} each time (see {@link #isSpecialArtifactKind}).
+     *
+     * <p>A plain write with no check. The one caller is {@code ArtifactAssembler}, which passes the
+     * result of that comparison, made with {@code ObjectRegistry.getObjectBaseKindMax()}, after it
+     * has registered the kind; before then the kind's index is still the placeholder zero.
+     *
+     * <p>Function setSpecialArtifactKind commented in full on 261107.
+     *
+     * @param specialArtifactKind {@code true} if the kind backs a special artifact
+     */
+    public void setSpecialArtifactKind(boolean specialArtifactKind) {
+        isSpecialArtifactKind = specialArtifactKind;
     }
 
     /**
@@ -1316,13 +1346,16 @@ public class ObjectKind {
      * already given the copy empty collections; that is why the collections are cleared or added
      * into rather than assigned. No C original: C copies a kind by assigning the struct.
      *
-     * <p>Throws {@link NullPointerException} on a kind whose dice, modifier map or display character
-     * were never assigned, such as one from the ten-argument constructor given a {@code null}
-     * display character, or the no-argument shell itself.
+     * <p>Throws {@link NullPointerException} on a kind with no display character, which is the
+     * no-argument shell until {@link #setCharacter} is called and a ten-argument kind given a
+     * {@code null} glyph. It also throws on a kind from the long constructor that was handed a
+     * {@code null} dice value, flag set, modifier map or element map; only {@code charge} and
+     * {@code stackSize} are checked for {@code null} first.
      *
      * <p>Function copy commented in full on 261009 (the claims that bases are immutable and that
      * the kind has more fields than any constructor takes removed on 261008; the claim that the
-     * flavour is copied removed on 261009).
+     * flavour is copied removed on 261009; the claim that the no-argument shell has no dice or
+     * modifier map removed on 261107).
      *
      * @return a new object kind that shares no mutable state with this one, bar the base, the
      *         flavour and the brand and slay members
@@ -1962,7 +1995,8 @@ public class ObjectKind {
      * {@link ItemObject#objectKindAttr()} are the callers, falling back to this whenever an item
      * of this kind is not drawn with its flavour's glyph instead.
      *
-     * <p>Function getNarrowCharacter coded before 260904, commented in full on 260928.
+     * <p>Function getCharacter coded before 260904, commented in full on 260928 (the stamp named
+     * {@code getNarrowCharacter} until 261107).
      *
      * @return this kind's display glyph and colour
      */
@@ -1996,17 +2030,68 @@ public class ObjectKind {
      * {@code kind->base} at {@code kb_info[tval]} and taking the next sval from that base; this
      * method does none of that, so {@link #base} and {@link #sVal} are left as they were.
      *
-     * <p>The one caller is {@link uk.co.jackoftradesltd.backend.parser.flavour.FlavourKindAssembler#assemble},
-     * which builds a throwaway kind when a {@code fixed:} flavour's sval symbol names no object kind.
+     * <p>There are two callers. {@link uk.co.jackoftradesltd.backend.parser.flavour.FlavourKindAssembler#assemble}
+     * builds a throwaway kind when a {@code fixed:} flavour's sval symbol names no object kind.
      * C's {@code lookup_sval} returns -1 for that miss, and {@code parse_flavor_flavor} in
      * {@code init.c} stores it in the {@code uint8_t} sval of the flavour, where it reads as 255; the
      * throwaway kind, given this tval and an sval of 255, is how the port reaches the same figure.
+     * {@code ArtifactAssembler} calls it on the kind it builds for a special artifact, as
+     * {@code write_dummy_object_record} does with {@code dummy->tval = art->tval}.
      *
-     * <p>Function setTval coded on 261025, commented in full on 261025.
+     * <p>Function setTval coded on 261025, commented in full on 261025, second caller added on
+     * 261107.
      *
      * @param tVal the item type to give the kind
      */
     public void setTval(TValue tVal) {
         this.tValue = tVal;
+    }
+
+    /**
+     * Sets the base this kind belongs to, the port of C's direct {@code kind->base} write — in
+     * {@code write_dummy_object_record} ({@code obj-init.c}) it is {@code &kb_info[dummy->tval]}.
+     *
+     * <p>A plain write with no check, {@code null} included. It does not touch {@link #tValue},
+     * {@link #sVal} or any flag; those are separate setters, and the sval is assigned by
+     * {@link ObjectRegistry#addObjectKind}. The one caller is {@code ArtifactAssembler}.
+     *
+     * <p>Function setBase commented in full on 261107.
+     *
+     * @param base the base to give the kind
+     */
+    public void setBase(ObjectBase base) {
+        this.base = base;
+    }
+
+    /**
+     * Turns one kind flag on, the port of C's {@code kf_on}. C's {@code write_dummy_object_record}
+     * ({@code obj-init.c}) copies the base's whole kind-flag set with {@code kf_copy} and then calls
+     * {@code kf_on(dummy->kind_flags, KF_INSTA_ART)}; {@code ArtifactAssembler} makes the same two
+     * steps by calling this once per base flag and once more for {@link ObjectKindFlag#KF_INSTA_ART}.
+     *
+     * <p>Turning on a flag already set changes nothing. There is no matching way to turn one off.
+     *
+     * <p>Function setKindFlag commented in full on 261107.
+     *
+     * @param objectKindFlag the kind flag to turn on
+     */
+    public void setKindFlag(ObjectKindFlag objectKindFlag) {
+        kindFlags.on(objectKindFlag);
+    }
+
+    /**
+     * Turns one object flag on, the port of C's {@code of_on}. C's {@code write_dummy_object_record}
+     * ({@code obj-init.c}) copies the base's whole flag set into the kind with {@code of_copy};
+     * {@code ArtifactAssembler} does the same by calling this once per flag of the base.
+     *
+     * <p>Turning on a flag already set changes nothing. This writes {@link #flags}, the flags every
+     * item of the kind carries, not the kind flags: that is {@link #setKindFlag}.
+     *
+     * <p>Function setFlag commented in full on 261107.
+     *
+     * @param oFlag the object flag to turn on
+     */
+    public void setFlag(ObjectFlag oFlag) {
+        flags.on(oFlag);
     }
 }

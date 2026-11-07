@@ -38,9 +38,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests for {@link ObjectBase}, the port of C's {@code struct object_base} ({@code object.h}).
  *
- * <p>The class has no behaviour beyond its constructor, so the C-derived expectations come from two
- * places: the zero-state C gives a record after {@code parse_object_base_name} (empty object flags,
- * {@code num_svals} 0, a zeroed {@code el_info} entry for every element that is not hated), and the
+ * <p>The class has no behaviour beyond its constructor, which stores what the assembler resolved
+ * and does no folding of its own, so the C-derived expectations come from two places: the
+ * zero-state C gives a record after {@code parse_object_base_name} ({@code num_svals} 0, a zeroed
+ * {@code el_info} entry for every element the file does not touch), and the
  * shipped {@code object_base.txt} itself, read by a small independent parser that follows
  * {@code obj-init.c} (defaults first, per-record override after, {@code HATES_x} sets
  * {@code EL_INFO_HATES} on element {@code x}). That parser shares no code with the grammar and
@@ -54,17 +55,23 @@ class ObjectBaseTest {
 
     private static final String REAL_FILE = "lib/gamedata/object_base.txt";
 
-    private static Flag<ElementEnum> hates(ElementEnum... elements) {
-        // The varargs constructor rejects an empty list, so build empty and switch each flag on.
-        Flag<ElementEnum> flag = new Flag<>(ElementEnum.class);
+    /**
+     * The per-element table the assembler hands the constructor for a base that hates the given
+     * elements: one entry per element, carrying only {@code EL_INFO_HATES}, as C's
+     * {@code grab_element_flag} leaves it.
+     */
+    private static Map<ElementEnum, ElementInfo> hates(ElementEnum... elements) {
+        Map<ElementEnum, ElementInfo> map = new HashMap<>();
         for (ElementEnum element : elements) {
-            flag.on(element);
+            ElementInfo info = new ElementInfo();
+            info.on(ElementInfoEnum.EL_INFO_HATES);
+            map.put(element, info);
         }
-        return flag;
+        return map;
     }
 
-    private static ObjectBase base(Flag<ElementEnum> hates, Flag<ObjectKindFlag> kindFlags) {
-        return new ObjectBase(TValue.TV_ARROW, "Arrow~", ColourEnum.COLOUR_LIGHT_UMBER, kindFlags, hates, new Flag<>(ElementEnum.class), 35, 40, new Flag<>(ObjectFlag.class));
+    private static ObjectBase base(Map<ElementEnum, ElementInfo> elementInfo, Flag<ObjectKindFlag> kindFlags) {
+        return new ObjectBase(TValue.TV_ARROW, "Arrow~", ColourEnum.COLOUR_LIGHT_UMBER, kindFlags, elementInfo, 35, 40, new Flag<>(ObjectFlag.class));
     }
 
     // ---- Constructor: plain fields ----------------------------------------
@@ -152,7 +159,20 @@ class ObjectBaseTest {
         assertTrue(b.getFlags().isEmpty());
     }
 
-    // ---- Constructor: HATES_ folding --------------------------------------
+    // ---- Constructor: name -------------------------------------------------
+
+    @Test
+    void absentNameIsKeptAsNull() {
+        // C: parse_object_base_name only calls string_make when the optional "name" argument is
+        // present, so kb->name stays NULL for "name:shot" style lines with no second argument.
+        ObjectBase b = new ObjectBase(TValue.TV_SHOT, null, ColourEnum.COLOUR_SLATE,
+                new Flag<>(ObjectKindFlag.class), new HashMap<>(), 0, 40, new Flag<>(ObjectFlag.class));
+
+        assertNull(b.getName());
+        assertTrue(b.toString().contains("name='null'"), b.toString());
+    }
+
+    // ---- setNumSvals --------------------------------------------------------
 
     @Test
     void setNumSvalsOverwritesTheCount() {
@@ -162,6 +182,8 @@ class ObjectBaseTest {
 
         assertEquals(7, b.getNumSvals());
     }
+
+    // ---- Constructor: element-info table ----------------------------------
 
     @Test
     void noHatedElementsGivesAnEmptyElementMap() {
@@ -197,16 +219,28 @@ class ObjectBaseTest {
     // ---- Constructor: aliasing (documented behaviour) ---------------------
 
     @Test
-    void hatesFlagIsOnlyReadNotRetained() {
-        Flag<ElementEnum> h = hates(ElementEnum.ELEM_ACID);
+    void elementInfoMapIsStoredByReferenceNotCopied() {
+        // Pinned because it differs from C, where the record owns its own el_info array.
+        Map<ElementEnum, ElementInfo> h = hates(ElementEnum.ELEM_ACID);
         ObjectBase b = base(h, new Flag<>(ObjectKindFlag.class));
 
-        h.on(ElementEnum.ELEM_COLD);
+        h.put(ElementEnum.ELEM_COLD, new ElementInfo());
 
-        assertFalse(b.getElementMap().containsKey(ElementEnum.ELEM_COLD));
+        assertSame(h, b.getElementMap());
+        assertTrue(b.getElementMap().containsKey(ElementEnum.ELEM_COLD));
     }
 
-    // ---- setElementInfo ---------------------------------------------------
+    @Test
+    void objectFlagsAreStoredByReferenceNotCopied() {
+        Flag<ObjectFlag> of = new Flag<>(ObjectFlag.class);
+        ObjectBase b = new ObjectBase(TValue.TV_ARROW, "Arrow~", ColourEnum.COLOUR_LIGHT_UMBER,
+                new Flag<>(ObjectKindFlag.class), new HashMap<>(), 35, 40, of);
+
+        of.on(ObjectFlag.OF_IMPAIR_HP);
+
+        assertSame(of, b.getFlags());
+        assertTrue(b.getFlags().has(ObjectFlag.OF_IMPAIR_HP));
+    }
 
     @Test
     void kindFlagsAreStoredByReferenceNotCopied() {
@@ -221,7 +255,7 @@ class ObjectBaseTest {
         assertSame(kf, b.getKindFlags());
     }
 
-    // ---- toString ---------------------------------------------------------
+    // ---- setElementInfo ---------------------------------------------------
 
     @Test
     void setElementInfoReplacesTheTableWithoutMerging() {
@@ -239,6 +273,30 @@ class ObjectBaseTest {
     }
 
     // ---- Shipped data, checked against an independent reading of the file -
+
+    @Test
+    void shippedFileHasNoNoneBaseSoTheTvNoneSlotIsTheSyntheticZeroedOne() throws IOException {
+        // C: finish_parse_object_base mem_zallocs kb_info[TV_MAX] and copies in only the records the
+        // file names. object_base.txt has no "name:none", so kb_info[0] (tval 0, "none") stays
+        // zeroed: tval 0, name NULL, attr 0 (COLOUR_DARK), break_perc 0, max_stack 0, no flags.
+        ParseResult<ObjectBase> result = new ObjectBaseReader().parseWithResults(REAL_FILE);
+        List<ObjectBase> none = result.items().stream()
+                .filter(b -> b.gettVal() == TValue.TV_NONE)
+                .toList();
+
+        assertEquals(1, none.size(), "exactly the synthetic base");
+        ObjectBase zeroed = none.get(0);
+        assertNull(zeroed.getName());
+        assertEquals(ColourEnum.COLOUR_DARK, zeroed.getAttr());
+        assertEquals(0, zeroed.getBreakPerc());
+        assertEquals(0, zeroed.getMaxStack());
+        assertEquals(0, zeroed.getNumSvals());
+        assertTrue(zeroed.getFlags().isEmpty());
+        assertTrue(zeroed.getKindFlags().isEmpty());
+        assertTrue(zeroed.getElementMap().isEmpty());
+    }
+
+    // ---- toString ---------------------------------------------------------
 
     @Test
     void toStringNamesTheScalarFields() {

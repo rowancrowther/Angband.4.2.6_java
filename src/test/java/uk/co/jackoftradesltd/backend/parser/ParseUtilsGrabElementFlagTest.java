@@ -208,15 +208,30 @@ class ParseUtilsGrabElementFlagTest {
         assertFalse(map.get(ElementEnum.ELEM_DARK).has(ElementInfoEnum.EL_INFO_HATES));
     }
 
+    /**
+     * {@code grabElementFlag} hands {@link ElementEnum#lookup} the text after the underscore with
+     * {@code ELEM_} put back on the front, so the lookup is by the constant's whole name and finds
+     * the two placeholders too (the caller refuses them).
+     *
+     * <p>Method lookupFindsTheWholeConstantNameIncludingThePlaceholders coded on 261105, commented in
+     * full on 261105 (replaces the bare-name form, which the code stopped using on 261105).
+     */
     @ParameterizedTest(name = "[{index}] {0} -> {1}")
-    @CsvSource({"ACID, ELEM_ACID", "HOLY_ORB, ELEM_HOLY_ORB", "ARROW, ELEM_ARROW", "NONE, ELEM_NONE",
-            "MAX, ELEM_MAX"})
-    void lookupFindsTheNameWithoutItsPrefixIncludingThePlaceholders(String name, ElementEnum expected) {
+    @CsvSource({"ELEM_ACID, ELEM_ACID", "ELEM_HOLY_ORB, ELEM_HOLY_ORB", "ELEM_ARROW, ELEM_ARROW",
+            "ELEM_NONE, ELEM_NONE", "ELEM_MAX, ELEM_MAX"})
+    void lookupFindsTheWholeConstantNameIncludingThePlaceholders(String name, ElementEnum expected) {
         assertSame(expected, ElementEnum.lookup(name));
     }
 
+    /**
+     * The bare name no longer matches, and nor does anything that is not the whole constant name
+     * byte for byte.
+     *
+     * <p>Method lookupIsExactAndCaseSensitive coded before 261105, commented in full on 261105
+     * (expectations moved to the whole-name form on 261105).
+     */
     @ParameterizedTest(name = "[{index}] lookup(\"{0}\") finds nothing")
-    @ValueSource(strings = {"", "acid", "ELEM_ACID", "HOLY", "ACID "})
+    @ValueSource(strings = {"", "acid", "ACID", "elem_acid", "ELEM_acid", "ELEM_HOLY", "ELEM_ACID "})
     void lookupIsExactAndCaseSensitive(String name) {
         assertNull(ElementEnum.lookup(name));
     }

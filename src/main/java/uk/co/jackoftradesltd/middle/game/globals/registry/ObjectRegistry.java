@@ -49,7 +49,15 @@ import java.util.*;
  * {@code curses}, {@code slays}, {@code brands}, {@code obj_properties}) and looks entries up by
  * walking them, the port keeps lists of objects and answers lookups with the object itself, or
  * {@code null} for a miss. C's index-0 placeholder entries, and the {@code *_max} counters that
- * include them, have no counterpart here. The lookups that do have a C original are
+ * include them, have no counterpart here.
+ *
+ * <p>Accepted deviation (decided 261009): C's {@code k_info}, {@code e_info}, {@code a_info},
+ * {@code activations}, {@code obj_properties} and the rest carry a blank record (at slot 0, or
+ * after the last record for {@code k_info}), so each matching {@code z_info} counter is one more
+ * than the record count. Here every list is base 0 and holds only real records, every counter is
+ * the plain size, and a lookup of the blank index answers {@code null}.
+ *
+ * <p>The lookups that do have a C original are
  * {@code lookup_kind} and {@code lookup_sval} ({@code obj-util.c}), {@code lookup_curse}
  * ({@code obj-curse.c}), {@code lookup_obj_property} ({@code obj-properties.c}), {@code findact}
  * ({@code obj-init.c}) and {@code max_runes} ({@code obj-knowledge.c}). The slay and brand lookups
@@ -66,7 +74,7 @@ import java.util.*;
  * figures in {@link #archery}, {@link #flagSets}, {@link #elementSets} and {@link #elementPowers}
  * are not written here: {@code GameConstants} fills them in, in the order C declares its rows.
  *
- * <p>Class ObjectRegistry coded before 261008, commented in full on 261008.
+ * <p>Class ObjectRegistry coded before 261008, commented in full on 261107.
  *
  * @author Rowan Crowther
  */
@@ -376,9 +384,11 @@ public class ObjectRegistry {
      * Number of activations available to random artifacts.
      *
      * <p>Set from {@link #setActivations}, so it is the size of the whole activation list rather
-     * than a separately maintained figure.
+     * than a separately maintained figure. The port's equivalent of C's {@code z_info->act_max},
+     * without the index-0 placeholder C counts in it ({@code findact} starts at slot 1 for that
+     * reason).
      *
-     * <p>Field randartActivationsMax coded before 261008, commented in full on 261008.
+     * <p>Field randartActivationsMax coded before 261008, commented in full on 261107.
      */
     private static int randartActivationsMax;
     /**
@@ -623,7 +633,13 @@ public class ObjectRegistry {
      * and before any special artifact kind is, so that {@link #getObjectBaseKindMax} divides the two
      * groups. Calling it at any other point moves the ceiling.
      *
-     * <p>Function updateObjectBaseKindMax coded before 261008, commented in full on 261008.
+     * <p>C sets {@code z_info->ordinary_kind_max} from {@code k_max} at the end of
+     * {@code finish_parse_object} ({@code obj-init.c}), where {@code k_max} already counts the
+     * spare slot after the last kind. The port's figure is therefore one lower, and the
+     * {@code kidx >= ordinary_kind_max} tests that C's artifact parsers make read the same here:
+     * the first synthesized kind's index equals the size recorded.
+     *
+     * <p>Function updateObjectBaseKindMax coded before 261008, commented in full on 261107.
      */
     public static void updateObjectBaseKindMax() {
         ObjectRegistry.objectBaseKindMax = ObjectRegistry.objectKinds.size();
@@ -782,9 +798,11 @@ public class ObjectRegistry {
     }
 
     /**
-     * Hands out the loaded object bases as a read-only view.
+     * Hands out the loaded object bases as a read-only view, in the order {@link #setObjectBases}
+     * received them. Stands in for C's {@code kb_info[]}, which is indexed by tval rather than
+     * listed; use {@link #getBaseFromTVal} to reach one base by tval.
      *
-     * <p>Function getTValues coded before 261008, commented in full on 261008.
+     * <p>Function getObjectBases coded before 261008, commented in full on 261107.
      *
      * @return an unmodifiable view of the loaded object bases
      * @throws NullPointerException if {@link #setObjectBases} has not run
@@ -1065,14 +1083,16 @@ public class ObjectRegistry {
      * object kinds are done: {@code lookup_kind} on tval {@code none} and the sval that
      * {@code lookup_sval} resolves from the name. The port looks the kind up by name alone, which
      * finds the same kind because each name occurs once in {@code object.txt}, under tval
-     * {@code none}.
+     * {@code none}. C resolves two further sentinels in the same place, {@code pile_kind}
+     * ({@code <pile>}) and {@code curse_object_kind} ({@code <curse object>}); this class holds
+     * only the first two.
      *
      * <p>Returns without doing anything if the kind table is empty, where every other kind lookup
      * throws; the sentinels are then left as they were. If the file lacks either name the field is
      * set to {@code null} rather than failing. {@code ObjectDataLoader} calls this straight after
      * {@link #updateObjectBaseKindMax}.
      *
-     * <p>Function loadUnknownKinds coded before 261008, commented in full on 261008.
+     * <p>Function loadUnknownKinds coded before 261008, commented in full on 261107.
      */
     public static void loadUnknownKinds() {
         if (objectKinds.isEmpty()) return;
@@ -1104,12 +1124,18 @@ public class ObjectRegistry {
      * the constant-time counterpart to the name-based {@link #lookupObjectKind(TValue, String)}.
      *
      * <p>The port of C's {@code lookup_kind} ({@code obj-util.c}), which scans {@code k_info} for
-     * the first kind with both values. The two agree on every input because {@link #addObjectKind}
-     * hands each base the next sval in turn, so a (tval, sval) pair is never shared. C reports a
-     * miss with {@code msg} and returns {@code NULL}; this method returns {@code null} without
-     * saying anything, and the message is left to the caller, {@code ObjectUtils.lookupKind}.
+     * the first kind with both values. The two agree on every input that has a base, because
+     * {@link #addObjectKind} hands each base the next sval in turn, so a (tval, sval) pair is never
+     * shared. The one exception is a kind with no base, which all take the (TV_NONE, 0) slot: C
+     * returns the earliest of them, this method the latest registered (see {@link #addObjectKind}).
+     * C reports a miss with {@code msg} and returns {@code NULL}; this method returns {@code null}
+     * without saying anything, and the message is left to the caller, {@code ObjectUtils.lookupKind}.
      *
-     * <p>Function lookupObjectKind coded before 261008, commented in full on 261008.
+     * <p>C's scan also covers the blank slot that ends {@code k_info}, so C answers a (0, 0) request
+     * with that blank record where this method answers {@code null}; this is the accepted
+     * deviation recorded in the class comment.
+     *
+     * <p>Function lookupObjectKind coded before 261008, commented in full on 261107.
      *
      * @param tValue the object type value
      * @param sValue the numeric sub-type value
@@ -1170,16 +1196,18 @@ public class ObjectRegistry {
      * this does both, so a miss at either step is {@code null}. The name it matches is the kind's
      * name with C's {@code &} and {@code ~} markers already removed, which is what C's
      * {@code obj_desc_name_format} leaves for a name without a {@code |} form (none in
-     * {@code object.txt} has one).
+     * {@code object.txt} has one). Kinds with no name are skipped in C; here they simply never
+     * match.
      *
-     * <p>The numeric test is looser than C's, which takes a leading unsigned number and rejects the
+     * <p>The numeric test is looser than C's, which runs {@code strtoul} (so leading white space and
+     * a sign are allowed), takes the number if it is below {@code INT_MAX} and rejects the
      * reference outright if anything but spaces or tabs follows it. Here only a reference that
      * {@code Integer.parseInt} accepts after trimming counts as a number, and anything else falls
      * through to the name match, so {@code "12abc"} is looked up as a name where C answers "none".
      * No kind in {@code object.txt} begins with a digit, so the two give the same answer on the
      * shipped data. A negative or out-of-range number finds no kind either way.
      *
-     * <p>Function lookupObjectKind coded before 261008, commented in full on 261008.
+     * <p>Function lookupObjectKind coded before 261008, commented in full on 261107.
      *
      * @param tval the object type value
      * @param ref  the sval reference — either a decimal sval or a sub-type name
@@ -1406,12 +1434,15 @@ public class ObjectRegistry {
      * Lookup an item base based on its tval and return the first base found
      *
      * <p>The port's replacement for C's direct {@code kb_info[tval]} indexing: C keeps one base per
-     * tval and can address it by number, where the port walks the list for the first match.
+     * tval and can address it by number, where the port walks the list for the first match. The two
+     * agree because {@code object_base.txt} gives each tval one record, so there is no duplicate for
+     * C's last-copied-wins {@code finish_parse_object_base} to disagree with. For a tval with no base
+     * C hands back a zeroed record; this returns {@code null}.
      *
-     * <p>Function getBaseFromTVal coded before 261008, commented in full on 261008.
+     * <p>Function getBaseFromTVal coded before 261008, commented in full on 261107.
      *
      * @param tVal The tval we are looking for
-     * @return the first item base with that tVal
+     * @return the first item base with that tVal or else {@code null}
      * @throws IllegalStateException if {@link #setObjectBases} has not run
      */
     @Nullable
@@ -1497,12 +1528,14 @@ public class ObjectRegistry {
      * <p>C tests the type and an integer index separately; the port folds the index into the
      * payload, whose {@code equals} compares the flag, modifier and element and deliberately not the
      * type, so this method is the one place the type is tested. The first property in list order
-     * that qualifies wins, as in C.
+     * that qualifies wins, as in C, whose {@code obj_properties} array keeps file order (with a
+     * blank record at slot 0 that the port does not hold). Within one property, C tries the exact
+     * match before the stat-as-mod match, and so does this loop.
      *
      * <p>Unlike the other lookups here there is no guard for an unset list: calling this before
      * {@link #setObjectProperties} fails with a {@link NullPointerException}.
      *
-     * <p>Function lookupObjectProperty coded before 261008, commented in full on 261008.
+     * <p>Function lookupObjectProperty coded before 261008, commented in full on 261107.
      *
      * @param type    the category of property wanted
      * @param payload the flag, modifier or element to find the definition for

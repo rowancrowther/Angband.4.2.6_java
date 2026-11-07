@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.numerics.Random;
@@ -30,7 +31,10 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -66,8 +70,12 @@ class ObjectKindConstructorsTest {
      */
     private static ObjectBase base() {
         Flag<ObjectKindFlag> kindFlags = new Flag<>(ObjectKindFlag.class, ObjectKindFlag.KF_EASY_KNOW);
+        ElementInfo fireInfo = new ElementInfo();
+        fireInfo.on(ElementInfoEnum.EL_INFO_HATES);
+        Map<ElementEnum, ElementInfo> hated = new java.util.HashMap<>();
+        hated.put(ElementEnum.ELEM_FIRE, fireInfo);
         return new ObjectBase(TValue.TV_SWORD, "sword", ColourEnum.COLOUR_WHITE, kindFlags,
-                new Flag<>(ElementEnum.class, ElementEnum.ELEM_FIRE), new Flag<>(ElementEnum.class), 0, 40, new Flag<>(ObjectFlag.class));
+                hated, 0, 40, new Flag<>(ObjectFlag.class));
     }
 
     /**
@@ -83,16 +91,35 @@ class ObjectKindConstructorsTest {
     }
 
     /**
-     * A kind synthesised to back a special artifact of level 7.
+     * A kind synthesised to back a special artifact of level 7, built the way
+     * {@code ArtifactAssembler.assemble} builds one: the no-argument constructor, then the setters,
+     * in the order of C's {@code write_dummy_object_record}. The registry step is left out, so the
+     * special-artifact marker is set directly.
      *
      * @param base the base to build it from
      * @return the constructed kind
      */
     private static ObjectKind artifactKind(ObjectBase base) {
-        Artifact artifact = new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0",
-                0, 0, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(),
-                new TreeMap<>(Curse.CURSE_ORDER), 7, 0, 0, 0, null, null, null);
-        return new ObjectKind(artifact, "Test", base);
+        ObjectKind kind = new ObjectKind();
+        kind.setBase(base);
+        kind.setTval(base.gettVal());
+        kind.setsValueName("Test");
+        kind.setLevel(7);
+        Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
+        for (ElementEnum ee : base.getElementMap().keySet()) {
+            elInfo.put(ee, base.getElementMap().get(ee).copy());
+        }
+        kind.setElInfo(elInfo);
+        for (ObjectFlag flag : base.getFlags()) {
+            kind.setFlag(flag);
+        }
+        for (ObjectKindFlag flag : base.getKindFlags()) {
+            kind.setKindFlag(flag);
+        }
+        kind.setCharacter(new AngbandDisplayCharacter('*', ColourEnum.COLOUR_RED));
+        kind.setKindFlag(ObjectKindFlag.KF_INSTA_ART);
+        kind.setSpecialArtifactKind(true);
+        return kind;
     }
 
     /**

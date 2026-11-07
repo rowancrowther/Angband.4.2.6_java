@@ -208,7 +208,7 @@ public final class ItemFixture {
     public static ObjectKind kindWithBase(TValue tValue, String name, int maxStack) {
         ObjectKind kind = new ObjectKind();
         set(kind, "base", new ObjectBase(tValue, name, null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, maxStack, new Flag<>(ObjectFlag.class)));
+                new Flag<>(ObjectKindFlag.class), new java.util.HashMap<>(), 0, maxStack, new Flag<>(ObjectFlag.class)));
         for (String field : new String[]{"toH", "toD", "toA", "pVal"}) {
             set(kind, field, new Random(0, 1, 1, 1, false));
         }
@@ -226,7 +226,7 @@ public final class ItemFixture {
     public static ObjectKind loadedKind(TValue tValue, String name, int maxStack) {
         ObjectKind kind = kindWithDice(tValue);
         set(kind, "base", new ObjectBase(tValue, name, null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, maxStack, new Flag<>(ObjectFlag.class)));
+                new Flag<>(ObjectKindFlag.class), new java.util.HashMap<>(), 0, maxStack, new Flag<>(ObjectFlag.class)));
         set(kind, "ignore", new Flag<>(IgnoreFlag.class));
         return kind;
     }

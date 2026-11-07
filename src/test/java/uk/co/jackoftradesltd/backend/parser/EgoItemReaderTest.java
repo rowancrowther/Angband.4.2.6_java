@@ -1341,14 +1341,19 @@ class EgoItemReaderTest {
 
     /**
      * C's name tables stop short of the sentinels: {@code element_names} and {@code obj_mods} have
-     * no {@code NONE} or {@code MAX}, so every one of these ends the load.
+     * no {@code NONE} or {@code MAX}, so every one of these ends the load. An {@code IGNORE_} or
+     * {@code HATES_} word naming a sentinel is refused by every flag table, so it ends the load with
+     * the general flag message, not a sentinel one.
+     *
+     * <p>Method sentinelElementAndModifierNamesStopTheLoadAsInC coded before 261105, commented in
+     * full on 261105 (flag-word message moved to "illegal flag value" on 261105).
      */
     @Test
     void sentinelElementAndModifierNamesStopTheLoadAsInC() {
-        assertStopsTheLoad("sentinel-ignore-none.txt", "type:sword\nflags:IGNORE_NONE\n", "sentinel element name");
-        assertStopsTheLoad("sentinel-ignore-max.txt", "type:sword\nflags:IGNORE_MAX\n", "sentinel element name");
-        assertStopsTheLoad("sentinel-hates-none.txt", "type:sword\nflags:HATES_NONE\n", "sentinel element name");
-        assertStopsTheLoad("sentinel-hates-max.txt", "type:sword\nflags:HATES_MAX\n", "sentinel element name");
+        assertStopsTheLoad("sentinel-ignore-none.txt", "type:sword\nflags:IGNORE_NONE\n", "illegal flag value");
+        assertStopsTheLoad("sentinel-ignore-max.txt", "type:sword\nflags:IGNORE_MAX\n", "illegal flag value");
+        assertStopsTheLoad("sentinel-hates-none.txt", "type:sword\nflags:HATES_NONE\n", "illegal flag value");
+        assertStopsTheLoad("sentinel-hates-max.txt", "type:sword\nflags:HATES_MAX\n", "illegal flag value");
         assertStopsTheLoad("sentinel-res-none.txt", "type:sword\nvalues:RES_NONE[1]\n", "sentinel element name");
         assertStopsTheLoad("sentinel-res-max.txt", "type:sword\nvalues:RES_MAX[1]\n", "sentinel element name");
         assertStopsTheLoad("sentinel-mod-none.txt", "type:sword\nvalues:NONE[1]\n", "sentinel object modifier name");
@@ -1376,6 +1381,28 @@ class EgoItemReaderTest {
         Flag<ObjectFlag> off = field(e, "flagsOff");
         assertTrue(of.has(ObjectFlag.OF_MAX));
         assertTrue(off.has(ObjectFlag.OF_MAX));
+    }
+
+    /**
+     * {@code find_value_arg} in {@code datafile.c} copies the dice text into a 40-byte buffer and
+     * refuses it when the closing bracket is more than 40 characters past the opening one, so a
+     * dice string of 39 characters fits and one of 40 does not. Spaces cannot pad the string, since
+     * {@code strtok} cuts the line at them, but zeros can: {@code dice_parse_string} keeps only the
+     * first 16 characters of a token and {@code strtol} reads them as 0, so 39 zeros are the dice
+     * {@code 0}. The check runs for {@code values:} dice only: a {@code RES_} figure is an integer
+     * and never meets it.
+     */
+    @Test
+    void aModifierDiceStringOfFortyCharactersStopsTheLoadAsInC() throws Exception {
+        String d39 = "0".repeat(39);
+        String d40 = "0".repeat(40);
+
+        EgoItem e = loadOne("dice-39.txt", "type:sword\nvalues:STEALTH[" + d39 + "]\n");
+        Map<ObjectModifier, Random> mods = field(e, "modifiers");
+        assertEquals("0+0d0M0", dice(mods.get(ObjectModifier.OM_STEALTH)));
+
+        assertStopsTheLoad("dice-40.txt", "type:sword\nvalues:STEALTH[" + d40 + "]\n",
+                "modifier dice value that is too long");
     }
 
     // ---- brand: and slay: order ------------------------------------------------------

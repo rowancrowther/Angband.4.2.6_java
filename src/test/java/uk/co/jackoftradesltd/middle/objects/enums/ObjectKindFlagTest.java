@@ -120,6 +120,74 @@ class ObjectKindFlagTest {
         assertThrows(IllegalArgumentException.class, () -> ObjectKindFlag.valueOf("EASY_KNOW"));
     }
 
+    /**
+     * C's {@code lookup_flag} searches the {@code kind_flags} name table from {@code FLAG_START}
+     * (1), so every real flag from {@code RAND_HI_RES} to {@code RAND_RES_POWER} resolves to its
+     * own constant. The prefixed name is the Java spelling of the table entry.
+     */
+    @Test
+    void lookupResolvesEveryRealFlagToItself() {
+        for (int i = 1; i < C_NAMES.length - 1; i++) {
+            ObjectKindFlag found = ObjectKindFlag.lookup(C_NAMES[i]);
+            assertNotNull(found, C_NAMES[i]);
+            assertEquals(C_NAMES[i], found.name());
+            assertEquals(i, found.ordinal(), C_NAMES[i]);
+        }
+    }
+
+    /**
+     * {@code lookup_flag} starts at index 1, so slot 0 ({@code NONE}) is never matched and C
+     * reports an invalid flag; the Java "not found" is {@code null}.
+     */
+    @Test
+    void lookupDoesNotMatchTheNoneSlot() {
+        assertNull(ObjectKindFlag.lookup("KF_NONE"));
+    }
+
+    /**
+     * The {@code kind_flags} table is built from the whole list, so its last entry is {@code MAX}
+     * and {@code lookup_flag} finds it at index 15. Java agrees: {@code "KF_MAX"} resolves.
+     */
+    @Test
+    void lookupMatchesTheMaxSlotAsCDoes() {
+        assertSame(ObjectKindFlag.KF_MAX, ObjectKindFlag.lookup("KF_MAX"));
+    }
+
+    /**
+     * Not found is {@code null}, never an exception and never some default flag: an unknown name,
+     * the unprefixed data-file spelling, the {@code IGNORE_*} element tokens, a wrong-case name,
+     * the empty string and {@code null} (C's {@code streq} is exact and case-sensitive).
+     */
+    @Test
+    void lookupReturnsNullForAnythingElse() {
+        assertNull(ObjectKindFlag.lookup("KF_NOTAFLAG"));
+        assertNull(ObjectKindFlag.lookup("EASY_KNOW"));
+        assertNull(ObjectKindFlag.lookup("KF_IGNORE_FIRE"));
+        assertNull(ObjectKindFlag.lookup("IGNORE_FIRE"));
+        assertNull(ObjectKindFlag.lookup("kf_good"));
+        assertNull(ObjectKindFlag.lookup("KF_Good"));
+        assertNull(ObjectKindFlag.lookup(" KF_GOOD"));
+        assertNull(ObjectKindFlag.lookup("KF_"));
+        assertNull(ObjectKindFlag.lookup(""));
+        assertNull(ObjectKindFlag.lookup(null));
+    }
+
+    /**
+     * The tokens the shipped data files use for kind flags all resolve through
+     * {@code lookup("KF_" + token)}, which is how the object-kind assembler calls it.
+     */
+    @Test
+    void lookupResolvesEveryDataFileToken() {
+        String[] tokens = {"EASY_KNOW", "SHOW_DICE", "SHOW_MULT", "SHOOTS_SHOTS", "SHOOTS_ARROWS",
+                "SHOOTS_BOLTS", "RAND_HI_RES", "RAND_SUSTAIN", "RAND_POWER", "RAND_BASE_RES",
+                "RAND_RES_POWER", "INSTA_ART", "QUEST_ART", "GOOD"};
+        for (String token : tokens) {
+            ObjectKindFlag found = ObjectKindFlag.lookup("KF_" + token);
+            assertNotNull(found, token);
+            assertEquals("KF_" + token, found.name());
+        }
+    }
+
     /** Every message column in {@code list-kind-flags.h} is the empty string. */
     @Test
     void everyMessageIsEmpty() {

@@ -7,6 +7,7 @@ import EffectBlock;
 @header {
     import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
     import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.curse.FullCurseDataParseRecord;
 
     import java.util.ArrayList;
     import java.util.HashMap;
@@ -132,10 +133,11 @@ slay
         ;
 
 curse
-        returns[String curseName, String cursePower]
+        returns[FullCurseDataParseRecord curseData]
         :   CURSE n=CURSE_STRING CURSE_COLON p=CURSE_INT {
-                $curseName  = $n.getText();
-                $cursePower = $p.getText();
+                String curseName  = $n.getText();
+                String cursePower = $p.getText();
+                $curseData = new FullCurseDataParseRecord(curseName, cursePower, "0");
             }
         ;
 
@@ -179,25 +181,25 @@ itemObject
             String pileChanceInit = "";
             String pileItemsInit = "";
             String powerInit = "";
-            String msgInit = "";
-            String visMsgInit = "";
+            String msgInit = null;
+            String visMsgInit = null;
             List<EffectParseRecord> effectsInit = new ArrayList<>();
             List<String> flagListInit = new ArrayList<>();
             Map<String, String> valuesInit = new HashMap<>();
             List<String> brandInit = new ArrayList<>();
             List<String> slayInit = new ArrayList<>();
-            Map<String, String> curseInit = new HashMap<>();
+            List<FullCurseDataParseRecord> curseInit = new ArrayList<>();
             String pValInit = "";
             StringBuilder dsb = new StringBuilder();
             StringBuilder msb = new StringBuilder();
             StringBuilder vsb = new StringBuilder();
-            String descInit = "";
+            String descInit = null;
             String timeInit = "";
         }
         @after {
-            descInit = dsb.toString();
-            msgInit = msb.toString();
-            visMsgInit = vsb.toString();
+            descInit = dsb.isEmpty() ? null : dsb.toString();
+            msgInit = msb.isEmpty() ? null : msb.toString();
+            visMsgInit = vsb.isEmpty() ? null : vsb.toString();
             $object = new ItemObjectParseRecord(nameInit, glyphInit, colourInit, typeInit,
                     levelInit, weightInit, costInit, atBaseInit, atTohInit, atTodInit,
                     arBaseInit, arToaInit, alCommonInit, alLowerInit, alUpperInit,
@@ -237,7 +239,7 @@ itemObject
         |   values { valuesInit.putAll($values.valueMap); }
         |   brand { brandInit.add($brand.brandStr); }
         |   slay { slayInit.add($slay.slayStr); }
-        |   curse { curseInit.put($curse.curseName, $curse.cursePower); }
+        |   curse { curseInit.add($curse.curseData); }
         |   pval { pValInit = $pval.pvalInt; }
         |   desc { dsb.append($desc.descStr); }
         |   time { timeInit = $time.timeStr; }

@@ -135,6 +135,22 @@ class ObjectKindAccessorsTest {
     }
 
     /**
+     * Asserts that a dice value is the zero {@link Random} a bare kind starts with — present, with
+     * no base, dice, sides or bonus — as C's zeroed {@code struct random} is.
+     *
+     * <p>Method assertZeroRandom coded on 261107, commented in full on 261107.
+     *
+     * @param actual the dice value read from the kind
+     */
+    private static void assertZeroRandom(Random actual) {
+        assertNotNull(actual);
+        assertEquals(0, actual.getBase());
+        assertEquals(0, actual.getDice());
+        assertEquals(0, actual.getSides());
+        assertEquals(0, actual.getMBonus());
+    }
+
+    /**
      * The three combat bonus dice, which describe a range rather than a value.
      */
     @Nested
@@ -142,15 +158,19 @@ class ObjectKindAccessorsTest {
     class CombatDice {
 
         /**
-         * A fresh kind has none of the three, so a caller reading them has to cope with that — an
-         * object built on a bare kind has no rolled bonuses to compare against.
+         * A fresh kind holds a zero {@link Random} for each of the three, as C's zeroed kind holds
+         * a zero {@code struct random}, so a caller reading them gets dice that roll 0 and need no
+         * null check.
+         *
+         * <p>Method bareKindHasNoDice coded before 261107, rewritten from "null" to "zero" on
+         * 261107 when the no-argument constructor began filling the dice fields.
          */
         @Test
         @DisplayName("a bare kind has no bonus dice")
         void bareKindHasNoDice() {
-            assertNull(kind.getToH());
-            assertNull(kind.getToD());
-            assertNull(kind.getToA());
+            assertZeroRandom(kind.getToH());
+            assertZeroRandom(kind.getToD());
+            assertZeroRandom(kind.getToA());
         }
 
         /**
@@ -492,14 +512,17 @@ class ObjectKindAccessorsTest {
         }
 
         /**
-         * A bare kind has no charge dice, since the no-argument constructor never touches the
-         * field — unlike {@code weight}, there is no C zero-value to fall back on because the
-         * dice are a {@link Random}, not a primitive.
+         * A bare kind holds a zero {@link Random} for its charge dice, as C's zeroed kind holds a
+         * zero {@code struct random}: the no-argument constructor fills the field, so a caller
+         * reading it gets dice that roll 0 and needs no null check.
+         *
+         * <p>Method bareKindHasNoCharge coded before 261107, rewritten from "null" to "zero" on
+         * 261107 when the no-argument constructor began filling the dice fields.
          */
         @Test
         @DisplayName("a bare kind has no charge dice")
         void bareKindHasNoCharge() {
-            assertNull(kind.getCharge());
+            assertZeroRandom(kind.getCharge());
         }
 
         /**
@@ -582,8 +605,9 @@ class ObjectKindAccessorsTest {
     class Copy {
 
         /**
-         * A kind straight from the data-file constructor is not yet copyable — the parser fills the
-         * dice afterwards, and the copy dereferences them.
+         * A kind from the ten-argument constructor given no display character is not copyable: the
+         * dice are already zero values, so it is the glyph, which the copy dereferences, that is
+         * missing. {@link ObjectKindSetterContractTest} checks that giving a glyph makes it copyable.
          */
         @Test
         @DisplayName("a half-built kind cannot be copied")

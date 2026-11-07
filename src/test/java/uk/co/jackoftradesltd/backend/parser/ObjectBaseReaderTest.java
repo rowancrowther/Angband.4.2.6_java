@@ -247,7 +247,7 @@ class ObjectBaseReaderTest {
     void unknownHatesFlagEndsTheLoad() {
         assertFatal("bad-hates.txt",
                 "name:sword:Bladed weapon~\ngraphics:white\nflags:HATES_NOTANELEMENT\n",
-                "illegal hates element flag value", "HATES_NOTANELEMENT");
+                "illegal flag value", "HATES_NOTANELEMENT");
     }
 
     @Test

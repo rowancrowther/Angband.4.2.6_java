@@ -26,13 +26,16 @@ import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ObjectBase;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Assembles the raw {@link ObjectBaseParseRecord}s parsed from {@code object_base.txt} into the
@@ -54,14 +57,16 @@ import java.util.List;
  * neither an object flag, a kind flag nor an element flag, a {@code HATES_} or {@code IGNORE_}
  * flag whose element does not exist, the bare token {@code NONE}, and a break chance or maximum
  * stack that {@link ParseUtils#parseIntString} cannot read. An unknown colour is the one
- * unresolved field that is not an error: C falls back to white, and so does this class.
+ * unresolved field that is not an error: C falls back to white, and so does this class. A record
+ * with no colour at all keeps the zero that C's copied defaults hold, which is
+ * {@link ColourEnum#COLOUR_DARK}.
  *
  * <p>The checks run in a different order from C's, which meets the lines of a record in file
  * order: here the tval is checked first, then the flags, then the two numbers. A record with more
  * than one fault therefore reports a different one first, and the load ends either way.
  *
  * <p>Class ObjectBaseAssembler coded before 260915, commented in full on 261028, updated on 261105
- * for the removal of the soft-error path.
+ * for the removal of the soft-error path, checked against {@code obj-init.c} again on 261107.
  *
  * @author Rowan Crowther
  */
@@ -91,7 +96,18 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
      * character and anything longer as a name matched without regard to case, as
      * {@code parse_object_base_graphics} chooses between {@code color_char_to_attr} and
      * {@code color_text_to_attr}. Both answer {@code null} for an unknown colour where C answers
-     * white, so a {@code null} is turned into {@link ColourEnum#COLOUR_WHITE} here.
+     * white, so a {@code null} from a non-empty colour is turned into
+     * {@link ColourEnum#COLOUR_WHITE} here. A single space is {@link ColourEnum#COLOUR_DARK}
+     * without a search, as in {@code color_char_to_attr}.
+     *
+     * <p>An empty colour means the record had no {@code graphics:} line. C never calls its colour
+     * handler then, so the record keeps the zero that the copied {@code default} record holds,
+     * which is the dark colour, and this method gives {@link ColourEnum#COLOUR_DARK} too.
+     *
+     * <p>One name differs: {@code Shade} resolves to {@link ColourEnum#COLOUR_SHADE} through
+     * {@link ColourEnum#fromCode(String)}, a constant C's {@code color_table} has no named row
+     * for, so C would answer white. {@code object_base.txt} does not use it, and
+     * {@link ColourEnum} documents the difference.
      *
      * <p><b>Flags.</b> {@code parse_object_base_flags} offers each token to three tables and the
      * token is valid if any accepts it. A token with an underscore whose text before the first
@@ -105,10 +121,18 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
      * after that placeholder, so it switches on {@code KF_MAX} and {@code OF_MAX} together, and no
      * other name is in both, which is why trying kind before object is the same as C trying both.
      * C tests {@code IGNORE} before {@code HATES}, which matters only for an empty tag, and the
-     * grammar's letter-initial flag token cannot produce one. A token that is an element-style
-     * prefix but names no element is fatal here, where C would go on to the other two tables;
-     * no object or kind flag in C begins with a prefix of {@code HATES} or {@code IGNORE} and an
-     * underscore, so the two agree on every flag that exists.
+     * grammar's letter-initial flag token cannot produce one.
+     *
+     * <p>C offers every token to all three tables and stops only when none accepts it. This
+     * method offers it to {@link ParseUtils#grabElementFlag} first and goes on to the kind and
+     * object tables only when that answers {@code false}, so a token the element step accepts is
+     * never tried against the other two. A token that is an element-style prefix but names no
+     * element (such as {@code HATES_FOO}) is therefore tried as a kind flag and an object flag
+     * too, as in C, and is fatal only because neither has it. No object or kind flag in C begins
+     * with a prefix of {@code HATES} or {@code IGNORE} and an underscore ({@code HOLD_LIFE},
+     * {@code IMPAIR_HP} and {@code INSTA_ART} do not), so the order makes no difference to any
+     * flag that exists. The tokens are checked in file order and the first one that no table
+     * accepts ends the load, as C's loop stops at the first one.
      *
      * <p><b>Numbers.</b> {@link ParseUtils#parseIntString} reads the break chance and maximum
      * stack as {@code parser_getint} does. Empty text gives 0, which is what C stores when a
@@ -125,7 +149,8 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
      * records name the same tval it keeps the earlier one, which a first-match search of this list
      * finds too.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261028.
+     * <p>Function assemble coded before 260915, commented in full on 261028, colour and flag
+     * paragraphs corrected on 261107.
      *
      * @param records  the raw object-base records from the grammar, in file order, with the
      *                 {@code default:} values already folded in
@@ -155,60 +180,23 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
             String rawColour = record.colour();
             ColourEnum colour;
             colour = ColourEnum.fromCode(rawColour);
-            if (colour == null) {
+            if (colour == null && !rawColour.isEmpty()) {
                 colour = ColourEnum.COLOUR_WHITE;
+            } else if (colour == null) {
+                colour = ColourEnum.COLOUR_DARK;
             }
             Flag<ObjectKindFlag> kindFlag = new Flag<>(ObjectKindFlag.class);
             Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
-            Flag<ElementEnum> hatesFlag = new Flag<>(ElementEnum.class);
-            Flag<ElementEnum> ignoreFlag = new Flag<>(ElementEnum.class);
-            boolean uScoreFound;
+            Map<ElementEnum, ElementInfo> elementInfo = new HashMap<>();
             for (String flag : record.flags()) {
-                uScoreFound = flag.contains("_");
-                String tag = "";
-                if (uScoreFound) {
-                    tag = flag.substring(0, flag.indexOf("_"));
-                }
-                if (uScoreFound && "HATES".startsWith(tag)) {
-                    String rawFlag = flag.substring(tag.length() + 1);
-                    try {
-                        ElementEnum ee = ElementEnum.valueOf("ELEM_" + rawFlag);
-                        if (ee == ElementEnum.ELEM_NONE || ee == ElementEnum.ELEM_MAX) {
-                            String msg = "Object base starting at line: " + line + " of file: " + filename + " has " +
-                                    "an illegal sentinel element flag value: " + flag;
-                            logger.fatal(msg);
-                            throw new DataFileParseException(msg);    
-                        }
-                        hatesFlag.on(ee);
-                    } catch (IllegalArgumentException e) {
-                        String msg = "Object base starting at line: " + line + " of file: " + filename + " has " +
-                                "an illegal hates element flag value: " + flag;
-                        logger.fatal(msg, e);
-                        throw new DataFileParseException(msg);
-                    }
-                } else if (uScoreFound && "IGNORE".startsWith(tag)) {
-                    String rawFlag = flag.substring(tag.length() + 1);
-                    try {
-                        ElementEnum ee = ElementEnum.valueOf("ELEM_" + rawFlag);
-                        if (ee == ElementEnum.ELEM_NONE || ee == ElementEnum.ELEM_MAX) {
-                            String msg = "Object base starting at line: " + line + " of file: " + filename + " has " +
-                                    "an illegal sentinel element flag value: " + flag;
-                            logger.fatal(msg);
-                            throw new DataFileParseException(msg);
-                        }
-                        ignoreFlag.on(ee);
-                    } catch (IllegalArgumentException e) {
-                        String msg = "Object base starting at line: " + line + " of file: " + filename + " has " +
-                                "an illegal ignore element flag value: " + flag;
-                        logger.fatal(msg, e);
-                        throw new DataFileParseException(msg);
-                    }
-                } else {
+                boolean flagFound = ParseUtils.grabElementFlag(elementInfo, flag);
+
+                if (!flagFound) {
                     if (flag.equals("NONE")) {
                         String msg = "Object base starting at line: " + line + " of file: " + filename + " has " +
-                                "an illegal sentinal object/object kind flag value: " + flag;
+                                "an illegal sentinel object/object kind flag value: " + flag;
                         logger.fatal(msg);
-                        throw new DataFileParseException(msg);                       
+                        throw new DataFileParseException(msg);
                     } else if (flag.equals("MAX")) {
                         kindFlag.on(ObjectKindFlag.KF_MAX);
                         oFlags.on(ObjectFlag.OF_MAX);
@@ -233,11 +221,11 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
             int breakChance = ParseUtils.parseIntString("Object base", record.breakChance(), line, filename, "break chance");
             int maxStack = ParseUtils.parseIntString("Object base", record.maxStack(), line, filename, "max stack");
 
-            results.add(new ObjectBase(tVal, name, colour, kindFlag, hatesFlag, ignoreFlag, breakChance, maxStack, oFlags));
+            results.add(new ObjectBase(tVal, name, colour, kindFlag, elementInfo, breakChance, maxStack, oFlags));
         }
 
         results.add(new ObjectBase(TValue.TV_NONE, null, ColourEnum.COLOUR_DARK,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class),
+                new Flag<>(ObjectKindFlag.class), new HashMap<>(),
                 0, 0, new Flag<>(ObjectFlag.class)));
 
         return results;

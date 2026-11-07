@@ -31,9 +31,10 @@ import java.util.Map;
  * number goes through it, from {@link uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler}
  * to {@link uk.co.jackoftradesltd.backend.parser.dungeonprofile.TunnelAssembler}. The grammar
  * hands over an integer as text, and these functions turn it into an {@code int} the way
- * {@code parser.c} does for the {@code int} and {@code uint} fields of a data-file line:
- * {@code parser_getint} reads with {@code strtol} and {@code parser_getuint} with
- * {@code strtoul}, both in base 0, so a leading {@code 0} means octal and anything else decimal.
+ * {@code parser.c}, function {@code parser_parse()}, does for the {@code int} and {@code uint}
+ * fields of a data-file line: it reads an {@code int} with {@code strtol} and a {@code uint} with
+ * {@code strtoul}, both in base 0 ({@code parser_getint} and {@code parser_getuint} only hand the
+ * stored result back), so a leading {@code 0} means octal and anything else decimal.
  *
  * <p>There are four ways in. The five-argument {@code parseIntString} is the base 0 reading
  * above. The six-argument one ending in {@code boolean octal} takes the base from its caller
@@ -79,9 +80,10 @@ import java.util.Map;
  * whether the text is nothing but a sign, {@link #onlyDigits(String)} whether it is nothing but
  * digits, and {@link #nonDigitFound(String, Radix)} whether anything after an optional sign is not a
  * digit. {@code nonDigitFound} stands in for the {@code *tc != ']'} test in {@code datafile.c},
- * function {@code find_value_arg()}, which the ego-item {@code values:} and {@code min-values:}
- * lines go through, so trailing text in a bracketed figure ends the load where
- * {@link #parseIntString} on its own would read up to it.
+ * function {@code find_value_arg()}, which the bracketed figures of the ego-item {@code values:}
+ * and {@code min-values:} lines and of the object-kind {@code values:} line go through, so
+ * trailing text in a bracketed figure ends the load where {@link #parseIntString} on its own
+ * would read up to it.
  *
  * <p>The text helpers at the foot of the class work on strings and not on numbers.
  * {@link #onlySpaceAndTab(String)} is the port of {@code contains_only_spaces} in {@code
@@ -98,13 +100,30 @@ import java.util.Map;
  * a number or a trim: it ports {@code grab_element_flag} in {@code obj-init.c}, which turns an
  * {@code IGNORE_<element>} or {@code HATES_<element>} word into a flag on that element.
  *
- * <p>Class ParseUtils coded on 261022, commented in full on 261105 (third way in added 261023,
+ * <p>{@link #parseADCGlyph(String)} and the {@link GlyphCharacter} it returns are the other
+ * function here that is neither a number nor a trim. C reads a {@code PARSE_T_CHAR} field in
+ * {@code parser_parse()} ({@code parser.c}) by converting the first character of the token to a
+ * {@code wchar_t} with {@code text_mbstowcs} (and refuses a token with more than one character),
+ * and the {@code graphics:} callbacks in {@code obj-init.c} take it with {@code parser_getchar}.
+ * Java has no {@code wchar_t}, so the one code point of the glyph text comes back as a
+ * {@code char} when it fits in one and as a wide code point when it needs two, and text of any
+ * other length comes back as {@code null}. Its one caller in {@code src/main} is
+ * {@code ArtifactAssembler}.
+ *
+ * <p>Class ParseUtils coded on 261022, commented in full on 261107 (third way in added 261023,
  * sign and digit tests added 261024, fourth way in and the {@code 0x} reading added 261025,
  * {@code onlySpaceAndTab} added by 261026; the whitespace skipping in the fixed-base reading and
- * the trimmers were in place before 261028; {@code grabElementFlag} noted 261105).
+ * the trimmers were in place before 261028; {@code grabElementFlag} noted 261105; reader wording
+ * and the caller lists corrected and the glyph reader described 261107).
  */
 public class ParseUtils {
-    /** Receives the fatal message before each {@link DataFileParseException} is thrown. */
+    /**
+     * Receives the fatal message before each {@link DataFileParseException} is thrown, so a bad
+     * data-file figure is in the log as well as in the exception. Shared by every reader in the
+     * class; the text helpers and the glyph reader never log.
+     *
+     * <p>Field logger coded before 261105, commented in full on 261107.
+     */
     private static final Logger logger = LogManager.getLogger(ParseUtils.class);
 
     /**
@@ -209,18 +228,21 @@ public class ParseUtils {
      * and the clamp are as in the five-argument form, and so is the leading whitespace, skipped with
      * {@link #cTrimFront(String)}. Text of nothing but whitespace stops the load with an "empty"
      * message, where {@code strtol} reads no digits ({@code pe == range} in
-     * {@code grab_int_range}). The caller still has to check the range: C
-     * refuses a figure outside 0 to 255 for {@code alloc:} ({@code PARSE_ERROR_OUT_OF_BOUNDS}), and
-     * this does not. {@code EgoItemAssembler} also reads through this form with {@code octal} false
-     * for the figures C reads in {@code find_value_arg()} ({@code strtol} in base 10), after
+     * {@code grab_int_range}). The caller still has to check the range: C refuses a figure outside
+     * 0 to 255 for an ego-item or artifact {@code alloc:} ({@code PARSE_ERROR_OUT_OF_BOUNDS} in
+     * {@code obj-init.c}), where an object kind's {@code alloc:} has no such check, and this does
+     * not. {@code EgoItemAssembler} reads its {@code alloc:} range through this form with
+     * {@code octal} false, and so does {@code ArtifactAssembler} for the artifact's, each followed
+     * by its own 0 to 255 test. {@code EgoItemAssembler} also uses it for the figures C reads in
+     * {@code find_value_arg()} ({@code strtol} in base 10), after
      * {@link #nonDigitFound(String, Radix)} has refused trailing text.
      *
      * <p>No prefix is stripped: a fixed base 10 reading of {@code 0x10} gives 0 (the {@code x}
      * stops it), as {@code strtol(..., 10)} does, and a fixed base 8 reading of {@code 08} gives 0.
      * Text with no digit of the base ({@code abc}, {@code 8} in octal) throws.
      *
-     * <p>Function parseIntString (fixed base) coded on 261022, commented in full on 261028
-     * (whitespace skipping noted 261028).
+     * <p>Function parseIntString (fixed base) coded on 261022, commented in full on 261107
+     * (whitespace skipping noted 261028; range note and callers corrected 261107).
      *
      * @param type     the kind of record being read, for the message ({@code "Activation"},
      *                 {@code "Artifact"})
@@ -282,9 +304,13 @@ public class ParseUtils {
      * {@link Radix} from the prefix it sees and this strips the prefix and reads the digits. It
      * was written for {@code FlavourAssembler}, whose {@code index} is a {@code uint} that
      * {@code parser_parse()} in {@code parser.c} reads with {@code strtoul} in base 0, but that
-     * assembler now uses the five-argument form. Its one caller in {@code src/main} is
-     * {@code ItemObjectAssembler}, which passes {@link Radix#DECIMAL} for the two figures of an
-     * {@code alloc:} range, the base 10 reading of {@code grab_int_range} in {@code datafile.c}.
+     * assembler now uses the five-argument form. Every caller in {@code src/main} passes
+     * {@link Radix#DECIMAL}: {@code ItemObjectAssembler} for the two figures of an object kind's
+     * {@code alloc:} range, the base 10 reading of {@code grab_int_range} in {@code datafile.c},
+     * and for a resistance figure, {@code ShapeAssembler} for a resist element and an object
+     * modifier, {@code ProjectionAssembler} for {@code denominator:}, {@code PlayerPropertyAssembler}
+     * for {@code bindui} and {@code UIEntryAssembler} for {@code priority:}. No caller chooses
+     * {@link Radix#HEX} or {@link Radix#OCTAL}, so those two arms are reached only from tests.
      *
      * <p>One leading {@code -} or {@code +} is stripped here ({@link #signFound(String)}) before
      * the prefix is looked for, so the prefix test is on the unsigned text; a caller that chooses
@@ -310,7 +336,8 @@ public class ParseUtils {
      * caller chooses HEX or OCTAL only after seeing the prefix, so the text without one is a
      * programming error and not data.
      *
-     * <p>Function parseIntString (with radix) coded before 261025, commented in full on 261028.
+     * <p>Function parseIntString (with radix) coded before 261025, commented in full on 261107
+     * (callers corrected 261107).
      *
      * @param type     the kind of record being read, for the message ({@code "Flavour"})
      * @param string   the raw text from the parse record, with any leading whitespace already
@@ -571,11 +598,13 @@ public class ParseUtils {
      * which the caller tests on the value {@link #parseIntString} gives back.
      *
      * <p>{@code radix} says which characters count as digits: {@link Radix#DECIMAL} is the C test
-     * and the only one a caller uses ({@code EgoItemAssembler} passes it). {@link Radix#OCTAL},
+     * and the only one a caller uses ({@code EgoItemAssembler} and {@code ItemObjectAssembler} pass
+     * it). {@link Radix#OCTAL},
      * {@link Radix#BINARY} and {@link Radix#HEX} apply the same test to that base's digits, with no
      * {@code 0x} prefix allowed, which is a Java extension and not a C test.
      *
-     * <p>Function nonDigitFound coded on 261024, commented in full on 261025.
+     * <p>Function nonDigitFound coded on 261024, commented in full on 261107 (callers corrected
+     * 261107).
      *
      * @param string the text between the brackets, not {@code null}
      * @param radix  the base whose digits are allowed after the optional sign
@@ -620,9 +649,12 @@ public class ParseUtils {
      * {@code false}.
      *
      * <p>{@code EffectAssembler} uses it to tell a number from a name in an effect sub-type, and
-     * {@code ClassEquipAssembler} to tell a numeric {@code sval} from a name.
+     * {@code ClassEquipAssembler} to tell a numeric {@code sval} from a name. {@code
+     * PlayerPropertyAssembler} (the {@code bindui} figure), {@code ProjectionAssembler} (the
+     * {@code denominator:} figure), {@code RoomProfileAssembler} (a tval) and
+     * {@code UIEntryAssembler} (the {@code priority:} figure) call it as well.
      *
-     * <p>Function onlyDigits coded on 261024, commented in full on 261028.
+     * <p>Function onlyDigits coded on 261024, commented in full on 261107 (callers listed 261107).
      *
      * @param string the raw text from the parse record, not {@code null}
      * @return {@code true} if every character is {@code 0} to {@code 9} and there is at least one
@@ -643,10 +675,13 @@ public class ParseUtils {
      * Whether the text is a single {@code -} or {@code +} and nothing else. C's {@code strtol} reads
      * no digits from it, so the figure is refused ({@code PARSE_ERROR_NOT_NUMBER} in
      * {@code parser.c}, or the {@code *tc != ']'} test in {@code find_value_arg()}); every form of
-     * {@link #parseIntString} refuses it now too, so this is a test a caller makes before reading
-     * and not a guard that reading needs. Empty text gives {@code false}.
+     * {@link #parseIntString} refuses it now too, so this is a test a caller could make before
+     * reading and not a guard that reading needs. Empty text gives {@code false}.
      *
-     * <p>Function signOnly coded on 261024, commented in full on 261024.
+     * <p>Outstanding: nothing outside {@code ParseUtils} calls it; {@link #nonDigitFound(String,
+     * Radix)} is the one caller.
+     *
+     * <p>Function signOnly coded on 261024, commented in full on 261107 (caller noted 261107).
      *
      * @param string the raw text from the parse record, not {@code null}
      * @return {@code true} if the text is exactly one sign character
@@ -835,9 +870,11 @@ public class ParseUtils {
      * The text with the trailing spaces and tabs removed and the front left alone. Text of
      * nothing but spaces and tabs, and empty text, gives {@code ""}.
      *
-     * <p>Outstanding: only {@link #trimOnlySpaceAndTab(String)} calls it in {@code src/main}.
+     * <p>{@code ClassEquipAssembler} calls it, after {@link #cTrimFront(String)}, to clear the
+     * padding off the end of an {@code sval}; {@link #trimOnlySpaceAndTab(String)} calls it too.
      *
-     * <p>Function trimRearOnlySpaceAndTab coded before 261028, commented in full on 261028.
+     * <p>Function trimRearOnlySpaceAndTab coded before 261028, commented in full on 261107
+     * (caller corrected 261107).
      *
      * @param string the text to trim, or {@code null}
      * @return the trimmed text, or {@code null} if {@code string} is {@code null}
@@ -908,10 +945,14 @@ public class ParseUtils {
 
     /**
      * The text with the C whitespace of {@link #onlyCSpace(String)} removed from both ends. Text
-     * of nothing but C whitespace, and empty text, gives {@code ""}. {@code ClassEquipAssembler}
-     * uses it to clear the padding off an {@code sval} before looking at its sign and digits.
+     * of nothing but C whitespace, and empty text, gives {@code ""}.
      *
-     * <p>Function cTrim coded before 261028, commented in full on 261028.
+     * <p>Outstanding: nothing under {@code src/main} calls it. {@code ClassEquipAssembler}, which
+     * clears the padding off an {@code sval} before looking at its sign and digits, calls
+     * {@link #cTrimFront(String)} and {@link #trimRearOnlySpaceAndTab(String)} instead.
+     *
+     * <p>Function cTrim coded before 261028, commented in full on 261107 (caller claim corrected
+     * 261107).
      *
      * @param string the text to trim, or {@code null}
      * @return the trimmed text, or {@code null} if {@code string} is {@code null}
@@ -924,7 +965,10 @@ public class ParseUtils {
      * The text with the trailing C whitespace of {@link #onlyCSpace(String)} removed and the
      * front left alone. Text of nothing but C whitespace, and empty text, gives {@code ""}.
      *
-     * <p>Function cTrimRear coded before 261028, commented in full on 261028.
+     * <p>Outstanding: only {@link #cTrim(String)} calls it, and nothing under {@code src/main}
+     * calls that.
+     *
+     * <p>Function cTrimRear coded before 261028, commented in full on 261107 (callers noted 261107).
      *
      * @param string the text to trim, or {@code null}
      * @return the trimmed text, or {@code null} if {@code string} is {@code null}
@@ -950,9 +994,11 @@ public class ParseUtils {
     /**
      * The text with the leading C whitespace of {@link #onlyCSpace(String)} removed and the rear
      * left alone, which is the skip {@code strtol} makes before the sign. Text of nothing but C
-     * whitespace, and empty text, gives {@code ""}. The fixed-base {@code parseIntString} uses it.
+     * whitespace, and empty text, gives {@code ""}. The fixed-base {@code parseIntString} uses it,
+     * and so do {@code ClassEquipAssembler} (on an {@code sval}) and {@code UIEntryAssembler} (on
+     * the {@code priority:} figure).
      *
-     * <p>Function cTrimFront coded before 261028, commented in full on 261028.
+     * <p>Function cTrimFront coded before 261028, commented in full on 261107 (callers listed 261107).
      *
      * @param string the text to trim, or {@code null}
      * @return the trimmed text, or {@code null} if {@code string} is {@code null}
@@ -982,9 +1028,10 @@ public class ParseUtils {
      *
      * <p>The word is cut at its first underscore. Nothing before the underscore means the word is
      * not for this function and gives {@code false}, so a word with no underscore at all is refused.
-     * The text after the underscore must be an element name exactly as {@link ElementEnum#lookup}
-     * finds it, upper case and without the {@code ELEM_} prefix, and it keeps any underscore of its
-     * own ({@code HATES_HOLY_ORB} is the holy orb, not an element called {@code ORB}). The
+     * The text after the underscore must be an element name in upper case, exactly as C spells it,
+     * and it keeps any underscore of its own ({@code HATES_HOLY_ORB} is the holy orb, not an element
+     * called {@code ORB}). The text is looked up as {@code "ELEM_" + name} through
+     * {@link ElementEnum#lookup}, which takes the whole constant name. The
      * placeholders {@link ElementEnum#ELEM_NONE} and {@link ElementEnum#ELEM_MAX} are Java
      * additions that C's name list does not hold, so {@code IGNORE_NONE} and {@code HATES_MAX}
      * give {@code false} here as they do there.
@@ -1005,7 +1052,8 @@ public class ParseUtils {
      * that was already on is not a failure to read the word. Nothing is added to {@code elInfo} for
      * a word that returns {@code false}.
      *
-     * <p>Function grabElementFlag coded before 261105, commented in full on 261105.
+     * <p>Function grabElementFlag coded before 261105, commented in full on 261105 (lookup form
+     * described on 261105).
      *
      * @param elInfo the per-element flags to update, keyed by element; a slot is created for an
      *               element on its first flag
@@ -1019,7 +1067,8 @@ public class ParseUtils {
         int underscorePosition = flag.indexOf("_");
         String token = flag.substring(0, underscorePosition);
         String name = flag.substring(underscorePosition + 1);
-        ElementEnum element = ElementEnum.lookup(name);
+        
+        ElementEnum element = ElementEnum.lookup("ELEM_" + name);
         if (element == null || element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) return false;
         
         if ("IGNORE".startsWith(token)) {
@@ -1036,13 +1085,74 @@ public class ParseUtils {
     }
     
     /**
+     * Reads the display glyph of a {@code graphics:} line as C reads a {@code PARSE_T_CHAR} field:
+     * the glyph is exactly one character, and it is kept whole. In C that is
+     * {@code text_mbstowcs(&v->u.cval, tok, 1)} in {@code parser_parse()} ({@code parser.c}), a
+     * {@code wchar_t} that the {@code graphics:} callbacks in {@code obj-init.c} store in
+     * {@code d_char}. Java cannot hold a code point above {@code U+FFFF} in a {@code char}, so the
+     * answer is split: a code point in the basic plane comes back as {@code glyphChar}
+     * with {@code wideGlyphChar} 0, and a supplementary code point comes back as
+     * {@code wideGlyphChar} with {@code glyphChar} {@code '\0'}. A caller tests {@code wideGlyphChar}
+     * for 0 to know which half holds the glyph, as {@code ArtifactAssembler} does.
+     *
+     * <p>Text of more than one code point is refused, with {@code null}. C's {@code parser_parse()}
+     * skips one code point with {@code utf8_fskip} and, if anything but a {@code :} follows, fails
+     * the line with {@code PARSE_ERROR_FIELD_TOO_LONG}, so {@code "ab"} never reaches a callback.
+     * The text given here is the glyph token alone, with no {@code :} after it, so every code point
+     * past the first is "too long". A letter with a combining mark after it ({@code "e"} then
+     * {@code U+0301}) is two code points in both languages and is refused in both. The count is
+     * of code points and not {@code char}s, so one supplementary glyph is accepted.
+     *
+     * <p>{@code null} and empty text give {@code null} as well. C has no such case: an empty
+     * character field is a missing field, which {@code parser_parse()} refuses
+     * ({@code PARSE_ERROR_MISSING_FIELD}) before any callback runs. All three refusals reach the
+     * caller as the same {@code null}, which it turns into a fatal error.
+     *
+     * <p>Function parseADCGlyph coded before 261107, commented in full on 261107 (rewritten the same
+     * day to say that more than one code point is refused, not ignored).
+     *
+     * @param glyph the glyph text from the parse record, or {@code null}
+     * @return the one code point of {@code glyph}, split as above, or {@code null} if {@code glyph}
+     * is {@code null}, empty, or longer than one code point
+     */
+    public static GlyphCharacter parseADCGlyph(String glyph) {
+        if (glyph == null || glyph.isEmpty()) return null;
+        int noWideChars = glyph.codePointCount(0, glyph.length());
+        if (noWideChars > 1) return null;
+        int wideChar = glyph.codePointAt(0);
+        if (Character.isSupplementaryCodePoint(wideChar)) {
+            return new GlyphCharacter('\0', wideChar);
+        } else {
+            return new GlyphCharacter(glyph.charAt(0), 0);
+        }
+    }
+    
+    /**
      * The bases the readers work in. {@code strtol} base 0 chooses between {@link #HEX},
      * {@link #OCTAL} and {@link #DECIMAL}; {@link #BINARY} is not a base C reads and is here for
-     * {@link #nonDigitFound(String, Radix)} and the private {@code stripStart} only.
+     * {@link #nonDigitFound(String, Radix)} and the readers that take a {@code Radix}, which give
+     * it the decimal checks and then read binary digits. Nothing in {@code src/main} passes it.
      *
-     * <p>Enum Radix coded before 261025, commented in full on 261025.
+     * <p>Enum Radix coded before 261025, commented in full on 261107 (BINARY's reach corrected
+     * 261107).
      */
     public enum Radix {
         BINARY, OCTAL, DECIMAL, HEX
     }
+
+    /**
+     * One display glyph, split because Java's {@code char} cannot hold every code point that C's
+     * {@code wchar_t} does. Exactly one half is meaningful: a glyph in the basic plane is in
+     * {@code glyphChar} with {@code wideGlyphChar} 0, and a supplementary-plane glyph is in
+     * {@code wideGlyphChar} with {@code glyphChar} {@code '\0'}. The port of the {@code wchar_t}
+     * that C's {@code PARSE_T_CHAR} field holds; {@link #parseADCGlyph(String)} builds it.
+     *
+     * <p>Record GlyphCharacter coded before 261107, commented in full on 261107.
+     *
+     * @param glyphChar     the glyph when it fits in a {@code char}, otherwise {@code '\0'}
+     * @param wideGlyphChar the glyph's code point when it does not fit in a {@code char},
+     *                      otherwise 0
+     */
+    public record GlyphCharacter (char glyphChar,
+                                  int wideGlyphChar) {}
 }

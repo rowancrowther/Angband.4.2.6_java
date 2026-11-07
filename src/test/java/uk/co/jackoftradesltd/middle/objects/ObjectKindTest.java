@@ -21,7 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.IgnoreFlag;
@@ -88,15 +88,24 @@ class ObjectKindTest {
     }
 
     /**
-     * A kind synthesised to back a special artifact.
+     * A kind synthesised to back a special artifact, built the way {@code ArtifactAssembler.assemble}
+     * builds one: the no-argument constructor, then the setters. The registry step is left out, so
+     * the special-artifact marker is set directly.
      *
      * @return the constructed kind
      */
     private static ObjectKind artifactKind() {
-        Artifact artifact = new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0",
-                0, 0, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(),
-                new TreeMap<>(Curse.CURSE_ORDER), 7, 0, 0, 0, null, null, null);
-        return new ObjectKind(artifact, "Test", base());
+        ObjectBase base = base();
+        ObjectKind kind = new ObjectKind();
+        kind.setBase(base);
+        kind.setTval(base.gettVal());
+        kind.setsValueName("Test");
+        kind.setLevel(7);
+        kind.setElInfo(new HashMap<>());
+        kind.setCharacter(new AngbandDisplayCharacter('*', ColourEnum.COLOUR_RED));
+        kind.setKindFlag(ObjectKindFlag.KF_INSTA_ART);
+        kind.setSpecialArtifactKind(true);
+        return kind;
     }
 
     /**
@@ -106,7 +115,7 @@ class ObjectKindTest {
      */
     private static ObjectBase base() {
         return new ObjectBase(TValue.TV_SWORD, "sword", ColourEnum.COLOUR_WHITE,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, 40, new Flag<>(ObjectFlag.class));
+                new Flag<>(ObjectKindFlag.class), new java.util.HashMap<>(), 0, 40, new Flag<>(ObjectFlag.class));
     }
 
     /**

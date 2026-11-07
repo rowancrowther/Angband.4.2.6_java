@@ -134,9 +134,9 @@ class ElementEnumTest {
     }
 
     /**
-     * The four base elements are exactly acid, electricity, fire and cold — C's {@code base}
-     * column in {@code list-elements.h}. Objects ignore them as a group, so a fifth appearing
-     * silently would change what a spellbook burns in.
+     * The four base elements are exactly acid, electricity, fire and cold — the range C delimits
+     * with {@code ELEM_BASE_MIN} and {@code ELEM_BASE_MAX} in {@code object.h}. Objects ignore them
+     * as a group, so a fifth appearing silently would change what a spellbook burns in.
      */
     @Test
     void exactlyTheFourPhysicalElementsAreBaseElements() {
@@ -180,6 +180,59 @@ class ElementEnumTest {
             if (element.isBase()) {
                 assertTrue(element.isHasResistRune(),
                         element.name() + " is a base element and so must be resistable");
+            }
+        }
+    }
+
+    /**
+     * The "high" elements are exactly poison through disenchantment — the range C delimits with
+     * {@code ELEM_HIGH_MIN} ({@code ELEM_POIS}) and {@code ELEM_HIGH_MAX} ({@code ELEM_DISEN} plus
+     * one) in {@code object.h}. Water and everything after it are not high, and neither are the two
+     * placeholders.
+     */
+    @Test
+    void theHighElementsAreExactlyPoisonThroughDisenchantment() {
+        List<String> high = Arrays.stream(ElementEnum.values())
+                .filter(ElementEnum::isHigh)
+                .map(Enum::name)
+                .collect(Collectors.toList());
+
+        assertEquals(List.of("ELEM_POIS", "ELEM_LIGHT", "ELEM_DARK", "ELEM_SOUND", "ELEM_SHARD",
+                "ELEM_NEXUS", "ELEM_NETHER", "ELEM_CHAOS", "ELEM_DISEN"), high);
+    }
+
+    /**
+     * C's loops over {@code ELEM_BASE_MIN} to {@code ELEM_HIGH_MIN} and {@code ELEM_HIGH_MIN} to
+     * {@code ELEM_HIGH_MAX} split the resistable run into two adjacent stretches with no overlap
+     * and no gap, so every resistable element is exactly one of base or high, and nothing else is
+     * either.
+     */
+    @Test
+    void baseAndHighAreDisjointAndTogetherAreTheResistableElements() {
+        for (ElementEnum element : ElementEnum.values()) {
+            assertFalse(element.isBase() && element.isHigh(),
+                    element.name() + " cannot be both base and high");
+            assertEquals(element.isHasResistRune(), element.isBase() || element.isHigh(),
+                    element.name() + " is resistable exactly when it is base or high");
+        }
+    }
+
+    /**
+     * The placeholders and the non-resistable elements carry none of the three flags: C's bounds
+     * never include {@code ELEM_NONE} (which does not exist there) or anything from
+     * {@code ELEM_WATER} on, and {@code ELEM_MAX} is only the count.
+     */
+    @Test
+    void thePlaceholdersAndTheElementsAfterDisenchantmentCarryNoFlags() {
+        boolean afterDisenchantment = false;
+        for (ElementEnum element : ElementEnum.values()) {
+            if (element == ElementEnum.ELEM_NONE || afterDisenchantment) {
+                assertFalse(element.isBase(), element.name() + " is not base");
+                assertFalse(element.isHigh(), element.name() + " is not high");
+                assertFalse(element.isHasResistRune(), element.name() + " is not resistable");
+            }
+            if (element == ElementEnum.ELEM_DISEN) {
+                afterDisenchantment = true;
             }
         }
     }

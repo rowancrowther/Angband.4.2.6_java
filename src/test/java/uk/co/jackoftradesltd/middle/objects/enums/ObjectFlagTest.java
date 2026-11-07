@@ -26,7 +26,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Unit tests for {@link ObjectFlag}, the port of C's {@code OF_*} list in
  * {@code list-object-flags.h}, and for {@link ObjectFlag#getSustainStatFlag}, the object-flag half
- * of {@code sustain_flag()} in {@code obj-properties.c}.
+ * of {@code sustain_flag()} in {@code obj-properties.c}, and for {@link ObjectFlag#lookup}, the
+ * port of {@code lookup_flag()} in {@code datafile.c} over the {@code obj_flags[]} name table.
  *
  * <p>The expected table is typed out from the C header, not read back from the enum, so a flag
  * moved, dropped or relabelled in the port fails here. Order is the thing C's header says must
@@ -166,5 +167,96 @@ class ObjectFlagTest {
     void sustainStatFlagIsNullForTheSentinels() {
         assertNull(ObjectFlag.getSustainStatFlag(SustainStat.SUS_STAT_NONE));
         assertNull(ObjectFlag.getSustainStatFlag(SustainStat.SUS_STAT_MAX));
+    }
+
+    /**
+     * {@code lookup_flag()} in {@code datafile.c} walks {@code obj_flags[]} from index 1 and returns
+     * the index of the first {@code streq()} match, so every real name finds the flag at its
+     * C index.
+     */
+    @Test
+    void lookupFindsEveryRealFlagAtItsCIndex() {
+        for (int i = 0; i < C_TABLE.length; i++) {
+            ObjectFlag found = ObjectFlag.lookup(C_TABLE[i][0]);
+            assertNotNull(found, C_TABLE[i][0]);
+            assertEquals(i + 1, found.ordinal(), C_TABLE[i][0]);
+            assertEquals(C_TABLE[i][0], found.name());
+        }
+    }
+
+    /**
+     * C's {@code obj_flags[]} has {@code "NONE"} at index 0 but {@code lookup_flag()} starts at
+     * {@code FLAG_START} (1), so {@code NONE} never matches and the answer is {@code FLAG_END}.
+     */
+    @Test
+    void lookupSkipsTheNoneEntryAtIndexZero() {
+        assertNull(ObjectFlag.lookup("OF_NONE"));
+    }
+
+    /**
+     * {@code list-object-flags.h} ends with {@code OF(MAX, "")}, so the name table holds
+     * {@code "MAX"} last and {@code lookup_flag()} finds it at index 39.
+     */
+    @Test
+    void lookupFindsTheMaxEntryAtTheEndOfTheTable() {
+        assertSame(ObjectFlag.OF_MAX, ObjectFlag.lookup("OF_MAX"));
+        assertEquals(C_TABLE.length + 1, ObjectFlag.lookup("OF_MAX").ordinal());
+    }
+
+    /**
+     * {@code streq()} is exact and case sensitive, and the table holds the name without the
+     * {@code OF_} prefix that the port's constants carry, so anything but the full constant name
+     * is no match.
+     */
+    @Test
+    void lookupIsExactAndCaseSensitive() {
+        assertNull(ObjectFlag.lookup("of_free_act"));
+        assertNull(ObjectFlag.lookup("OF_Free_Act"));
+        assertNull(ObjectFlag.lookup("FREE_ACT"));
+        assertNull(ObjectFlag.lookup("OF_FREE_ACT "));
+        assertNull(ObjectFlag.lookup(" OF_FREE_ACT"));
+        assertNull(ObjectFlag.lookup("OF_FREE"));
+        assertNull(ObjectFlag.lookup("OF_FREE_ACTION"));
+    }
+
+    /**
+     * No such flag, and the empty string, which {@code streq()} would compare against each entry
+     * and fail on, give {@code FLAG_END}.
+     */
+    @Test
+    void lookupOfAnUnknownOrEmptyNameIsNull() {
+        assertNull(ObjectFlag.lookup("OF_NO_SUCH_FLAG"));
+        assertNull(ObjectFlag.lookup(""));
+        assertNull(ObjectFlag.lookup("OF_"));
+    }
+
+    /**
+     * Names that belong to other C tables ({@code kind_flags[]}, element names, the player flag
+     * names) are not in {@code obj_flags[]}, so they are no match here.
+     */
+    @Test
+    void lookupDoesNotFindNamesFromOtherTables() {
+        assertNull(ObjectFlag.lookup("OF_RES_FIRE"));
+        assertNull(ObjectFlag.lookup("OF_KF_EASY_KNOW"));
+        assertNull(ObjectFlag.lookup("KF_EASY_KNOW"));
+        assertNull(ObjectFlag.lookup("OF_UNAWARE"));
+    }
+
+    /**
+     * Labels such as {@code " sStr"} are display text, not names; the lookup searches names only.
+     */
+    @Test
+    void lookupDoesNotMatchDisplayLabels() {
+        assertNull(ObjectFlag.lookup(" sStr"));
+        assertNull(ObjectFlag.lookup("sStr"));
+        assertNull(ObjectFlag.lookup("FrAct"));
+    }
+
+    /**
+     * C would crash in {@code streq()} on a null name; the port answers no match.
+     */
+    @Test
+    void lookupOfNullIsNull() {
+        assertNull(ObjectFlag.lookup(null));
     }
 }

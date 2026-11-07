@@ -27,7 +27,6 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Activation;
-import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.*;
@@ -86,6 +85,10 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
      * as C's flag lookup starts after it, and {@code MAX} is accepted, as C's tables carry it.
      * The element names {@code NONE} and {@code MAX} are refused, since C's element names carry
      * neither. {@code flags-off:} takes object flags only, with the same {@code NONE} rule.
+     * C tries the object, kind and element lookups on every token and applies each one that
+     * matches; here a token that reads as an element flag is not looked up as an object or kind
+     * flag. No object or kind flag name has the shape {@code <IGNORE/HATES prefix>_<element>}, so
+     * the two agree on every token the data can hold.
      *
      * <p><b>Values.</b> In {@code values:} a {@code RES_<element>[n]} entry sets that element's
      * resistance level from an integer, and every other entry is a modifier whose bracket is a
@@ -109,7 +112,9 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
      * nothing, as C sets one flag per index. Each {@code curse:} line is applied in file order, as
      * {@code parse_ego_curse} does: an unknown name stops the load, a power above 0 stores the
      * curse with a timeout of 0 (replacing an earlier line for the same curse), and a power of 0
-     * or below is ignored, so it never removes an earlier line.
+     * or below is ignored, so it never removes an earlier line. C's three name loops start at
+     * index 1 and skip the blank record in slot 0; the registries here hold only real records, so
+     * there is nothing to skip (the blank-slot deviation of 261009 on {@link ObjectRegistry}).
      *
      * <p><b>Numbers.</b> The {@code info:} figures and the {@code alloc:} commonness are read in
      * base 0, as {@code parser_getint} reads them. The two {@code alloc:} depths are read in
@@ -124,8 +129,8 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
      * {@code null}. An ego with no {@code act:} line, or one naming an unknown activation, has a
      * {@code null} activation with no error, as {@code findact} answers {@code NULL}.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261024, updated on 261105 for
-     * the removal of the soft-error path.
+     * <p>Function assemble coded before 260915, commented in full on 261107 (updated on 261105 for
+     * the removal of the soft-error path).
      *
      * @param records  the raw ego-item records from the grammar, in file order
      * @param filename the file the records were read from, named in the message of a failure
@@ -140,52 +145,27 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
         int index = 0;
 
         for (EgoItemParseRecord record : records) {
+            // Line number of the start of the record
             int line = record.line();
 
+            // Name of the ego item
             String name = record.name();
+            
             List<ObjectKind> possItems = new ArrayList<>();
             int cost = ParseUtils.parseIntString("EgoItem", record.cost(), line, filename, "cost");
             Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
             Flag<ObjectKindFlag> kFlags = new Flag<>(ObjectKindFlag.class);
             Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
             for (String flag : record.flags()) {
-                String eFlagName = "";
-                String oFlagName = "";
-                String kFlagName = "";
-                boolean ignore = false;
-                boolean hates = false;
-                if (flag.contains("_") && "IGNORE".startsWith(flag.substring(0, flag.indexOf('_')))) {
-                    eFlagName = "ELEM_" + flag.substring(flag.indexOf('_') + 1);
-                    ignore = true;
-                } else if (flag.contains("_") && "HATES".startsWith(flag.substring(0, flag.indexOf('_')))) {
-                    eFlagName = "ELEM_" + flag.substring(flag.indexOf('_') + 1);
-                    hates = true;
-                } else {
-                    oFlagName = "OF_" + flag;
-                    kFlagName = "KF_" + flag;
-                }
-                boolean eFlagFound = false;
+                boolean eFlagFound = ParseUtils.grabElementFlag(elInfo, flag);
+                String oFlagName = "OF_" + flag;
+                String kFlagName = "KF_" + flag;
+                
                 boolean oFlagFound = false;
                 boolean kFlagFound = false;
 
-                ElementEnum eFlag = ElementEnum.ELEM_NONE;
                 ObjectFlag oFlag = ObjectFlag.OF_NONE;
                 ObjectKindFlag kFlag = ObjectKindFlag.KF_NONE;
-
-                try {
-                    eFlag = ElementEnum.valueOf(eFlagName);
-                    if (eFlag == ElementEnum.ELEM_NONE || eFlag == ElementEnum.ELEM_MAX) {
-                        String msg = "EgoItem starting at line: " + line + " of file: " + filename + " has " +
-                                "a sentinel element name: " + flag;
-                        logger.fatal(msg);
-                        throw new DataFileParseException(msg);
-                    }
-                    eFlagFound = true;
-                } catch (DataFileParseException d) {
-                    throw d;
-                } catch (Exception e) {
-                    eFlagFound = false;
-                }
 
                 try {
                     oFlag = ObjectFlag.valueOf(oFlagName);
@@ -209,15 +189,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                     kFlagFound = false;
                 }
 
-                if (eFlagFound && !oFlagFound && !kFlagFound) {
-                    if (ignore && !hates) {
-                        elInfo.computeIfAbsent(eFlag, k -> new ElementInfo())
-                                .on(ElementInfoEnum.EL_INFO_IGNORE);
-                    } else if (!ignore && hates) {
-                        elInfo.computeIfAbsent(eFlag, k -> new ElementInfo())
-                                .on(ElementInfoEnum.EL_INFO_HATES);
-                    }
-                } else if (!eFlagFound) {
+                if (!eFlagFound) {
                     if (oFlagFound) {
                         oFlags.on(oFlag);
                     }
@@ -286,6 +258,12 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                         throw new DataFileParseException(msg);
                     }
                 } else {
+                    if (value.length() >= 40) {
+                        String msg = "EgoItem starting at line: " + line + " of file: " + filename + " has " +
+                                "a modifier dice value that is too long: " + value;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
                     Random dice = Random.parseStr(value);
                     if (dice == null) {
                         String msg = "EgoItem starting at line: " + line + " of file: " + filename + " has " +

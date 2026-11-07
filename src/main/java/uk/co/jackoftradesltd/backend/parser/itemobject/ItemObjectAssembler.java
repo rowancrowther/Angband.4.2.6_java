@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.backend.parser.itemobject;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.parser.curse.FullCurseDataParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
@@ -29,7 +30,6 @@ import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.effect.Effect;
-import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.*;
@@ -48,14 +48,17 @@ import java.util.*;
  *       ({@link TValue#fromName} then {@link ObjectRegistry#getBaseFromTVal}); a record with no
  *       {@code type:} keeps C's zero tval, {@code TV_NONE}, and a {@code null} base, as C leaves
  *       {@code k->base} {@code NULL} when {@code parse_object_type} never runs;</li>
- *   <li>{@code graphics:} takes the first code point of the glyph token, as C's
- *       {@code parser_getchar} takes the first wide character and ignores the rest, and builds the
+ *   <li>{@code graphics:} reads the glyph token as a single code point and builds the
  *       {@link AngbandDisplayCharacter} through its {@code int} constructor when the code point is
- *       supplementary and its {@code char} one otherwise. The colour goes through
- *       {@link ColourEnum#fromCode(String)}, and one that does not resolve becomes
- *       {@link ColourEnum#COLOUR_WHITE}, as C's {@code color_char_to_attr} and
- *       {@code color_text_to_attr} return white. A record with no glyph keeps a {@code null} cell,
- *       where C leaves {@code d_char} and {@code d_attr} zero;</li>
+ *       supplementary and its {@code char} one otherwise. C's parser refuses a {@code char} field of
+ *       more than one character ({@code PARSE_ERROR_FIELD_TOO_LONG}); here that refusal is the
+ *       lexer's, since the glyph token matches exactly one code point and anything longer never
+ *       reaches the assembler, so {@code codePointAt(0)} is the whole token. The colour goes through
+ *       {@link ColourEnum#fromCode(String)}: one character is a colour code, longer text a colour
+ *       name, as C chooses between {@code color_char_to_attr} and {@code color_text_to_attr} on the
+ *       length. One that does not resolve becomes {@link ColourEnum#COLOUR_WHITE}, as both C
+ *       functions return white. A record with no glyph keeps a {@code null} cell, where C leaves
+ *       {@code d_char} and {@code d_attr} zero;</li>
  *   <li>the rand fields (attack {@code hd}/to-h/to-d, armour to-a, {@code charges}, pile stack,
  *       {@code pval}) become {@link Random}s via {@code Random.parseStr}, while the scalar fields
  *       (level/weight/cost/power, armour base {@code ac}, alloc, pile chance) are parsed as ints.
@@ -66,21 +69,38 @@ import java.util.*;
  *       them, so {@code 010} is ten there. A commonness without both range ends is an error;</li>
  *   <li>the {@code values:} line is fanned out into its two C destinations — the {@code obj_mods}
  *       half into a {@code Map<}{@link ObjectModifier}{@code , Random>} and the {@code RES_}-prefixed
- *       half into a {@code Map<}{@link ElementEnum}{@code ,} {@link ElementInfo}{@code >};</li>
- *   <li>each {@code flags:} token is tried as an {@link ObjectFlag} ({@code OF_}), then as an
- *       {@link ObjectKindFlag} ({@code KF_}), then as {@code IGNORE_<element>} or
- *       {@code HATES_<element>}. C tries all three tables for every token, but the two flag lists
- *       share no name apart from their {@code NONE} and {@code MAX} sentinels, so the first match is
- *       the only one. The element prefix chooses the bit, as it does in C's
+ *       half into a {@code Map<}{@link ElementEnum}{@code ,} {@link ElementInfo}{@code >}. A token
+ *       is a modifier unless it starts {@code RES_}, and C's {@code obj_mods} table holds neither a
+ *       {@code NONE} nor a {@code MAX}, so {@link ObjectModifier#OM_NONE} and
+ *       {@link ObjectModifier#OM_MAX} are refused. A modifier's figure is read as dice; a
+ *       {@code RES_} figure is read as C's {@code find_value_arg} reads it, in base 10 with no
+ *       trailing text, and one at {@code INT_MIN} or {@code INT_MAX} is refused. C holds both
+ *       halves in index-ordered arrays; these two maps are {@link HashMap}s, so their iteration
+ *       order is unspecified;</li>
+ *   <li>each {@code flags:} token is tried as an {@link ObjectFlag} ({@code OF_}), as an
+ *       {@link ObjectKindFlag} ({@code KF_}) and as {@code IGNORE_<element>} or
+ *       {@code HATES_<element>}, all three for every token as C's {@code parse_object_flags} does,
+ *       and a token that none of them takes is an error. C's lookup starts at table index 1, which
+ *       skips the {@code NONE} at index 0, so {@code NONE} is refused. Both C tables end in
+ *       {@code MAX}, so C takes a {@code MAX} token and sets the sentinel bit in both; the
+ *       lookups here find {@link ObjectFlag#OF_MAX} and {@link ObjectKindFlag#KF_MAX} and do
+ *       the same. The element prefix chooses the bit, as it does in C's
  *       {@code grab_element_flag}: {@code IGNORE_} sets {@code EL_INFO_IGNORE} and {@code HATES_}
  *       sets {@code EL_INFO_HATES} in that element's {@link ElementInfo}, the same record the
  *       {@code RES_} level lives in. The base's kind flags are then added to the kind's own, as
  *       {@code finish_parse_object} does with {@code kf_union};</li>
- *   <li>brands, slays and curses resolve against their registries by code or name. Curses become a
+ *   <li>brands, slays and curses resolve against their registries by code or name. Brands and slays
+ *       are collected into {@link LinkedHashSet}s by walking {@link ObjectRegistry#getBrands()} and
+ *       {@link ObjectRegistry#getSlays()} and keeping those the record named, so the sets come out
+ *       in registry order, the order C's {@code brands[i]} and {@code slays[i]} boolean arrays are
+ *       walked in, and not in the order the record listed them. Curses become a
  *       {@code Map<}{@link Curse}{@code ,} {@link CurseData}{@code >} keyed by curse, with the
  *       parsed power and a timeout of 0 at kind level; a curse declared at power 0 or below is
  *       dropped rather than stored, as C stores a curse only when its power is above 0, absence
- *       being how this port says "not cursed with this";</li>
+ *       being how this port says "not cursed with this". A curse named twice keeps the later
+ *       power, and a later entry at power 0 or below leaves the earlier one in place, as C's
+ *       array does. The {@link ObjectKind} constructor copies the map into a {@link TreeMap}
+ *       ordered by {@code Curse.CURSE_ORDER}, so the kind's curses are index-ordered as in C;</li>
  *   <li>base damage dice/sides ({@code dd}/{@code ds}) are derived from the attack {@code hd},
  *       and effects are delegated to {@link EffectAssembler};</li>
  *   <li>the record's own {@code time:} dice string becomes the kind's {@code time} {@link Random}
@@ -99,17 +119,20 @@ import java.util.*;
  * The flavour, the aware and unaware notes, and the aware, tried and everseen state belong to the
  * running game and start empty, and the ignore flags start empty.
  *
- * <p>Class ItemObjectAssembler coded before 260915, commented in full on 261026, updated on 261105
- * for the removal of the soft-error path.
+ * <p>Class ItemObjectAssembler coded before 260915, commented in full on 261107 (glyph, flag,
+ * ordering and sentinel notes rewritten against {@code parse_object_*} and
+ * {@code finish_parse_object}; the soft-error path was removed on 261105).
  *
  * @author Rowan Crowther
  */
 public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, List<ObjectKind>> {
     /**
      * Class logger. Receives the fatal message of each {@link DataFileParseException} just before
-     * it is thrown.
+     * it is thrown, so the message reaches the log as well as the caller. It is {@code static final}
+     * and shared by every assembly; the assembler holds no other state, so one instance may
+     * assemble any number of files.
      *
-     * <p>Field logger coded before 260915, commented in full on 261026.
+     * <p>Field logger coded before 260915, commented in full on 261107.
      */
     private static final Logger logger = LogManager.getLogger(ItemObjectAssembler.class);
 
@@ -124,17 +147,30 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
      * error, as C's {@code PARSE_ERROR_NOT_RANDOM} is. {@code dd} and {@code ds} are the dice and
      * sides of the attack {@code hd}, as C's {@code parse_object_attack} takes them.
      *
+     * <p>The method does in one pass over each record what C does across the
+     * {@code parse_object_*} callbacks and {@code finish_parse_object}, and it reads the
+     * directives in a fixed order (type, graphics, the plain figures, dice, {@code alloc:},
+     * {@code charges:}, {@code pile:}, flags, values, brands, slays, curses, {@code pval:},
+     * {@code power:}, effects, {@code time:}), where C reads them in file order. The order only decides which of two bad
+     * directives in one record is reported; every failure ends the load. Each record is built
+     * into an {@link ObjectKind} with the base's kind flags added to its own
+     * ({@code kf_union} in C), and the kind index is left 0 for
+     * {@link ObjectRegistry#addObjectKind}. A {@code type:} whose tval has no base loads with
+     * {@code base} {@code null}, where C hands back a zeroed base; the kind-flag union is skipped
+     * then, which adds nothing, as the zeroed base's flags would.
+     *
      * <p>Function assemble commented in full before 260915, provenance stamp added on 260915,
      * rewritten on 261026 for the fatal error policy, the {@code HATES_} flags and the curse and
-     * {@code alloc:} handling.
+     * {@code alloc:} handling, and on 261107 for the directive order, flag sentinels and the
+     * unbased-tval case.
      *
      * @param records  the raw object records captured by the grammar
      * @param filename the file the records came from, named in every exception message
      * @return the assembled object kinds, one per record, in source order
-     * @throws DataFileParseException if any record has an unknown {@code type:}, flag, modifier,
-     *                                element, brand, slay or curse, a missing {@code alloc:} range
-     *                                end or pile amount, or a figure or dice string that does not
-     *                                parse
+     * @throws DataFileParseException if any record has an unknown {@code type:}, flag (including
+     *                                {@code NONE}), modifier (including the sentinels), element,
+     *                                brand, slay or curse, a missing {@code alloc:} range end or
+     *                                pile amount, or a figure or dice string that does not parse
      */
     @Override
     public List<ObjectKind> assemble(@NotNull List<ItemObjectParseRecord> records,
@@ -274,64 +310,81 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             }
             Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
             Flag<ObjectKindFlag> oKindFlags = new Flag<>(ObjectKindFlag.class);
-            Flag<ElementEnum> eIFlags = new Flag<>(ElementEnum.class);
-            Flag<ElementEnum> eHFlags = new Flag<>(ElementEnum.class);
+            Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
             for (String flag : record.flags()) {
-                ObjectFlag oFlag;
-                ObjectKindFlag kFlag;
-                ElementEnum eFlag;
-                try {
-                    oFlag = ObjectFlag.valueOf("OF_" + flag);
+                if (flag.equals("NONE")) {
+                    String msg = "Object kind starting at line: " + line + " of file: " + filename + " has " +
+                            "an unknown sentinel flag: " + flag;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
+                
+                ObjectFlag oFlag = ObjectFlag.lookup("OF_" + flag);
+                ObjectKindFlag kFlag = ObjectKindFlag.lookup("KF_" + flag);
+                
+                if (oFlag != null) {
                     oFlags.on(oFlag);
-                } catch (IllegalArgumentException e) {
-                    try {
-                        kFlag = ObjectKindFlag.valueOf("KF_" + flag);
-                        oKindFlags.on(kFlag);
-                    } catch (IllegalArgumentException e1) {
-                        try {
-                            if (flag.startsWith("IGNORE_")) {
-                                eFlag = ElementEnum.valueOf("ELEM_" + flag.substring(7));
-                                eIFlags.on(eFlag);
-                            } else if (flag.startsWith("HATES_")) {
-                                eFlag = ElementEnum.valueOf("ELEM_" + flag.substring(6));
-                                eHFlags.on(eFlag);
-                            } else {
-                                String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
-                                        "an unknown flag: " + flag;
-                                logger.fatal(msg);
-                                throw new DataFileParseException(msg);
-                            }
-                        } catch (IllegalArgumentException e2) {
-                            String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
-                                    "an unknown flag: " + flag;
-                            logger.fatal(msg, e2);
-                            throw new DataFileParseException(msg);
-                        }
-                    }
+                }
+                if (kFlag != null) {
+                    oKindFlags.on(kFlag);
+                }
+                
+                boolean flagFound = ParseUtils.grabElementFlag(elInfo, flag);
+                
+                if (!flagFound && kFlag == null && oFlag == null) {
+                    String msg = "Object kind starting at line: " + line + " of file: " + filename + " has " +
+                            "an unknown flag: " + flag;
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
                 }
             }
             Map<ObjectModifier, Random> modifiers = new HashMap<>();
-            Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
             for (String key : record.values().keySet()) {
                 String value = record.values().get(key);
                 String enumFlag;
                 if (key.startsWith("RES_")) {
                     enumFlag = "ELEM_" + key.substring(4);
                     ElementEnum elementEnum;
-                    try {
-                        elementEnum = ElementEnum.valueOf(enumFlag);
-                        ElementInfo info = elInfo.computeIfAbsent(elementEnum, k -> new ElementInfo());
-                        info.setResLevel(ParseUtils.parseIntString("Object kind", value, line, filename, "resistance"));
-                    } catch (IllegalArgumentException e) {
+                
+                    elementEnum = ElementEnum.lookup(enumFlag);
+                    if (elementEnum == null) {
                         String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
                                 "an illegal resistance element value: " + key;
-                        logger.fatal(msg, e);
+                        logger.fatal(msg);
                         throw new DataFileParseException(msg);
                     }
+                    
+                    if (elementEnum == ElementEnum.ELEM_MAX || elementEnum == ElementEnum.ELEM_NONE) {
+                        String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
+                                "an illegal sentinel resistance element value: " + key;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    if (ParseUtils.nonDigitFound(value, ParseUtils.Radix.DECIMAL)) {
+                        String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
+                                "a non-digit found in the element value: " + key;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    int resistance = ParseUtils.parseIntString("Object kind", value, line, filename, "resistance", ParseUtils.Radix.DECIMAL);
+                    if (resistance == Integer.MIN_VALUE || resistance == Integer.MAX_VALUE) {
+                        String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
+                                "an out of bounds object modifier value: " + key;
+                        logger.fatal(msg);
+                        throw new DataFileParseException(msg);
+                    }
+                    ElementInfo info = elInfo.computeIfAbsent(elementEnum, k -> new ElementInfo());
+                    info.setResLevel(resistance);
                 } else {
                     ObjectModifier om;
                     try {
                         om = ObjectModifier.valueOf("OM_" + key);
+                        if (om == ObjectModifier.OM_NONE || om == ObjectModifier.OM_MAX) {
+                            String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
+                                    "an illegal sentinel object modifier value: " + key;
+                            logger.fatal(msg);
+                            throw new DataFileParseException(msg);
+                        }
                         Random rnd = Random.parseStr(value);
                         if (rnd == null) {
                             String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
@@ -348,30 +401,45 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     }
                 }
             }
-            Set<Brand> brands = new HashSet<>();
-            for (String brand : record.brand()) {
-                Brand b = ObjectRegistry.lookupBrandCode(brand);
-                if (b == null) {
+            Set<Brand> fileBrands = new HashSet<>();
+            for (String b : record.brand()) {
+                Brand brand = ObjectRegistry.lookupBrandCode(b);
+                if (brand != null) {
+                    fileBrands.add(brand);
+                } else {
                     String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
-                            "an illegal brand value: " + brand;
+                            "an illegal brand value: " + b;
                     logger.fatal(msg);
                     throw new DataFileParseException(msg);
-                } else
-                    brands.add(b);
+                }
             }
-            Set<Slay> slays = new HashSet<>();
-            for (String slay : record.slay()) {
-                Slay s = ObjectRegistry.lookupSlay(slay);
-                if (s == null) {
+            Set<Brand> brands = new LinkedHashSet<>();
+            for (Brand b : ObjectRegistry.getBrands()) {
+                if (fileBrands.contains(b)) {
+                    brands.add(b);
+                }                
+            }
+            Set<Slay> fileSlays = new HashSet<>();
+            for (String s : record.slay()) {
+                Slay slay = ObjectRegistry.lookupSlay(s);
+                if (slay != null) {
+                    fileSlays.add(slay);
+                } else {
                     String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
-                            "an illegal slay value: " + slay;
+                            "an illegal slay value: " + s;
                     logger.fatal(msg);
                     throw new DataFileParseException(msg);
-                } else
-                    slays.add(s);
+                }
+            }
+            Set<Slay> slays = new LinkedHashSet<>();
+            for (Slay slay : ObjectRegistry.getSlays()) {
+                if (fileSlays.contains(slay)) {
+                    slays.add(slay);
+                }
             }
             Map<Curse, CurseData> curses = new HashMap<>();
-            for (String curseName : record.curse().keySet()) {
+            for (FullCurseDataParseRecord curseDataRecord : record.curse()) {
+                String curseName = curseDataRecord.name();
                 Curse curse = ObjectRegistry.lookupCurse(curseName);
                 if (curse == null) {
                     String msg = "Object kind starting at line: " + line +" of file: " + filename + " has " +
@@ -379,7 +447,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     logger.fatal(msg);
                     throw new DataFileParseException(msg);
                 } else {
-                    int power = ParseUtils.parseIntString("Object kind", record.curse().get(curseName), line, filename, "curse power");
+                    int power = ParseUtils.parseIntString("Object kind", curseDataRecord.power(), line, filename, "curse power");
                     if (power > 0)
                         curses.put(curse, new CurseData(power, 0));
                 }
@@ -417,16 +485,6 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             
             if (base != null) {
                 oKindFlags.union(base.getKindFlags());
-            }
-            
-            for (ElementEnum elem : eIFlags) {
-                ElementInfo info = elInfo.computeIfAbsent(elem, k -> new ElementInfo());
-                info.getFlags().on(ElementInfoEnum.EL_INFO_IGNORE);
-            }
-
-            for (ElementEnum elem : eHFlags) {
-                ElementInfo info = elInfo.computeIfAbsent(elem, k -> new ElementInfo());
-                info.getFlags().on(ElementInfoEnum.EL_INFO_HATES);
             }
             
             itemObjects.add(new ObjectKind(name, description, base, 0, pVal,

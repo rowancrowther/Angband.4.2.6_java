@@ -20,6 +20,9 @@ package uk.co.jackoftradesltd.backend.parser.artifact;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.backend.parser.curse.FullCurseDataParseRecord;
+import uk.co.jackoftradesltd.backend.parser.gameconstants.GameConstantsAssembler;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
@@ -70,28 +73,56 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      * Resolves every raw {@link ArtifactParseRecord} field into its domain form and builds
      * the {@link Artifact}: the base object tvalue, numeric to-hit/to-damage/AC/weight/cost/
      * level/alloc-range fields, object flags, the {@code values:} map (fanned out into
-     * {@link uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier}s and element resist
-     * levels the same way {@link uk.co.jackoftradesltd.backend.parser.gameconstants.GameConstantsAssembler}
+     * {@link ObjectModifier}s and element resist
+     * levels the same way {@link GameConstantsAssembler}
      * fans out its {@code RES_}-prefixed keys), brands, slays, curses (by registry lookup),
      * and an optional activation/timeout pair.
      *
-     * <p>Also resolves the artifact's backing {@link ObjectKind}. An artifact reuses the kind for
-     * its base type when one exists, or creates and registers a new one. A kind at or above the
-     * ordinary kind limit is special, as C tests {@code kidx >= z_info->ordinary_kind_max}. A new
-     * kind takes the level that was in force when the {@code base-object:} line was read, or 0 if
-     * no {@code level:} line came before it, because C's {@code write_dummy_object_record} copies
-     * {@code art->level} at that moment. The grammar records both facts as
-     * {@link ArtifactParseRecord#levelFirst()} and {@link ArtifactParseRecord#baseObjectLevel()}. Every
-     * shipped record puts {@code level:} after {@code base-object:}, so every special kind is
-     * level 0, and a second run at birth finds the kind and leaves its level alone. A record with
-     * two {@code base-object:} lines is an accepted deviation: C makes or finds a kind for each,
-     * and here only the last counts. A special kind takes the artifact's weight and cost only when the record has a
+     * <p>Also resolves the artifact's backing {@link ObjectKind}. Each {@code base-object:} line
+     * is handled as C's {@code parse_artifact_base_object} handles it: the kind for that type and
+     * sub-type is reused when one exists, and otherwise a new special kind is made and registered,
+     * as {@code write_dummy_object_record} does. A kind at or above the ordinary kind limit is
+     * special, as C tests {@code kidx >= z_info->ordinary_kind_max}.
+     *
+     * <p>A new kind takes the level that was in force when its {@code base-object:} line was read,
+     * or 0 if no {@code level:} line came before it, because {@code write_dummy_object_record}
+     * copies {@code art->level} at that moment. The grammar takes that snapshot into
+     * {@link ArtifactParseRecord.ArtifactBaseObjectParseRecord#level()}, one per
+     * {@code base-object:} line. Every shipped record puts {@code level:} after
+     * {@code base-object:}, so every special kind is level 0, and a second run at birth finds the
+     * kind and leaves its level alone.
+     *
+     * <p>A record with two {@code base-object:} lines makes or finds a kind for each, as C does.
+     * The artifact's own base type, and every later weight, cost, activation, time and glyph
+     * write, go to the last one. That is an accepted deviation: C sends each of those to
+     * whichever kind was current at the line.
+     *
+     * <p>A special kind takes the artifact's weight and cost only when the record has a
      * {@code weight:} or {@code cost:} line. A special light also takes the activation and time
      * that the record carries, and the artifact keeps none. Its activations are cleared and refilled
      * only when the record has an {@code act:} line, and its time is set only when the record has a
      * {@code time:} line. An unknown {@code act:} name is a warning, not an error, and leaves no
-     * activation, as {@code findact} returns {@code NULL} in C. A record with no {@code msg:} line
-     * holds a {@code null} message, as C's {@code alt_msg} starts {@code NULL}.
+     * activation, as {@code findact} returns {@code NULL} in C.
+     *
+     * <p>A record with no {@code desc:} line holds {@code null} text, as C's {@code text} starts
+     * {@code NULL}, and the grammar delivers that {@code null}, which the assembler passes
+     * straight through. A record with no {@code msg:} line holds a {@code null} message for the
+     * same reason, but the grammar delivers an empty string there, and the assembler turns it into
+     * {@code null}. A {@code curse:} line with power 0 adds nothing, and leaves any earlier line
+     * for the same curse in place, as C's {@code parse_artifact_curse} does.
+     *
+     * <p>A record with no {@code base-object:} line is refused, where C zero-fills the artifact
+     * and loads it as tval 0. This is an accepted deviation, recorded in
+     * {@code docs/Accepted_Deviations.md} under "Artifact". Every record in the shipped
+     * {@code artifact.txt} has the line, so only a modded file reaches the error.
+     *
+     * <p>A numeric {@code base-object:} sval that names no kind is also an accepted deviation,
+     * recorded under "Artifact" in the same file. C's {@code lookup_sval} returns an all-digit name
+     * as the sval and loads the artifact with no kind. Here the kind lookup would miss, a kind would
+     * be made under the next free sval, and the lookup after the loop would miss again, so the
+     * special-kind test would throw a {@link NullPointerException} rather than a
+     * {@link DataFileParseException}. The grammar refuses a numeric sval first, so only a record
+     * built by hand reaches it.
      *
      * <p>As C's {@code artifact_parser} does, the load ends at the first bad field. That covers an
      * unknown tvalue or base object, a malformed integer, an unknown flag, modifier, element,
@@ -101,7 +132,9 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      * thrown as a {@link DataFileParseException}.
      *
      * <p>Function assemble coded before 260915, commented in full on 260915, rewritten for the
-     * load-ending errors on 261023, special-kind level note added on 261023.
+     * load-ending errors on 261023, special-kind level note added on 261023, absent-text,
+     * zero-power curse and no-base-object notes added on 261106, rewritten for the per-line level
+     * snapshot, the msg/desc null note and the numeric-sval deviation on 261107.
      *
      * @param records  the raw artifact records from the grammar, in file order
      * @param filename the name of the data file, used in the error messages
@@ -114,34 +147,43 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
         List<Artifact> artifacts = new ArrayList<>();
 
         for (ArtifactParseRecord record : records) {
+            // Line number of the record
             int line = record.line();
+            
+            // Name of the artifact
             String name = record.name();
+            
+            // description of the artifact
             String text = record.desc();
-            String tValStr = record.tValue();
-            TValue tVal = null;
-            if (!tValStr.isEmpty()) {
-                tVal = TValue.fromName(tValStr);
-                if (tVal == null) {
-                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
-                            "an unknown base-obj tvalue: " + tValStr;
-                    logger.fatal(message);
-                    throw new DataFileParseException(message);
-                }
-            }
-            String sVal = record.sValue();
+            
+            // Integer to Hit            
             int toh = ParseUtils.parseIntString("Artifact", record.toh(), line, filename, "To hit");
+            
+            // Integer to Damage
             int tod = ParseUtils.parseIntString("Artifact", record.tod(), line, filename, "To damage");
+            
+            // Integer base armour class
             int baseAC = ParseUtils.parseIntString("Artifact", record.baseAC(), line, filename, "Base AC");
+            
+            // Integer to armour class
             int toa = ParseUtils.parseIntString("Artifact", record.toa(), line, filename, "To AC");
+            
+            // String Base damage
             String baseDamageString = record.baseDamage();
+            
+            // Integer weight
             int weight = ParseUtils.parseIntString("Artifact", record.weight(), line, filename, "Weight");
+            
+            // Integer cost
             int cost = ParseUtils.parseIntString("Artifact", record.cost(), line, filename, "Cost");
+            
+            // Object/element flags
             Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
-            Map<ElementEnum, Set<ElementInfoEnum>> elements = new HashMap<>();
+            Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
             for (String flag : record.flagList()) {
                 try {
                     ObjectFlag oFlag = ObjectFlag.valueOf("OF_" + flag);
-                    if (oFlag != ObjectFlag.OF_NONE)
+                    if (oFlag != ObjectFlag.OF_NONE && oFlag != ObjectFlag.OF_MAX)
                         flags.on(oFlag);
                     else {
                         String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
@@ -150,56 +192,18 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                         throw new DataFileParseException(message);
                     }
                 } catch (IllegalArgumentException e) {
-                    try {
-                        if (!flag.contains("_")) {
-                            String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
-                                    "an unknown flag: " + flag;
-                            logger.fatal(message, e);
-                            throw new DataFileParseException(message);
-                        }
-                        String[] flagParts = flag.split("_", 2);
-                        if (flagParts.length == 2) {
-                            if (flagParts[1].equals("NONE") || flagParts[1].equals("MAX")) {
-                                String message = "Artifact at line: " + line + " of file: " + filename + " has " +
-                                        "an illegal sentinel flag: " + flag;
-                                logger.fatal(message, e);
-                                throw new DataFileParseException(message);
-                            }
-                        }
-                        if ("IGNORE".startsWith(flagParts[0])) {
-                            ElementEnum element = ElementEnum.valueOf("ELEM_" + flagParts[1]);
-                            if (elements.containsKey(element)) {
-                                elements.get(element).add(ElementInfoEnum.EL_INFO_IGNORE);
-                            } else {
-                                Set<ElementInfoEnum> set = new HashSet<>();
-                                set.add(ElementInfoEnum.EL_INFO_IGNORE);
-                                elements.put(element, set);
-                            }
-                        } else if ("HATES".startsWith(flagParts[0])) {
-                            ElementEnum element = ElementEnum.valueOf("ELEM_" + flagParts[1]);
-                            if (elements.containsKey(element)) {
-                                elements.get(element).add(ElementInfoEnum.EL_INFO_HATES);
-                            } else {
-                                Set<ElementInfoEnum> set = new HashSet<>();
-                                set.add(ElementInfoEnum.EL_INFO_HATES);
-                                elements.put(element, set);
-                            }
-                        } else {
-                            String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
-                                    "an unknown flag: " + flag;
-                            logger.fatal(message, e);
-                            throw new DataFileParseException(message);    
-                        }
-                    } catch (IllegalArgumentException e1) {
-                        String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
-                                "an unknown flag: " + flag;
-                        logger.fatal(message, e1);
+                    boolean eFlagFound = ParseUtils.grabElementFlag(elInfo, flag);
+                    if (!eFlagFound) {
+                        String message = "Artifact at line: " + line + " of file: " + filename + " has " +
+                                "an unknown ignore/hates flag: " + flag;
+                        logger.fatal(message);
                         throw new DataFileParseException(message);
                     }
                 }
             }
+            
+            // Object modifier/value flags
             Map<ObjectModifier, Integer> modifiers = new HashMap<>();
-            Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
             for (String key : record.values().keySet()) {
                 try {
                     int value = Integer.parseInt(record.values().get(key));
@@ -242,19 +246,15 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     throw new DataFileParseException(message);
                 }
             }
+            
+            // Ignored elements
             for (ElementEnum e : Arrays.stream(ElementEnum.values()).filter(ElementEnum::isBase)
                     .toList()) {
                 ElementInfo ei = elInfo.computeIfAbsent(e, k -> new ElementInfo());
                 ei.on(ElementInfoEnum.EL_INFO_IGNORE);
             }
-            for (ElementEnum ee : ElementEnum.values()) {
-                if (elements.containsKey(ee)) {
-                    ElementInfo ei = elInfo.computeIfAbsent(ee, k -> new ElementInfo());
-                    for (ElementInfoEnum eie : elements.get(ee)) {
-                        ei.on(eie);
-                    }
-                }
-            }
+            
+            // Brands
             Set<Brand> fileBrands = new HashSet<>();
             Set<Brand> brands = new LinkedHashSet<>();
             for (String b : record.brand()) {
@@ -272,6 +272,8 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 if (fileBrands.contains(brand)) 
                     brands.add(brand);
             }
+            
+            // Slays
             Set<Slay> fileSlays = new HashSet<>();
             Set<Slay> slays = new LinkedHashSet<>();
             for (String s : record.slay()) {
@@ -289,8 +291,11 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 if (fileSlays.contains(slay))
                     slays.add(slay);
             }
+            
+            // Curses
             TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
-            for (String key : record.curse().keySet()) {
+            for (FullCurseDataParseRecord curseDataRecord : record.curse()) {
+                String key = curseDataRecord.name();
                 Curse curse = ObjectRegistry.lookupCurse(key);
                 if (curse == null) {
                     String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
@@ -300,7 +305,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 } else {
                     int power;
                     CurseData curseData;
-                    String value = record.curse().get(key);
+                    String value = curseDataRecord.power();
                     power = ParseUtils.parseIntString("Artifact", value, line, filename, "power");
                     if (power > 0) {
                         curseData = new CurseData(power, 0);
@@ -308,8 +313,14 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     }
                 }
             }
+            
+            // Level
             int level = ParseUtils.parseIntString("Artifact", record.level(), line, filename, "Level");
+            
+            // Commonness
             int commonness = ParseUtils.parseIntString("Artifact", record.commonness(), line, filename, "Commonness");
+            
+            // Min level
             int min = ParseUtils.parseIntString("Artifact", record.min(), line, filename, "Min", false);
             if (0 > min || min > 255) {
                 String message = "Artifact beginning at line: " + line + " of file: " + filename
@@ -317,6 +328,8 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 logger.fatal(message);
                 throw new DataFileParseException(message);
             }
+            
+            // Max level
             int max = ParseUtils.parseIntString("Artifact", record.max(), line, filename, "Max", false);
             if (0 > max || max > 255) {
                 String message = "Artifact beginning at line: " + line + " of file: " + filename
@@ -324,6 +337,8 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 logger.fatal(message);
                 throw new DataFileParseException(message);
             }
+            
+            // Activation
             Activation activation = null;
             if (!record.activation().isEmpty()) {
                 activation = ObjectRegistry.lookupActivation(record.activation());
@@ -333,8 +348,11 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     logger.warn(message);
                 }
             }
+            
+            // Activation message
             String activationMsg = record.msg().isEmpty() ? null : record.msg();
             
+            // Time
             Random time = Random.Zero();
             if (!record.time().isEmpty()) {
                 time = Random.parseStr(record.time());
@@ -345,33 +363,90 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     throw new DataFileParseException(message);
                 }
             }
-
-            ObjectBase objectBase;
-            if (tVal != null)
-                objectBase = ObjectRegistry.getBaseFromTVal(tVal);
-            else
-                objectBase = null;
-
-            if (objectBase == null) {
+            
+            // Guard against a empty objectBases
+            if (record.baseObjects().isEmpty()) {
                 String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
-                        "an unknown object type: " + tVal;
+                        "no assigned bases";
                 logger.fatal(message);
-                throw new DataFileParseException(message);
+                throw new DataFileParseException(message);                
             }
             
-            ObjectKind objectKind = ObjectRegistry.lookupObjectKind(tVal, sVal);
-            
-            boolean special = (objectKind == null) 
-                    || (objectKind != null && objectKind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax());
+            // Get the last object base details
+            ArtifactParseRecord.ArtifactBaseObjectParseRecord baseParseRecord = record.baseObjects().getLast();
 
-            boolean specialLight = (objectKind == null && tVal == TValue.TV_LIGHT) 
-                    || (special && tVal == TValue.TV_LIGHT);
+            // TValue, SValue & appropriate level for records
+            TValue tVal;
+            ObjectKind kind;
+            String sValStr;
+            int levelInt;
+            List<ArtifactParseRecord.ArtifactBaseObjectParseRecord> objectBases = record.baseObjects();
+            for (ArtifactParseRecord.ArtifactBaseObjectParseRecord objectBaseParseRecord : objectBases) {
+                String tValStr = objectBaseParseRecord.tValue();
+                sValStr = objectBaseParseRecord.sValue();
+                String levelStr = objectBaseParseRecord.level();
+                levelInt = ParseUtils.parseIntString("Artifact", levelStr, line, filename, "level");
 
+                tVal = TValue.fromName(tValStr);
+                if (tVal == null) {
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "an unknown base-obj tvalue: " + tValStr;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+
+                ObjectBase base = ObjectRegistry.getBaseFromTVal(tVal);
+                if (base == null) {
+                    String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
+                            "an unknown base from tvalue: " + tValStr;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                kind = ObjectRegistry.lookupObjectKind(tVal, sValStr);
+                if (kind == null) {
+                    kind = new ObjectKind();
+                    kind.setBase(base);
+                    kind.setTval(tVal);
+                    kind.setsValueName(sValStr);
+                    Map<ElementEnum, ElementInfo> elementInfoMap = new HashMap<>();
+                    kind.setLevel(levelInt);
+                    for (ElementEnum elementEnum : base.getElementMap().keySet()) {
+                        elementInfoMap.put(elementEnum, base.getElementMap().get(elementEnum).copy());
+                    }
+                    kind.setElInfo(elementInfoMap);
+                    Flag<ObjectFlag> oFlags = base.getFlags();
+                    for (ObjectFlag oFlag : oFlags) {
+                        kind.setFlag(oFlag);
+                    }
+                    Flag<ObjectKindFlag> kFlags = base.getKindFlags();
+                    for (ObjectKindFlag kFlag : kFlags) {
+                        kind.setKindFlag(kFlag);
+                    }
+                    kind.setCharacter(new AngbandDisplayCharacter('*', ColourEnum.COLOUR_RED));
+                    kind.setKindFlag(ObjectKindFlag.KF_INSTA_ART);
+                    ObjectRegistry.addObjectKind(kind);
+                    kind.setSpecialArtifactKind(kind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax());
+                }
+            }
+
+            // Object bases noted in this artifact
+            TValue lastTValue = TValue.fromName(baseParseRecord.tValue());
+
+            // Special light
+            if (lastTValue == null) {
+                lastTValue = TValue.TV_NONE;
+            }
+            kind = ObjectRegistry.lookupObjectKind(lastTValue, baseParseRecord.sValue());
+            boolean special = kind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax();
+            boolean specialLight = special && lastTValue == TValue.TV_LIGHT;
+
+            // Artifact activation & time initial values
             Activation artActivation = activation;
             Random artTime = time;
             Activation kindActivation = null;
             Random kindTime = null;
 
+            // Artifact activation & time special light values
             if (specialLight) {
                 if (!record.time().isEmpty())
                     kindTime = artTime;
@@ -380,41 +455,51 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 artActivation = null;
             }
 
-            Artifact artifact = new Artifact(name, text, tVal, sVal, toh, tod, toa,
+            // Artifact constructor
+            Artifact artifact = new Artifact(name, text, lastTValue, baseParseRecord.sValue(), toh, tod, toa,
                     baseAC, baseDamageString, weight, cost, flags, modifiers, elInfo,
                     brands, slays, curses, level, commonness, min, max, artActivation,
                     activationMsg, artTime);
-
-            if (objectKind == null) {
-                objectKind = new ObjectKind(artifact, sVal, objectBase);
-                if (record.levelFirst()) {
-                    level = ParseUtils.parseIntString("Artifact", record.baseObjectLevel(), line,
-                            filename, "Level");
-                    objectKind.setLevel(level);
-                }
-                else objectKind.setLevel(0);
-                ObjectRegistry.addObjectKind(objectKind);
-            }
-
+            
+            // Weight for special kinds
             if (special && !record.weight().isEmpty())
-                objectKind.setWeight(weight);
+                kind.setWeight(weight);
+            
+            // Cost for special kinds
             if (special && !record.cost().isEmpty())
-                objectKind.setCost(cost);
+                kind.setCost(cost);
 
+            // Special kind activations list
             if (specialLight && !record.activation().isEmpty()) {
-                List<Activation> kindActivations = objectKind.getActivations();
+                List<Activation> kindActivations = kind.getActivations();
                 kindActivations.clear();
                 if (kindActivation != null)
                     kindActivations.add(kindActivation);
             }
 
+            // Kind time, if not already set
             if (kindTime != null) {
-                objectKind.setTime(kindTime);
+                kind.setTime(kindTime);
             }            
 
-            if (!record.glyph().isEmpty()) {
-                if (objectKind.getKindFlags().has(ObjectKindFlag.KF_INSTA_ART)) {
-                    objectKind.setCharacter(new AngbandDisplayCharacter(record.glyph().charAt(0), record.colour()));
+            // Agnband Display Character
+            if (!record.glyph().isEmpty() && !record.colour().isEmpty()) {
+                ParseUtils.GlyphCharacter glyphCharacter = ParseUtils.parseADCGlyph(record.glyph());
+
+                if (glyphCharacter == null) {
+                    String message = "Artifact beginning at line: " + line + " of file: " + filename
+                            + " has an unknown error with token glyph value: " + record.glyph();
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+
+                if (kind.getKindFlags().has(ObjectKindFlag.KF_INSTA_ART)) {
+                    ColourEnum colour = ColourEnum.fromCode(record.colour());
+                    if (colour == null) colour = ColourEnum.COLOUR_WHITE;
+                    if (glyphCharacter.wideGlyphChar() == 0)
+                        kind.setCharacter(new AngbandDisplayCharacter(glyphCharacter.glyphChar(), colour));
+                    else
+                        kind.setCharacter(new AngbandDisplayCharacter(glyphCharacter.wideGlyphChar(), colour));
                 } else {
                     String message = "Artifact beginning at line: " + line + " of file: " + filename
                             + " has an unknown error with token glyph value: " + record.glyph();
@@ -423,9 +508,11 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 }
             }
 
+            // Add to the results list
             artifacts.add(artifact);
         }
 
+        // Return the results list
         return artifacts;
     }
 }

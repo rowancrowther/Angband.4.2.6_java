@@ -25,9 +25,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link TValue}'s lookups — {@link TValue#fromName(String)}, {@link TValue#fromName(int)}
@@ -142,6 +140,37 @@ class TValueLookupTest {
         @DisplayName("a leading plus sign is accepted")
         void signIsAccepted() {
             assertResolves(TValue.TV_BOW, "+5");
+        }
+
+        /**
+         * {@code strtoul} negates the digits it read, and negative zero is zero, so {@code "-0"}
+         * is a successful lookup of tval {@code 0}. Any other minus gives a huge unsigned value
+         * that fails {@code r < TV_MAX}, so {@code "-5"} is {@code -1}.
+         *
+         * <p>Function negativeZeroIsTvalZero coded on 261107, commented in full on 261107.
+         */
+        @Test
+        @DisplayName("-0 is tval 0 and -5 is rejected")
+        void negativeZeroIsTvalZero() {
+            assertResolves(TValue.TV_NONE, "-0");
+            assertResolves(TValue.TV_NONE, "+0");
+            assertRejected("-5");
+        }
+
+        /**
+         * The digits are read and checked before any name match, and a sign with no digit after
+         * it reads nothing, so {@code strtoul} leaves {@code pe == name} and the text goes to the
+         * name match, which finds nothing.
+         *
+         * <p>Function signWithNoDigitsIsNotANumber coded on 261107, commented in full on 261107.
+         *
+         * @param text a sign with no digits straight after it
+         */
+        @ParameterizedTest
+        @ValueSource(strings = {"+", "-", "+ 5", "- 5"})
+        @DisplayName("a sign with no digits straight after it is not a number")
+        void signWithNoDigitsIsNotANumber(String text) {
+            assertRejected(text);
         }
 
         /**
@@ -315,6 +344,49 @@ class TValueLookupTest {
             assertRejected("armour");
             assertRejected("armor");
         }
+
+        /**
+         * Only the first lowercase match is rewritten, and the rest is dropped, so a name with two
+         * lowercase {@code armour}s keeps its first rewrite and the second never matters. Here
+         * both ports agree with C.
+         *
+         * <p>Function twoLowercaseArmoursRewriteTheFirst coded on 261107, commented in full on
+         * 261107.
+         */
+        @Test
+        @DisplayName("with two lowercase armours the first is rewritten and the rest dropped")
+        void twoLowercaseArmoursRewriteTheFirst() {
+            assertResolves(TValue.TV_HARD_ARMOR, "hard armour armour");
+        }
+
+        /**
+         * Accepted deviation (261107, "Tval" in {@code docs/Accepted_Deviations.md}), pinned so a
+         * change to it is deliberate. C's {@code strstr} finds the lowercase second word in
+         * {@code "soft Armour armour"}, giving {@code "soft Armour armor"}, which matches nothing
+         * ({@code -1}). The port finds the capitalised first word, so it resolves to
+         * {@link TValue#TV_SOFT_ARMOR}.
+         *
+         * <p>Function capitalisedBeforeLowercaseArmourDiffersFromC coded on 261107, commented in
+         * full on 261107.
+         */
+        @Test
+        @DisplayName("deviation: a capitalised Armour before a lowercase armour resolves here, not in C")
+        void capitalisedBeforeLowercaseArmourDiffersFromC() {
+            assertResolves(TValue.TV_SOFT_ARMOR, "soft Armour armour");
+        }
+
+        /**
+         * Accepted deviation (261107): upper-casing {@code "ß"} gives {@code "SS"}, which shifts
+         * the position the port finds, and the substring runs past the end. C returns {@code -1}.
+         *
+         * <p>Function upperCasingThatChangesLengthThrows coded on 261107, commented in full on
+         * 261107.
+         */
+        @Test
+        @DisplayName("deviation: text whose upper-casing changes length throws")
+        void upperCasingThatChangesLengthThrows() {
+            assertThrows(StringIndexOutOfBoundsException.class, () -> TValue.fromName("ß armour"));
+        }
     }
 
     /**
@@ -444,7 +516,8 @@ class TValueLookupTest {
 
     /**
      * The identifier form, which has no C equivalent: the constant name without {@code TV_}.
-     * Pinned so that a change to it is deliberate.
+     * An accepted deviation (261107, "Tval" in {@code docs/Accepted_Deviations.md}): C returns
+     * {@code -1} for every text here that resolves. Pinned so that a change to it is deliberate.
      */
     @Nested
     @DisplayName("identifiers (port only)")

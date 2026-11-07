@@ -1493,3 +1493,38 @@ Found 2026-10-19 during `/port VisualsReader.java`. Not fixed.
 - Should the caps be enforced, or is "no limit" the intended Java behaviour? Refusing a 33rd step and a file with no `cycle:` block
   would match C; the dropped ninth group and 65th cycle are quiet data loss in C that Java need not copy. Whichever is chosen, the
   flicker table will want a three-step rule when `FlickerTable` gets its read path.
+
+## `artifact/ArtifactAssembler.java`: a special artifact's kind is built bare, C copies the base's flags, kind flags and element info into it
+
+Found 2026-11-07 during `/port` of the open assemblers. Not fixed.
+
+- C: `write_dummy_object_record` in `obj-init.c` zeroes the new kind, then copies the tval's object flags (`of_copy`), kind flags (`kf_copy`) and `el_info` (`memcpy`) from `kb_info[tval]`, and adds `KF_INSTA_ART`. Weight, cost, activation and the dice stay zero.
+- Java: `ArtifactAssembler.java:376-384` calls `new ObjectKind()`, then sets the base, tval, sval name, level, glyph and `KF_INSTA_ART`. The object flags stay empty and the kind flags hold `KF_INSTA_ART` alone.
+- `kind.setElInfo(elInfo)` at `ArtifactAssembler.java:380` hands the kind the artifact's own element map by reference, so the kind carries the artifact's `RES_` levels and base-element ignore bits, and none of the base's hates flags.
+- The `ObjectKind(Artifact, String, ObjectBase)` constructor in `ObjectKind.java` does what C does: it copies the three sets, takes `KF_INSTA_ART`, zeroes the dice and sets `isSpecialArtifactKind`. Nothing in `src/main` calls it.
+- A kind built the current way has `isSpecialArtifactKind()` false, and `PlayerKnowledge.java`, `ObjectKnowledge.java` and `ObjectUtils.java` all read it. Its dice fields are `null`.
+- Shipped data: 14 special kinds are made on the first load.
+
+## `itemobject/ItemObjectAssembler.java`: an `alloc:` depth of 2147483647 or more loads, C refuses it
+
+Found 2026-11-07 during `/port` of the open assemblers. Not fixed.
+
+- C: `parse_object_alloc` calls `grab_int_range` in `datafile.c`, which returns `PARSE_ERROR_INVALID_VALUE` for either end at or beyond `INT_MIN` or `INT_MAX`. `parse_object_alloc` turns that into `PARSE_ERROR_INVALID_ALLOCATION`. There is no 0 to 255 check for objects.
+- Java: `ItemObjectAssembler.java:242-245` reads both ends with `ParseUtils.parseIntString` and never tests for the `Integer.MIN_VALUE`/`Integer.MAX_VALUE` mark that the clamp leaves, so `alloc:1:5 to 2147483647` loads. `EgoItemAssembler.java` and `ArtifactAssembler.java` are not affected, since their 0 to 255 check catches it.
+- None on the shipped data.
+
+## `itemobject/ItemObjectAssembler.java` and `ArtifactAssembler.java`: a tval with no `object_base.txt` record has a `null` base, C has a zeroed one
+
+Found 2026-11-07 during `/port` of the open assemblers. Not fixed.
+
+- C: `kb_info` is zero-filled for every tval, so `type:` on a valid tval the file never declares still gives the kind `&kb_info[tval]`. Its `num_svals` counts up and the kind gets a real sval. An artifact's `base-object:` on that tval loads too.
+- Java: `ObjectRegistry.getBaseFromTVal` answers `null`. `ItemObjectAssembler.java:159` then registers the kind as base-less (sval 0, no counter), and `ArtifactAssembler.java:389-394` refuses the record as an unknown object type.
+- None on the shipped data, where `object_base.txt` declares every tval that `object.txt` and `artifact.txt` use.
+
+## `itemobject/ItemObjectAssembler.java` and `egoitem/EgoItemAssembler.java`: a `values:` dice string of 40 characters or more is accepted, C refuses it
+
+Found 2026-11-07 during `/port` of the open assemblers. Not fixed.
+
+- C: `grab_rand_value` in `datafile.c` copies the text between the brackets into a 40-byte `dice_string`, and `find_value_arg` returns false when it does not fit, so the token is `PARSE_ERROR_INVALID_VALUE`.
+- Java: `ItemObjectAssembler.java:352` and `EgoItemAssembler.java:256` pass the whole text to `Random.parseStr` with no length test.
+- None on the shipped data. Only a modded file with a padded dice string could show it.

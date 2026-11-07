@@ -27,7 +27,6 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.effect.Effect;
-import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.Curse;
@@ -234,27 +233,15 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
             // flags: line fans out — HATES_/IGNORE_ set element flags on elInfo,
             // everything else is an object flag.
             for (String flag : record.flags()) {
-                if (flag.startsWith("HATES_") || flag.startsWith("IGNORE_")) {
-                    boolean hates = flag.startsWith("HATES_");
-                    String elemName = "ELEM_" + flag.substring(hates ? 6 : 7);
-                    try {
-                        ElementEnum elementEnum = ElementEnum.valueOf(elemName);
-                        ElementInfo info = elInfo.computeIfAbsent(elementEnum, k -> new ElementInfo());
-                        info.on(hates ? ElementInfoEnum.EL_INFO_HATES : ElementInfoEnum.EL_INFO_IGNORE);
-                    } catch (IllegalArgumentException e) {
-                        String msg = "Curse starting at line: " + line + " of file: " + filename + " has " +
-                                "an invalid Element flag value: " + flag;
-                        logger.fatal(msg, e);
-                        throw new DataFileParseException(msg);
-                    }
-                } else {
+                boolean flagAdded = ParseUtils.grabElementFlag(elInfo, flag);
+                if (!flagAdded) {
                     ObjectFlag objectFlag;
                     try {
                         objectFlag = ObjectFlag.valueOf("OF_" + flag);
                         objectFlags.on(objectFlag);
                     } catch (IllegalArgumentException e) {
                         String msg = "Curse starting at line: " + line + " of file: " + filename + " has " +
-                                "an invalid object flag value: " + flag;
+                                "an invalid object/element flag value: " + flag;
                         logger.fatal(msg, e);
                         throw new DataFileParseException(msg);
                     }

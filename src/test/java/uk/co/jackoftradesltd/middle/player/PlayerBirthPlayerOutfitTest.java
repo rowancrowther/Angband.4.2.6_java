@@ -19,7 +19,6 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
-import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
@@ -114,7 +113,7 @@ class PlayerBirthPlayerOutfitTest {
      */
     private static ObjectKind kind(TValue tValue, String sValueName, int cost) {
         ObjectBase base = new ObjectBase(tValue, "test-base", null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, 99, new Flag<>(ObjectFlag.class));
+                new Flag<>(ObjectKindFlag.class), new java.util.HashMap<>(), 0, 99, new Flag<>(ObjectFlag.class));
         ObjectKind kind = new ObjectKind(null, cost, 0, 0, 0, "test", tValue, sValueName, base, false);
         for (String name : new String[]{"toH", "toD", "toA", "pVal"}) {
             ItemFixture.set(kind, name, new Random(0, 1, 1, 1, false));

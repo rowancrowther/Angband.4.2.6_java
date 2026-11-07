@@ -22,6 +22,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.parser.curse.FullCurseDataParseRecord;
 import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectAssembler;
 import uk.co.jackoftradesltd.backend.parser.itemobject.ItemObjectParseRecord;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
@@ -30,6 +31,7 @@ import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -548,6 +550,15 @@ class ItemObjectReaderTest {
     }
 
     /**
+     * A text directive's value in C's terms: every line is appended with {@code string_append}, so
+     * the lines join, and a directive the record never gave leaves the zeroed record's {@code NULL}.
+     */
+    private static String joinedOrNull(Map<String, List<String>> record, String key) {
+        List<String> values = record.get(key);
+        return values == null ? null : String.join("", values);
+    }
+
+    /**
      * A scalar directive's value in C's terms: a repeat overwrites, so the last line wins, and a
      * directive the record never gave leaves the zeroed record's 0.
      */
@@ -679,11 +690,11 @@ class ItemObjectReaderTest {
             int pile = record.containsKey("pile") ? Integer.parseInt(last(record, "pile").split(":")[0]) : 0;
             assertEquals(pile, (int) kindField(kind, "genMultProb"), "pile chance of " + at);
 
-            assertEquals(String.join("", record.getOrDefault("desc", List.of())),
+            assertEquals(joinedOrNull(record, "desc"),
                     kindField(kind, "text"), "desc of " + at);
-            assertEquals(String.join("", record.getOrDefault("msg", List.of())),
+            assertEquals(joinedOrNull(record, "msg"),
                     kindField(kind, "effectMessage"), "msg of " + at);
-            assertEquals(String.join("", record.getOrDefault("vis-msg", List.of())),
+            assertEquals(joinedOrNull(record, "vis-msg"),
                     kindField(kind, "visMessage"), "vis-msg of " + at);
             assertEquals(record.getOrDefault("effect", List.of()).size(), kind.getEffect().size(),
                     "effect count of " + at);
@@ -811,8 +822,8 @@ class ItemObjectReaderTest {
         assertNotSame(wand, ring);
         assertEquals("6+1d10m0", dice(wand.getCharge()));
         assertEquals("A line of shimmering blue light appears.", kindField(wand, "visMessage"));
-        assertEquals("", kindField(wand, "effectMessage"));
-        assertEquals("", kindField(ring, "visMessage"));
+        assertNull(kindField(wand, "effectMessage"));
+        assertNull(kindField(ring, "visMessage"));
         assertEquals("0+0d0m0", dice(ring.getCharge()));
     }
 
@@ -1052,15 +1063,20 @@ class ItemObjectReaderTest {
     /**
      * {@code parse_object_curse} stores a power only when it is above 0 and never clears one, so
      * {@code curse:teleportation:50} followed by {@code curse:teleportation:0} leaves the 50 in C.
-     * The grammar keeps the last line per curse name, so the zero replaces the 50 and the assembler
-     * then drops it.
+     * The grammar now hands the assembler every {@code curse:} line in file order, and the assembler
+     * ignores a power of 0 or below, so the 50 survives here too.
+     *
+     * <p>Method aLaterZeroPowerCurseLeavesAnEarlierOneAsInC coded before 261105, commented in full on
+     * 261105 (was aLaterZeroPowerCurseDropsAnEarlierOneHereWhereCKeepsIt; flipped to the C behaviour
+     * on 261105 when the curse lines became a list).
      */
     @Test
-    void aLaterZeroPowerCurseDropsAnEarlierOneHereWhereCKeepsIt() throws Exception {
+    void aLaterZeroPowerCurseLeavesAnEarlierOneAsInC() throws Exception {
         ParseResult<ObjectKind> result = load("curse-zero-after.txt", obj("cursed", HEAD + "curse:teleportation:50\ncurse:teleportation:0\n"));
 
         Map<Curse, CurseData> curses = kindField(result.items().get(0), "curses");
-        assertTrue(curses.isEmpty(), () -> "C would hold teleportation at 50, got: " + curses);
+        assertEquals(1, curses.size(), () -> "C holds teleportation at 50, got: " + curses);
+        assertEquals(50, curses.values().iterator().next().getPower());
     }
 
     /**
@@ -1176,7 +1192,7 @@ class ItemObjectReaderTest {
                                              String allocCommon, String allocLower, String allocUpper) {
         return new ItemObjectParseRecord("probe", glyph, colour, "sword", "", "", "",
                 attackBase, attackToh, "", "", "", allocCommon, allocLower, allocUpper, "", "", "", "",
-                "", "", List.of(), List.of(), Map.of(), List.of(), List.of(), Map.of(), pVal, "", "", 7);
+                "", "", List.of(), List.of(), Map.of(), List.of(), List.of(), List.of(), pVal, "", "", 7);
     }
 
     private static ObjectKind assembleOne(ItemObjectParseRecord record) {
@@ -1216,7 +1232,10 @@ class ItemObjectReaderTest {
 
     /**
      * {@code text_mbstowcs(&cval, tok, 1)} converts one character and ignores the rest of the
-     * token, whether that first character is a basic one or a supplementary one.
+     * token, whether that first character is a basic one or a supplementary one. In C a longer
+     * token never gets that far, since {@code parser_parse()} refuses a {@code char} field of more
+     * than one character ({@code PARSE_ERROR_FIELD_TOO_LONG}); here the lexer's glyph token is one
+     * code point, so the assembler is only handed a longer one by a test like this.
      */
     @Test
     void onlyTheFirstCodePointOfTheGlyphTokenIsKept() {
@@ -1316,5 +1335,288 @@ class ItemObjectReaderTest {
                 () -> assembleOne(rec("|", "w", "", "", "", "5", "", "20")));
         assertThrows(DataFileParseException.class,
                 () -> assembleOne(rec("|", "w", "", "", "", "5", "1", "")));
+    }
+
+    // ---- ItemObjectAssembler, clause by clause against parse_object_* and finish_parse_object ----
+
+    /**
+     * A record with every directive absent except what a test sets. The tests below hand this to
+     * the assembler directly, so they reach cases the lexer and grammar would stop first.
+     */
+    private static final class Probe {
+        String tval = "sword";
+        String colour = "w";
+        String weight = "";
+        String cost = "";
+        String power = "";
+        String pileChance = "";
+        String pileNumber = "";
+        String attackBase = "";
+        List<String> flags = List.of();
+        Map<String, String> values = Map.of();
+        List<String> brand = List.of();
+        List<String> slay = List.of();
+        List<FullCurseDataParseRecord> curse = List.of();
+
+        ObjectKind build() {
+            return new ItemObjectAssembler().assemble(List.of(new ItemObjectParseRecord("probe", "|", colour,
+                    tval, "", weight, cost, attackBase, "", "", "", "", "", "", "", "", pileChance, pileNumber,
+                    power, "", "", List.of(), flags, values, brand, slay, curse, "", "", "", 7)), "probe.txt").get(0);
+        }
+    }
+
+    /**
+     * {@code obj_flags} and {@code kind_flags} in {@code obj-init.c} both end in {@code MAX} (the
+     * {@code list-*-flags.h} headers end on it), and {@code lookup_flag} starts at table index 1, so
+     * only the {@code NONE} at index 0 is skipped. C therefore takes a {@code MAX} token and sets
+     * the sentinel bit in both flag sets.
+     */
+    @Test
+    void aMaxFlagTokenIsTakenIntoBothFlagTablesAsInC() {
+        Probe probe = new Probe();
+        probe.flags = List.of("MAX");
+
+        ObjectKind kind = probe.build();
+
+        assertTrue(kind.getFlags().has(ObjectFlag.OF_MAX));
+        assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_MAX));
+    }
+
+    /**
+     * Index 0 of both C flag tables holds {@code NONE} and {@code lookup_flag} never looks there,
+     * and no element name is {@code NONE}, so the token matches nothing and
+     * {@code parse_object_flags} returns {@code PARSE_ERROR_INVALID_FLAG}.
+     */
+    @Test
+    void aNoneFlagTokenIsRefusedAsInC() {
+        Probe probe = new Probe();
+        probe.flags = List.of("NONE");
+
+        DataFileParseException thrown = assertThrows(DataFileParseException.class, probe::build);
+        assertTrue(thrown.getMessage().contains("NONE"), thrown.getMessage());
+    }
+
+    /**
+     * {@code grab_element_flag} compares the text after the underscore with {@code element_names},
+     * which stops short of {@code ELEM_MAX} and holds no {@code NONE}, so neither sentinel names an
+     * element and the token is an invalid flag.
+     */
+    @Test
+    void anIgnoreOrHatesTokenNamingASentinelElementIsRefused() {
+        for (String token : List.of("IGNORE_NONE", "HATES_MAX", "IGNORE_MAX", "HATES_NONE")) {
+            Probe probe = new Probe();
+            probe.flags = List.of(token);
+
+            assertThrows(DataFileParseException.class, probe::build, token);
+        }
+    }
+
+    /**
+     * {@code grab_flag} and {@code grab_element_flag} compare with {@code streq} and
+     * {@code strncmp}, which are case-sensitive, so a lower-case flag name is no flag.
+     */
+    @Test
+    void flagTokensAreCaseSensitiveAsInC() {
+        for (String token : List.of("easy_know", "ignore_fire", "Hates_Fire")) {
+            Probe probe = new Probe();
+            probe.flags = List.of(token);
+
+            assertThrows(DataFileParseException.class, probe::build, token);
+        }
+    }
+
+    /**
+     * {@code obj_mods} is the stats followed by the modifiers, with no {@code NONE} and no
+     * {@code MAX}, and {@code grab_rand_value} matches names with {@code streq}. A sentinel name or
+     * a lower-case one matches nothing, and {@code parse_object_values} returns
+     * {@code PARSE_ERROR_INVALID_VALUE}.
+     */
+    @Test
+    void aModifierSentinelOrLowerCaseModifierIsRefusedAsInC() {
+        for (String key : List.of("NONE", "MAX", "str")) {
+            Probe probe = new Probe();
+            probe.values = Map.of(key, "1");
+
+            assertThrows(DataFileParseException.class, probe::build, key);
+        }
+    }
+
+    /**
+     * {@code grab_index_and_int} reads the figure with {@code find_value_arg}: {@code strtol} in
+     * base 10, accepted only when the next character is the closing bracket, and refused at
+     * {@code INT_MIN} or {@code INT_MAX}. An empty bracket reads nothing, stops on the
+     * {@code ]} and is accepted as 0. The level is then stored in the element's {@code res_level}.
+     */
+    @Test
+    void aResistanceFigureIsReadAsFindValueArgReadsIt() {
+        Map<String, Integer> accepted = new LinkedHashMap<>();
+        accepted.put("1", 1);
+        accepted.put("-1", -1);
+        accepted.put("+3", 3);
+        accepted.put("0", 0);
+        accepted.put("", 0);
+        accepted.put("2147483646", (int) (short) 2147483646);
+        accepted.put("-2147483647", (int) (short) -2147483647);
+        for (Map.Entry<String, Integer> entry : accepted.entrySet()) {
+            Probe probe = new Probe();
+            probe.values = Map.of("RES_FIRE", entry.getKey());
+
+            assertEquals(entry.getValue(), (int) probe.build().getElInfo(ElementEnum.ELEM_FIRE).getResLevel(),
+                    "[" + entry.getKey() + "]");
+        }
+
+        for (String refused : List.of("5x", "-", "+", "1d2", "2147483647", "-2147483648")) {
+            Probe probe = new Probe();
+            probe.values = Map.of("RES_FIRE", refused);
+
+            assertThrows(DataFileParseException.class, probe::build, "[" + refused + "]");
+        }
+    }
+
+    /**
+     * {@code element_names} holds upper-case names only and {@code streq} is case-sensitive, so
+     * {@code RES_fire} names no element.
+     */
+    @Test
+    void aLowerCaseResistanceElementIsRefusedAsInC() {
+        Probe probe = new Probe();
+        probe.values = Map.of("RES_fire", "1");
+
+        assertThrows(DataFileParseException.class, probe::build);
+    }
+
+    /**
+     * C sets {@code k->slays[i]} and {@code k->brands[i]} in boolean arrays indexed by the
+     * registry, so the order the record names them in is lost and a walk of the kind meets them in
+     * registry order. The sets here are built by walking the registry, so they must come out in
+     * registry order whichever way round the record lists them.
+     */
+    @Test
+    void brandsAndSlaysComeOutInRegistryOrderWhateverOrderTheRecordNamesThem() {
+        List<Slay> slays = ObjectRegistry.getSlays();
+        List<Brand> brands = ObjectRegistry.getBrands();
+        assertTrue(slays.size() >= 3 && brands.size() >= 3, "the seeded registries are large enough");
+
+        Probe probe = new Probe();
+        probe.slay = List.of(slays.get(2).getCode(), slays.get(0).getCode(), slays.get(1).getCode());
+        probe.brand = List.of(brands.get(2).getCode(), brands.get(0).getCode(), brands.get(1).getCode());
+        ObjectKind kind = probe.build();
+
+        assertEquals(slays.subList(0, 3), new ArrayList<>(kind.getSlays()));
+        assertEquals(brands.subList(0, 3), new ArrayList<>(kind.getBrands()));
+    }
+
+    /**
+     * {@code k->curses} is an array indexed by curse, so a walk of it meets the curses in index
+     * order whichever order the record named them in.
+     */
+    @Test
+    void cursesComeOutInCurseIndexOrderWhateverOrderTheRecordNamesThem() {
+        List<Curse> registry = new ArrayList<>(ObjectRegistry.getCurses());
+        registry.sort(Curse.CURSE_ORDER);
+        Curse low = registry.get(0);
+        Curse high = registry.get(registry.size() - 1);
+        assertTrue(low.getIndex() < high.getIndex(), "the two curses have different indices");
+
+        Probe probe = new Probe();
+        probe.curse = List.of(new FullCurseDataParseRecord(high.getName(), "50", ""),
+                new FullCurseDataParseRecord(low.getName(), "20", ""));
+        ObjectKind kind = probe.build();
+
+        assertEquals(List.of(low, high), new ArrayList<>(kind.getCurses().keySet()));
+        assertEquals(20, kind.getCurses().get(low).getPower());
+        assertEquals(50, kind.getCurses().get(high).getPower());
+    }
+
+    /**
+     * {@code tval_find_idx("none")} is 0, not -1, so {@code type:none} is a legal line. The kind
+     * keeps {@code TV_NONE} and whatever base the registry holds for it, and the load goes on.
+     */
+    @Test
+    void typeNoneIsALegalTvalAsInC() {
+        Probe probe = new Probe();
+        probe.tval = "none";
+
+        ObjectKind kind = probe.build();
+
+        assertEquals(TValue.TV_NONE, kind.gettValue());
+        assertSame(ObjectRegistry.getBaseFromTVal(TValue.TV_NONE), kind.getBase());
+    }
+
+    /**
+     * {@code color_text_to_attr} matches a name with {@code my_stricmp}, so case does not matter;
+     * {@code color_char_to_attr} compares the code character with {@code ==}, so it does.
+     */
+    @Test
+    void aColourNameIgnoresCaseButAColourCodeDoesNot() {
+        for (String name : List.of("red", "RED", "Red")) {
+            Probe probe = new Probe();
+            probe.colour = name;
+
+            assertEquals(ColourEnum.COLOUR_RED, probe.build().getCharacter().getAttributeColour(), name);
+        }
+
+        Probe lower = new Probe();
+        lower.colour = "r";
+        Probe upper = new Probe();
+        upper.colour = "R";
+
+        assertEquals(ColourEnum.COLOUR_RED, lower.build().getCharacter().getAttributeColour());
+        assertEquals(ColourEnum.COLOUR_LIGHT_RED, upper.build().getCharacter().getAttributeColour());
+    }
+
+    /**
+     * {@code parser_getint} is {@code strtol} in base 0, so {@code weight}, {@code cost} and
+     * {@code power} read {@code 010} as eight, {@code 0x10} as sixteen and {@code -3} as minus three.
+     */
+    @Test
+    void theIntegerDirectivesAreReadInBaseZeroAsParserGetintReadsThem() {
+        Probe probe = new Probe();
+        probe.weight = "010";
+        probe.cost = "0x10";
+        probe.power = "-3";
+
+        ObjectKind kind = probe.build();
+
+        assertEquals(8, kind.getWeight());
+        assertEquals(16, kind.getCost());
+        assertEquals(-3, kind.getPower());
+    }
+
+    /**
+     * {@code parse_object_attack} stores the dice and sides of {@code hd} in {@code k->dd} and
+     * {@code k->ds}.
+     */
+    @Test
+    void theAttackDiceAndSidesAreTheHdDiceAndSides() {
+        Probe probe = new Probe();
+        probe.attackBase = "3d4";
+
+        ObjectKind kind = probe.build();
+
+        assertEquals(3, kind.getDamageDice());
+        assertEquals(4, kind.getDamageSides());
+    }
+
+    /**
+     * {@code pile} is one line of probability and stack dice in C ({@code "pile int prob rand
+     * stack"}), so a probability with no stack is a missing field. The stack dice themselves must
+     * parse.
+     */
+    @Test
+    void aPileChanceNeedsAStackAmountThatParses() {
+        Probe noAmount = new Probe();
+        noAmount.pileChance = "25";
+        assertThrows(DataFileParseException.class, noAmount::build);
+
+        Probe badAmount = new Probe();
+        badAmount.pileChance = "25";
+        badAmount.pileNumber = "not dice";
+        assertThrows(DataFileParseException.class, badAmount::build);
+
+        Probe fine = new Probe();
+        fine.pileChance = "25";
+        fine.pileNumber = "2d3";
+        assertDoesNotThrow(fine::build);
     }
 }

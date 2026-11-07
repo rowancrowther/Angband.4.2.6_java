@@ -228,7 +228,7 @@ class ObjectUtilsObjectPrepTest {
         @DisplayName("only the kind's own flags reach the object; the base's are never applied")
         void baseFlagsAreNotApplied() {
             ObjectBase base = new ObjectBase(TValue.TV_SWORD, "edged", null,
-                    new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, 40, new Flag<>(ObjectFlag.class));
+                    new Flag<>(ObjectKindFlag.class), new java.util.HashMap<>(), 0, 40, new Flag<>(ObjectFlag.class));
             set(base, "flags", new Flag<>(ObjectFlag.class, ObjectFlag.OF_IMPAIR_HP));
 
             ObjectKind kind = kind(TValue.TV_SWORD);
@@ -448,7 +448,7 @@ class ObjectUtilsObjectPrepTest {
         @DisplayName("an element on both kind and base gets the kind's level and the union of both flag sets")
         void elementInfoUnionsKindAndBaseFlags() {
             ObjectBase base = new ObjectBase(TValue.TV_SWORD, "edged", null,
-                    new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), new Flag<>(ElementEnum.class), 0, 40, new Flag<>(ObjectFlag.class));
+                    new Flag<>(ObjectKindFlag.class), new java.util.HashMap<>(), 0, 40, new Flag<>(ObjectFlag.class));
             base.getElementMap().put(ElementEnum.ELEM_ACID, new uk.co.jackoftradesltd.middle.objects.ElementInfo());
             base.getElementMap().get(ElementEnum.ELEM_ACID).getFlags().on(ElementInfoEnum.EL_INFO_HATES);
 

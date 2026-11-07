@@ -20,6 +20,8 @@ package uk.co.jackoftradesltd.middle.objects.enums;
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftradesltd.middle.player.enums.SustainStat;
 
+import java.util.Arrays;
+
 /**
  * The boolean property flags an object can carry (sustains, protections,
  * telepathy, free action, light, digging, throwing, curses, …), each with the
@@ -40,10 +42,16 @@ import uk.co.jackoftradesltd.middle.player.enums.SustainStat;
  *
  * <p>Order matters. C's header warns that changing flag order breaks savefiles, and the
  * constants here are in exactly the order of that header: {@code OF_NONE} first, standing in
- * for the zero C's {@code OF_NONE} holds, then the thirty-eight {@code OF()} entries, then
- * {@code OF_MAX}. {@code OF_NONE} and {@code OF_MAX} are sentinels, not real flags, so a loop
- * over every flag runs from {@code ordinal() == 1} up to but excluding {@code OF_MAX}, as C's
- * loops do from {@code 1} to {@code OF_MAX}.
+ * for the zero C's {@code OF_NONE} holds, then the thirty-eight real {@code OF()} entries, then
+ * the {@code OF(MAX, "")} entry that closes the list. {@code OF_NONE} and {@code OF_MAX} are
+ * sentinels, not real flags, so a loop over every flag runs from {@code ordinal() == 1} up to
+ * but excluding {@code OF_MAX}, as C's loops do from {@code 1} to {@code OF_MAX}.
+ *
+ * <p>Finding a flag by name is {@link #lookup(String)}, the port of C's {@code lookup_flag()}
+ * ({@code datafile.c}) run over the {@code obj_flags[]} name tables, which are built from the
+ * same header with a {@code "NONE"} entry at index 0 and the header's {@code "MAX"} entry last.
+ * Because {@code lookup_flag()} starts at index 1, {@code "NONE"} never matches there, while
+ * {@code "MAX"} does.
  *
  * <p>The first five real flags, {@code OF_SUST_STR} to {@code OF_SUST_CON}, must stay in the
  * same order as the stats in {@code list-stats.h}, because C's {@code sustain_flag()}
@@ -51,15 +59,21 @@ import uk.co.jackoftradesltd.middle.player.enums.SustainStat;
  * {@link uk.co.jackoftradesltd.middle.player.enums.SustainStat} records that pairing and
  * {@link #getSustainStatFlag} reads it.
  *
- * <p>Class ObjectFlag coded before 261005, commented in full on 261012.
+ * <p>Class ObjectFlag coded before 261005, commented in full on 261107.
  *
  * @author Rowan Crowther
  */
 public enum ObjectFlag {
     /**
      * Sentinel for "no flag", standing in for the zero C's {@code OF_NONE} holds at the head of
-     * its enum. It is not a real flag: the data file cannot name it, and C's flag loops start
-     * after it. Its label is the empty string.
+     * its enum. It is not a real flag, and C's flag loops start after it. Its label is the empty
+     * string.
+     *
+     * <p>C's name table does carry a {@code "NONE"} entry for it at index 0, but
+     * {@code lookup_flag()} starts at index 1, so a flag list naming {@code NONE} finds nothing.
+     * {@link #lookup(String)} follows that and answers {@code null} for {@code "OF_NONE"}.
+     *
+     * <p>Constant OF_NONE coded before 261005, commented in full on 261107.
      */
     OF_NONE(""),
     /**
@@ -266,7 +280,14 @@ public enum ObjectFlag {
     OF_MULTIPLY_WEIGHT("MulWg"),
     /**
      * Count sentinel, the {@code OF_MAX} C's list ends on, one past the last real flag. It is
-     * not a real flag, and the data file cannot name it; its label is the empty string.
+     * not a real flag; its label is the empty string.
+     *
+     * <p>C's header lists it as an ordinary {@code OF(MAX, "")} entry, so the name tables hold
+     * {@code "MAX"} and {@code lookup_flag()} finds it at index 39. {@link #lookup(String)}
+     * does the same and returns this constant for {@code "OF_MAX"}; nothing in the lookup
+     * refuses it, so a caller that must not turn it on has to test for it.
+     *
+     * <p>Constant OF_MAX coded before 261005, commented in full on 261107.
      */
     OF_MAX("");
 
@@ -320,6 +341,33 @@ public enum ObjectFlag {
             case SUS_STAT_STR -> OF_SUST_STR;
             default -> null;
         };
+    }
+
+    /**
+     * Find a flag by its constant name, the port of C's {@code lookup_flag()}
+     * ({@code datafile.c}) as used by {@code grab_flag()} over the {@code obj_flags[]} name
+     * tables. C walks the table from index 1, compares with {@code streq()} (exact, case
+     * sensitive) and returns {@code FLAG_END} (0) when the table runs out; here the argument is
+     * the full constant name, prefix included, and the answer is the constant or {@code null}.
+     *
+     * <p>{@code "OF_SUST_STR"} to {@code "OF_MULTIPLY_WEIGHT"} give their constants, and
+     * {@code "OF_MAX"} gives {@link #OF_MAX}, as C finds {@code "MAX"}. {@code "OF_NONE"} gives
+     * {@code null}, as C's search skips the {@code "NONE"} entry at index 0, and so does a name
+     * with the wrong case, a missing {@code OF_} prefix, or no such flag. A {@code null} argument
+     * gives {@code null}; C would crash in {@code streq()}.
+     *
+     * <p>C's other table search, {@code code_index_in_array()}, starts at index 0 and so does
+     * accept {@code "NONE"}; this method is not a port of that one.
+     *
+     * <p>Method lookup coded on 261107, commented in full on 261107.
+     *
+     * @param flag the constant name, for example {@code "OF_FREE_ACT"}
+     * @return the matching constant, or {@code null} for no match or for {@link #OF_NONE}
+     */
+    public static ObjectFlag lookup(String flag) {
+        ObjectFlag result = Arrays.stream(ObjectFlag.values()).filter(of -> of.name().equals(flag)).findFirst().orElse(null);
+        if (result == ObjectFlag.OF_NONE) return null;
+        return result;
     }
 
     /**

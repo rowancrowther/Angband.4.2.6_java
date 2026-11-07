@@ -26,7 +26,6 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -54,9 +53,11 @@ public class ObjectBase {
     /**
      * The base type's name, C's {@code object_base.name} (the optional second argument of the
      * {@code name:} line in {@code object_base.txt}, e.g. {@code "Bladed weapon~"}). The assembler
-     * passes an empty string when the line has no name part.
+     * passes {@code null} when the line has no name part, as C's {@code name} stays {@code NULL},
+     * and for the synthetic {@code TV_NONE} base.
      *
-     * <p>Field name coded before 261009, commented in full on 261009.
+     * <p>Field name coded before 261009, commented in full on 261009, null-when-absent described on
+     * 261105.
      */
     private String name;
 
@@ -78,30 +79,35 @@ public class ObjectBase {
 
     /**
      * Per-element info shared by kinds of this base, keyed by element: C's
-     * {@code object_base.el_info[ELEM_MAX]}. The constructor folds each hated element in as an
-     * entry carrying the {@link ElementInfoEnum#EL_INFO_HATES} flag, and derived kinds may add
-     * further per-element flags (e.g. dungeon spellbooks setting {@code EL_INFO_IGNORE}).
+     * {@code object_base.el_info[ELEM_MAX]}. The map is built by the assembler and stored by
+     * reference: {@code ObjectBaseAssembler} puts an entry carrying
+     * {@link ElementInfoEnum#EL_INFO_HATES} or {@link ElementInfoEnum#EL_INFO_IGNORE} against each
+     * element named by a {@code HATES_} or {@code IGNORE_} flag word, through
+     * {@code ParseUtils.grabElementFlag}. Derived kinds may add further per-element flags (e.g.
+     * dungeon spellbooks setting {@code EL_INFO_IGNORE}).
      *
      * <p>C's array has an entry for every element, all zeroed unless the data file touches them;
      * this map is sparse, holding an entry only for an element that has one, so an absent key
      * means "zeroed entry" (no flags, resistance level 0). Readers must therefore test
      * {@link Map#containsKey} before dereferencing, as {@code ObjectUtils} does.
      *
-     * <p>Field elementInfo coded before 261009, commented in full on 261009.
+     * <p>Field elementInfo coded before 261009, commented in full on 261009, rewritten for the
+     * assembler-built map on 261105.
      */
     private Map<ElementEnum, ElementInfo> elementInfo;
 
     /**
-     * Object flags (the {@code OF_*} set) for this base, C's {@code object_base.flags}. Always empty
-     * in this port: the constructor leaves it unset and nothing has a setter for it, and the assembler
-     * resolves every non-{@code HATES_} token in {@code object_base.txt} as an {@link ObjectKindFlag},
-     * not an {@link ObjectFlag}. C's {@code parse_object_base_flags} would also accept an
-     * {@code OF_} token there, but the shipped file uses none (its flags are {@code HATES_*},
-     * {@code EASY_KNOW}, {@code SHOW_DICE} and {@code SHOW_MULT}), so the two agree on the shipped data.
-     * {@code ObjectKind} still copies this set into each kind it builds, so it would flow through
-     * were it ever populated.
+     * Object flags (the {@code OF_*} set) for this base, C's {@code object_base.flags}. The set is
+     * built by {@code ObjectBaseAssembler} and stored by reference: a {@code flags:} token that is
+     * not an element flag and names no kind flag is tried as an {@link ObjectFlag}, as C's
+     * {@code parse_object_base_flags} offers each token to the object-flag table too, and
+     * {@code MAX} switches on {@code OF_MAX} as well as {@code KF_MAX}. The shipped file uses no
+     * object flag (its flags are {@code HATES_*}, {@code EASY_KNOW}, {@code SHOW_DICE} and
+     * {@code SHOW_MULT}), so the set is empty on the shipped data. {@code ObjectKind} copies this
+     * set into each kind it builds.
      *
-     * <p>Field flags coded before 261009, commented in full on 261009.
+     * <p>Field flags coded before 261009, commented in full on 261009, rewritten for the
+     * assembler-built set on 261105.
      */
     private Flag<ObjectFlag> flags;
 
@@ -141,54 +147,49 @@ public class ObjectBase {
     private int numSvals;
 
     /**
-     * Build an object base, folding the incoming {@code HATES_*} element flags into the per-element
-     * {@link #elementInfo} table (each hated element gets an entry flagged
-     * {@link ElementInfoEnum#EL_INFO_HATES}). This one constructor stands in for the sequence of
-     * {@code obj-init.c} parser callbacks that build a C record ({@code parse_object_base_name},
-     * {@code _graphics}, {@code _break}, {@code _max_stack} and {@code _flags}): {@link #flags}
-     * starts empty, {@link #numSvals} starts at 0, and an element that is not hated gets no entry.
+     * Build an object base from the values the assembler has already resolved. This one constructor
+     * stands in for the sequence of {@code obj-init.c} parser callbacks that build a C record
+     * ({@code parse_object_base_name}, {@code _graphics}, {@code _break}, {@code _max_stack} and
+     * {@code _flags}); {@link #numSvals} starts at 0, as {@code parse_object_base_name} sets it.
      *
-     * <p>{@code kFlag} is stored by reference, not copied (C's record owns its own bit array), so
-     * the caller must not go on mutating the set it passed in. {@code hatesFlag} is only read.
+     * <p>{@code kFlag}, {@code elInfo} and {@code oFlags} are stored by reference, not copied (C's
+     * record owns its own arrays), so the caller must not go on mutating what it passed in. The
+     * element map is the sparse one described at {@link #elementInfo}: only elements the data file
+     * named have an entry.
      *
-     * <p>Constructor ObjectBase coded before 261009, commented in full on 261009.
+     * <p>Constructor ObjectBase coded before 261009, commented in full on 261009, rewritten for the
+     * element map and object flags being passed in on 261105.
      *
      * @param tVal        the item type value
-     * @param name        the base type's name
+     * @param name        the base type's name, or {@code null} if the {@code name:} line gave none
      * @param colour      the default display colour
      * @param kFlag       the object-kind flags shared by this base's kinds
-     * @param hatesFlag   the elements items of this base are destroyed by
+     * @param elInfo      the per-element flags and resistance levels, keyed by element
      * @param breakChance the break-on-throw percentage
      * @param maxStack    the maximum stack size
+     * @param oFlags      the object flags shared by this base's kinds
      */
     public ObjectBase(TValue tVal, String name, ColourEnum colour, Flag<ObjectKindFlag> kFlag,
-                      Flag<ElementEnum> hatesFlag, Flag<ElementEnum> ignoreFlag, int breakChance, int maxStack, 
+                      Map<ElementEnum, ElementInfo> elInfo, int breakChance, int maxStack, 
                       Flag<ObjectFlag> oFlags) {
         this.tVal = tVal;
         this.name = name;
         this.attr = colour;
         this.kindFlags = kFlag;
         this.flags = oFlags;
-        this.elementInfo = new HashMap<>();
-        for (ElementEnum element : hatesFlag) {
-            ElementInfo info = elementInfo.computeIfAbsent(element, k -> new ElementInfo());
-            info.getFlags().on(ElementInfoEnum.EL_INFO_HATES);
-        }
-        for (ElementEnum element : ignoreFlag) {
-            ElementInfo info = elementInfo.computeIfAbsent(element, k -> new ElementInfo());
-            info.getFlags().on(ElementInfoEnum.EL_INFO_IGNORE);
-        }
+        this.elementInfo = elInfo;
         this.breakPerc = breakChance;
         this.maxStack = maxStack;
     }
 
     /**
      * Replace this base's per-element info table wholesale, with no merge into the entries the
-     * constructor created. Java-side only: C writes straight into the {@code el_info[]} array.
-     * Nothing in {@code src/main} or {@code src/test} calls this at present, so it is an unused
-     * boundary for now.
+     * constructor created: the old map is dropped and the new one is stored by reference, not
+     * copied. Java-side only: C writes straight into the {@code el_info[]} array of
+     * {@code struct object_base} ({@code object.h}). Nothing in {@code src/main} calls this at
+     * present, so it is an unused boundary there; only {@code ObjectBaseTest} exercises it.
      *
-     * <p>Function setElementInfo coded before 261009, commented in full on 261009.
+     * <p>Function setElementInfo coded before 261009, commented in full on 261107.
      *
      * @param elementInfo the new element-info map
      */
@@ -221,12 +222,13 @@ public class ObjectBase {
     }
 
     /**
-     * Returns the base type's name, C's {@code object_base.name}. May be an empty string, since the
+     * Returns the base type's name, C's {@code object_base.name}. May be {@code null}, since the
      * name part of the {@code name:} line in {@code object_base.txt} is optional.
      *
-     * <p>Function getName coded before 261009, commented in full on 261009.
+     * <p>Function getName coded before 261009, commented in full on 261009, null-when-absent
+     * described on 261105.
      *
-     * @return the base type's name
+     * @return the base type's name, or {@code null} if the line gave none
      */
     public String getName() {
         return name;
@@ -306,9 +308,10 @@ public class ObjectBase {
 
     /**
      * Returns the object flags (the {@code OF_*} set) for this base, C's {@code object_base.flags}.
-     * This is the live set, and it is always empty in the current port (see {@link #flags}).
+     * This is the live set, not a copy, and it is empty on the shipped data (see {@link #flags}).
      *
-     * <p>Function getFlags coded before 261009, commented in full on 261009.
+     * <p>Function getFlags coded before 261009, commented in full on 261009, "always empty" removed
+     * on 261105.
      *
      * @return the object flags for this base
      */

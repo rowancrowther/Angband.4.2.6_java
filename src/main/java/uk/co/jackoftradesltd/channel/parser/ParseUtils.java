@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 
 import java.math.BigInteger;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Shared number and text reading for the assemblers: every assembler whose data file holds a
@@ -110,11 +111,16 @@ import java.util.Map;
  * other length comes back as {@code null}. Its one caller in {@code src/main} is
  * {@code ArtifactAssembler}.
  *
+ * <p>{@link #isTrue(String)} is the flag reader: it reads a figure with {@code strtoul} base 0 rules
+ * and answers whether it is non-zero, as {@code parse_act_aim} in {@code obj-init.c} does for an
+ * {@code aim:} line, with {@code Optional.empty()} standing for C's {@code PARSE_ERROR_NOT_NUMBER}.
+ *
  * <p>Class ParseUtils coded on 261022, commented in full on 261107 (third way in added 261023,
  * sign and digit tests added 261024, fourth way in and the {@code 0x} reading added 261025,
  * {@code onlySpaceAndTab} added by 261026; the whitespace skipping in the fixed-base reading and
  * the trimmers were in place before 261028; {@code grabElementFlag} noted 261105; reader wording
- * and the caller lists corrected and the glyph reader described 261107).
+ * and the caller lists corrected and the glyph reader described 261107; {@code isTrue}
+ * described 261107).
  */
 public class ParseUtils {
     /**
@@ -1124,6 +1130,103 @@ public class ParseUtils {
             return new GlyphCharacter('\0', wideChar);
         } else {
             return new GlyphCharacter(glyph.charAt(0), 0);
+        }
+    }
+
+    /**
+     * Reads one {@code aim:}-style flag figure and says whether it is non-zero. C has no function of
+     * this name: the behaviour is {@code parse_act_aim} in {@code obj-init.c}, which takes
+     * {@code parser_getuint(p, "aim")} and stores {@code val ? true : false}, and the number itself
+     * is read in {@code parser_parse()} ({@code parser.c}) with {@code strtoul(tok, &z, 0)}. This
+     * method reproduces that read and that test together, with the same base 0 rules as the other
+     * readers here:
+     *
+     * <ul>
+     *   <li>leading C whitespace is skipped ({@link #cTrimFront(String)});</li>
+     *   <li>an optional {@code +} or {@code -} comes next, and the sign never changes the answer,
+     *   since only zero or non-zero is asked: {@code "-5"} and {@code "+5"} are {@code true};</li>
+     *   <li>{@code 0x} or {@code 0X} selects base 16, any other leading {@code 0} selects base 8,
+     *   and anything else is base 10, so {@code "01"}, {@code "07"} and {@code "012"} are
+     *   {@code true} and {@code "00"} is {@code false};</li>
+     *   <li>reading stops at the first character that is not a digit of the base, and anything
+     *   after it is ignored, so {@code "5abc"} is {@code true} and {@code "08"} is {@code false}
+     *   (the {@code 0} is read, the {@code 8} is not an octal digit).</li>
+     * </ul>
+     *
+     * <p>{@code Optional.empty()} stands for C's {@code PARSE_ERROR_NOT_NUMBER}, which
+     * {@code parser_parse()} raises only when {@code strtoul} read no characters at all
+     * ({@code z == tok}). That is the empty text, text of only whitespace, a sign with no digits
+     * ({@code "-"}, {@code "- 5"}, {@code "--5"}) and text that starts with a non-digit
+     * ({@code "abc"}). A prefix with nothing readable after it is not a failure: {@code "0x"},
+     * {@code "0xg"} and {@code "08"} read the leading {@code 0} as the value zero, so they are
+     * {@code false}, as in C. A {@code null} argument also gives empty; C has no such case.
+     *
+     * <p>C's refusal of a leading {@code -} on an unsigned field ({@code *tok == '-'} in
+     * {@code parser_parse()}) is not made here: it tests the raw token before whitespace is skipped,
+     * so the caller has to make it. This method answers {@code true} for {@code "-5"}.
+     *
+     * <p>Accepted deviation (261027, numbers outside the {@code int} range): C reads a 64-bit
+     * {@code strtoul} result and stores it in a 32-bit {@code uval}, which wraps ({@code 4294967296}
+     * is zero in C and {@code 2147483648} is non-zero). Here a figure that does not fit in an
+     * {@code int} makes {@code Integer.parseInt} throw, and the answer is empty. Do not flag.
+     *
+     * <p>Outstanding: nothing in {@code src/main} or {@code src/test} calls it.
+     *
+     * <p>Function isTrue coded before 261107, commented in full on 261107.
+     *
+     * @param string the figure as it appears in the data file, or {@code null}
+     * @return {@code Optional.of(true)} if the figure reads as a non-zero number,
+     * {@code Optional.of(false)} if it reads as zero, and {@code Optional.empty()} if C would
+     * report it as not a number
+     */
+    public static Optional<Boolean> isTrue(String string) {
+        try {
+            if (signOnly(string)) return Optional.empty();
+            string = cTrimFront(string);
+            if (string.isEmpty()) return Optional.empty();
+
+            int sign = signFound(string);
+            if (sign != 0) string = string.substring(1);
+
+            Radix radix = Radix.DECIMAL;
+            if (string.charAt(0) == '0') {
+                if (string.equals("0"))
+                    return Optional.of(false);
+                if (string.length() > 1 && (string.charAt(1) == 'x' || string.charAt(1) == 'X')) {
+                    string = string.substring(2);
+                    radix = Radix.HEX;
+                } else {
+                    radix = Radix.OCTAL;
+                    string = string.substring(1);
+                }
+            }
+            
+            int radixValue = 10;
+            String stripped;
+            switch (radix) {
+                case HEX -> {
+                    radixValue = 16;
+                    stripped = stripHex(string);
+                    if (stripped.isEmpty()) return Optional.of(false);
+                }
+                case OCTAL -> {
+                    radixValue = 8;
+                    stripped = stripOctal(string);
+                    if (stripped.isEmpty()) return Optional.of(false);
+                }
+                case DECIMAL -> {
+                    stripped = stripDecimal(string);
+                }
+                default -> {
+                    return Optional.empty();
+                }
+            }
+            
+            int value = Integer.parseInt(stripped, radixValue);
+            
+            return Optional.of(value != 0);
+        } catch (Exception e) {
+            return Optional.empty();
         }
     }
     

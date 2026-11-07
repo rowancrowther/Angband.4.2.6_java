@@ -291,10 +291,10 @@ Each group is one helper (or one policy) and then one pass over its users.
 
 ### `grab_element_flag` (`IGNORE_` and `HATES_`)
 
-- A: `itemobject/ItemObjectAssembler.java` (knows `IGNORE_`, not `HATES_`).
+- A: `itemobject/ItemObjectAssembler.java` (knows `IGNORE_`, not `HATES_`). [<span style="color:#006400">**CLOSED**</span> 26-11-07: calls `ParseUtils.grabElementFlag` on every `flags:` token, so `HATES_` and `IGNORE_` both load; `ItemObjectReaderTest` and `ItemObjectAssemblerObjectPrepTest` pass.]
 - A: `objectbase/ObjectBaseAssembler.java` (knows `HATES_`, not `IGNORE_`). [<span style="color:#006400">**CLOSED**</span> 26-10-28: `IGNORE_` is read with C's prefix rule and sets `EL_INFO_IGNORE`; `ObjectBaseAssemblerTest` and `ObjectBaseReaderTest` pass.]
-- A: `egoitem/EgoItemAssembler.java` and `artifact/ArtifactAssembler.java`.
-- Write one equivalent of C's function and call it from all four.
+- A: `egoitem/EgoItemAssembler.java` and `artifact/ArtifactAssembler.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-07: both call `ParseUtils.grabElementFlag`, the artifact one after `ObjectFlag.valueOf` fails, as C tries `grab_flag` first; `EgoItemReaderTest` and `ArtifactReaderTest` pass.]
+- Write one equivalent of C's function and call it from all four. [<span style="color:#006400">**CLOSED**</span> 26-11-07: `ParseUtils.grabElementFlag` is the one equivalent, called from all four and from `CurseAssembler`; `ParseUtilsGrabElementFlagTest` pins it.]
 
 ### Booleans read from text (`!= 0`, not `equals("1")`)
 

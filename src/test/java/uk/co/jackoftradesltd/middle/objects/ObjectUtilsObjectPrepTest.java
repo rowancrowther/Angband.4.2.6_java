@@ -31,6 +31,7 @@ import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.data.ObjMakeData;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
@@ -423,6 +424,37 @@ class ObjectUtilsObjectPrepTest {
 
             assertTrue(obj.getSlays().stream().anyMatch(s -> s.sameMonsterSlain(slay)));
             assertTrue(obj.getBrands().stream().anyMatch(b -> b.getName().equals("fire")));
+        }
+
+        /**
+         * The kind's brands and slays reach the object in the kind's order, which the assemblers
+         * set to C's registry order. The fixtures are longer than a small hash set would keep in
+         * order.
+         */
+        @Test
+        @DisplayName("the kind's brands and slays reach the object in the kind's order")
+        void brandsAndSlaysKeepTheKindsOrder() {
+            ObjectKind kind = kind(TValue.TV_SWORD);
+            List<Brand> brands = new ArrayList<>();
+            for (int i : new int[]{7, 2, 11, 0, 5, 9, 3, 10, 1, 8, 4, 6}) {
+                brands.add(new Brand("B" + i, "b" + i, "burns", null, null, 3, 3, 5));
+            }
+            List<Slay> slays = new ArrayList<>();
+            for (MonsterRaceFlag flag : new MonsterRaceFlag[]{MonsterRaceFlag.RF_DEMON,
+                    MonsterRaceFlag.RF_ORC, MonsterRaceFlag.RF_UNDEAD, MonsterRaceFlag.RF_ANIMAL,
+                    MonsterRaceFlag.RF_GIANT, MonsterRaceFlag.RF_EVIL, MonsterRaceFlag.RF_TROLL,
+                    MonsterRaceFlag.RF_DRAGON}) {
+                slays.add(new Slay(flag.name() + "_2", flag.name(), null, "smite", "pierces",
+                        flag, 2, 2, 5));
+            }
+            set(kind, "brands", new LinkedHashSet<>(brands));
+            set(kind, "slays", new LinkedHashSet<>(slays));
+
+            ItemObject obj = new ItemObject();
+            ObjectUtils.objectPrep(obj, kind, 1, DamageAspect.MAXIMIZE);
+
+            assertEquals(brands, new ArrayList<>(obj.getBrands()));
+            assertEquals(slays, new ArrayList<>(obj.getSlays()));
         }
     }
 

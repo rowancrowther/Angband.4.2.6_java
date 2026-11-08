@@ -47,12 +47,14 @@ import java.util.List;
  *     <li>{@code message_type} is a {@link MessageType} rather than an index into the message table.</li>
  *     <li>{@code fallback} is a {@code Summon} reference, or {@code null}, rather than an index into
  *     {@code summons} with {@code -1} for none.</li>
- *     <li>{@code bases} is a {@code List} in file order, where C prepends each {@code base:} line to a
- *     linked list and so holds them in reverse. Only membership is tested, so the order has no effect.</li>
+ *     <li>{@code bases} is a {@code List} in the reverse of file order, as in C, where
+ *     {@code parse_summon_base} prepends each {@code base:} line to a linked list. Only membership is
+ *     tested, so play never sees the order.</li>
  *     <li>{@code race_flag} is a {@link MonsterRaceFlag} with {@code RF_NONE} for C's zero.</li>
  * </ul>
  *
- * <p>Class Summon coded before 261009, commented in full on 261009.
+ * <p>Class Summon coded before 261009, commented in full on 261009, updated on 261108 for the order
+ * of the bases.
  *
  * @author Rowan Crowther
  */
@@ -87,13 +89,15 @@ public class Summon {
      */
     private boolean uniquesAllowed;
     /**
-     * The monster base types this summon may draw from, one per {@code base:} line in file order.
-     * An empty list means any base is allowed. {@code summon_specific_okay} in {@code mon-summon.c}
-     * accepts a race whose base is in the list. A kept {@code Summon} never holds a {@code null}
-     * element, because the assembler drops a record whose base does not resolve. Corresponds to the
-     * {@code bases} linked list in {@code struct summon}, which C holds in reverse file order.
+     * The monster base types this summon may draw from, one per {@code base:} line, in the reverse of
+     * file order. An empty list means any base is allowed. {@code summon_specific_okay} in
+     * {@code mon-summon.c} accepts a race whose base is in the list. A {@code Summon} never holds a
+     * {@code null} element, because the assembler stops the load when a base does not resolve.
+     * Corresponds to the {@code bases} linked list in {@code struct summon}, which C holds in the same
+     * order.
      *
-     * <p>Field bases coded before 261009, commented in full on 261009.
+     * <p>Field bases coded before 261009, commented in full on 261009, updated on 261108 for the order
+     * and the stop-the-load wording.
      */
     private List<MonsterBase> bases;
     /**
@@ -218,10 +222,11 @@ public class Summon {
     }
 
     /**
-     * Gets the monster base types this summon may draw from, in file order. The list is the live one,
-     * not a copy, and is empty when any base is allowed.
+     * Gets the monster base types this summon may draw from, in the reverse of file order. The list is
+     * the live one, not a copy, and is empty when any base is allowed.
      *
-     * <p>Function getBases coded before 261009, commented in full on 261009.
+     * <p>Function getBases coded before 261009, commented in full on 261009, updated on 261108 for the
+     * order.
      *
      * @return the monster base types this summon may draw from
      */

@@ -72,13 +72,17 @@ import java.util.Optional;
  *
  * <p><strong>Absent and ordered values.</strong> An omitted {@code race-flag:} arrives from the
  * grammar as empty text and gives {@link MonsterRaceFlag#RF_NONE}, C's zero. The {@code base:} lines
- * are held in file order, where C prepends each to a linked list and so holds them in reverse;
- * {@code summon_specific_okay} only tests membership, so the order is not observable. The list returned
- * holds only real records, with no blank slot at the end and so no counterpart of {@code summon_max};
- * this is the accepted deviation recorded on {@code MonsterRegistry}.
+ * are held in the reverse of file order: {@code parse_summon_base} prepends each base to a linked
+ * list, so the base written last is held first, and the list is built with {@code addFirst} to match.
+ * {@code summon_specific_okay} only tests membership, so play never sees the order. The records
+ * themselves stay in file order, because {@code finish_parse_summon} fills the {@code summons} array
+ * from the end of a chain that was itself built backwards. The list returned holds only real records,
+ * with no blank slot at the end and so no counterpart of {@code summon_max}; this is the accepted
+ * deviation recorded on {@code MonsterRegistry}.
  *
  * <p>Class SummonAssembler coded before 260915, commented in full on 261107 (updated on 261105 for
- * the removal of the soft-error path; the unresolved-fallback account corrected on 261107).
+ * the removal of the soft-error path; the unresolved-fallback account corrected on 261107; the order
+ * of the bases corrected on 261108 when the list was reversed).
  *
  * @author Rowan Crowther
  */
@@ -105,6 +109,9 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
      * blank last slot of {@code summons} and fails in {@code strcmp} (an accepted deviation, recorded in
      * the class block).
      * <p>
+     * Each resolved base is put at the head of the summon's list with {@code addFirst}, as
+     * {@code parse_summon_base} does, so a summon's bases come back last-written first.
+     * <p>
      * The class block records the rules for {@code uniques:}, the sentinel race flag, the order of
      * the bases and the unresolved fallback.
      * <p>
@@ -114,7 +121,8 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
      * in the file is the one thrown, as C's first parser error ends the load. Nothing is read after it,
      * and the second pass never runs for a file that faulted in the first.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261107.
+     * <p>Function assemble coded before 260915, commented in full on 261107, updated on 261108 for the
+     * reversed bases.
      *
      * @param records  the raw parse records, in file order
      * @param filename the file the records were read from, named in the message of a fault
@@ -157,7 +165,7 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }
-                bases.add(monsterBase);
+                bases.addFirst(monsterBase);
             }
             // The race flag is optional: an omitted one arrives as "" and means "no restriction"
             // (RF_NONE), so only a *present* value that fails to resolve is an error. Guarding on

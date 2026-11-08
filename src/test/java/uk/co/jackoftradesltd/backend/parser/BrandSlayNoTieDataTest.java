@@ -43,12 +43,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * (brands) or kills the same monsters (slays), clears the one with the lower multiplier. On an
  * exact tie its {@code else} arm clears {@code j}, the lower index, so the survivor depends on
  * table order. The port scans for a match and keeps the higher multiplier, which on a tie keeps
- * whichever it met first, and the brand and slay sets are unordered {@link java.util.HashSet}s, so
- * a tie would resolve arbitrarily. The two agree only while no tie exists in the data.
+ * whichever it met first, the item's own. The brand and slay sets are
+ * {@link java.util.LinkedHashSet}s that keep their load order, but the merge does not re-sort by
+ * registry position, so the two agree only while no tie exists in the data.
  *
- * <p>If this test fails, the data has gained a tie. The sort by registry position belongs inside
- * {@code copyBrands} and {@code copySlays} (see the ordering note in their Javadoc), not on the
- * sets.
+ * <p>If this test fails, the data has gained a tie. The comparison by registry position belongs
+ * inside {@code copyBrands} and {@code copySlays} (see the ordering note in their Javadoc), not on
+ * the sets.
  *
  * <p>Brands group by name, as C's {@code streq(brands[i].name, brands[j].name)}; slays group by
  * {@link Slay#sameMonsterSlain}. The slay load resolves {@code base:} through the monster base

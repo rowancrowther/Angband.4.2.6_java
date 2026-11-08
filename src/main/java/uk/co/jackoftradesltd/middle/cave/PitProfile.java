@@ -85,15 +85,19 @@ public class PitProfile {
      */
     private Flag<MonsterSpell> forbiddenSpellFlags;
     /**
-     * Monster base types allowed in this pit.
+     * Monster base types allowed in this pit, in the reverse of file order, as C's head-pushed list
+     * holds them.
      */
     private List<MonsterBase> bases;
     /**
-     * Theme colours associated with this pit.
+     * Theme colours associated with this pit, in the reverse of file order, as C's head-pushed list
+     * holds them.
      */
     private List<ColourEnum> colours;
     /**
-     * Specific monster races explicitly forbidden from this pit.
+     * Specific monster races explicitly forbidden from this pit, in the reverse of file order, as C's
+     * head-pushed list holds them. An entry is {@code null} where a {@code mon-ban:} name matched no
+     * monster.
      */
     private List<MonsterRace> forbiddenMonsters;
 

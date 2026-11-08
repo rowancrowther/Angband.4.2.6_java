@@ -877,8 +877,8 @@ public class ItemObject {
         modifiers = new LinkedHashMap<>();
         curses = cursesFactory();
         elInfo = new LinkedHashMap<>();
-        brands = new HashSet<>();
-        slays = new HashSet<>();
+        brands = new LinkedHashSet<>();
+        slays = new LinkedHashSet<>();
         effect = new ArrayList<>();
         tValue = TValue.TV_NONE;
         time = Random.Zero();
@@ -3284,7 +3284,7 @@ public class ItemObject {
      */
     public boolean appendBrand(Brand brand) {
         if (brands == null) {
-            brands = new HashSet<>();
+            brands = new LinkedHashSet<>();
         }
 
         Brand oldBrand = brands.stream().filter(b -> b.getName().equals(brand.getName()))
@@ -3375,7 +3375,7 @@ public class ItemObject {
      */
     public boolean appendSlay(Slay slay) {
         if (slays == null) {
-            slays = new HashSet<>();
+            slays = new LinkedHashSet<>();
         }
 
         Slay oldSlay = slays.stream().filter(s -> s.sameMonsterSlain(slay))
@@ -4065,7 +4065,7 @@ public class ItemObject {
      */
     public void clearBrands() {
         if (brands == null)
-            brands = new HashSet<>();
+            brands = new LinkedHashSet<>();
         
         brands.clear();
     }
@@ -4206,7 +4206,7 @@ public class ItemObject {
      */
     public void clearSlays() {
         if (slays == null)
-            slays = new HashSet<>();
+            slays = new LinkedHashSet<>();
         
         slays.clear();
     }
@@ -4927,7 +4927,7 @@ public class ItemObject {
      * <p>Function freeSlays commented in full on 261002.
      */
     private void freeSlays() {
-        this.slays = new HashSet<>();
+        this.slays = new LinkedHashSet<>();
     }
 
     /**
@@ -4938,7 +4938,7 @@ public class ItemObject {
      * <p>Function freeBrands commented in full on 261002.
      */
     private void freeBrands() {
-        this.brands = new HashSet<>();
+        this.brands = new LinkedHashSet<>();
     }
 
     /**
@@ -6278,11 +6278,11 @@ public class ItemObject {
         if (this.brands == null)
             copy.brands = null;
         else
-            copy.brands = new HashSet<>(this.brands);
+            copy.brands = new LinkedHashSet<>(this.brands);
         if (this.slays == null)
             copy.slays = null;
         else
-            copy.slays = new HashSet<>(this.slays);
+            copy.slays = new LinkedHashSet<>(this.slays);
         if (this.curses == null)
             copy.curses = null;
         else {
@@ -6732,8 +6732,8 @@ public class ItemObject {
         flags = new Flag<>(ObjectFlag.class);
         modifiers = new LinkedHashMap<>();
         elInfo = new LinkedHashMap<>();
-        brands = new HashSet<>();
-        slays = new HashSet<>();
+        brands = new LinkedHashSet<>();
+        slays = new LinkedHashSet<>();
         curses = cursesFactory();
         effect = new ArrayList<>();
         effectMessage = null;

@@ -694,13 +694,13 @@ public class EgoItem {
         }
         Set<Brand> newBrands;
         if (brands != null) {
-            newBrands = new HashSet<>(brands);
+            newBrands = new LinkedHashSet<>(brands);
         } else {
             newBrands = Set.of();
         }
         Set<Slay> newSlays;
         if (slays != null) {
-            newSlays = new HashSet<>(this.slays);
+            newSlays = new LinkedHashSet<>(this.slays);
         } else {
             newSlays = Set.of();
         }

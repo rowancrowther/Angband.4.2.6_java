@@ -24,6 +24,8 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -206,6 +208,102 @@ class ObjectUtilsCopyBrandsTest {
             copyBrands(dest, new ObjectKind());
 
             assertEquals(Set.of(acid), dest.getBrands());
+        }
+    }
+
+    /**
+     * The order the merged brands come out in. The sets keep the order they were filled in, and the
+     * merge does not re-sort by registry position.
+     */
+    @Nested
+    @DisplayName("the order of the merged brands")
+    class Order {
+
+        /**
+         * An empty item takes the kind's order exactly, which is the case {@link ObjectUtils#objectPrep}
+         * always presents and the one that matches C, because the kind's set is loaded in registry order.
+         */
+        @Test
+        @DisplayName("an empty dest takes the source's order")
+        void emptyDestTakesSourceOrder() {
+            List<Brand> expected = new ArrayList<>();
+            for (int i : new int[]{7, 2, 11, 0, 5, 9, 3, 10, 1, 8, 4, 6}) {
+                expected.add(brand("B" + i, "b" + i, 3));
+            }
+            ObjectKind source = new ObjectKind();
+            expected.forEach(source::addBrand);
+
+            ItemObject dest = new ItemObject();
+            copyBrands(dest, source);
+
+            assertEquals(expected, new ArrayList<>(dest.getBrands()));
+        }
+
+        /**
+         * Pins the Java behaviour where it differs from C. C walks the combined set in table order;
+         * here the item's brands stay first and the kind's unmatched ones follow, in the kind's order.
+         */
+        @Test
+        @DisplayName("source brands with no partner are appended after dest's, not re-sorted")
+        void unmatchedSourceBrandsAreAppendedAfterDestsHere() {
+            Brand late = brand("LATE", "late", 3);
+            Brand early1 = brand("EARLY1", "early1", 3);
+            Brand early2 = brand("EARLY2", "early2", 3);
+            ItemObject dest = new ItemObject();
+            dest.addBrand(late);
+            ObjectKind source = new ObjectKind();
+            source.addBrand(early1);
+            source.addBrand(early2);
+
+            copyBrands(dest, source);
+
+            assertEquals(List.of(late, early1, early2), new ArrayList<>(dest.getBrands()));
+        }
+
+        /**
+         * A stronger source brand takes the place of the weaker dest one it replaces.
+         */
+        @Test
+        @DisplayName("a replacement stays where the brand it replaced stood")
+        void replacementKeepsThePlace() {
+            Brand first = brand("FIRST", "first", 3);
+            Brand weakAcid = brand("ACID_2", "acid", 2);
+            Brand last = brand("LAST", "last", 3);
+            ItemObject dest = new ItemObject();
+            dest.addBrand(first);
+            dest.addBrand(weakAcid);
+            dest.addBrand(last);
+            Brand strongAcid = brand("ACID_3", "acid", 3);
+            ObjectKind source = new ObjectKind();
+            source.addBrand(strongAcid);
+
+            copyBrands(dest, source);
+
+            List<Brand> result = new ArrayList<>(dest.getBrands());
+            assertEquals(List.of("FIRST", "ACID_3", "LAST"),
+                    result.stream().map(Brand::getCode).toList());
+        }
+
+        /**
+         * Pins the Java behaviour where it differs from C. On an equal multiplier C clears the
+         * lower table index, so the later brand survives; here the item's own brand, met first,
+         * survives whatever the registry position of the two. {@code brand.txt} has no such pair
+         * (see {@code BrandSlayNoTieDataTest}), so it cannot show on the shipped data.
+         */
+        @Test
+        @DisplayName("on an exact tie dest's brand survives, where C keeps the higher index")
+        void tieKeepsDestsBrandHereWhereCKeepsTheHigherIndex() {
+            Brand destBrand = brand("ACID_A", "acid", 3);
+            Brand sourceBrand = brand("ACID_B", "acid", 3);
+            ItemObject dest = new ItemObject();
+            dest.addBrand(destBrand);
+            ObjectKind source = new ObjectKind();
+            source.addBrand(sourceBrand);
+
+            copyBrands(dest, source);
+
+            assertEquals(1, dest.getBrands().size());
+            assertSame(destBrand, dest.getBrands().iterator().next());
         }
     }
 }

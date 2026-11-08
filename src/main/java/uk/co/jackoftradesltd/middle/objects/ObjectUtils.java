@@ -1262,13 +1262,20 @@ public class ObjectUtils {
      * actually defines - no two brands there share both a name and a multiplier, so the tie-break
      * neither approach can express symmetrically never has to run.
      *
-     * <p>Where C's table order matters, it is applied here and not carried by the collection: the
-     * brand sets are unordered {@link java.util.HashSet}s, by decision, where curses are a
-     * {@code TreeMap} in {@code CURSE_ORDER}. This method is the one place a brand's table position
-     * could decide an outcome, and it does not need it today because the tie never occurs in
-     * {@code brand.txt}. If a tie ever became possible, the position to compare is the brand's index
-     * in {@link uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry#getBrands()}, and
-     * the sort belongs inside this method, not on the set.
+     * <p>The brand sets are {@link java.util.LinkedHashSet}s, so they carry the order they were
+     * filled in. The assemblers fill them in C's index order, which is the reverse of file order and
+     * the order of {@link uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry#getBrands()}.
+     * The merge itself does not re-sort: the item's brands stay where they stand, a loser is replaced
+     * in its place, and the kind's unmatched brands are appended after them in the kind's order.
+     * With an empty item, which is what {@link #objectPrep} always passes, the result is the kind's
+     * order exactly, and so C's. With brands already on the item, the kind's follow them, where C
+     * would walk the combined set in table order.
+     *
+     * <p>The tie-break is the one place a brand's table position could decide an outcome. On an exact
+     * multiplier tie C keeps the brand at the higher index; here the scan keeps whichever it met
+     * first, which is the item's. That cannot show today because the tie never occurs in
+     * {@code brand.txt}. If a tie became possible, the position to compare is the brand's index in
+     * {@code ObjectRegistry.getBrands()}, and the comparison belongs inside this method.
      *
      * <p>The replacement is {@link Brand#copy}, not the source's own reference - see that method's
      * Javadoc for why a copy is needed here where C only ever flips a bit. A source brand with no
@@ -1287,7 +1294,8 @@ public class ObjectUtils {
      * assumed non-null, which the method's only caller, {@link #objectPrep}, always supplies.
      *
      * <p>Function copyBrands coded before 260904, commented in full on 261005, ordering note added
-     * on 261017, rewritten for the item and kind arguments on 261017.
+     * on 261017, rewritten for the item and kind arguments on 261017, ordering note rewritten for
+     * ordered sets on 261108.
      *
      * @param dest   the item whose brands the merge writes into
      * @param source the kind whose brands are being added
@@ -1330,11 +1338,13 @@ public class ObjectUtils {
      * 3/5 for the ones with a "kill" tier) are distinct values, so C's index-based tie-break is never
      * the thing deciding the outcome.
      *
-     * <p>The ordering rule is the one {@link #copyBrands} records: the slay sets are unordered
-     * {@link java.util.HashSet}s by decision, and C's table order is applied inside this method if
-     * a tie ever needs it, comparing positions in
-     * {@link uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry#getSlays()}, never
-     * carried by the set.
+     * <p>The ordering rule is the one {@link #copyBrands} records: the slay sets are
+     * {@link java.util.LinkedHashSet}s filled in C's index order, the merge keeps the item's slays in
+     * place and appends the kind's unmatched ones after them, and the result is the kind's order
+     * exactly when the item starts empty. On an exact multiplier tie C keeps the higher index and
+     * this keeps the item's slay, which {@code slay.txt} never lets show. If a tie became possible,
+     * the comparison belongs inside this method, on positions in
+     * {@link uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry#getSlays()}.
      *
      * <p>The merge is read from and written back through the same read-only views and item methods
      * as {@link #copyBrands}, with {@link ItemObject#clearSlays} and {@link ItemObject#addSlay}
@@ -1347,7 +1357,8 @@ public class ObjectUtils {
      * was never built is already covered, as for brands, by the getters answering an empty set.
      *
      * <p>Function copySlays coded before 260904, commented in full on 261005, ordering note added
-     * on 261017, rewritten for the item and kind arguments on 261017.
+     * on 261017, rewritten for the item and kind arguments on 261017, ordering note rewritten for
+     * ordered sets on 261108.
      *
      * @param dest   the item whose slays the merge writes into
      * @param source the kind whose slays are being added

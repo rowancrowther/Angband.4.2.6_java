@@ -56,8 +56,10 @@ import static org.junit.jupiter.api.Assertions.*;
  *       accepted deviation of 261027 recorded in {@code docs/Accepted_Deviations.md};</li>
  *   <li>{@code parse_summon_base} uses {@code lookup_monster_base}, which compares with
  *       {@code streq} (exact case), and returns {@code PARSE_ERROR_INVALID_MONSTER_BASE} for a
- *       miss. Each base is pushed on the head of a list, so C holds them in reverse; only
- *       membership is ever tested, so the Java file order is not observable;</li>
+ *       miss. Each base is pushed on the head of a list, so C holds them in reverse, and the
+ *       Java list is built with {@code addFirst} to hold them the same way (Stage 4 of
+ *       {@code docs/Issue_Approach_Order.md}). {@code summon_specific_okay} only tests membership,
+ *       so play never sees the order;</li>
  *   <li>{@code parse_summon_race_flag} uses {@code lookup_flag} on the names without their
  *       {@code RF_} prefix, compared with {@code streq} from {@code FLAG_START} (1), so
  *       {@code NONE} at index 0 is never matched and there is no {@code MAX} row;</li>
@@ -82,6 +84,8 @@ class SummonAssemblerTest {
     /** A base name the seeded monster bases hold. */
     private static final String BASE = "ancient dragon";
     private static final String OTHER_BASE = "zephyr hound";
+    /** A third seeded base, so an order test has more than one pair to swap. */
+    private static final String THIRD_BASE = "wraith";
 
     private static Object savedBases;
 
@@ -90,7 +94,8 @@ class SummonAssemblerTest {
         var field = RegistrySeeding.resolve("monsterBases");
         field.setAccessible(true);
         savedBases = field.get(null);
-        MonsterRegistry.setMonsterBases(List.of(new MonsterBase(BASE), new MonsterBase(OTHER_BASE)));
+        MonsterRegistry.setMonsterBases(List.of(new MonsterBase(BASE), new MonsterBase(OTHER_BASE),
+                new MonsterBase(THIRD_BASE)));
     }
 
     @AfterAll
@@ -226,13 +231,21 @@ class SummonAssemblerTest {
     }
 
     @Test
-    void severalBasesAreAllKept() {
+    void severalBasesAreKeptInTheReverseOfFileOrderAsInC() {
         Summon summon = one(record("A", "SUM_MONSTER", "0", List.of(BASE, OTHER_BASE), "", ""));
 
-        // C holds these in reverse, and only tests membership, so only membership is checked.
-        assertEquals(2, summon.getBases().size());
-        assertTrue(summon.getBases().contains(MonsterRegistry.lookupMonsterBase(BASE)));
-        assertTrue(summon.getBases().contains(MonsterRegistry.lookupMonsterBase(OTHER_BASE)));
+        // parse_summon_base pushes each base on the head of the list, so the last base written is
+        // the first held.
+        assertEquals(List.of(MonsterRegistry.lookupMonsterBase(OTHER_BASE),
+                MonsterRegistry.lookupMonsterBase(BASE)), summon.getBases());
+    }
+
+    @Test
+    void threeBasesReverseWholeNotJustTheFirstPair() {
+        Summon summon = one(record("A", "SUM_MONSTER", "0", List.of(BASE, OTHER_BASE, THIRD_BASE), "", ""));
+
+        assertEquals(List.of(THIRD_BASE, OTHER_BASE, BASE),
+                summon.getBases().stream().map(MonsterBase::getCodeName).toList());
     }
 
     @ParameterizedTest

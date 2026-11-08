@@ -496,8 +496,8 @@ public class ObjectKind {
         flags = new Flag<>(ObjectFlag.class);
         activations = new ArrayList<>();
         effect = new ArrayList<>();
-        brands = new HashSet<>();
-        slays = new HashSet<>();
+        brands = new LinkedHashSet<>();
+        slays = new LinkedHashSet<>();
         curses = new TreeMap<>(Curse.CURSE_ORDER);
         ignore = new Flag<>(IgnoreFlag.class);
         modifiers = new HashMap<>();
@@ -584,8 +584,8 @@ public class ObjectKind {
         }
 
         modifiers = new HashMap<>();
-        brands = new HashSet<>();
-        slays = new HashSet<>();
+        brands = new LinkedHashSet<>();
+        slays = new LinkedHashSet<>();
         curses = new TreeMap<>(Curse.CURSE_ORDER);
         activations = new ArrayList<>();
         effect = new ArrayList<>();
@@ -1698,7 +1698,7 @@ public class ObjectKind {
      */
     public void clearSlays() {
         if (slays == null)
-            slays = new HashSet<>();
+            slays = new LinkedHashSet<>();
         
         slays.clear();
     }
@@ -1789,7 +1789,7 @@ public class ObjectKind {
      */
     public void clearBrands() {
         if (brands == null)
-            brands = new HashSet<>();
+            brands = new LinkedHashSet<>();
         
         brands.clear();
     }

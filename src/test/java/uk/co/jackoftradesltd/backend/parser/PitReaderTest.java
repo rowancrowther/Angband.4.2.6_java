@@ -589,7 +589,8 @@ class PitReaderTest {
      * order, which is {@code pit_info} order in C: {@code parse_pit_name} pushes each record on the head
      * of a chain and {@code finish_parse_pit} fills the array downward from the end, so slot 0 is the
      * first record. The room digit is C's {@code room_type} and {@link PitRoomType} is declared in the
-     * same order, so the digit is the ordinal.
+     * same order, so the digit is the ordinal. Inside each profile the bases, colours and forbidden
+     * monsters are the reverse of the file, because each entry is pushed on the head of its list.
      */
     @Test
     void realFileMatchesTheUpstreamFileRecordForRecordInFileOrder() throws Exception {
@@ -619,13 +620,15 @@ class PitReaderTest {
             assertSpells(row[9], field(pit, "forbiddenSpellFlags"), label + " spell-ban");
 
             List<MonsterBase> bases = field(pit, "bases");
-            assertEquals(split(row[10]), bases.stream().map(MonsterBase::getCodeName).toList(), label + " mon-base");
+            // The fixture columns list each profile's bases, colours and bans as the file writes them;
+            // the profile holds them last-written first, so the expected lists are reversed.
+            assertEquals(split(row[10]).reversed(), bases.stream().map(MonsterBase::getCodeName).toList(), label + " mon-base");
             List<ColourEnum> colours = field(pit, "colours");
-            assertEquals(split(row[11]).stream().map(COLOUR_LETTERS::get).toList(), colours, label + " color");
+            assertEquals(split(row[11]).reversed().stream().map(COLOUR_LETTERS::get).toList(), colours, label + " color");
             List<MonsterRace> banned = field(pit, "forbiddenMonsters");
             // monster.txt spells the race "horned reaper"; lookup_monster matches the file's "Horned Reaper"
             // to it ignoring case, so the comparison here does too.
-            assertEquals(split(row[12]).stream().map(String::toLowerCase).toList(),
+            assertEquals(split(row[12]).reversed().stream().map(String::toLowerCase).toList(),
                     banned.stream().map(r -> r.getName().toLowerCase()).toList(), label + " mon-ban");
         }
     }
@@ -709,26 +712,30 @@ class PitReaderTest {
         assertEquals(2, forbiddenSpells.count());
         assertEquals(2, ((List<?>) field(pit, "bases")).size());
         assertEquals(2, ((List<?>) field(pit, "forbiddenMonsters")).size());
-        assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_GREEN), field(pit, "colours"));
+        assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_RED), field(pit, "colours"));
     }
 
     /**
      * C pushes each base, colour and forbidden monster on the head of its list, so it holds them in
-     * reverse file order; the Java lists are in file order. {@code mon_pit_hook} only asks whether a
-     * race matches some entry, so the difference is not observable, and this pins the Java order so
-     * it is not rediscovered as a mismatch.
+     * reverse file order, and the Java lists are built with {@code addFirst} to hold them the same
+     * way (Stage 4 of {@code docs/Issue_Approach_Order.md}). {@code mon_pit_hook} only asks whether a
+     * race matches some entry, so play never sees the order.
      */
     @Test
-    void listsInsideAProfileAreInFileOrderHereWhereCHoldsThemReversed() throws Exception {
+    void listsInsideAProfileAreInTheReverseOfFileOrderAsInC() throws Exception {
         ParseResult<PitProfile> result = load("list-order.txt", String.join("\n",
                 "name:Order",
                 "mon-base:orc", "mon-base:troll", "mon-base:giant",
-                "color:r", "color:g", "color:b"));
+                "color:r", "color:g", "color:b",
+                "mon-ban:Horned Reaper", "mon-ban:Grip, Farmer Maggot's Dog"));
 
         List<MonsterBase> bases = field(result.items().getFirst(), "bases");
-        assertEquals(List.of("orc", "troll", "giant"), bases.stream().map(MonsterBase::getCodeName).toList());
-        assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_BLUE),
+        assertEquals(List.of("giant", "troll", "orc"), bases.stream().map(MonsterBase::getCodeName).toList());
+        assertEquals(List.of(ColourEnum.COLOUR_BLUE, ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_RED),
                 field(result.items().getFirst(), "colours"));
+        List<MonsterRace> banned = field(result.items().getFirst(), "forbiddenMonsters");
+        assertEquals(List.of("grip, farmer maggot's dog", "horned reaper"),
+                banned.stream().map(r -> r.getName().toLowerCase()).toList());
     }
 
     /**

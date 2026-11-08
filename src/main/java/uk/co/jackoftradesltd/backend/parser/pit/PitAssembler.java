@@ -82,9 +82,12 @@ import java.util.List;
  * whichever of {@link PitRoomType#PIT_TYPE_NONE} and {@link PitRoomType#PIT_TYPE_OTHER} it becomes
  * here. {@code innate-freq:} is stored as
  * {@code 100 / pct}, the convention of a race's {@code freq_innate}. The lists inside a profile
- * (bases, colours, forbidden monsters) are in file order, where C pushes each entry on the head of
- * its list and holds them reversed; {@code mon_pit_hook} only asks whether something matches, so
- * the order never shows.
+ * (bases, colours, forbidden monsters) are held in the reverse of file order: C pushes each entry on
+ * the head of its list ({@code parse_pit_mon_base}, {@code parse_pit_color} and
+ * {@code parse_pit_mon_ban}), so the entry written last is held first, and each Java list is built
+ * with {@code addFirst} to match. {@code mon_pit_hook} only asks whether something matches, so play
+ * never sees the order. The profiles themselves stay in file order, because {@code finish_parse_pit}
+ * fills {@code pit_info} from the end of a chain that was itself built backwards.
  *
  * <p>The names are resolved here, so {@code monster_base.txt} and {@code monster.txt} must already
  * be loaded: both lookups throw {@link IllegalStateException} if their registry is empty.
@@ -98,7 +101,8 @@ import java.util.List;
  * of the {@code strtoul} result. For {@code innate-freq:} the clamped value is above 100, so it is
  * refused as out of range. The shipped {@code pit.txt} has none.
  *
- * <p>Class PitAssembler coded before 260915, commented in full on 261028.
+ * <p>Class PitAssembler coded before 260915, commented in full on 261028, updated on 261108 for the
+ * reversed lists.
  *
  * @author Rowan Crowther
  */
@@ -133,8 +137,11 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
      *
      * <p>Every failure is fatal and the rest of the file is not read.
      *
+     * <p>The colours, bases and forbidden monsters are each put at the head of their list with
+     * {@code addFirst}, so a profile holds them last-written first, as C's head-pushed chains do.
+     *
      * <p>Function assemble coded before 260915, commented in full on 261028, updated on 261105 for
-     * the removal of the soft-error path.
+     * the removal of the soft-error path and on 261108 for the reversed lists.
      *
      * @param records  the raw pit records from the parser
      * @param filename the file being read, for the messages
@@ -296,18 +303,20 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
             // or a colour name. ColourEnum.fromCode(String) sends a one-char string to the
             // case-sensitive code lookup (color_char_to_attr) and anything longer to the
             // case-insensitive name lookup (color_text_to_attr). It returns null when nothing
-            // matches, which becomes white as in both C functions.
+            // matches, which becomes white as in both C functions. addFirst: parse_pit_color pushes
+            // each colour on the head of the list, so the last one written is held first.
             List<ColourEnum> colours = new ArrayList<>();
             for (String colourString : record.colours()) {
                 ColourEnum colourType = ColourEnum.fromCode(colourString);
                 if (colourType == null) {
                     colourType = ColourEnum.COLOUR_WHITE;
                 }
-                colours.add(colourType);
+                colours.addFirst(colourType);
             }
             // mon-base: allowed template types, resolved by name against the loaded monster bases.
             // This is why pit loading must run after monster_base.txt (lookupMonsterBase throws if
-            // the base registry is not yet populated).
+            // the base registry is not yet populated). addFirst: parse_pit_mon_base pushes each base
+            // on the head of the list, so the last one written is held first.
             List<MonsterBase> bases = new ArrayList<>();
             for (String base : record.monsterBases()) {
                 MonsterBase mBase = MonsterRegistry.lookupMonsterBase(base);
@@ -317,17 +326,19 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
                     logger.fatal(msg);
                     throw new DataFileParseException(msg);
                 }
-                bases.add(mBase);
+                bases.addFirst(mBase);
             }
             // mon-ban: despite the "MonsterBases" field name, these name specific monsters and
             // resolve to MonsterRace, not MonsterBase - matching C, whose pit_profile stores
             // forbidden_monsters as a monster_race list. Hence lookupMonsterRace (which requires
             // monster.txt loaded first, another reason pits load late in the init chain). A name
             // that matches no monster is added as null, as C stores a NULL race and never checks it.
+            // addFirst: parse_pit_mon_ban pushes each entry on the head of the list, so the last one
+            // written is held first.
             List<MonsterRace> bannedRaces = new ArrayList<>();
             for (String race : record.bannedMonsterBases()) {
                 MonsterRace monRace = MonsterRegistry.lookupMonsterRace(race);
-                bannedRaces.add(monRace);
+                bannedRaces.addFirst(monRace);
             }
 
             pits.add(new PitProfile(name, pitRoomType, ave, rarity, objRarity,

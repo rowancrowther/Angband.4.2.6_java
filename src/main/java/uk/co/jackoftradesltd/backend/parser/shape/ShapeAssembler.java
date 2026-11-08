@@ -58,15 +58,20 @@ import java.util.Map;
  * {@code parse_shape_*} handler returns a parse error and {@code init.c} quits on the first one.
  * Hard grammar and lexer errors are handled upstream by {@code GrammarDriver}.
  *
- * <p><b>Order:</b> the shapes come back in file order, so a shape's position in the list is the
- * {@code sidx} C gives it ({@code z_info->shape_max++} in {@code parse_shape_name}). C also keeps
- * its {@code shapes} list in reverse file order; {@code PlayerRegistry} records that difference as
- * deliberate and finds a shape by position where C searches for the {@code sidx}. Each shape's
- * blows are the other way round: {@code parse_shape_blow} pushes every {@code blow:} line on the
- * head of the chain, and the player-attack code walks that chain from the head, so the blows are
- * held in reverse file order and index 0 is the last {@code blow:} line.
+ * <p><b>Order:</b> the shapes come back in reverse file order, as C's {@code shapes} list is
+ * ({@code parse_shape_name} in {@code init.c} sets {@code shape->next} to the list so far, so
+ * each new shape goes on the head). The last shape in {@code shape.txt} is therefore at index 0,
+ * and of two shapes with one name the later one comes first, which is the one C's
+ * {@code lookup_player_shape} finds. A shape's position in the list is not its {@code sidx}:
+ * each shape is numbered from its place in the file ({@code z_info->shape_max++}, so the first
+ * {@code name:} line is 0) and holds that number in {@link PlayerShape#getShapeIndex()}, which
+ * is what {@code PlayerRegistry.lookupPlayerShape(int)} matches on, as {@code player_shape_by_idx}
+ * does. Each shape's blows are held the same way round: {@code parse_shape_blow} pushes every
+ * {@code blow:} line on the head of the chain, and the player-attack code walks that chain from
+ * the head, so index 0 is the last {@code blow:} line.
  *
- * <p>Class ShapeAssembler coded before 260915, commented in full on 261029.
+ * <p>Class ShapeAssembler coded before 260915, commented in full on 261029, updated on 261108
+ * for the reversed list and the stored {@code sidx}.
  *
  * @author Rowan Crowther
  */
@@ -80,8 +85,9 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
     private static final Logger logger = LogManager.getLogger(ShapeAssembler.class);
 
     /**
-     * Assembles every parsed shape record into a {@link PlayerShape}, in file order. The port of
-     * the {@code parse_shape_*} handlers in {@code init.c}, run record by record.
+     * Assembles every parsed shape record into a {@link PlayerShape}, returned in reverse file
+     * order as C's list is. The port of the {@code parse_shape_*} handlers in {@code init.c}, run
+     * record by record.
      *
      * <p>Per record: the three {@code combat:} figures and the eight {@code skill-*} figures are
      * parsed as integers. An absent line reaches here as an empty string and is 0, which is what
@@ -101,16 +107,19 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
      * both. The effects go to {@link EffectAssembler}, and the blows are described in the class
      * comment. The blow count is the number of {@code blow:} lines, duplicates included.
      *
-     * <p>The shape's {@code sidx} is not stored, as {@link PlayerShape} describes, and the count
-     * C keeps in {@code z_info->shape_max} is taken from the size of this list by
+     * <p>Each shape's {@code sidx} is set from the number of records built before it, so it is the
+     * shape's place in the file whatever its place in the returned list. The count C keeps in
+     * {@code z_info->shape_max} is taken from the size of this list by
      * {@code PlayerRegistry.setPlayerShape}.
      *
      * <p>Function assemble coded before 260915, updated on 261105 to accept {@code OF_MAX},
-     * commented in full on 261105.
+     * commented in full on 261105, updated on 261108 to return the list reversed and to set the
+     * {@code sidx}.
      *
      * @param records  the raw shape records captured by the grammar
      * @param filename the data file the records came from, for the error messages
-     * @return the assembled shapes in file order, one per record
+     * @return the assembled shapes in reverse file order, one per record, each holding its file
+     *         position as its {@code sidx}
      * @throws DataFileParseException if a number, flag name, {@code values:} name or effect does
      *                                not resolve
      */
@@ -232,11 +241,13 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
                 blowList.addFirst(new PlayerBlow(blow));
             }
 
-            shapes.add(new PlayerShape(name, toa, toh, tod, skills, oFlags, pFlags,
+            PlayerShape shape = new PlayerShape(name, toa, toh, tod, skills, oFlags, pFlags,
                     values, elementValues, effects,
-                    record.blowMethod().size(), blowList));
+                    record.blowMethod().size(), blowList);
+            shape.setShapeIndex(shapes.size());
+            shapes.addFirst(shape);
         }
-
+        
         return shapes;
     }
 }

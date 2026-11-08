@@ -24,6 +24,8 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -202,6 +204,103 @@ class ObjectUtilsCopySlaysTest {
             copySlays(dest, new ObjectKind());
 
             assertEquals(Set.of(evil), dest.getSlays());
+        }
+    }
+
+    /**
+     * The order the merged slays come out in. The sets keep the order they were filled in, and the
+     * merge does not re-sort by registry position.
+     */
+    @Nested
+    @DisplayName("the order of the merged slays")
+    class Order {
+
+        /**
+         * An empty item takes the kind's order exactly, which is the case {@link ObjectUtils#objectPrep}
+         * always presents and the one that matches C, because the kind's set is loaded in registry order.
+         */
+        @Test
+        @DisplayName("an empty dest takes the source's order")
+        void emptyDestTakesSourceOrder() {
+            List<Slay> expected = new ArrayList<>();
+            for (MonsterRaceFlag flag : new MonsterRaceFlag[]{MonsterRaceFlag.RF_DEMON,
+                    MonsterRaceFlag.RF_ORC, MonsterRaceFlag.RF_UNDEAD, MonsterRaceFlag.RF_ANIMAL,
+                    MonsterRaceFlag.RF_GIANT, MonsterRaceFlag.RF_EVIL, MonsterRaceFlag.RF_TROLL,
+                    MonsterRaceFlag.RF_DRAGON}) {
+                expected.add(slay(flag.name() + "_2", flag.name(), flag, 2));
+            }
+            ObjectKind source = new ObjectKind();
+            expected.forEach(source::addSlay);
+
+            ItemObject dest = new ItemObject();
+            copySlays(dest, source);
+
+            assertEquals(expected, new ArrayList<>(dest.getSlays()));
+        }
+
+        /**
+         * Pins the Java behaviour where it differs from C. C walks the combined set in table order;
+         * here the item's slays stay first and the kind's unmatched ones follow, in the kind's order.
+         */
+        @Test
+        @DisplayName("source slays with no partner are appended after dest's, not re-sorted")
+        void unmatchedSourceSlaysAreAppendedAfterDestsHere() {
+            Slay late = slay("TROLL_2", "troll", MonsterRaceFlag.RF_TROLL, 2);
+            Slay early1 = slay("EVIL_2", "evil", EVIL, 2);
+            Slay early2 = slay("ORC_3", "orc", ORC, 3);
+            ItemObject dest = new ItemObject();
+            dest.addSlay(late);
+            ObjectKind source = new ObjectKind();
+            source.addSlay(early1);
+            source.addSlay(early2);
+
+            copySlays(dest, source);
+
+            assertEquals(List.of(late, early1, early2), new ArrayList<>(dest.getSlays()));
+        }
+
+        /**
+         * A stronger source slay takes the place of the weaker dest one it replaces.
+         */
+        @Test
+        @DisplayName("a replacement stays where the slay it replaced stood")
+        void replacementKeepsThePlace() {
+            Slay first = slay("TROLL_2", "troll", MonsterRaceFlag.RF_TROLL, 2);
+            Slay weakEvil = slay("EVIL_2", "evil", EVIL, 2);
+            Slay last = slay("DRAGON_2", "dragon", MonsterRaceFlag.RF_DRAGON, 2);
+            ItemObject dest = new ItemObject();
+            dest.addSlay(first);
+            dest.addSlay(weakEvil);
+            dest.addSlay(last);
+            ObjectKind source = new ObjectKind();
+            source.addSlay(slay("EVIL_3", "evil", EVIL, 3));
+
+            copySlays(dest, source);
+
+            assertEquals(List.of("TROLL_2", "EVIL_3", "DRAGON_2"),
+                    dest.getSlays().stream().map(Slay::getCode).toList());
+        }
+
+        /**
+         * Pins the Java behaviour where it differs from C. On an equal multiplier C clears the
+         * lower table index, so the later slay survives; here the item's own slay, met first,
+         * survives whatever the registry position of the two. {@code slay.txt} has no such pair
+         * (see {@code BrandSlayNoTieDataTest}), so it cannot show on the shipped data.
+         */
+        @Test
+        @DisplayName("on an exact tie dest's slay survives, where C keeps the higher index")
+        void tieKeepsDestsSlayHereWhereCKeepsTheHigherIndex() {
+            Slay destSlay = slay("EVIL_A", "evil", EVIL, 2);
+            Slay sourceSlay = slay("EVIL_B", "evil", EVIL, 2);
+            ItemObject dest = new ItemObject();
+            dest.addSlay(destSlay);
+            ObjectKind source = new ObjectKind();
+            source.addSlay(sourceSlay);
+
+            copySlays(dest, source);
+
+            assertEquals(1, dest.getSlays().size());
+            assertSame(destSlay, dest.getSlays().iterator().next());
         }
     }
 }

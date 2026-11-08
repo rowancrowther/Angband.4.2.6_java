@@ -267,9 +267,11 @@ class PitAssemblerTest {
         assertTrue(bannedSpells.has(MonsterSpell.RSF_BR_ELEC));
         assertTrue(bannedSpells.has(MonsterSpell.RSF_SHRIEK));
 
-        assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_GREEN), field(pit, "colours"));
+        // Colours and bases are written red, green and orc, troll; each list is held last-written
+        // first, as C's head-pushed chains are.
+        assertEquals(List.of(ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_RED), field(pit, "colours"));
         List<MonsterBase> bases = field(pit, "bases");
-        assertEquals(List.of("orc", "troll"), bases.stream().map(MonsterBase::getCodeName).toList());
+        assertEquals(List.of("troll", "orc"), bases.stream().map(MonsterBase::getCodeName).toList());
         List<MonsterRace> bans = field(pit, "forbiddenMonsters");
         assertEquals(List.of("Horned Reaper"), bans.stream().map(MonsterRace::getName).toList());
     }
@@ -537,14 +539,27 @@ class PitAssemblerTest {
     /**
      * One character goes to {@code color_char_to_attr}: a letter in {@code color_table} is that
      * colour, matched case-sensitively ({@code d} is dark and {@code D} is light dark), and a space
-     * is dark. The order of the entries is kept.
+     * is dark. The entries are held last-written first, as {@code parse_pit_color} pushes them.
      */
     @Test
     void aColourCodeIsLookedUpCaseSensitively() throws Exception {
         PitProfile pit = one(new Rec().colours("d", "D", "r", "R", " "));
 
-        assertEquals(List.of(ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_LIGHT_DARK, ColourEnum.COLOUR_RED,
-                ColourEnum.COLOUR_LIGHT_RED, ColourEnum.COLOUR_DARK), field(pit, "colours"));
+        assertEquals(List.of(ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_LIGHT_RED, ColourEnum.COLOUR_RED,
+                ColourEnum.COLOUR_LIGHT_DARK, ColourEnum.COLOUR_DARK), field(pit, "colours"));
+    }
+
+    /**
+     * {@code parse_pit_color} pushes each colour on the head of the profile's list, so the colour
+     * written last is held first. A palindrome would hide a missing reversal, so the codes here are
+     * all different.
+     */
+    @Test
+    void coloursAreHeldInTheReverseOfFileOrderAsInC() throws Exception {
+        PitProfile pit = one(new Rec().colours("r", "g", "b"));
+
+        assertEquals(List.of(ColourEnum.COLOUR_BLUE, ColourEnum.COLOUR_GREEN, ColourEnum.COLOUR_RED),
+                field(pit, "colours"));
     }
 
     /**
@@ -567,7 +582,7 @@ class PitAssemblerTest {
     void aColourNameIsMatchedIgnoringCaseAndUnknownNamesAreWhite() throws Exception {
         PitProfile pit = one(new Rec().colours("Red", "LIGHT DARK", "nonsense"));
 
-        assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_LIGHT_DARK, ColourEnum.COLOUR_WHITE),
+        assertEquals(List.of(ColourEnum.COLOUR_WHITE, ColourEnum.COLOUR_LIGHT_DARK, ColourEnum.COLOUR_RED),
                 field(pit, "colours"));
     }
 
@@ -586,15 +601,18 @@ class PitAssemblerTest {
         assertTrue(e.getMessage().endsWith("an illegal monster base value: " + name), e.getMessage());
     }
 
-    /** The bases come back as the registry's own objects, in the order written. */
+    /**
+     * The bases come back as the registry's own objects, held last-written first because
+     * {@code parse_pit_mon_base} pushes each on the head of the list.
+     */
     @Test
-    void theBasesAreTheRegistrysObjectsInFileOrder() throws Exception {
+    void theBasesAreTheRegistrysObjectsInTheReverseOfFileOrder() throws Exception {
         PitProfile pit = one(new Rec().bases("troll", "orc"));
 
         List<MonsterBase> bases = field(pit, "bases");
         assertEquals(2, bases.size());
-        assertEquals("troll", bases.get(0).getCodeName());
-        assertEquals("orc", bases.get(1).getCodeName());
+        assertSame(MonsterRegistry.lookupMonsterBase("orc"), bases.get(0));
+        assertSame(MonsterRegistry.lookupMonsterBase("troll"), bases.get(1));
     }
 
     // ---- mon-ban: -----------------------------------------------------------
@@ -640,7 +658,9 @@ class PitAssemblerTest {
     /**
      * {@code parse_pit_mon_ban} never checks what {@code lookup_monster} returned, so a name that
      * matches nothing becomes a {@code NULL} race in the list and the load goes on. Here it is a
-     * {@code null} entry, in place, between the ones that resolved.
+     * {@code null} entry, in place, between the ones that resolved. The list is held
+     * last-written first, as {@code parse_pit_mon_ban} pushes each entry on the head, so the file's
+     * Horned Reaper, Norman, Grip come back as Grip, {@code null}, Horned Reaper.
      */
     @Test
     void aMonBanNameThatMatchesNothingIsStoredAsNull() throws Exception {
@@ -648,9 +668,9 @@ class PitAssemblerTest {
 
         List<MonsterRace> bans = field(pit, "forbiddenMonsters");
         assertEquals(3, bans.size());
-        assertEquals("Horned Reaper", bans.get(0).getName());
+        assertEquals("Grip", bans.get(0).getName());
         assertNull(bans.get(1));
-        assertEquals("Grip", bans.get(2).getName());
+        assertEquals("Horned Reaper", bans.get(2).getName());
     }
 
     // ---- Registries not loaded -----------------------------------------------

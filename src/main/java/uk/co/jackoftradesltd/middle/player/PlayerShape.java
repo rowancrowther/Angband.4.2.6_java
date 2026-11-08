@@ -48,20 +48,26 @@ import java.util.Map;
  *
  * <p><b>Deliberate differences from the C struct.</b>
  * <ul>
- *   <li>{@code sidx}, the shape's index, is not held. C numbers shapes as {@code shape.txt} is
- *       parsed and finds them again by index or name; the port resolves by name through
- *       {@code PlayerRegistry.lookupPlayerShape}, and {@code Player} keeps a reference to the
- *       shape itself.</li>
+ *   <li>{@code sidx}, the shape's index, is held in {@link #shapeIndex} but is not a constructor
+ *       argument. C numbers a shape as its {@code name:} line is parsed ({@code z_info->shape_max++}),
+ *       so the first shape in {@code shape.txt} is 0; here {@code ShapeAssembler} numbers each
+ *       shape by calling {@link #setShapeIndex} after construction. The list the shapes sit in is
+ *       in reverse file order, as C's is, so the number is what
+ *       {@code PlayerRegistry.lookupPlayerShape(int)} matches on. Lookup by name goes through
+ *       {@code PlayerRegistry.lookupPlayerShape(String)}, and {@code Player} keeps a reference to
+ *       the shape itself.</li>
  *   <li>The fixed C arrays ({@code skills[SKILL_MAX]}, {@code modifiers[OBJ_MOD_MAX]},
  *       {@code el_info[ELEM_MAX]}) become maps holding only the entries the data file named.
  *       An absent key reads as zero, which is what C's zero-filled array holds for it.</li>
  *   <li>C's linked {@code effect} and {@code blows} chains become lists, with {@link #numBlows}
- *       the size of the blow list as {@code num_blows} is in C. C pushes each {@code blow:} line
- *       onto the head of its chain, so it holds them in reverse file order; the port keeps file
- *       order.</li>
+ *       the size of the blow list as {@code num_blows} is in C. The order is not a difference: C
+ *       pushes each {@code blow:} line onto the head of its chain, so it holds them in reverse
+ *       file order, and {@code ShapeAssembler} builds the list the same way round, so index 0 is
+ *       the last {@code blow:} line.</li>
  * </ul>
  *
- * <p>Class PlayerShape coded before 260820, commented in full on 261009.
+ * <p>Class PlayerShape coded before 260820, commented in full on 261009, updated on 261108 for the
+ * stored {@code sidx} and the blow order.
  *
  * @author Rowan Crowther
  */
@@ -167,22 +173,34 @@ public class PlayerShape {
     private int numBlows;
     /**
      * The named unarmed blows available in this shape (C: {@code player_shape.blows}, see
-     * {@link PlayerBlow}). Held in file order; C holds the same names in reverse file order.
+     * {@link PlayerBlow}). Held in reverse file order, as C holds them, so index 0 is the last
+     * {@code blow:} line.
      *
-     * <p>Field playerBlow coded before 260820, commented in full on 261009.
+     * <p>Field playerBlow coded before 260820, commented in full on 261009, updated on 261108 for
+     * the blow order.
      */
     private List<PlayerBlow> playerBlow;
+    /**
+     * The shape's {@code sidx} (C: {@code player_shape.sidx}): its place in {@code shape.txt},
+     * counted from 0, so {@code normal} is 0. {@code ShapeAssembler} sets it through
+     * {@link #setShapeIndex}; a shape built any other way holds 0.
+     *
+     * <p>Field shapeIndex coded on 261108, commented in full on 261108.
+     */
+    private int shapeIndex;
 
     /**
      * Creates a fully-specified shape from its parsed attributes.
      *
      * <p>All the form's contributions are supplied at once and stored as given, with no copying
-     * or validation. The class has no setters, so the object is an immutable description once
-     * built, though the maps, flag sets and lists passed in are shared rather than copied.
-     * {@code ShapeAssembler} is the production caller; it passes {@code numBlows} as the size of
-     * {@code playerBlow}, and the class does not check that the two agree.
+     * or validation. The only setter is {@link #setShapeIndex}, so the object is an immutable
+     * description once the assembler has numbered it, though the maps, flag sets and lists passed
+     * in are shared rather than copied. {@code ShapeAssembler} is the production caller; it passes
+     * {@code numBlows} as the size of {@code playerBlow}, and the class does not check that the two
+     * agree. The {@code sidx} is not a constructor argument and starts at 0.
      *
-     * <p>Constructor PlayerShape coded before 260820, commented in full on 261009.
+     * <p>Constructor PlayerShape coded before 260820, commented in full on 261009, updated on
+     * 261108 for the {@code sidx} and the setter.
      *
      * @param name           the shape's display name
      * @param toAc           armour-class bonus
@@ -210,7 +228,6 @@ public class PlayerShape {
                        int numBlows,
                        List<PlayerBlow> playerBlow) {
         this.name = name;
-        // this.sidx = sidx;
         this.toAc = toAc;
         this.toHit = toHit;
         this.toDam = toDam;
@@ -230,11 +247,14 @@ public class PlayerShape {
      * <p>Lists the logger, name, the three combat bonuses, skills, both flag sets, effects, blow
      * count and blow names. It does not list {@link #objectValueModifiers} or
      * {@link #elementValueModifiers}, so a dump will not show a shape's stat, speed or resistance
-     * values. Intended for logging/diagnostics, not for player-facing display. Not in C.
+     * values, and it does not list {@link #shapeIndex}, so a dump will not show the shape's
+     * {@code sidx}. Intended for logging/diagnostics, not for player-facing display. Not in C.
      *
-     * <p>Function toString coded before 260820, commented in full on 261009.
+     * <p>Function toString coded before 260820, commented in full on 261009, updated on 261108 to
+     * note that the {@code sidx} is not listed.
      *
-     * @return a dump of this shape's fields, omitting the two {@code values:} maps
+     * @return a dump of this shape's fields, omitting the two {@code values:} maps and the
+     *         {@code sidx}
      */
     @Override
     public String toString() {
@@ -423,5 +443,37 @@ public class PlayerShape {
         if (!objectValueModifiers.containsKey(om))
             return 0;
         return objectValueModifiers.get(om);
+    }
+
+    /**
+     * Reads {@link #shapeIndex}.
+     *
+     * <p>This is what {@code PlayerRegistry.lookupPlayerShape(int)} compares with, as C's
+     * {@code player_shape_by_idx} compares {@code sidx}. It is 0 until {@code ShapeAssembler} has
+     * numbered the shape, so a shape built by hand and never numbered answers 0 like the first
+     * shape in the file.
+     *
+     * <p>Function getShapeIndex coded on 261108, commented in full on 261108.
+     *
+     * @return the shape's place in {@code shape.txt}, counted from 0
+     */
+    public int getShapeIndex() {
+        return shapeIndex;
+    }
+
+    /**
+     * Sets {@link #shapeIndex}.
+     *
+     * <p>Called by {@code ShapeAssembler} once per shape, with the number of shapes built before
+     * this one, because the {@code sidx} follows file order and the list the shapes end up in is
+     * the other way round. The value is stored as given: it is not checked for a negative number
+     * or for a clash with another shape's.
+     *
+     * <p>Function setShapeIndex coded on 261108, commented in full on 261108.
+     *
+     * @param shapeIndex the shape's place in {@code shape.txt}, counted from 0
+     */
+    public void setShapeIndex(int shapeIndex) {
+        this.shapeIndex = shapeIndex;
     }
 }

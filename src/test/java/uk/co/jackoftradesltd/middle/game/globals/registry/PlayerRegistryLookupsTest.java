@@ -136,15 +136,30 @@ class PlayerRegistryLookupsTest {
     }
 
     /**
-     * @return the nine shapes {@code shape.txt} defines, in file order
+     * @return the nine shapes {@code shape.txt} defines, laid out as {@code ShapeAssembler}
+     *         returns them: in reverse file order (C's list is built by head insertion), each
+     *         holding its place in the file as its {@code sidx}, so {@code normal} is last in the
+     *         list and has sidx 0
      */
     private static List<PlayerShape> theGameShapes() {
         List<PlayerShape> list = new ArrayList<>();
+        int sidx = 0;
         for (String n : List.of("normal", "fox", "Pukel-man", "bear", "eagle", "bat", "warg",
                 "vampire", "werewolf")) {
-            list.add(shape(n));
+            PlayerShape s = shape(n);
+            s.setShapeIndex(sidx++);
+            list.add(s);
         }
-        return list;
+        return new ArrayList<>(list.reversed());
+    }
+
+    /**
+     * @param shapes a list from {@link #theGameShapes()}
+     * @param name   a shape name from {@code shape.txt}
+     * @return the shape of that name in the list, whatever its position
+     */
+    private static PlayerShape named(List<PlayerShape> shapes, String name) {
+        return shapes.stream().filter(s -> s.getName().equals(name)).findFirst().orElseThrow();
     }
 
     // ---- fixtures ----
@@ -261,9 +276,9 @@ class PlayerRegistryLookupsTest {
         List<PlayerShape> shapes = theGameShapes();
         PlayerRegistry.setPlayerShape(shapes);
 
-        assertSame(shapes.get(0), PlayerRegistry.lookupPlayerShape("normal"));
-        assertSame(shapes.get(3), PlayerRegistry.lookupPlayerShape("bear"));
-        assertSame(shapes.get(2), PlayerRegistry.lookupPlayerShape("Pukel-man"));
+        assertSame(named(shapes, "normal"), PlayerRegistry.lookupPlayerShape("normal"));
+        assertSame(named(shapes, "bear"), PlayerRegistry.lookupPlayerShape("bear"));
+        assertSame(named(shapes, "Pukel-man"), PlayerRegistry.lookupPlayerShape("Pukel-man"));
         assertTrue(bus.types.isEmpty());
     }
 
@@ -314,9 +329,11 @@ class PlayerRegistryLookupsTest {
         List<PlayerShape> shapes = theGameShapes();
         PlayerRegistry.setPlayerShape(shapes);
 
+        // The list is in reverse file order, so a position is not a sidx: werewolf is first.
+        assertEquals("werewolf", shapes.get(0).getName());
         for (int sidx = 0; sidx < SHAPE_NAMES.length; sidx++) {
             PlayerShape found = PlayerRegistry.lookupPlayerShape(sidx);
-            assertSame(shapes.get(sidx), found, "sidx " + sidx);
+            assertSame(named(shapes, SHAPE_NAMES[sidx]), found, "sidx " + sidx);
             assertEquals(SHAPE_NAMES[sidx], found.getName(), "sidx " + sidx);
         }
         assertTrue(bus.types.isEmpty());

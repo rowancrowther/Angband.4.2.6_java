@@ -276,12 +276,12 @@ public class PlayerRegistry {
      */
     private static int playerShapeMax;
     /**
-     * The loaded player shapes in file order - the port of C's {@code shapes} list (which C holds
-     * in reverse file order). Resolved by name via {@link #lookupPlayerShape(String)}, or by
-     * position via {@link #lookupPlayerShape(int)}, which stands in for C's {@code sidx} because
-     * the port's file order is C's {@code sidx} order; {@code null} until loaded.
+     * The loaded player shapes in reverse file order - the port of C's {@code shapes} list, which
+     * C builds by head insertion. Resolved by name via {@link #lookupPlayerShape(String)}, which
+     * takes the first match as C does, or by {@code sidx} via {@link #lookupPlayerShape(int)},
+     * which matches on {@link PlayerShape#getShapeIndex()}; {@code null} until loaded.
      *
-     * <p>Field playerShapes commented in full on 261026.
+     * <p>Field playerShapes commented in full on 261026, updated on 261108 for the reversed list.
      */
     private static List<PlayerShape> playerShapes;
     /**
@@ -392,7 +392,7 @@ public class PlayerRegistry {
      *
      * <p>Function setPlayerShape commented in full on 261008.
      *
-     * @param playerShape the assembled player shapes, in file order
+     * @param playerShape the assembled player shapes, in reverse file order as C's list is
      */
     public static void setPlayerShape(@NotNull List<PlayerShape> playerShape) {
         PlayerRegistry.playerShapes = playerShape;
@@ -777,12 +777,14 @@ public class PlayerRegistry {
      * shows the player {@code "Could not find %s shape!"} through {@code msg} and returns
      * {@code NULL}; the port sends the same text through {@link Message#message} and returns
      * {@code null}. The miss is not fatal in either version, so callers must guard. The shape
-     * returned is the shared original, not a copy, as in C.
+     * returned is the shared original, not a copy, as in C. The list is in reverse file order, as
+     * C's is, so of two shapes with one name the one later in {@code shape.txt} is found.
      *
-     * <p>The by-position counterpart, C's {@code player_shape_by_idx}, is
+     * <p>The by-index counterpart, C's {@code player_shape_by_idx}, is
      * {@link #lookupPlayerShape(int)}.
      *
-     * <p>Function lookupPlayerShape commented in full on 261026.
+     * <p>Function lookupPlayerShape commented in full on 261026, updated on 261108 for the
+     * reversed list.
      *
      * @param name the shape name, e.g. {@code "normal"} or {@code "bear"}
      * @return the matching {@link PlayerShape}, or {@code null} if none matches
@@ -807,14 +809,15 @@ public class PlayerRegistry {
     }
     
     /**
-     * Look up a player shape by its position in load order.
+     * Look up a player shape by its {@code sidx}, the number its place in {@code shape.txt} gave it.
      *
      * <p>The port of C's {@code player_shape_by_idx} in {@code player-util.c}, which walks the
      * {@code shapes} list for the shape whose {@code sidx} equals the index asked for and returns
      * it. C hands out {@code sidx} as it parses ({@code z_info->shape_max++} in
      * {@code parse_shape_name}, {@code init.c}), so the first {@code name:} line in
-     * {@code shape.txt} is 0, the next 1, and so on. The port keeps its list in file order, so the
-     * position in the list is the {@code sidx} and a subscript finds the same shape. The shape
+     * {@code shape.txt} is 0, the next 1, and so on. The port's list is in reverse file order, so
+     * a position in it is not the {@code sidx}; the search matches on
+     * {@link PlayerShape#getShapeIndex()}, which {@code ShapeAssembler} sets. The shape
      * returned is the shared original, not a copy, as in C.
      *
      * <p>On a miss, which means a negative number or one at or beyond {@link #getPlayerShapeMax},
@@ -829,9 +832,10 @@ public class PlayerRegistry {
      * {@link PlayerShape} itself. The one use is an {@code effect:SHAPECHANGE} line with no
      * sub-type, which C leaves at sub-type 0 and the port resolves to {@code lookupPlayerShape(0)}.
      *
-     * <p>Function lookupPlayerShape(int) coded on 261026, commented in full on 261026.
+     * <p>Function lookupPlayerShape(int) coded on 261026, commented in full on 261026, updated on
+     * 261108 to match on the stored {@code sidx}.
      *
-     * @param number the shape's position in the loaded shape list, the same as C's {@code sidx}
+     * @param number the shape's {@code sidx}, its place in {@code shape.txt} counted from 0
      * @return the matching {@link PlayerShape}, or {@code null} if the number is out of range
      * @throws IllegalStateException if player shapes have not been loaded
      */
@@ -846,7 +850,8 @@ public class PlayerRegistry {
         if (number < 0 || number >= playerShapes.size())
             Message.message("Could not find shape %d!", number);
         else
-            return playerShapes.get(number);
+            return playerShapes.stream().filter(ps -> ps.getShapeIndex() == number)
+                    .findFirst().orElse(null);
         
         return null;
     }

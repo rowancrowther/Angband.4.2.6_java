@@ -300,6 +300,12 @@ class SummonReaderTest {
             new Upstream("WRAITH", MessageType.MSG_SUM_WRAITH, true, List.of("wraith"), MonsterRaceFlag.RF_UNIQUE, "HI_UNDEAD"),
             new Upstream("UNIQUE", MessageType.MSG_SUM_UNIQUE, true, List.of(), MonsterRaceFlag.RF_UNIQUE, "HI_UNDEAD"));
 
+    /**
+     * The summons come back in file order ({@code finish_parse_summon} fills the array downward from
+     * the end of a head-pushed chain), but each summon's bases are held in the reverse of the file, as
+     * the chain of {@code parse_summon_base} pushes leaves them. {@link #UPSTREAM} lists the bases as
+     * the file writes them, so they are compared reversed.
+     */
     @Test
     void realFileComesBackInFileOrderWithEveryFieldAsUpstream() throws IOException {
         List<Summon> loaded = new SummonReader().parseWithResults(REAL_FILE).items();
@@ -312,7 +318,7 @@ class SummonReaderTest {
             assertEquals(expected.name(), actual.getName(), where);
             assertEquals(expected.msgt(), actual.getMessageType(), where);
             assertEquals(expected.uniques(), actual.isUniquesAllowed(), where);
-            assertEquals(expected.bases(),
+            assertEquals(expected.bases().reversed(),
                     actual.getBases().stream().map(MonsterBase::getCodeName).toList(), where);
             assertEquals(expected.raceFlag(), actual.getRaceFlag(), where);
             assertEquals(expected.fallback(), actual.getFallbackName(), where);
@@ -406,7 +412,8 @@ class SummonReaderTest {
         ParseResult<Summon> result = load("multiword.txt", summon("H", "SUM_MONSTER", "0", "base:zephyr hound\nbase:canine", "two words here"));
 
         Summon h = result.items().get(0);
-        assertEquals(List.of("zephyr hound", "canine"),
+        // Written zephyr hound then canine; the bases are held last-written first, as in C.
+        assertEquals(List.of("canine", "zephyr hound"),
                 h.getBases().stream().map(MonsterBase::getCodeName).toList());
         assertEquals("two words here", h.getDescription());
     }

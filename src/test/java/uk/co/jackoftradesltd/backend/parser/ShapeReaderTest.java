@@ -299,24 +299,32 @@ class ShapeReaderTest {
     }
 
     @Test
-    void shapesComeBackInFileOrderWhereCsListIsReversed() throws IOException {
+    void shapesComeBackInReverseFileOrderAsCsListIs() throws IOException {
         // C's finish_parse_shape installs a list built by head insertion: reverse file order, with
-        // each sidx counted up in file order. The Java list is in file order, so its index is sidx.
+        // each sidx counted up in file order. The Java list is in C's order, so the last shape in
+        // the file is at index 0 and each shape's sidx is its place in the FILE.
+        List<String> fileOrder = List.of("normal", "fox", "Pukel-man", "bear", "eagle", "bat", "warg",
+                "vampire", "werewolf");
         List<PlayerShape> shapes = new ShapeReader().parseWithResults(REAL_FILE).items();
 
-        assertEquals(List.of("normal", "fox", "Pukel-man", "bear", "eagle", "bat", "warg", "vampire",
-                "werewolf"), shapes.stream().map(PlayerShape::getName).toList());
+        assertEquals(fileOrder.reversed(), shapes.stream().map(PlayerShape::getName).toList());
+        for (PlayerShape s : shapes) {
+            assertEquals(fileOrder.indexOf(s.getName()), s.getShapeIndex(), s.getName() + " sidx");
+        }
     }
 
     @Test
-    void twoShapesWithOneNameBothLoadInFileOrder() throws IOException {
+    void twoShapesWithOneNameLoadInReverseFileOrder() throws IOException {
         // C's lookup_player_shape walks the reversed list, so it finds the LAST of two same-named
-        // shapes; the Java list is in file order and PlayerRegistry looks up first-match.
+        // shapes; the Java list is in C's order and PlayerRegistry looks up first-match, so the
+        // later record comes first. Each keeps the sidx its place in the file gave it.
         ParseResult<PlayerShape> result = load("dup-name.txt", shape("twin", "combat:1:1:1\n") + shape("twin", "combat:2:2:2\n"));
 
         assertEquals(2, result.items().size());
-        assertEquals(1, result.items().get(0).getToHit());
-        assertEquals(2, result.items().get(1).getToHit());
+        assertEquals(2, result.items().get(0).getToHit());
+        assertEquals(1, result.items().get(1).getToHit());
+        assertEquals(1, result.items().get(0).getShapeIndex());
+        assertEquals(0, result.items().get(1).getShapeIndex());
     }
 
     // ---- The nine shipped shapes against shape.txt -----------------------
@@ -393,10 +401,12 @@ class ShapeReaderTest {
         assertEquals(TABLE.size(), shapes.size());
         for (int i = 0; i < TABLE.size(); i++) {
             Row row = TABLE.get(i);
-            PlayerShape got = shapes.get(i);
+            // TABLE is in file order; the list is in C's reverse order.
+            PlayerShape got = shapes.get(TABLE.size() - 1 - i);
             String at = row.name();
 
             assertEquals(row.name(), got.getName(), at);
+            assertEquals(i, got.getShapeIndex(), at + " sidx");
             assertEquals(row.toh(), got.getToHit(), at + " to-h");
             assertEquals(row.tod(), got.getToDam(), at + " to-d");
             assertEquals(row.toa(), got.getToAc(), at + " to-a");

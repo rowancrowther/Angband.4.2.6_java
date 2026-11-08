@@ -159,13 +159,16 @@ public class MonsterSpellAssembler implements Assembler<MonsterSpellParseRecord,
                         throw new DataFileParseException(msg);
                     }
             }
-            if (ParseUtils.minusFound(record.hit())) {
-                String msg = "Monster spell starting at line: " + line +" of file: " + filename + " has " +
-                        "an illegal monster hit value: " + record.hit();
-                logger.fatal(msg);
-                throw new DataFileParseException(msg);   
+            int hit = 0;
+            if (!record.hit().isEmpty()) {
+                if (ParseUtils.minusFound(record.hit())) {
+                    String msg = "Monster spell starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal monster hit value: " + record.hit();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
+                hit = ParseUtils.parseIntString("Monster spell", record.hit(), line, filename, "hit");
             }
-            int hit = ParseUtils.parseIntString("Monster spell", record.hit(), line, filename, "hit");
             // EffectAssembler is all-or-nothing: it returns every effect in this spell's block or
             // throws on the first one that fails to resolve, so a spell is never built with one of
             // its effects missing. It never returns null.

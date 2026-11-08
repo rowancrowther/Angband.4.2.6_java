@@ -166,7 +166,7 @@ file
                     defaultBreakChance = $default_value.breakChanceNum;
                 else
                     defaultMaxStack = $default_value.maxStackNum;
-            })+
+            })*
 
             (object_base {
                 ObjectBaseParseRecord base = $object_base.objectBase;
@@ -176,7 +176,8 @@ file
                     newBase = new ObjectBaseParseRecord(base.name(), base.tVal(), base.colour(),
                     base.flags(),
                     base.breakChance().isEmpty() ? defaultBreakChance : base.breakChance(),
-                    base.maxStack().isEmpty() ? defaultMaxStack : base.maxStack(), base.line());
+                    base.maxStack().isEmpty()    ? defaultMaxStack    : base.maxStack(), 
+                    base.line());
                 } else {
                     newBase = base;
                 }

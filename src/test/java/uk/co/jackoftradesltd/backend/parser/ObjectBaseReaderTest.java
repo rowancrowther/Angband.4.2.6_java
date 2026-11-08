@@ -573,10 +573,31 @@ class ObjectBaseReaderTest {
 
     }
 
-    /** C: any number of {@code default:} lines, including none. The grammar needs at least one. */
+    /**
+     * C: any number of {@code default:} lines, including none. {@code init_parse_object_base}
+     * {@code mem_zalloc}s the parse data, so with no {@code default:} line a record that gives no
+     * {@code break:} or {@code max-stack:} takes 0 for both.
+     */
     @Test
-    void aFileWithNoDefaultLineIsAHardErrorWhereCAcceptsIt() throws IOException {
-        assertHardError("no-default.txt", "name:sword:S~\ngraphics:white\n");
+    void aFileWithNoDefaultLineLoadsWithZeroDefaultsAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("no-default.txt", "name:sword:S~\ngraphics:white\n");
+
+        assertEquals(1, declared(result).size());
+        ObjectBase base = declared(result).get(0);
+        assertEquals(TValue.TV_SWORD, base.gettVal());
+        assertEquals(0, base.getBreakPerc(), "no default: line, so break chance is C's zeroed 0");
+        assertEquals(0, base.getMaxStack(), "no default: line, so max stack is C's zeroed 0");
+    }
+
+    /** C: giving only one of the two {@code default:} values leaves the other at the zeroed 0. */
+    @Test
+    void aFileWithOnlyOneDefaultLineLeavesTheOtherAtZeroAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("one-default.txt",
+                "default:max-stack:40\nname:sword:S~\ngraphics:white\n");
+
+        ObjectBase base = declared(result).get(0);
+        assertEquals(0, base.getBreakPerc(), "break chance was never given, so it is 0");
+        assertEquals(40, base.getMaxStack());
     }
 
     /**

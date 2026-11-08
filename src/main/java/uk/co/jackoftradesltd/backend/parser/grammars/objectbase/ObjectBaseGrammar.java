@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectBaseGrammar.g4 by ANTLR 4.13.2
+// Generated from ObjectBaseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.objectbase;
 
 import org.antlr.v4.runtime.*;
@@ -707,10 +707,10 @@ public class ObjectBaseGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(87); 
+			setState(89);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==DEFAULT_MAX_STACK || _la==DEFAULT_BREAK_CHANCE) {
 				{
 				{
 				setState(84);
@@ -723,17 +723,17 @@ public class ObjectBaseGrammar extends Parser {
 				            
 				}
 				}
-				setState(89); 
+				setState(91);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==DEFAULT_MAX_STACK || _la==DEFAULT_BREAK_CHANCE );
-			setState(94); 
+			}
+			setState(95); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(91);
+				setState(92);
 				((FileContext)_localctx).object_base = object_base();
 
 				                ObjectBaseParseRecord base = ((FileContext)_localctx).object_base.objectBase;
@@ -753,11 +753,11 @@ public class ObjectBaseGrammar extends Parser {
 				            
 				}
 				}
-				setState(96); 
+				setState(97); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==NAME );
-			setState(98);
+			setState(99);
 			match(EOF);
 			}
 		}
@@ -773,7 +773,7 @@ public class ObjectBaseGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0012e\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0012f\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0001"+
 		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0003"+
@@ -787,13 +787,13 @@ public class ObjectBaseGrammar extends Parser {
 		"\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0003\u0006F\b\u0006\u0001"+
 		"\u0006\u0001\u0006\u0001\u0006\u0003\u0006K\b\u0006\u0001\u0006\u0001"+
 		"\u0006\u0001\u0006\u0005\u0006P\b\u0006\n\u0006\f\u0006S\t\u0006\u0001"+
-		"\u0007\u0001\u0007\u0001\u0007\u0004\u0007X\b\u0007\u000b\u0007\f\u0007"+
-		"Y\u0001\u0007\u0001\u0007\u0001\u0007\u0004\u0007_\b\u0007\u000b\u0007"+
-		"\f\u0007`\u0001\u0007\u0001\u0007\u0001\u0007\u0000\u0000\b\u0000\u0002"+
-		"\u0004\u0006\b\n\f\u000e\u0000\u0000d\u0000\u0016\u0001\u0000\u0000\u0000"+
-		"\u0002#\u0001\u0000\u0000\u0000\u0004%\u0001\u0000\u0000\u0000\u0006)"+
-		"\u0001\u0000\u0000\u0000\b-\u0001\u0000\u0000\u0000\n1\u0001\u0000\u0000"+
-		"\u0000\f>\u0001\u0000\u0000\u0000\u000eW\u0001\u0000\u0000\u0000\u0010"+
+		"\u0007\u0001\u0007\u0001\u0007\u0005\u0007X\b\u0007\n\u0007\f\u0007[\t"+
+		"\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0004\u0007`\b\u0007\u000b"+
+		"\u0007\f\u0007a\u0001\u0007\u0001\u0007\u0001\u0007\u0000\u0000\b\u0000"+
+		"\u0002\u0004\u0006\b\n\f\u000e\u0000\u0000e\u0000\u0016\u0001\u0000\u0000"+
+		"\u0000\u0002#\u0001\u0000\u0000\u0000\u0004%\u0001\u0000\u0000\u0000\u0006"+
+		")\u0001\u0000\u0000\u0000\b-\u0001\u0000\u0000\u0000\n1\u0001\u0000\u0000"+
+		"\u0000\f>\u0001\u0000\u0000\u0000\u000eY\u0001\u0000\u0000\u0000\u0010"+
 		"\u0011\u0005\u0002\u0000\u0000\u0011\u0012\u0005\b\u0000\u0000\u0012\u0017"+
 		"\u0006\u0000\uffff\uffff\u0000\u0013\u0014\u0005\u0001\u0000\u0000\u0014"+
 		"\u0015\u0005\b\u0000\u0000\u0015\u0017\u0006\u0000\uffff\uffff\u0000\u0016"+
@@ -825,13 +825,13 @@ public class ObjectBaseGrammar extends Parser {
 		"OL\u0001\u0000\u0000\u0000PS\u0001\u0000\u0000\u0000QO\u0001\u0000\u0000"+
 		"\u0000QR\u0001\u0000\u0000\u0000R\r\u0001\u0000\u0000\u0000SQ\u0001\u0000"+
 		"\u0000\u0000TU\u0003\u0000\u0000\u0000UV\u0006\u0007\uffff\uffff\u0000"+
-		"VX\u0001\u0000\u0000\u0000WT\u0001\u0000\u0000\u0000XY\u0001\u0000\u0000"+
-		"\u0000YW\u0001\u0000\u0000\u0000YZ\u0001\u0000\u0000\u0000Z^\u0001\u0000"+
-		"\u0000\u0000[\\\u0003\f\u0006\u0000\\]\u0006\u0007\uffff\uffff\u0000]"+
-		"_\u0001\u0000\u0000\u0000^[\u0001\u0000\u0000\u0000_`\u0001\u0000\u0000"+
-		"\u0000`^\u0001\u0000\u0000\u0000`a\u0001\u0000\u0000\u0000ab\u0001\u0000"+
-		"\u0000\u0000bc\u0005\u0000\u0000\u0001c\u000f\u0001\u0000\u0000\u0000"+
-		"\b\u0016#9EJQY`";
+		"VX\u0001\u0000\u0000\u0000WT\u0001\u0000\u0000\u0000X[\u0001\u0000\u0000"+
+		"\u0000YW\u0001\u0000\u0000\u0000YZ\u0001\u0000\u0000\u0000Z_\u0001\u0000"+
+		"\u0000\u0000[Y\u0001\u0000\u0000\u0000\\]\u0003\f\u0006\u0000]^\u0006"+
+		"\u0007\uffff\uffff\u0000^`\u0001\u0000\u0000\u0000_\\\u0001\u0000\u0000"+
+		"\u0000`a\u0001\u0000\u0000\u0000a_\u0001\u0000\u0000\u0000ab\u0001\u0000"+
+		"\u0000\u0000bc\u0001\u0000\u0000\u0000cd\u0005\u0000\u0000\u0001d\u000f"+
+		"\u0001\u0000\u0000\u0000\b\u0016#9EJQYa";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

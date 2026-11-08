@@ -20,9 +20,11 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.cave.Feature;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
 
@@ -500,10 +502,17 @@ class TerrainReaderTest {
         assertHardError("junk-resist.txt", VALID_RECORD + "resist-flag:RAND_50:x\n");
     }
 
-    /** C: {@code color_text_to_attr} answers white for a name it does not know. */
+    /**
+     * C: {@code color_text_to_attr} answers white for a name it does not know. The lexer takes any
+     * colour text, so the load succeeds and {@code TerrainFeatureAssembler} supplies the white.
+     */
     @Test
-    void anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite() throws IOException {
-        assertHardError("bad-colour.txt", "code:FLOOR\nname:x\ngraphics:.:nonsense\n");
+    void anUnknownColourNameDrawsWhiteAsInC() throws IOException {
+        ParseResult<Feature> result = load("bad-colour.txt", "code:FLOOR\nname:x\ngraphics:.:nonsense\n");
+
+        AngbandDisplayCharacter cell = result.items().getFirst().getDisplayCharacter();
+        assertEquals('.', cell.getNarrowCharacter());
+        assertEquals(ColourEnum.COLOUR_WHITE, cell.getAttributeColour());
     }
 
     /** C: {@code parser_parse} skips leading whitespace before it reads the directive. */

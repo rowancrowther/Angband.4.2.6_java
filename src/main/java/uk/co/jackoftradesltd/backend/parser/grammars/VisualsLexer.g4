@@ -30,8 +30,8 @@ ROL_EOL
 
 mode COLOUR;
 
-COLOUR_CHAR
-        :   COLOUR_CODE
+COLOUR_LINE
+        :   ~('\r' | '\n' | ':')+
         ;
 
 SWAP_COLON

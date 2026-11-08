@@ -981,9 +981,12 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aColourNameIsAHardErrorHereWhereCAcceptsOne() throws IOException {
-        // parse_monster_color: a value longer than one character goes through color_text_to_attr.
-        assertThrows(ParseCancellationException.class, () -> load("colour-name.txt", "name:Nope\nbase:townsfolk\nglyph:t\ncolor:white\n"));
+    void aColourNameIsAcceptedAsInC() throws Exception {
+        // parse_monster_color: a value longer than one character goes through color_text_to_attr,
+        // which matches the name case-insensitively.
+        ParseResult<MonsterRace> r = load("colour-name.txt", "name:Nope\nbase:townsfolk\nglyph:t\ncolor:white\n");
+        AngbandDisplayCharacter adc = field(byName(r, "Nope"), "adc");
+        assertEquals(ColourEnum.COLOUR_WHITE, adc.getAttributeColour());
     }
 
     @Test

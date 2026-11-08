@@ -1207,14 +1207,14 @@ class ArtifactReaderTest {
      * {@code g} is green. The Phial's kind is a special light, so it carries {@code KF_INSTA_ART} and
      * takes the line.
      *
-     * <p>C answers white for a colour it does not know. The lexer refuses one before the assembler
-     * runs, so that fallback is not reachable from a file and the last case here is a syntax error.
+     * <p>C answers white for a colour it does not know. The lexer takes any colour text, so the last
+     * case here loads and the assembler supplies the white.
      *
-     * <p>Method theGraphicsColourIsMatchedAsCMatchesItAndAnUnknownOneIsASyntaxError coded on 261107,
-     * commented in full on 261107.
+     * <p>Method theGraphicsColourIsMatchedAsCMatchesItAndAnUnknownOneIsWhite coded on 261107,
+     * commented in full on 261107, last case changed from a syntax error to white on 261108.
      */
     @Test
-    void theGraphicsColourIsMatchedAsCMatchesItAndAnUnknownOneIsASyntaxError() throws Exception {
+    void theGraphicsColourIsMatchedAsCMatchesItAndAnUnknownOneIsWhite() throws Exception {
         ObjectKind phial = ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Phial");
         AngbandDisplayCharacter original = kindField(phial, "character");
 
@@ -1230,7 +1230,11 @@ class ArtifactReaderTest {
                 assertEquals('~', glyph.getNarrowCharacter(), c[0]);
                 assertEquals(c[1], glyph.getAttributeColour().name(), "graphics colour " + c[0]);
             }
-            assertHardError("phial-bad-colour.txt", "name:X\nbase-object:light:Phial\ngraphics:~:Nosuchcolour\n");
+            // C's color_text_to_attr answers white for a name it does not know; the lexer takes any text.
+            load("phial-bad-colour.txt", "name:X\nbase-object:light:Phial\ngraphics:~:Nosuchcolour\n");
+            AngbandDisplayCharacter bad = kindField(phial, "character");
+            assertEquals('~', bad.getNarrowCharacter());
+            assertEquals("COLOUR_WHITE", bad.getAttributeColour().name(), "unknown graphics colour");
         } finally {
             phial.setCharacter(original);
         }

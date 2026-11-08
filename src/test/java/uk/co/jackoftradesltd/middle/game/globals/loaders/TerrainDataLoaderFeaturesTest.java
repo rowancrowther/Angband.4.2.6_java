@@ -397,24 +397,22 @@ class TerrainDataLoaderFeaturesTest {
         }
     }
 
-    /** The accepted deviation: C turns an unknown colour into white, the port's lexer rejects it. */
+    /** C turns an unknown colour into white; the lexer takes any colour text and the assembler does the same. */
     @Nested
-    @DisplayName("the colour check, stricter than C")
+    @DisplayName("the colour check, as C")
     class ColourCheck {
 
         @Test
-        @DisplayName("an unknown colour is rejected rather than read as white")
-        void unknownColourIsRejected() throws IOException {
-            List<Feature> sentinel = new ArrayList<>();
-            TerrainRegistry.setFeatures(sentinel);
-            writeTerrain(shippedTerrain().replace("graphics:.:w", "graphics:.:Q"));
+        @DisplayName("an unknown colour is read as white")
+        void unknownColourIsWhite() throws Exception {
+            // the closed door ships as Light Umber, so white can only come from the fall back
+            writeTerrain(shippedTerrain().replace("graphics:+:U", "graphics:+:Q"));
 
-            RuntimeException thrown = assertThrows(RuntimeException.class, TerrainDataLoader::loadTerrainFeatures);
+            TerrainDataLoader.loadTerrainFeatures();
 
-            // the lexer only has tokens for the colours in C's table, so this is a hard grammar error that
-            // fails the whole file, not a dropped record that the count guard then catches
-            assertFalse(thrown.getMessage().contains("Wrong number"), thrown.getMessage());
-            assertTrue(TerrainRegistry.getFeatures().isEmpty());
+            AngbandDisplayCharacter door = (AngbandDisplayCharacter) field(feature(TerrainFlags.FEAT_CLOSED), "displayCharacter");
+            assertEquals('+', door.getNarrowCharacter());
+            assertEquals(ColourEnum.COLOUR_WHITE, door.getAttributeColour());
         }
 
         @Test

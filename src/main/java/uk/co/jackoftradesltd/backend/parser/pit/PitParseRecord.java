@@ -42,7 +42,8 @@ import java.util.List;
  * @param innateFreq         required innate-attack frequency ({@code innate-freq:}), as text
  * @param spells             required monster spell codes ({@code spell-req:}), unresolved
  * @param bannedSpells       forbidden monster spell codes ({@code spell-ban:}), unresolved
- * @param colours            theme colour codes ({@code color:}), one single-char code per entry
+ * @param colours            theme colours ({@code color:}), one entry per line: a single-char code or a colour name,
+ *                           unresolved
  * @param monsterBases       allowed monster base names ({@code mon-base:}), unresolved
  * @param bannedMonsterBases forbidden monster names ({@code mon-ban:}) - resolved later as races,
  *                           not bases, since C's {@code forbidden_monsters} is a {@code monster_race} list

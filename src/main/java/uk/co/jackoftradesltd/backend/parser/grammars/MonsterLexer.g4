@@ -240,8 +240,8 @@ DROP_EOL
 
 mode COLOUR_MODE;
 
-COLOUR_CHAR
-        :   COLOUR_CODE
+COLOUR_LINE
+        :   ~('\n' | '\r')+
         ;
 
 COLOUR_EOL

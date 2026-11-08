@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PitGrammar.g4 by ANTLR 4.13.2
+// Generated from PitGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.pit;
 
 import org.antlr.v4.runtime.*;
@@ -25,6 +25,7 @@ import org.antlr.v4.runtime.atn.ParserATNSimulator;
 import org.antlr.v4.runtime.atn.PredictionContextCache;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
+import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftradesltd.backend.parser.pit.PitParseRecord;
 
@@ -42,7 +43,7 @@ public class PitGrammar extends Parser {
 		NAME=1, ROOM=2, ALLOC=3, OBJ_RARITY=4, COLOUR=5, MON_BASE=6, FLAGS_REQ=7, 
 		FLAGS_BAN=8, INNATE_FREQ=9, SPELL_REQ=10, SPELL_BAN=11, MON_BAN=12, PIT_INTEGER=13, 
 		COMMENT=14, EOL=15, FLAG=16, FLAG_OR=17, FLAG_EOL=18, STRING=19, REST_OF_LINE_EOL=20, 
-		ALLOC_COLON=21, ALLOC_INTEGER=22, ALLOC_EOL=23, COLOUR_CHAR=24, COLOUR_EOL=25;
+		ALLOC_COLON=21, ALLOC_INTEGER=22, ALLOC_EOL=23, COLOUR_LINE=24, COLOUR_EOL=25;
 	public static final int
 		RULE_name = 0, RULE_room = 1, RULE_alloc = 2, RULE_objRarity = 3, RULE_colour = 4, 
 		RULE_monBase = 5, RULE_flagsReq = 6, RULE_flagsBan = 7, RULE_innateFreq = 8, 
@@ -71,7 +72,7 @@ public class PitGrammar extends Parser {
 			null, "NAME", "ROOM", "ALLOC", "OBJ_RARITY", "COLOUR", "MON_BASE", "FLAGS_REQ", 
 			"FLAGS_BAN", "INNATE_FREQ", "SPELL_REQ", "SPELL_BAN", "MON_BAN", "PIT_INTEGER", 
 			"COMMENT", "EOL", "FLAG", "FLAG_OR", "FLAG_EOL", "STRING", "REST_OF_LINE_EOL", 
-			"ALLOC_COLON", "ALLOC_INTEGER", "ALLOC_EOL", "COLOUR_CHAR", "COLOUR_EOL"
+			"ALLOC_COLON", "ALLOC_INTEGER", "ALLOC_EOL", "COLOUR_LINE", "COLOUR_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -144,6 +145,11 @@ public class PitGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitName(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitName(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final NameContext name() throws RecognitionException {
@@ -188,6 +194,11 @@ public class PitGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitRoom(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitRoom(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -239,6 +250,11 @@ public class PitGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitAlloc(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitAlloc(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final AllocContext alloc() throws RecognitionException {
@@ -288,6 +304,11 @@ public class PitGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitObjRarity(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitObjRarity(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ObjRarityContext objRarity() throws RecognitionException {
@@ -317,9 +338,9 @@ public class PitGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class ColourContext extends ParserRuleContext {
 		public String colourChar;
-		public Token COLOUR_CHAR;
+		public Token COLOUR_LINE;
 		public TerminalNode COLOUR() { return getToken(PitGrammar.COLOUR, 0); }
-		public TerminalNode COLOUR_CHAR() { return getToken(PitGrammar.COLOUR_CHAR, 0); }
+		public TerminalNode COLOUR_LINE() { return getToken(PitGrammar.COLOUR_LINE, 0); }
 		public ColourContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -332,6 +353,11 @@ public class PitGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitColour(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitColour(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ColourContext colour() throws RecognitionException {
@@ -343,8 +369,8 @@ public class PitGrammar extends Parser {
 			setState(46);
 			match(COLOUR);
 			setState(47);
-			((ColourContext)_localctx).COLOUR_CHAR = match(COLOUR_CHAR);
-			 ((ColourContext)_localctx).colourChar =  ((ColourContext)_localctx).COLOUR_CHAR.getText(); 
+			((ColourContext)_localctx).COLOUR_LINE = match(COLOUR_LINE);
+			 ((ColourContext)_localctx).colourChar =  ((ColourContext)_localctx).COLOUR_LINE.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -375,6 +401,11 @@ public class PitGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitMonBase(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitMonBase(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -427,6 +458,11 @@ public class PitGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitFlagsReq(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitFlagsReq(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -501,6 +537,11 @@ public class PitGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitFlagsBan(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitFlagsBan(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final FlagsBanContext flagsBan() throws RecognitionException {
@@ -566,6 +607,11 @@ public class PitGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitInnateFreq(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitInnateFreq(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final InnateFreqContext innateFreq() throws RecognitionException {
@@ -617,6 +663,11 @@ public class PitGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitSpellReq(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitSpellReq(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -691,6 +742,11 @@ public class PitGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitSpellBan(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitSpellBan(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final SpellBanContext spellBan() throws RecognitionException {
@@ -755,6 +811,11 @@ public class PitGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitMonBan(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitMonBan(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -877,6 +938,11 @@ public class PitGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitPitRecord(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitPitRecord(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -1042,6 +1108,11 @@ public class PitGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof PitGrammarListener ) ((PitGrammarListener)listener).exitFile(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof PitGrammarVisitor ) return ((PitGrammarVisitor<? extends T>)visitor).visitFile(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 

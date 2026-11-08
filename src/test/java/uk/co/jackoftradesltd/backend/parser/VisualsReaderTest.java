@@ -64,9 +64,10 @@ import static org.junit.jupiter.api.Assertions.*;
  *       {@code GrammarDriver} throws as a {@code ParseCancellationException}.</li>
  *   <li>{@link ReaderAgainstC} - the reader checked clause by clause against {@code ui-visuals.c}:
  *       the shipped file's 38 cycles at their upstream step counts, the missing-file and
- *       hard-error contract, the convenience methods' {@code getFirst()} unwrap, and each place the
- *       grammar or assembler is stricter or looser than C (colour codes, the field after the name,
- *       block order, and the group, cycle and step caps C enforces).</li>
+ *       hard-error contract, the convenience methods' {@code getFirst()} unwrap, the colour field
+ *       (first character only, unknown is white, a blank is dark, empty is refused), and each place
+ *       the grammar or assembler is stricter or looser than C (the field after the name, block
+ *       order, and the group, cycle and step caps C enforces).</li>
  *   <li>{@link CycleAssemblerUnit} - the cycle assembler in isolation, reaching the refusal and
  *       grouping branches that grammar-valid input cannot (an empty colour string is impossible to
  *       lex, so it can only be injected by hand).</li>
@@ -81,7 +82,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * ({@code FlickerTable.stepFor}), the reflection can go.
  *
  * <p>Test class VisualsReaderTest coded before 261105, updated on 261105 for the removal of the
- * soft-error path.
+ * soft-error path, updated on 261108 for the lenient colour field (COLOUR_LINE in the lexer, first
+ * character only in both assemblers).
  *
  * @author Rowan Crowther
  */
@@ -272,9 +274,21 @@ class VisualsReaderTest {
         }
 
         @Test
-        void invalidColourCodeIsAHardLexerError() throws IOException {
-            // 'q' is not one of the 28 COLOUR_CODE chars, so COLOUR_CHAR cannot lex it: hard, not soft.
+        void anUnlistedColourCodeIsNotALexerError() throws IOException {
+            // 'q' is not one of the 28 colour codes, but COLOUR_LINE takes any value up to the colon or
+            // the end of the line, so it reaches the assembler, which reads it as white as C does.
             Path file = write("bad-code.txt", "flicker:d:dark\nflicker-color:q\n");
+
+            ParseResult<FlickerTable> result = assertDoesNotThrow(
+                    () -> new VisualsReader().parseFlickerWithResults(file.toString()));
+
+            assertEquals(1, result.items().size());
+        }
+
+        @Test
+        void anEmptyColourValueIsAHardError() throws IOException {
+            // COLOUR_LINE needs at least one character, matching C's strlen(color_code) == 0 refusal.
+            Path file = write("empty-code.txt", "flicker:d:dark\nflicker-color:\n");
 
             assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlickerWithResults(file.toString()));
 
@@ -308,7 +322,8 @@ class VisualsReaderTest {
      * comment says what C does. {@link FlickerTable} has no accessor, so the flicker half's
      * step-count differences (C keeps exactly three steps per colour) cannot be pinned here.
      *
-     * <p>Class ReaderAgainstC coded on 261019, commented in full on 261019.
+     * <p>Class ReaderAgainstC coded on 261019, commented in full on 261019, colour-field tests
+     * rewritten on 261108 once the lexer stopped refusing unlisted colours.
      *
      * @author Rowan Crowther
      */
@@ -379,7 +394,7 @@ class VisualsReaderTest {
         void aHardErrorEmptiesBothHalvesAsCQuitsOnAnyHandlerError() throws IOException {
             // Every visuals_parse_* error is fatal in C. Both halves parse the whole file here, so
             // both carry the error and neither yields a table.
-            Path file = write("bad.txt", "cycle:fancy:mine\ncycle-color:q\n");
+            Path file = write("bad.txt", "cycle:fancy:mine\ncycle-color:\n");
             VisualsReader reader = new VisualsReader();
 
             assertThrows(ParseCancellationException.class, () -> reader.parseCyclerWithResults(file.toString()));
@@ -391,7 +406,7 @@ class VisualsReaderTest {
         void theConvenienceMethodsPassTheParseErrorStraightThrough() throws IOException {
             // parseCycler and parseFlicker unwrap with items().getFirst(), but the parse error is
             // thrown before the unwrap, so it reaches the caller unchanged.
-            Path file = write("bad2.txt", "cycle:fancy:mine\ncycle-color:q\n");
+            Path file = write("bad2.txt", "cycle:fancy:mine\ncycle-color:\n");
 
             assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseCycler(file.toString()));
             assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlicker(file.toString()));
@@ -440,41 +455,94 @@ class VisualsReaderTest {
             assertEquals(2, cycler.getByGroup("a").size());
         }
 
-        // ---- Where Java differs: the colour field ---------------------------
+        // ---- The colour field: first character only, and it never fails ----
+
+        /**
+         * The three steps stored for {@code base} after parsing {@code content} as a flicker file.
+         * {@link FlickerTable} has no accessor yet, so its private {@code byAttr} map is read by
+         * reflection, as {@link FlickerAssemblerUnit} does.
+         */
+        @SuppressWarnings("unchecked")
+        private List<ColourEnum> flickerSteps(String name, String content, ColourEnum base) throws IOException {
+            FlickerTable table = new VisualsReader().parseFlickerWithResults(write(name, content).toString())
+                    .items().getFirst();
+            try {
+                java.lang.reflect.Field f = FlickerTable.class.getDeclaredField("byAttr");
+                f.setAccessible(true);
+                ColourCycle cycle = ((Map<ColourEnum, ColourCycle>) f.get(table)).get(base);
+                assertNotNull(cycle, "no cycle for " + base);
+                return List.copyOf(cycle.getSteps());
+            } catch (ReflectiveOperationException e) {
+                throw new AssertionError("FlickerTable.byAttr not readable", e);
+            }
+        }
 
         @Test
-        void anUnlistedColourLetterOnACycleColourIsAHardErrorHereWhereCReadsItAsWhite() throws IOException {
+        void anUnlistedColourLetterOnACycleColourReadsAsWhiteAsInC() throws IOException {
             // color_char_to_attr falls through to COLOUR_WHITE for a character not in color_table, so
-            // "cycle-color:q" loads as a white step in C. The lexer only knows the 28 listed letters.
-            assertThrows(ParseCancellationException.class, () -> new VisualsReader()
-                    .parseCyclerWithResults(write("q.txt", "cycle:g:n\ncycle-color:q\n").toString()));
+            // "cycle-color:q" loads as a white step.
+            VisualsCycler cycler = cycler("q.txt", "cycle:g:n\ncycle-color:q\n");
 
+            assertEquals(ColourEnum.COLOUR_WHITE, cycler.getByGroup("g").get("n").getColour(0));
         }
 
         @Test
-        void aColourWrittenAsAWordIsAHardErrorHereWhereCTakesItsFirstLetter() throws IOException {
-            // The handlers pass only color_code[0] to color_char_to_attr, so "cycle-color:red" is the
-            // letter r (red) in C. The lexer reads one letter and then meets "ed".
-            assertThrows(ParseCancellationException.class, () -> new VisualsReader()
-                    .parseCyclerWithResults(write("word.txt", "cycle:g:n\ncycle-color:red\n").toString()));
+        void aColourWrittenAsAWordIsItsFirstLetterAsInC() throws IOException {
+            // The handlers pass only color_code[0] to color_char_to_attr, so "red" is r (red), "Red" is
+            // R (light red, not the colour named Red) and "Mauve" is M (mustard).
+            VisualsCycler cycler = cycler("word.txt",
+                    "cycle:g:n\ncycle-color:red\ncycle-color:Red\ncycle-color:Mauve\n");
 
+            ColourCycle cycle = cycler.getByGroup("g").get("n");
+            assertEquals(ColourEnum.COLOUR_RED, cycle.getColour(0));
+            assertEquals(ColourEnum.COLOUR_LIGHT_RED, cycle.getColour(1));
+            assertEquals(ColourEnum.COLOUR_MUSTARD, cycle.getColour(2));
         }
 
         @Test
-        void aTwoLetterBaseColourOnAFlickerHeaderIsAHardErrorHereWhereCTakesTheFirst() throws IOException {
-            // visuals_parse_flicker reads color_code[0] only, so "flicker:dd:name" selects dark in C.
-            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlickerWithResults(
-                    write("dd.txt", "flicker:dd:name\nflicker-color:d\n").toString()));
+        void aColourWrittenAsAWordOnAFlickerStepIsItsFirstLetterAsInC() throws IOException {
+            List<ColourEnum> steps = flickerSteps("word-step.txt",
+                    "flicker:d:name\nflicker-color:Red\nflicker-color:Mauve\nflicker-color:q\n",
+                    ColourEnum.COLOUR_DARK);
 
+            assertEquals(List.of(ColourEnum.COLOUR_LIGHT_RED, ColourEnum.COLOUR_MUSTARD, ColourEnum.COLOUR_WHITE),
+                    steps);
         }
 
         @Test
-        void aBlankAfterAColourLetterIsAHardErrorHereWhereCReadsTheLetter() throws IOException {
-            // strtok on ':' leaves "d " as the token and only its first character is read, so a
-            // trailing blank is harmless in C. COLOUR_EOL takes no blanks before the newline.
-            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseFlickerWithResults(
-                    write("trailing.txt", "flicker:d:name\nflicker-color:d \n").toString()));
+        void aMultiLetterBaseColourOnAFlickerHeaderIsItsFirstLetterAsInC() throws IOException {
+            // visuals_parse_flicker reads color_code[0] only, so "flicker:dd:name" selects dark and
+            // "flicker:Red:name" selects R (light red).
+            assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK),
+                    flickerSteps("dd.txt", "flicker:dd:name\nflicker-color:r\n", ColourEnum.COLOUR_DARK));
+            assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK),
+                    flickerSteps("red-key.txt", "flicker:Red:name\nflicker-color:r\n", ColourEnum.COLOUR_LIGHT_RED));
+        }
 
+        @Test
+        void anUnlistedBaseColourOnAFlickerHeaderKeysTheTableByWhiteAsInC() throws IOException {
+            assertEquals(List.of(ColourEnum.COLOUR_RED, ColourEnum.COLOUR_DARK, ColourEnum.COLOUR_DARK),
+                    flickerSteps("q-key.txt", "flicker:q:name\nflicker-color:r\n", ColourEnum.COLOUR_WHITE));
+        }
+
+        @Test
+        void aBlankAfterAColourLetterIsHarmlessAsInC() throws IOException {
+            // strtok on ':' leaves "r " as the token and only its first character is read, so a
+            // trailing blank changes nothing. COLOUR_LINE keeps the blank; the assembler ignores it.
+            VisualsCycler cycler = cycler("trailing.txt", "cycle:g:n\ncycle-color:r \n");
+            List<ColourEnum> flicker = flickerSteps("trailing-flicker.txt",
+                    "flicker:d:name\nflicker-color:r \n", ColourEnum.COLOUR_DARK);
+
+            assertEquals(ColourEnum.COLOUR_RED, cycler.getByGroup("g").get("n").getColour(0));
+            assertEquals(ColourEnum.COLOUR_RED, flicker.getFirst());
+        }
+
+        @Test
+        void aLoneBlankIsDarkAsInC() throws IOException {
+            // color_char_to_attr answers COLOUR_DARK for ' ', and the handlers refuse only an empty value.
+            VisualsCycler cycler = cycler("blank.txt", "cycle:g:n\ncycle-color: \n");
+
+            assertEquals(ColourEnum.COLOUR_DARK, cycler.getByGroup("g").get("n").getColour(0));
         }
 
         // ---- Where Java differs: the name field -----------------------------
@@ -580,10 +648,10 @@ class VisualsReaderTest {
     // ----------------------------------------------------------------------
 
     /**
-     * Direct {@link VisualsCycleAssembler} tests. Two of the assembler's branches are unreachable
-     * through the reader: an empty colour string cannot be lexed (COLOUR_CHAR needs one code char),
-     * and an unknown code char is a hard lexer error before the assembler ever runs. Injecting
-     * hand-built {@link VisualsCycleParseRecord}s is the only way to cover them. Every assembler
+     * Direct {@link VisualsCycleAssembler} tests. One of the assembler's branches is unreachable
+     * through the reader: an empty colour string cannot be lexed (COLOUR_LINE needs at least one
+     * character). Injecting hand-built {@link VisualsCycleParseRecord}s is the only way to cover it,
+     * and the same way reaches colours the reader would pass through whole. Every assembler
      * error stops the load, as in C; the full C-derived set is in {@code VisualsCycleAssemblerTest}.
      *
      * <p>Class CycleAssemblerUnit coded before 261030, updated on 261030 when the assembler's soft

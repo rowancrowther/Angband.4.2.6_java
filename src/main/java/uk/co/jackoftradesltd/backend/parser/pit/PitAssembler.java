@@ -292,9 +292,11 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
                     throw new DataFileParseException(msg);
                 }
             }
-            // color: each entry is a single-character colour code; ColourEnum.fromCode resolves a
-            // one-char string via the colour table and returns null for anything unrecognized,
-            // which becomes white as in C's color_char_to_attr.
+            // color: each entry is the whole value written after "color:" - a one-character code
+            // or a colour name. ColourEnum.fromCode(String) sends a one-char string to the
+            // case-sensitive code lookup (color_char_to_attr) and anything longer to the
+            // case-insensitive name lookup (color_text_to_attr). It returns null when nothing
+            // matches, which becomes white as in both C functions.
             List<ColourEnum> colours = new ArrayList<>();
             for (String colourString : record.colours()) {
                 ColourEnum colourType = ColourEnum.fromCode(colourString);

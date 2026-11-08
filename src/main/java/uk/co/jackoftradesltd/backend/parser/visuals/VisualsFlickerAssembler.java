@@ -54,6 +54,13 @@ import java.util.*;
  * colour), whereas {@code record.colours()} are the animation frames - two different colour axes off
  * the same record. The {@code name} on the {@code flicker:} line is ignored, as in C, which never
  * reads it.
+ * <p>
+ * <strong>Colour text arrives raw.</strong> {@code VisualsLexer} reads every colour field, the
+ * {@code flicker:} header's and each {@code flicker-color:} step's, as a {@code COLOUR_LINE}: any
+ * run of characters up to a colon or the end of the line. The {@code Colours} fragments are not
+ * applied to it, so the grammar never checks that the text is a colour code. Despite the name
+ * {@code colourChar}, the record holds that whole run, not one character, and the colour is decided
+ * here, from its first character only.
  *
  * <p>Class VisualsFlickerAssembler coded before 2026-09-15, commented in full on 2026-10-30.
  *
@@ -65,22 +72,39 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
      * made by C's {@code visuals_parse_flicker()} and {@code visuals_parse_flicker_color()}
      * ({@code ui-visuals.c}).
      * <p>
-     * For each block, the base-attribute key and every step colour go through
-     * {@link ColourEnum#fromCode}. An unrecognized code becomes {@link ColourEnum#COLOUR_WHITE},
-     * the same answer C's {@code color_char_to_attr()} ({@code z-color.c}) gives. The grammar only
-     * lexes a single valid {@code COLOUR_CODE}, so that fallback, and C's refusal of an empty or
-     * negative code, cannot be reached from a grammar-checked file.
+     * <strong>Colours.</strong> For each block, the base-attribute key and every step colour go
+     * through {@link ColourEnum#fromCode(char)} on the <em>first character</em> of the text only, as
+     * C's two handlers pass just {@code color_code[0]} to {@code color_char_to_attr()}
+     * ({@code z-color.c}). So {@code Red} is {@code R} (light red, not the colour named Red),
+     * {@code Mauve} is {@code M} (mustard), and {@code r } with a trailing blank is {@code r}. A
+     * character that matches no colour becomes {@link ColourEnum#COLOUR_WHITE}, C's "we assume
+     * white", and a space is {@link ColourEnum#COLOUR_DARK}.
+     * <p>
+     * <strong>Reachable from a file.</strong> {@code COLOUR_LINE} in {@code VisualsLexer.g4} accepts
+     * any value up to the colon or the end of the line, spaces included, so the white fallback is
+     * reachable from a real file ({@code flicker-color:q}) and so is the dark one: a value of one
+     * blank, {@code flicker-color: }, is a one-character {@code COLOUR_LINE} and gives
+     * {@link ColourEnum#COLOUR_DARK}. C's refusal of an empty value is made by the grammar instead:
+     * {@code COLOUR_LINE} needs at least one character, so an empty value produces no token and
+     * {@code VisualsGrammar} finds a {@code FLICKER_COLOUR} or {@code FLICKER} with no colour after
+     * it. A colon ends {@code COLOUR_LINE}, so on a {@code flicker-color:} line a colon after the
+     * value is also refused by the grammar, whereas on the {@code flicker:} line it is the
+     * separator before the name.
      * <p>
      * If the key is new, the first three steps are added in order and any shortfall is padded with
      * {@link ColourEnum#COLOUR_DARK}. If the key already has a cycle, the block's steps write over
      * that cycle's list from index 0, at most three of them, and the rest keep their earlier values,
      * as C's step-index reset does. A stored cycle always holds exactly three steps, so that overwrite
      * by index never runs off the end of the list. The cycle stored for the key is then rebuilt
-     * around the list, named with the block's own base code as a label only.
-     * Nothing here throws.
+     * around the list, named with the block's own raw base-colour text (the whole
+     * {@code COLOUR_LINE}, so {@code Red} stays {@code Red} although the key is {@code R}) as a
+     * label only.
+     * Nothing here throws for a record the grammar produced; a hand-built record with an empty colour
+     * string would throw {@link StringIndexOutOfBoundsException}.
      *
      * <p>Function assemble coded on 2026-10-30, commented in full on 2026-10-30, updated on 261105
-     * for the removal of the soft-error path.
+     * for the removal of the soft-error path, updated on 261108 for the lenient colour field (first
+     * character only), commented again on 261108 for the raw {@code COLOUR_LINE} treatment.
      *
      * @param records  the parsed {@code flicker:} blocks, in file order
      * @param filename the file being assembled; unused here
@@ -94,7 +118,7 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
         for (VisualsFlickerParseRecord record : records) {
             List<ColourEnum> steps = new ArrayList<>();
 
-            ColourEnum key = ColourEnum.fromCode(record.colourChar());
+            ColourEnum key = ColourEnum.fromCode(record.colourChar().charAt(0));
             if (key == null) {
                 key = ColourEnum.COLOUR_WHITE;
             }
@@ -105,7 +129,7 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
             }
             int count = 0;
             for (String colour : record.colours()) {
-                ColourEnum colourType = ColourEnum.fromCode(colour);
+                ColourEnum colourType = ColourEnum.fromCode(colour.charAt(0));
                 if (count < 3) {
                     if (prevFound) {
                         steps.set(count, Objects.requireNonNullElse(colourType, ColourEnum.COLOUR_WHITE));

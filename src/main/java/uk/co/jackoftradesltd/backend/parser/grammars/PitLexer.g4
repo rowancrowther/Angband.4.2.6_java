@@ -2,7 +2,7 @@
 // monsters may fill a themed room, how deep/rare it is, its theme colours).
 // Cf. the C original's pit parser in src/mon-init.c.
 //
-// Most directives are simple "keyword:value" lines, but three value shapes
+// Most directives are simple "keyword:value" lines, but four value shapes
 // need their own lexer mode so a value's characters are not mis-tokenized as
 // keywords or flags:
 //   * REST_OF_LINE - free text (names, monster-base names) taken verbatim to
@@ -10,14 +10,15 @@
 //   * FLAG_MODE    - one or more '|'-separated upper-case flag/spell codes.
 //   * ALLOC_MODE   - the "rarity:level" pair, split on a ':' that must not be
 //                    confused with the ':' ending a keyword.
-//   * COLOUR_MODE  - a single colour-code letter (from the shared Colours
-//                    alphabet), kept apart so a bare letter is only a colour
-//                    right after color:.
-// Shared bits (FLAG_BODY, colour codes, comment/EOL skipping) come from the
-// imported grammars.
+//   * COLOUR_MODE  - the rest of the line after color: (a colour-code letter
+//                    or a colour name), taken verbatim and resolved by the
+//                    assembler, kept apart so the value is only read as a
+//                    colour right after color:.
+// Shared bits (FLAG_BODY, comment/EOL skipping) come from the imported
+// grammars Flags and CommentsAndEol.
 lexer grammar PitLexer;
 
-import Flags, CommentsAndEol, Colours;
+import Flags, CommentsAndEol;
 
 // "name:<text>" - starts a record; the name runs to end of line, so free-text mode.
 NAME
@@ -40,7 +41,7 @@ OBJ_RARITY
         ;
 
 // "color:<code>" - a theme colour; American spelling, matching the data file.
-// The single-letter value is lexed in COLOUR_MODE so it is not read as a keyword.
+// The value is lexed in COLOUR_MODE so it is not read as a keyword.
 COLOUR
         :   'color:' -> pushMode(COLOUR_MODE)
         ;
@@ -137,12 +138,13 @@ ALLOC_EOL
         :   PIT_EOL -> popMode, skip
         ;
 
-// --- COLOUR_MODE: a single colour-code letter -----------------------------
+// --- COLOUR_MODE: a colour code or colour name ----------------------------
 mode COLOUR_MODE;
 
-// One colour code (COLOUR_CODE is the shared single-letter alphabet from Colours).
-COLOUR_CHAR
-        :   COLOUR_CODE
+// The whole value, verbatim: a one-letter code or a name such as "Light Blue".
+// Not checked here - C treats an unmatched value as white, so the assembler does.
+COLOUR_LINE
+        :   ~('\r' | '\n')+
         ;
 
 COLOUR_EOL

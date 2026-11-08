@@ -32,8 +32,6 @@
  */
 lexer grammar AngbandDisplayCharacter;
 
-import Colours;
-
 /*
  * @author Rowan Crowther
  *
@@ -67,28 +65,6 @@ GLYPH_ONLY
 /*
  * @author Rowan Crowther
  *
- * GRAPHICS_COLOUR_FRAGMENT contains all possible single letter
- * values for the colour table, as well as the colour names, both
- * minuscule and title case. Both forms are sourced from the shared
- * Colours import so the colour alphabet lives in exactly one place.
- */
- fragment GRAPHICS_COLOUR_FRAGMENT
-        :   COLOUR_CODE | COLOUR_NAME
-        ;
-
-/*
- * @author Rowan Crowther
- *
- * GRAPHICS_SYMBOL_FRAGMENT allows all possible characters apart from a :,
- * or a new line character.
- */
-fragment GRAPHICS_SYMBOL_FRAGMENT
-        :   ~('\r' | '\n')
-        ;
-
-/*
- * @author Rowan Crowther
- *
  * COLOUR_MODE - entered into either at the start of a colour-only line,
  * or after a GLYPH_MODE COLON_SWITCH token.
  */
@@ -101,7 +77,7 @@ mode COLOUR_MODE;
  * the full name of the character
  */
 COLOUR_VALUES
-        :   GRAPHICS_COLOUR_FRAGMENT -> mode(DEFAULT_MODE)
+        :   ~('\r' | '\n')+ -> mode(DEFAULT_MODE)
         ;
 
 /*
@@ -121,7 +97,7 @@ mode GLYPH_MODE;
  * Wrapper for a GRAPHICS_SYMBOL_FRAGMENT
  */
 GLYPH_VALUES
-        :   GRAPHICS_SYMBOL_FRAGMENT -> mode(POST_GLYPH_MODE)
+        :   ~('\n' | '\r') -> mode(POST_GLYPH_MODE)
         ;
 
 mode POST_GLYPH_MODE;

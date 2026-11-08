@@ -43,10 +43,11 @@ objRarity
         :   OBJ_RARITY PIT_INTEGER { $objectRarity = $PIT_INTEGER.getText(); }
         ;
 
-// "color:<code>" - the single colour-code character.
+// "color:<code>" - the rest of the line: a colour-code character or a colour name,
+// kept as text for the assembler to resolve.
 colour
         returns[String colourChar]
-        :   COLOUR COLOUR_CHAR { $colourChar = $COLOUR_CHAR.getText(); }
+        :   COLOUR COLOUR_LINE { $colourChar = $COLOUR_LINE.getText(); }
         ;
 
 // "mon-base:<name>" - one allowed monster-base name (verbatim).

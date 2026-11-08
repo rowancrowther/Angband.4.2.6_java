@@ -34,7 +34,7 @@ glyph
 
 colour
         returns[String colourStr]
-        :   COLOUR COLOUR_CHAR { $colourStr = $COLOUR_CHAR.getText(); }
+        :   COLOUR COLOUR_LINE { $colourStr = $COLOUR_LINE.getText(); }
         ;
 
 speed

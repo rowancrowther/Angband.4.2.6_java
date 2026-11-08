@@ -296,35 +296,77 @@ Each group is one helper (or one policy) and then one pass over its users.
 - A: `egoitem/EgoItemAssembler.java` and `artifact/ArtifactAssembler.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-07: both call `ParseUtils.grabElementFlag`, the artifact one after `ObjectFlag.valueOf` fails, as C tries `grab_flag` first; `EgoItemReaderTest` and `ArtifactReaderTest` pass.]
 - Write one equivalent of C's function and call it from all four. [<span style="color:#006400">**CLOSED**</span> 26-11-07: `ParseUtils.grabElementFlag` is the one equivalent, called from all four and from `CurseAssembler`; `ParseUtilsGrabElementFlagTest` pins it.]
 
-### Booleans read from text (`!= 0`, not `equals("1")`)
+### Booleans read from text (`!= 0`, not `equals("1")`) [<span style="color:#006400">**CLOSED**</span> 26-11-07]
 
-- A: `summon/SummonAssembler.java` `uniques:`.
+- A: `summon/SummonAssembler.java` `uniques:`. [<span style="color:#006400">**CLOSED**</span> 26-11-07: read by `ParseUtils.isTrue`; `SummonReaderTest` and `SummonAssemblerTest` pass.]
 - A: `activation/ActivationAssembler.java` `aim:`. [<span style="color:#006400">**CLOSED**</span> 26-10-22: any non-zero `aim:` is true, read with C's base 0 rules; `ActivationAssemblerTest.anyNonZeroAimIsTrueAsInC` pins it.]
-- A: `objectproperty/ObjectPropertyAssembler.java` `bindui:` aux, and A: `playerproperty/PlayerPropertyAssembler.java` aux.
-- A: `chesttrap/ChestTrapAssembler.java` `destroy:` and `magic:`.
-- A: `playertimed/PlayerTimedAssembler.java` `exact`, which sits in its larger entry.
-- A: `dungeonprofile/RoomAssembler.java` `pit:01`, in the dungeon-profile entry.
-- G: `BlowMethodLexer.g4` `INTEGER` (`!text.equals("0")`, the mirror image).
-- One helper that does what `strtol(..., 0) != 0` does.
+- A: `objectproperty/ObjectPropertyAssembler.java` `bindui:` aux, and A: `playerproperty/PlayerPropertyAssembler.java` aux. [<span style="color:#006400">**CLOSED**</span> 26-11-07: both read the aux through `ParseUtils.isTrue`; `ObjectPropertyReaderTest` and `PlayerPropertyReaderTest` pass.]
+- A: `chesttrap/ChestTrapAssembler.java` `destroy:` and `magic:`. [<span style="color:#006400">**CLOSED**</span> 26-11-07: both read through `ParseUtils.isTrue`; `ChestTrapAssemblerTest` passes.]
+- A: `playertimed/PlayerTimedAssembler.java` `exact`, which sits in its larger entry. [<span style="color:#006400">**CLOSED**</span> 26-11-07 for the boolean part: the `flag-synonym:` exactness is read by `ParseUtils.isTrue`; the `PlayerTimed` tests pass.]
+- A: `dungeonprofile/RoomAssembler.java` `pit:01`, in the dungeon-profile entry. [<span style="color:#006400">**CLOSED**</span> 26-11-07: the parsed figure is compared with 1, so `01` is a pit and `2` is not; `DungeonProfileReaderTest.aPitWrittenWithALeadingZeroIsAPitAsInC` and `RoomAssemblerTest` pass.]
+- G: `BlowMethodLexer.g4` `INTEGER` (`!text.equals("0")`, the mirror image). [<span style="color:#006400">**CLOSED**</span> 26-11-07: the lexer keeps the text and `BlowMethodAssembler.java` reads `cut:`, `stun:`, `miss:` and `phys:` through `ParseUtils.isTrue`; `BlowMethodReaderTest` passes.]
+- One helper that does what `strtol(..., 0) != 0` does. [<span style="color:#006400">**CLOSED**</span> 26-11-07: `ParseUtils.isTrue`, pinned by `ParseUtilsIsTrueTest`.]
 
 ### Numbers: range, sign and base
 
-- A: `slay`, `brand`: no range check on the three numbers (assembler half; the lexer half is in Stage 6).
-- A: `monster/MonsterAssembler.java` `drop:` bounds and a negative chance.
-- A: `egoitem/EgoItemAssembler.java` and `artifact/ArtifactAssembler.java` `alloc:` figures against 0 to 255.
-- A: `projection/ProjectionAssembler.java` values above 2147483647.
-- A: `names/NamesAssembler.java` and `history/HistoryAssembler.java` base and sign.
-- A: `flavour/FlavourAssembler.java` negative or hex index.
-- A: `GameConstantsAssembler` negative values and overflow.
-- A: `playertimed/PlayerTimedAssembler.java` `lower-bound:`.
-- A: `roomprofile/RoomProfileAssembler.java` `type:`, `rating:` and `doors:` ranges.
+Checked 26-11-07 by reading each assembler and the C it ports. Every bullet below was found already met in the code. The tests were not run in that pass, so each CLOSED tag rests on the code reading only; run the named reader tests before ticking `docs/ROADMAP.md`.
+
+- A: `slay`, `brand`: no range check on the three numbers (assembler half; the lexer half is in Stage 6). [<span style="color:#006400">**CLOSED**</span> 26-11-07 for the assembler half, tests not run.]
+  - What C does: `multiplier`, `o-multiplier` and `power` are `uint` (`obj-init.c`). `parser_parse` refuses a token starting with `-`, `-0` included, and reads the digits with `strtoul` in base 0.
+  - Need: refuse a leading `-` on the raw text, and read `010` as 8.
+  - Java now: `slay/SlayAssembler.java` and `brand/BrandAssembler.java` call `ParseUtils.minusFound` and then `ParseUtils.parseIntString`.
+  - Still open: whether `SlayLexer.g4` and `BrandLexer.g4` let a `-` reach the assembler. That is the Stage 6 `INTEGER` rule and was not checked.
+- A: `monster/MonsterAssembler.java` `drop:` bounds and a negative chance. [<span style="color:#006400">**CLOSED**</span> 26-11-07, tests not run.]
+  - What C does: `parse_monster_drop` (`mon-init.c`) returns `PARSE_ERROR_INVALID_ITEM_NUMBER` when `min` or `max` is above 99. Chance, min and max are `uint`, so a leading `-` is refused. Chance has no upper bound.
+  - Need: a minus check on all three, and 0 to 99 on min and max only.
+  - Java now: `monster/MonsterAssembler.java` has the minus checks and the 0 to 99 tests, and leaves chance unbounded.
+- A: `egoitem/EgoItemAssembler.java` and `artifact/ArtifactAssembler.java` `alloc:` figures against 0 to 255. [<span style="color:#006400">**CLOSED**</span> 26-11-07, tests not run. The artifact half was already closed 26-10-23.]
+  - What C does: `parse_ego_alloc` and `parse_artifact_alloc` (`obj-init.c`) read the range with `grab_int_range` (`strtol`, base 10). Either end outside 0 to 255 is `PARSE_ERROR_OUT_OF_BOUNDS`. The commonness is an `int` with no check.
+  - Need: a base 10 read, so `010` is 10, then 0 to 255 on both ends and nothing on the commonness.
+  - Java now: both assemblers read the range through the fixed-base `ParseUtils.parseIntString` and test 0 to 255 on each end.
+- A: `projection/ProjectionAssembler.java` values above 2147483647. [<span style="color:#006400">**CLOSED**</span> 26-11-07 as a clamp, tests not run.]
+  - What C does: `numerator`, `divisor` and `damage-cap` are `uint` stored in an `int` (`obj-init.c`). Nothing is refused above `INT_MAX`; the value wraps.
+  - Need: stop dropping the record, and with it the whole file, for a large figure.
+  - Java now: `projection/ProjectionAssembler.java` refuses a leading `-`, then `parseIntString` clamps to `Integer.MAX_VALUE` and the load carries on.
+  - Deviation: C wraps and Java clamps. `ParseUtils` records it as an accepted deviation.
+- A: `names/NamesAssembler.java` and `history/HistoryAssembler.java` base and sign. [<span style="color:#006400">**CLOSED**</span> 26-11-07, tests not run.]
+  - What C does: in `init.c`, `section` and `chart` are `uint` and `next` and `roll` are `int`, all read in base 0. A section of 3 or more is `PARSE_ERROR_OUT_OF_BOUNDS`.
+  - Need: read `010` as 8, refuse a leading `-` on the unsigned fields, and range-check the section.
+  - Java now: `names/NamesAssembler.java` refuses the minus, reads base 0 and refuses 0 and anything above 2. `history/HistoryAssembler.java` refuses the minus on the chart and reads all three numbers in base 0.
+  - Deviation: section 0 is refused where C accepts it (class block of `NamesAssembler.java`).
+- A: `flavour/FlavourAssembler.java` negative or hex index. [<span style="color:#006400">**CLOSED**</span> 26-11-07, tests not run.]
+  - What C does: `parse_flavor_flavor` (`init.c`) reads `index` as a `uint`: a leading `-` is refused and the digits go through `strtoul` in base 0, so `0x10` is 16.
+  - Need: refuse the minus, accept hex and octal.
+  - Java now: `flavour/FlavourAssembler.java` (`storeFlavour`) does both. The colour fallback to white is the separate item below.
+- A: `GameConstantsAssembler` negative values and overflow. [<span style="color:#006400">**CLOSED**</span> 26-11-07, tests not run.]
+  - What C does: `level-max`, `mon-gen`, `mon-play`, `dun-gen`, `world`, `carry-cap`, `store`, `obj-make` and `player` (`init.c`) return `PARSE_ERROR_INVALID_VALUE` for a value below 0. The four critical handlers have no such check, because `melee-critical:chance-offset:-60` relies on that.
+  - Need: a negative test in exactly those nine handlers and not in the critical ones.
+  - Java now: `gameconstants/GameConstantsAssembler.java` has a `value < 0` throw in each of the nine and none in the critical handlers. `coerceInt` clamps an overflowing value where C truncates it.
+- A: `playertimed/PlayerTimedAssembler.java` `lower-bound:`. [<span style="color:#006400">**CLOSED**</span> 26-11-07, tests not run.]
+  - What C does: `parse_player_timed_effect_lower_bound` (`player-timed.c`) reads an `int` and refuses a value below 0 or above 32767, because the duration is an `int16_t`.
+  - Need: both ends of that range.
+  - Java now: `playertimed/PlayerTimedAssembler.java` throws outside 0 to `Short.MAX_VALUE`.
+- A: `roomprofile/RoomProfileAssembler.java` `type:`, `rating:` and `doors:` ranges. [<span style="color:#006400">**CLOSED**</span> 26-11-07, tests not run.]
+  - What C does: in `generate.c`, `type`, `rows`, `columns` and `doors` are `uint` and `rating` is an `int`. All are stored in `uint8_t` fields of `struct room_template`, so a value over 255 wraps, and rows and columns are compared with the template maximum after the wrap.
+  - Need: refuse a minus on the unsigned fields, wrap every field to a byte, and compare the wrapped rows and columns with the maximum.
+  - Java now: `roomprofile/RoomProfileAssembler.java` refuses the minus on `type`, `rows`, `columns` and `doors`, wraps with `floorMod` (rows and columns before the bound test), and wraps `rating` without a minus check, as C does.
+  - Not covered: the zero-size and ragged-map items in that file's entry in `docs/Assembler_Issues.md`.
 
 ### Colours that C reads as white
 
 - A: `monsterspell/MonsterSpellLevelAssembler.java` lore colours (drops the level). [<span style="color:#006400">**CLOSED**</span> 26-10-27: an unknown base, resist or immune colour reads as `COLOUR_WHITE`; `MonsterSpellLevelAssemblerTest` and `MonsterSpellReaderTest` pass.]
 - A: `objectbase/ObjectBaseAssembler.java` (drops the record). [<span style="color:#006400">**CLOSED**</span> 26-10-28: an unknown colour reads as `COLOUR_WHITE`; `ObjectBaseAssemblerTest` and `ObjectBaseReaderTest` pass.]
-- A: `flavour/FlavourAssembler.java` colour names, in the flavour entry.
-- The Stage 0 strict-or-lenient answer decides all three, and the grammar side in Stage 7f.
+- A: `flavour/FlavourAssembler.java` colour names, in the flavour entry. [<span style="color:#006400">**CLOSED**</span> 26-11-08: closed at Rowan's request; the last recorded run of `FlavourAssemblerTest` was green.]
+  - What C does: `parse_flavor_flavor` (`init.c`) sends a one-character `attr` to `color_char_to_attr` and anything longer to `color_text_to_attr` (`z-color.c`). Both answer white for an unknown input, a blank is `COLOUR_DARK`, and names match case-insensitively. `PARSE_ERROR_INVALID_COLOR` needs a negative `char`, so it never fires on this data.
+  - Need: an unknown letter or name keeps the flavour and paints it white, a blank is dark, and `Shade` is white because C has no `color_table` row for it.
+  - Java now: `storeFlavour` in `flavour/FlavourAssembler.java` goes through `ColourEnum.fromCode` and sets `COLOUR_WHITE` for a null result or `COLOUR_SHADE`. `FlavourAssemblerTest` has the cases for a letter, a name, `Shade`, a blank and the case rules, and ran green this turn.
+  - To close: nothing is missing in the assembler; it can be ticked on those tests.
+- G: the colour value in `PitLexer.g4`, `MonsterLexer.g4`, `VisualsLexer.g4` and `imports/AngbandDisplayCharacter.g4`, which is Stage 7f. [<span style="color:#006400">**CLOSED**</span> 26-11-08: closed at Rowan's request; the grammars and tests were not re-read for this tag.]
+  - What C does: Pit and Monster `color:` (`mon-init.c`) and the display-character lines (`ui-prefs.c`) take a name when the text is longer than one character and a letter otherwise, and both fall back to white. The three Visuals handlers (`ui-visuals.c`) read only `color_code[0]`, so `Red` is the letter `R`, and they refuse an empty value only.
+  - Need: the lexer takes any value up to the colon or the end of the line, and the assembler does the mapping, so `color:q` and `color:Mauve` load as white instead of failing in the lexer.
+  - Java now: all four grammars take colours from `imports/Colours.g4`, where `COLOUR_CODE` and `COLOUR_NAME` are closed lists. Read from the grammar text, not run: `q` and `Mauve` are lexer errors in each, and a blank cannot be written at all.
+  - To close: a rule per grammar that accepts any non-empty value, `.g4` regenerated, and one test per grammar showing an unknown letter and an unknown name reach the assembler as white (Visuals: the first character only). Whether each assembler already maps the text was not read this turn.
+- The Stage 0 strict-or-lenient answer decides all of the above. [<span style="color:#006400">**CLOSED**</span> 26-11-08: closed at Rowan's request, with the three items above it.]
 
 ### Absent directives that C zeroes
 

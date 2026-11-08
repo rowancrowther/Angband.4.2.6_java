@@ -1167,15 +1167,18 @@ class ItemObjectReaderTest {
     /**
      * {@code parse_object_graphics} turns a one-character colour with {@code color_char_to_attr} and a
      * longer one with {@code color_text_to_attr}; both answer white for a name they do not know. The
-     * colour is a fixed set of lexer tokens here, so {@code 9} and {@code q} (neither is a colour
-     * code) are lexer errors, and the whole file loads as nothing. The assembler's own fall back to
-     * white, which a file cannot reach, is covered by {@link #anUnresolvedColourFallsBackToWhite}.
+     * lexer takes any colour text, so {@code 9} and {@code q} (neither is a colour code) and a
+     * longer unknown name all load, and {@code ItemObjectAssembler} supplies the white. The
+     * assembler alone is covered by {@link #anUnresolvedColourFallsBackToWhite}.
      */
     @Test
-    void anUnknownColourIsAHardErrorHereWhereCFallsBackToWhite() throws IOException {
-        for (String colour : List.of("9", "q")) {
-            assertThrows(ParseCancellationException.class, () -> load("bad-colour.txt", obj("dim", "type:sword\ngraphics:|:" + colour + "\n")), "colour " + colour);
+    void anUnknownColourFallsBackToWhiteAsInC() throws IOException {
+        for (String colour : List.of("9", "q", "nonsense")) {
+            ParseResult<ObjectKind> result = load("bad-colour.txt", obj("dim", "type:sword\ngraphics:|:" + colour + "\n"));
 
+            AngbandDisplayCharacter cell = result.items().get(0).getCharacter();
+            assertEquals('|', cell.getNarrowCharacter(), "colour " + colour);
+            assertEquals(ColourEnum.COLOUR_WHITE, cell.getAttributeColour(), "colour " + colour);
         }
     }
 

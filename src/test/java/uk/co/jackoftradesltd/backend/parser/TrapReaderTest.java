@@ -662,10 +662,29 @@ class TrapReaderTest {
         assertHardError("vis-space.txt", "name:a:b\nvisibility:2d10 M50\n");
     }
 
-    /** C: {@code color_text_to_attr} answers white for a name it does not know. */
+    /**
+     * C: {@code color_text_to_attr} answers white for a name it does not know. The lexer takes any
+     * colour text, so the load succeeds and {@code TrapAssembler} supplies the white.
+     */
     @Test
-    void anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite() throws IOException {
-        assertHardError("colour-name.txt", "name:a:b\ngraphics:^:nonsense\n");
+    void anUnknownColourNameDrawsWhiteAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("colour-name.txt", "name:a:b\ngraphics:^:nonsense\n");
+
+        AngbandDisplayCharacter adc = field(r.items().getFirst(), "angbandDisplayCharacter");
+        assertEquals('^', adc.getNarrowCharacter());
+        assertEquals(ColourEnum.COLOUR_WHITE, adc.getAttributeColour());
+    }
+
+    /**
+     * C: {@code graphics:^:} has no value for the colour field, so {@code parser_parse} refuses the
+     * line as a missing field. {@code COLOUR_VALUES} needs at least one character, so the lexer
+     * errors at the newline, and the load must stop there: the lexer is still in colour mode, and
+     * left to carry on it would take the following {@code name:} line as the colour. The line after
+     * is the one that proves it is not swallowed.
+     */
+    @Test
+    void anEmptyGraphicsColourIsAHardErrorAsInC() {
+        assertHardError("empty-colour.txt", "name:a:b\ngraphics:^:\nname:c:d\n");
     }
 
     /** C: {@code parser_parse} skips leading whitespace on a line. */

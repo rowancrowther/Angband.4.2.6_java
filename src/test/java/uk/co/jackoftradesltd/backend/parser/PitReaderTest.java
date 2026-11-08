@@ -480,20 +480,18 @@ class PitReaderTest {
     }
 
     /**
-     * The assembler's unknown-colour arm has no fixture because it cannot be reached from a file:
-     * {@code COLOUR_CHAR} only matches the 28 codes the shared {@code Colours} alphabet lists, and
-     * {@code ColourEnum.fromCode} resolves every one of them. A colour the lexer does not know is a
-     * hard lexer error instead, and the file fails closed. C never rejects a colour:
      * {@code color_char_to_attr} answers {@code COLOUR_WHITE} for a letter that is not in
-     * {@code color_table}, so {@code color:q} loads there as white.
+     * {@code color_table}, and {@code color_text_to_attr} does the same for a name that matches
+     * none, so C never rejects a {@code color:} value. The lexer takes the whole line, so the
+     * assembler's fallback to white is reachable from a file.
      */
     @Test
-    void anUnknownColourCodeIsALexerErrorNotASoftOne() throws IOException {
-        String badColour = GOOD_RECORD.replace("color:r", "color:q");
-        String path = tempFile("bad-colour.txt", badColour + "\n");
+    void anUnknownColourCodeOrNameLoadsAsWhite() throws Exception {
+        for (String value : List.of("q", "Q", "1", "nonsense", "Light Bleu")) {
+            ParseResult<PitProfile> result = load("bad-colour.txt", "name:Bad", "color:" + value);
 
-        assertThrows(ParseCancellationException.class, () -> new PitReader().parseWithResults(path));
-
+            assertEquals(List.of(ColourEnum.COLOUR_WHITE), field(result.items().getFirst(), "colours"), value);
+        }
     }
 
     /**
@@ -803,13 +801,26 @@ class PitReaderTest {
 
     /**
      * {@code parse_pit_color} takes a colour name longer than one character through
-     * {@code color_text_to_attr}, which matches {@code color_table} names case-insensitively. The
-     * lexer takes one letter only.
+     * {@code color_text_to_attr}, which matches {@code color_table} names case-insensitively
+     * ({@code my_stricmp}). A one-character value goes through {@code color_char_to_attr}, which is
+     * case-sensitive: {@code w} is White but {@code W} is Light Slate.
      */
     @Test
-    void aColourNameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("colour-name.txt", "name:Named\ncolor:Red"));
+    void aColourNameIsMatchedCaseInsensitivelyAndACodeCaseSensitively() throws Exception {
+        Map<String, ColourEnum> expected = new java.util.LinkedHashMap<>();
+        expected.put("Red", ColourEnum.COLOUR_RED);
+        expected.put("red", ColourEnum.COLOUR_RED);
+        expected.put("RED", ColourEnum.COLOUR_RED);
+        expected.put("Light Blue", ColourEnum.COLOUR_LIGHT_BLUE);
+        expected.put("light blue", ColourEnum.COLOUR_LIGHT_BLUE);
+        expected.put("Deep Light Blue", ColourEnum.COLOUR_DEEP_LIGHT_BLUE);
+        expected.put("w", ColourEnum.COLOUR_WHITE);
+        expected.put("W", ColourEnum.COLOUR_LIGHT_SLATE);
+        for (Map.Entry<String, ColourEnum> e : expected.entrySet()) {
+            ParseResult<PitProfile> result = load("colour-name.txt", "name:Named", "color:" + e.getKey());
 
+            assertEquals(List.of(e.getValue()), field(result.items().getFirst(), "colours"), e.getKey());
+        }
     }
 
     /**

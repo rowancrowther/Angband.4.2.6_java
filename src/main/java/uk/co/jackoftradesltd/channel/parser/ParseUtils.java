@@ -1152,8 +1152,9 @@ public class ParseUtils {
     }
 
     /**
-     * Reads one {@code aim:}-style flag figure and says whether it is non-zero. C has no function of
-     * this name: the behaviour is {@code parse_act_aim} in {@code obj-init.c}, which takes
+     * Reads one flag figure from a data file, the kind of field C stores as a bool, and says whether
+     * it is non-zero. C has no function of this name: the model is {@code parse_act_aim} in
+     * {@code obj-init.c}, which takes
      * {@code parser_getuint(p, "aim")} and stores {@code val ? true : false}, and the number itself
      * is read in {@code parser_parse()} ({@code parser.c}) with {@code strtoul(tok, &z, 0)}. This
      * method reproduces that read and that test together, with the same base 0 rules as the other
@@ -1188,9 +1189,16 @@ public class ParseUtils {
      * is zero in C and {@code 2147483648} is non-zero). Here a figure that does not fit in an
      * {@code int} makes {@code Integer.parseInt} throw, and the answer is empty. Do not flag.
      *
-     * <p>Outstanding: nothing in {@code src/main} or {@code src/test} calls it.
+     * <p>Callers: {@code ActivationAssembler} ({@code aim:}), {@code SummonAssembler}
+     * ({@code uniques:}), {@code BlowMethodAssembler} ({@code cut:}, {@code stun:}, {@code miss:},
+     * {@code phys:}), {@code ChestTrapAssembler} ({@code destroy:}, {@code magic:}),
+     * {@code ObjectPropertyAssembler} and {@code PlayerPropertyAssembler} (the {@code bindui:} aux
+     * figure) and {@code PlayerTimedAssembler} (the {@code flag-synonym:} exactness).
+     * {@code ParseUtilsIsTrueTest} pins the readings above. {@code RoomAssembler} does not call it:
+     * C compares {@code pit:} with 1, not with 0, so it uses {@link #parseIntString} instead.
      *
-     * <p>Function isTrue coded before 261107, commented in full on 261107.
+     * <p>Function isTrue coded before 261107, commented in full on 261107 (opening and caller list
+     * corrected 261107).
      *
      * @param string the figure as it appears in the data file, or {@code null}
      * @return {@code Optional.of(true)} if the figure reads as a non-zero number,

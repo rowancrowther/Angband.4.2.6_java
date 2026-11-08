@@ -144,7 +144,7 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
             List<ColourEnum> colours = new ArrayList<>();
             for (String colour : record.colours()) {
                 if (!colour.isEmpty()) {
-                    ColourEnum colourType = ColourEnum.fromCode(colour);
+                    ColourEnum colourType = ColourEnum.fromCode(colour.charAt(0));
                     if (colourType == null) {
                         colours.add(ColourEnum.COLOUR_WHITE);
                     } else {

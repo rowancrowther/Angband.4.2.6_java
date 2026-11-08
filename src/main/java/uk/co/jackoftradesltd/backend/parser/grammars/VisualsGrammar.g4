@@ -12,15 +12,15 @@ options { tokenVocab = VisualsLexer; }
 
 flicker
         returns[String colourChar, String blockName]
-        :   FLICKER COLOUR_CHAR SWAP_COLON STRING
-            { $colourChar = $COLOUR_CHAR.getText();
+        :   FLICKER COLOUR_LINE SWAP_COLON STRING
+            { $colourChar = $COLOUR_LINE.getText();
               $blockName = $STRING.getText(); }
         ;
 
 flickerColour
         returns[String colourChar]
-        :   FLICKER_COLOUR COLOUR_CHAR
-            { $colourChar = $COLOUR_CHAR.getText(); }
+        :   FLICKER_COLOUR COLOUR_LINE
+            { $colourChar = $COLOUR_LINE.getText(); }
         ;
 
 flickerBlock
@@ -47,7 +47,7 @@ cycle
 
 cycleColour
         returns[String colour]
-        :   CYCLE_COLOUR COLOUR_CHAR {$colour = $COLOUR_CHAR.getText(); }
+        :   CYCLE_COLOUR COLOUR_LINE {$colour = $COLOUR_LINE.getText(); }
         ;
 
 cycleBlock

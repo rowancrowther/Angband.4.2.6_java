@@ -14,8 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterGrammar.g4 by ANTLR 4.13.2
+// Generated from MonsterGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monster;
 
 import org.antlr.v4.runtime.*;
@@ -51,7 +50,7 @@ public class MonsterGrammar extends Parser {
 		BLOW_WORD=43, BLOW_EOL=44, FLAG=45, FLAG_OR=46, FLAG_EOL=47, COLON=48, 
 		DELIMITED_STRING=49, DELIMITED_EOL=50, FRIEND_INTEGER=51, FRIEND_DICE=52, 
 		FRIEND_COLON=53, FRIEND_NAME=54, FRIEND_EOL=55, DROP_COLON=56, DROP_INTEGER=57, 
-		DROP_STRING=58, DROP_EOL=59, COLOUR_CHAR=60, COLOUR_EOL=61;
+		DROP_STRING=58, DROP_EOL=59, COLOUR_LINE=60, COLOUR_EOL=61;
 	public static final int
 		RULE_name = 0, RULE_plural = 1, RULE_base = 2, RULE_glyph = 3, RULE_colour = 4, 
 		RULE_speed = 5, RULE_hitPoints = 6, RULE_light = 7, RULE_hearing = 8, 
@@ -98,7 +97,7 @@ public class MonsterGrammar extends Parser {
 			"BLOW_WORD", "BLOW_EOL", "FLAG", "FLAG_OR", "FLAG_EOL", "COLON", "DELIMITED_STRING", 
 			"DELIMITED_EOL", "FRIEND_INTEGER", "FRIEND_DICE", "FRIEND_COLON", "FRIEND_NAME", 
 			"FRIEND_EOL", "DROP_COLON", "DROP_INTEGER", "DROP_STRING", "DROP_EOL", 
-			"COLOUR_CHAR", "COLOUR_EOL"
+			"COLOUR_LINE", "COLOUR_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -352,9 +351,9 @@ public class MonsterGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class ColourContext extends ParserRuleContext {
 		public String colourStr;
-		public Token COLOUR_CHAR;
+		public Token COLOUR_LINE;
 		public TerminalNode COLOUR() { return getToken(MonsterGrammar.COLOUR, 0); }
-		public TerminalNode COLOUR_CHAR() { return getToken(MonsterGrammar.COLOUR_CHAR, 0); }
+		public TerminalNode COLOUR_LINE() { return getToken(MonsterGrammar.COLOUR_LINE, 0); }
 		public ColourContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -383,8 +382,8 @@ public class MonsterGrammar extends Parser {
 			setState(86);
 			match(COLOUR);
 			setState(87);
-			((ColourContext)_localctx).COLOUR_CHAR = match(COLOUR_CHAR);
-			 ((ColourContext)_localctx).colourStr =  ((ColourContext)_localctx).COLOUR_CHAR.getText(); 
+			((ColourContext)_localctx).COLOUR_LINE = match(COLOUR_LINE);
+			 ((ColourContext)_localctx).colourStr =  ((ColourContext)_localctx).COLOUR_LINE.getText(); 
 			}
 		}
 		catch (RecognitionException re) {

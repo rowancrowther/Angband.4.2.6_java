@@ -263,8 +263,8 @@ class ChestTrapReaderTest {
         ChestTrap locked = byCode(loadReal(), ChestTrapCode.NO_TRAP);
 
         assertTrue(locked.getEffect().isEmpty());
-        assertEquals("", locked.getMessage());
-        assertEquals("", locked.getMessageDeath());
+        assertNull(locked.getMessage());
+        assertNull(locked.getMessageDeath());
         assertFalse(locked.isDestroy());
         assertFalse(locked.isMagic());
     }
@@ -293,8 +293,8 @@ class ChestTrapReaderTest {
         assertEquals("A puff of green gas surrounds you!",
                 byCode(traps, ChestTrapCode.POISON).getMessage());
 
-        // A record with no msg-death: gets "" from the grammar's @init, never null.
-        assertEquals("", byCode(traps, ChestTrapCode.POISON).getMessageDeath());
+        // A record with no msg-death: gets null from the grammar's @init, as C leaves NULL.
+        assertNull(byCode(traps, ChestTrapCode.POISON).getMessageDeath());
     }
 
     // ---- Grammar-level behaviours (synthetic fixtures) --------------------
@@ -545,17 +545,17 @@ class ChestTrapReaderTest {
         List<ChestTrap> traps = loadReal();
 
         assertEquals(7, traps.size());
-        assertTrap(traps.get(0), "locked", ChestTrapCode.NO_TRAP, 1, 0, false, false, "", "");
+        assertTrap(traps.get(0), "locked", ChestTrapCode.NO_TRAP, 1, 0, false, false, null, null);
         assertTrap(traps.get(1), "gas trap", ChestTrapCode.POISON, 1, 1, false, false,
-                "A puff of green gas surrounds you!", "");
+                "A puff of green gas surrounds you!", null);
         assertTrap(traps.get(2), "poison needle", ChestTrapCode.LOSE_STR, 2, 2, false, false,
                 "A small needle has pricked you!", "a poison needle");
         assertTrap(traps.get(3), "poison needle", ChestTrapCode.LOSE_CON, 3, 2, false, false,
                 "A small needle has pricked you!", "a poison needle");
         assertTrap(traps.get(4), "summoning runes", ChestTrapCode.SUMMON, 15, 1, false, true,
-                "You are enveloped in a cloud of smoke!", "");
+                "You are enveloped in a cloud of smoke!", null);
         assertTrap(traps.get(5), "gas trap", ChestTrapCode.PARALYZE, 19, 1, false, false,
-                "A puff of yellow gas surrounds you!", "");
+                "A puff of yellow gas surrounds you!", null);
         assertTrap(traps.get(6), "explosion device", ChestTrapCode.EXPLODE, 25, 1, true, false,
                 "There is a sudden explosion! Everything inside the chest is destroyed!",
                 "an exploding chest");

@@ -1094,6 +1094,52 @@ class MonsterReaderTest {
     }
 
     @Test
+    void anExplicitGlyphOutsideTheBasicMultilingualPlaneIsKeptWhole() throws Exception {
+        // parse_monster_glyph stores parser_getchar in a wchar_t, so U+1F409 loads. The port keeps it in
+        // the wide half of the display character and leaves the narrow half at NUL.
+        ParseResult<MonsterRace> r = load("astral-glyph.txt",
+                "name:Dragonfly\nbase:townsfolk\ncolor:w\nglyph:🐉\n");
+
+        AngbandDisplayCharacter adc = field(byName(r, "Dragonfly"), "adc");
+        assertEquals(0x1F409, adc.getWideCharacter());
+        assertEquals('\0', adc.getNarrowCharacter());
+        assertEquals(0x1F409, adc.getCharacter().codePointAt(0));
+        assertEquals(ColourEnum.COLOUR_WHITE, adc.getAttributeColour());
+    }
+
+    @Test
+    void aMonsterWithoutAGlyphLineInheritsABaseGlyphOutsideTheBasicMultilingualPlane() throws Exception {
+        // parse_monster_base copies the base's d_char, a wchar_t, into the race when it reads base:. The
+        // base here holds U+1F409 in its wide half and NUL in its narrow half, as MonsterBaseAssembler
+        // stores it, so the race must take the wide half or its display character is built from NUL.
+        MonsterBase wideBase = new MonsterBase("wide-test-base", "wide", new Flag<>(MonsterRaceFlag.class),
+                '\0', 0x1F409, null, "wide");
+        List<MonsterBase> original = registeredBases();
+        List<MonsterBase> withWide = new ArrayList<>(original);
+        withWide.addFirst(wideBase);
+        MonsterRegistry.setMonsterBases(withWide);
+        try {
+            ParseResult<MonsterRace> r = load("astral-base.txt", "name:Heir\nbase:wide-test-base\ncolor:w\n");
+
+            AngbandDisplayCharacter adc = field(byName(r, "Heir"), "adc");
+            assertEquals(0x1F409, adc.getWideCharacter(), "the base's wide glyph is inherited");
+            assertEquals(0x1F409, adc.getCharacter().codePointAt(0));
+        } finally {
+            MonsterRegistry.setMonsterBases(original);
+        }
+    }
+
+    /**
+     * Reads the bases {@link MonsterRegistry} holds, so a test can add one and put the list back.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<MonsterBase> registeredBases() throws Exception {
+        Field f = MonsterRegistry.class.getDeclaredField("monsterBases");
+        f.setAccessible(true);
+        return (List<MonsterBase>) f.get(null);
+    }
+
+    @Test
     void aMessageForAnUnknownSpellEndsTheLoadAsInC() {
         // C: grab_name fails -> PARSE_ERROR_INVALID_SPELL_NAME.
         assertRefusedWith("msg-unknown-spell.txt", rec("Solo", "spells:SHRIEK", "message-vis:NOTASPELL:Hello"),
@@ -1349,6 +1395,17 @@ class MonsterReaderTest {
         ParseResult<MonsterRace> r = load("glyph-first.txt", "name:Solo\nglyph:x\nbase:townsfolk\ncolor:w\n");
         AngbandDisplayCharacter adc = field(byName(r, "Solo"), "adc");
         assertEquals('x', adc.getNarrowCharacter());
+    }
+
+    @Test
+    void aFlagsOffLineBeforeAFlagsLineNamingTheSameFlagLeavesItOffHereWhereCLeavesItOn() throws Exception {
+        // C: parse_monster_flags and parse_monster_flags_off act one line at a time, so flags-off:EVIL
+        // (nothing to remove yet) followed by flags:EVIL leaves EVIL set. Java applies every flags:
+        // entry and then every flags-off: entry, so EVIL ends off. Accepted deviation, see
+        // docs/Accepted_Deviations.md ("A flags-off: or glyph: line before base: ...", second part).
+        ParseResult<MonsterRace> r = load("flagsoff-before-flags.txt",
+                "name:Solo\nbase:townsfolk\ncolor:w\nflags-off:EVIL\nflags:EVIL\n");
+        assertFalse(byName(r, "Solo").hasMonsterRaceFlag(MonsterRaceFlag.RF_EVIL));
     }
 
     // =====================================================================

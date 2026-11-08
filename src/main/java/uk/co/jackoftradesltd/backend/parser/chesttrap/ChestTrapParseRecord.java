@@ -30,7 +30,8 @@ import java.util.List;
  * {@code String}, so that a malformed value survives parsing and can be reported against its line
  * rather than failing at token level. Two conventions follow from that, and the assembler relies on
  * both: a directive that was <em>absent</em> arrives as {@code ""} (the grammar's {@code @init}
- * defaults), while a directive that was <em>present but malformed</em> arrives as {@code null},
+ * defaults), except {@code msg:} and {@code msg-death:}, which arrive as {@code null} as C leaves
+ * {@code NULL}. A directive that was <em>present but malformed</em> arrives as {@code null},
  * because ANTLR's error recovery leaves the sub-rule's return unset.
  *
  * <p>There is no {@code pval} component. C synthesizes that field while parsing, one bit per record
@@ -43,8 +44,8 @@ import java.util.List;
  * @param effect   the trap's effect blocks in file order; may be empty, and may hold several
  * @param destroy  {@code "1"} if springing the trap destroys the chest's contents
  * @param magic    {@code "1"} if the trap is magical rather than physical
- * @param msg      the message shown when the trap fires
- * @param msgDeath the message shown if the trap kills the character
+ * @param msg      the message shown when the trap fires; {@code null} when absent
+ * @param msgDeath the message shown if the trap kills the character; {@code null} when absent
  * @param line     the line the record's {@code name:} was found on, for error reporting
  * @author Rowan Crowther
  */

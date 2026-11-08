@@ -100,8 +100,8 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
      *       present but malformed {@code null}, goes to {@link ParseUtils#isTrue(String)}, which
      *       answers empty, and ends the load.</li>
      *   <li><strong>{@code msg:} and {@code msg-death:}</strong> are copied as they are, with
-     *       {@code ""} when absent where C leaves {@code NULL}. Code that reads them must treat
-     *       {@code ""} as C's {@code if (trap->msg)} treats {@code NULL}: no message.</li>
+     *       {@code null} when absent, as C leaves {@code NULL}. Code that reads them must test for
+     *       {@code null} where C tests {@code if (trap->msg)}: no message.</li>
      * </ul>
      *
      * <p>A {@code level:} too big for an {@code int} is clamped to {@link Integer#MAX_VALUE} (or
@@ -209,8 +209,8 @@ public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<
                 }
                 magic = magicVal.get();
             }
-            String msg = record.msg() == null ? "" : record.msg();
-            String msgDeath = record.msgDeath() == null ? "" : record.msgDeath();
+            String msg = record.msg();
+            String msgDeath = record.msgDeath();
 
             chestTraps.add(new ChestTrap(name, trapCode, level, effects, destroy, magic, msg, msgDeath));
         }

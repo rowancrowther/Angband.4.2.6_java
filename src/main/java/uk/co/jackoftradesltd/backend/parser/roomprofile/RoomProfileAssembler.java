@@ -83,9 +83,10 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
      *     the {@code "room template"} builder ({@link RoomType#TEMPLATE}); zero is allowed;</li>
      *     <li>a {@code tval:} that resolves to no tval. The numbers 0 to 35 and the name
      *     {@code none} are all valid, and 0 and {@code none} give {@link TValue#TV_NONE};</li>
-     *     <li>a {@code flags:} name that is not {@code NONE}, {@code FEW_ENTRANCES} or {@code MAX}.
-     *     The match is case-sensitive, and the first bad name is the fault, as C stops at the
-     *     first name {@code grab_flag} rejects.</li>
+     *     <li>a {@code flags:} name that is not {@code FEW_ENTRANCES} or {@code MAX}. {@code NONE}
+     *     is refused too: it is the sentinel at index 0 of C's {@code room_flags[]} table, and
+     *     {@code lookup_flag} starts its search past it. The match is case-sensitive, and the
+     *     first bad name is the fault, as C stops at the first name {@code grab_flag} rejects.</li>
      * </ul>
      *
      * <p>The result is in reverse file order. C's {@code parse_room_name} points each new template
@@ -177,7 +178,7 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
                 }
                 doors = ParseUtils.parseIntString("Room profile", record.doors(), line, filename, "doors");
             }
-            if (doors > 0) doors = doors % 256;
+            doors = Math.floorMod(doors, 256);
             // tval: is text in the data — numeric ("0") or a name ("rod", "wand", ...). Try the
             // numeric fast path first, then fall back to name resolution, matching the order
             // C's tval_find_idx checks them in.
@@ -211,6 +212,12 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
             for (String flag : record.flags()) {
                 try {
                     RoomFlags rFlag = RoomFlags.valueOf(flag);
+                    if (rFlag == RoomFlags.NONE) {
+                        String message = "Room profile starting at line: " + line + " of file: " + filename + " has " +
+                                "an illegal sentinel room flag value: " + flag;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                     roomFlags.on(rFlag);
                 } catch (IllegalArgumentException e) {
                     String message = "Room profile starting at line: " + line + " of file: " + filename + " has " +

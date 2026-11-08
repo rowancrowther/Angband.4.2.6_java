@@ -56,11 +56,13 @@ import java.util.List;
  *
  * <p><b>No linked list of charts.</b> C pushes each new chart onto the front of a global
  * {@code histories} list and finds a chart by walking it ({@code findchart}). The port keeps
- * charts in a {@link List} in first-appearance order and the assembler finds them through a map.
- * The one later lookup, {@code PlayerRegistry.lookupPlayerHistoryChart}, goes by chart number, so
- * the reversed C order has no visible effect.
+ * charts in a {@link List} that the assembler returns newest first, the same order as C's, and the
+ * assembler finds them through a map. The one later lookup,
+ * {@code PlayerRegistry.lookupPlayerHistoryChart}, goes by chart number, so nothing reads the
+ * order today.
  *
- * <p>Class PlayerHistoryChart coded on 260902, commented in full on 261011.
+ * <p>Class PlayerHistoryChart coded on 260902, commented in full on 261011, updated on 261108 once
+ * the charts came back newest first.
  *
  * @author Rowan Crowther
  */

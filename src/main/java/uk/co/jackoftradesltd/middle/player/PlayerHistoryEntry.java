@@ -72,7 +72,7 @@ public class PlayerHistoryEntry {
      *
      * <p>Field logger commented in full on 261012.
      */
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(PlayerHistoryEntry.class);
 
     /**
      * Cumulative probability threshold at which this entry is selected during the roll — C's

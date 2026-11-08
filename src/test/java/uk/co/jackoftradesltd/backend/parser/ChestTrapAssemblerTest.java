@@ -557,7 +557,7 @@ class ChestTrapAssemblerTest {
     }
 
     @Test
-    void aNullNameOrMessageBecomesAnEmptyString() {
+    void aNullNameBecomesAnEmptyStringButAbsentMessagesStayNull() {
         List<ChestTrapParseRecord> records = validFile();
         records.set(1, new ChestTrapParseRecord(null, "POISON", "2",
                 new ArrayList<>(), "", "", null, null, 6));
@@ -565,8 +565,9 @@ class ChestTrapAssemblerTest {
         ChestTrap trap = assemble(records).get(1);
 
         assertEquals("", trap.getName());
-        assertEquals("", trap.getMessage());
-        assertEquals("", trap.getMessageDeath());
+        // C leaves msg and msg_death NULL when the file has no such line.
+        assertNull(trap.getMessage());
+        assertNull(trap.getMessageDeath());
     }
 
     @Test

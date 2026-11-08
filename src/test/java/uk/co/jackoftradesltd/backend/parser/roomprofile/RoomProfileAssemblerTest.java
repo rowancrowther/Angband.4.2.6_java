@@ -298,16 +298,26 @@ class RoomProfileAssemblerTest {
     // ---- flags ---------------------------------------------------------------
 
     /**
-     * C's {@code room_flags} table is {@code NONE}, {@code FEW_ENTRANCES} and {@code MAX}, so
-     * {@code grab_flag} accepts all three; a record with no flags has none set.
+     * C's {@code room_flags} table is {@code NONE}, {@code FEW_ENTRANCES} and {@code MAX}, but
+     * {@code lookup_flag} starts past {@code NONE}, so {@code grab_flag} accepts the other two; a
+     * record with no flags has none set.
      */
     @Test
-    void everyNameInCsRoomFlagTableLoads() {
+    void everyNameInCsRoomFlagTableAfterTheSentinelLoads() {
         assertFalse(assembleOne(withFlags()).getFlags().has(RoomFlags.FEW_ENTRANCES));
         assertTrue(assembleOne(withFlags("FEW_ENTRANCES")).getFlags().has(RoomFlags.FEW_ENTRANCES));
-        assertDoesNotThrow(() -> assembleOne(withFlags("NONE")));
         assertDoesNotThrow(() -> assembleOne(withFlags("MAX")));
-        assertTrue(assembleOne(withFlags("NONE", "FEW_ENTRANCES")).getFlags().has(RoomFlags.FEW_ENTRANCES));
+    }
+
+    /**
+     * {@code NONE} is index 0 of the table and {@code lookup_flag} never looks there, so
+     * {@code parse_room_flags} refuses it, alone or after a good flag.
+     */
+    @Test
+    void theSentinelNoneFlagStopsTheLoad() {
+        assertStopsTheLoad(withFlags("NONE"), "illegal sentinel room flag value: NONE");
+        assertStopsTheLoad(withFlags("FEW_ENTRANCES", "NONE"),
+                "illegal sentinel room flag value: NONE");
     }
 
     /**

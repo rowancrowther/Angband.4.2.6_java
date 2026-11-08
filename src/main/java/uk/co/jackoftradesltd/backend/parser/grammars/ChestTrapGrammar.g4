@@ -164,7 +164,8 @@ msgDeath
  * rather than overwrite it.
  *
  * @init seeds every field with an empty value, so a directive that is simply
- * absent arrives at the assembler as "" rather than null; a directive that is
+ * absent arrives at the assembler as "" rather than null - except msg: and
+ * msg-death:, which are seeded with null as C leaves NULL; a directive that is
  * present but malformed still arrives as null, because ANTLR's error
  * recovery leaves the sub-rule's return unset and the assignment below
  * copies that null over the default. The assembler guards for both.
@@ -178,8 +179,8 @@ chestTrap
             List<EffectParseRecord> effectInit = new ArrayList<>();
             String destroyInit = "";
             String magicInit = "";
-            String msgInit = "";
-            String msgDeathInit = "";
+            String msgInit = null;
+            String msgDeathInit = null;
             int lineInit = 0;
         }
         @after {

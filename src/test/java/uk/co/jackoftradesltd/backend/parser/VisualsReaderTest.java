@@ -75,15 +75,17 @@ import static org.junit.jupiter.api.Assertions.*;
  *       opaque {@link FlickerTable} allows.</li>
  * </ul>
  * <p>
- * <strong>Coverage ceiling.</strong> {@link FlickerTable} still exposes no accessor, so
- * {@link FlickerAssemblerUnit} reads its {@code byAttr} map by reflection and each cycle's steps
- * through {@code ColourCycle.getSteps()}. That reaches the per-step colour mapping and the
- * base-attribute collision behaviour; once the designed runtime accessor lands
- * ({@code FlickerTable.stepFor}), the reflection can go.
+ * <strong>Reading the flicker table.</strong> {@link FlickerAssemblerUnit} reads the table's
+ * {@code byAttr} map by reflection and each cycle's steps through {@code ColourCycle.getSteps()},
+ * which reaches the per-step colour mapping, the three-step padding and the base-attribute
+ * collision behaviour. {@link FlickerTable#getAttr} is the read path now; its frame wrap and
+ * absent-key rule are pinned in {@code FlickerTableTest}, so the reflection here could be replaced
+ * by {@code getAttr} calls without losing coverage.
  *
  * <p>Test class VisualsReaderTest coded before 261105, updated on 261105 for the removal of the
  * soft-error path, updated on 261108 for the lenient colour field (COLOUR_LINE in the lexer, first
- * character only in both assemblers).
+ * character only in both assemblers),
+ * updated on 261108 for the `FlickerTable.getAttr` read path (Coverage ceiling note replaced).
  *
  * @author Rowan Crowther
  */

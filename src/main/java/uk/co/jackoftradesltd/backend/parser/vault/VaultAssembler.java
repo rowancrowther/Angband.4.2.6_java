@@ -167,6 +167,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
                 throw new DataFileParseException(message);
             }
             int rows = ParseUtils.parseIntString("Vault", record.rows(), line, filename, "rows");
+            rows = Math.floorMod(rows, 256);
             // Mirrors C's parse_vault_rows, which rejects a vault taller than its own room
             // builder's max_height (PARSE_ERROR_VAULT_TOO_BIG, [C] src/generate.c). The cap is
             // per type, not global — a lesser vault gets 22 rows where a greater vault gets 44 —
@@ -184,6 +185,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
                 throw new DataFileParseException(message);
             }
             int columns = ParseUtils.parseIntString("Vault", record.cols(), line, filename, "columns");
+            columns = Math.floorMod(columns, 256);
             // As above, for parse_vault_columns ([C] src/generate.c).
             if (columns > type.getMaxWidth()) {
                 String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
@@ -211,6 +213,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
             String mapText = map.toString();
             
             int rating = ParseUtils.parseIntString("Vault", record.rating(), line, filename, "rating");
+            rating = Math.floorMod(rating, 256);
             if (ParseUtils.minusFound(record.minLevel())) {
                 String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
                         "an illegal negative minimum level value: " + record.minLevel();
@@ -218,6 +221,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
                 throw new DataFileParseException(message);
             }
             int minLevel = ParseUtils.parseIntString("Vault", record.minLevel(), line, filename, "minimum level");
+            minLevel = Math.floorMod(minLevel, 256);
             if (ParseUtils.minusFound(record.maxLevel())) {
                 String message = "Vault starting at line: " + line + " of file: " + filename + " has " +
                         "an illegal negative maximum level value: " + record.maxLevel();
@@ -231,6 +235,7 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
             // rely on this. min-depth:0 needs no equivalent - zero is already the right floor.
             if (maxLevel == 0)
                 maxLevel = GameConstants.getWorldMaxDepth();
+            maxLevel = Math.floorMod(maxLevel, 256);
             // A record may carry several flags: lines, each OR'd into the same set - the file's
             // own header says so, and C appends rather than replaces ([C] src/generate.c).
             // The grammar therefore hands over one flat list however many lines produced it.

@@ -53,7 +53,7 @@ public class PlayerHistory {
     /**
      * Logger for this type.
      */
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(PlayerHistory.class);
 
     /**
      * The events logged so far, oldest first — C's {@code h->entries} read up to {@code h->next}.

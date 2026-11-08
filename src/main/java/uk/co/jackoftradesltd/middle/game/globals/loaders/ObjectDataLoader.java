@@ -362,8 +362,9 @@ public class ObjectDataLoader {
      * <p>
      * The list is stored in reverse file order, as the assembler returns it, which is C's
      * {@code brands[]} order. C's {@code finish_parse_brand} also fails the parse when the file
-     * holds more than 254 brands ({@code PARSE_ERROR_TOO_MANY_ENTRIES}); neither this loader nor
-     * {@code BrandAssembler} applies that limit, so a longer file would register in full.
+     * holds more than 254 brands ({@code PARSE_ERROR_TOO_MANY_ENTRIES}); {@code BrandAssembler}
+     * applies that limit and throws on the 255th record, so the load stops before the registry is
+     * touched.
      *
      * <p>Function loadBrands coded before 261005, commented in full on 261013, updated on 261104 for
      * the removal of the soft-error path.

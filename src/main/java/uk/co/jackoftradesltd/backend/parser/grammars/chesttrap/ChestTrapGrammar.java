@@ -556,8 +556,8 @@ public class ChestTrapGrammar extends Parser {
 		            List<EffectParseRecord> effectInit = new ArrayList<>();
 		            String destroyInit = "";
 		            String magicInit = "";
-		            String msgInit = "";
-		            String msgDeathInit = "";
+		            String msgInit = null;
+		            String msgDeathInit = null;
 		            int lineInit = 0;
 		        
 		int _la;

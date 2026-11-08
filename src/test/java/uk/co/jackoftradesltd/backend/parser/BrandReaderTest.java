@@ -485,17 +485,32 @@ class BrandReaderTest {
         assertTrue(e.getMessage().contains("invalid resist flag value: MAX"), e::getMessage);
     }
 
-    // ---- Where the loader differs from C ----
+    // ---- The 254-brand limit ----
 
     @Test
-    void moreThanTwoHundredFiftyFourBrandsAllLoadHereWhereCFailsTheParse() throws IOException {
-        // finish_parse_brand stops counting at 254 and returns PARSE_ERROR_TOO_MANY_ENTRIES.
+    void exactlyTwoHundredFiftyFourBrandsLoadAsInC() throws IOException {
+        // finish_parse_brand counts up to 254 without error; the 255th entry is the one it refuses.
+        StringBuilder body = new StringBuilder();
+        for (int i = 0; i < 254; i++) {
+            body.append(brand("B_" + i, "fire", "burn", "3", "25", "113", "IM_FIRE", ""));
+        }
+        ParseResult<Brand> result = load("max.txt", body.toString());
+
+        assertEquals(254, result.items().size());
+    }
+
+    @Test
+    void theTwoHundredFiftyFifthBrandStopsTheLoadAsInC() {
+        // finish_parse_brand breaks when brand_max is already 254 and returns
+        // PARSE_ERROR_TOO_MANY_ENTRIES.
         StringBuilder body = new StringBuilder();
         for (int i = 0; i < 255; i++) {
             body.append(brand("B_" + i, "fire", "burn", "3", "25", "113", "IM_FIRE", ""));
         }
-        ParseResult<Brand> result = load("many.txt", body.toString());
 
-        assertEquals(255, result.items().size());
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("many.txt", body.toString()));
+
+        assertTrue(e.getMessage().contains("overflow"), e::getMessage);
     }
 }

@@ -267,6 +267,56 @@ class VaultAssemblerTest {
         assertThrowsFor(withColumns("Lesser vault", cols, 1));
     }
 
+    // --- values that wrap to a byte ---
+
+    /**
+     * {@code hgt} is a {@code uint8_t}, so {@code rows:278} is stored as 22 and passes the lesser
+     * vault cap of 22. {@code rows:256} wraps to zero, which loads.
+     */
+    @Test
+    void rowsWrapToAByteBeforeTheCapIsTested() {
+        assertEquals(22, one(withRows("278")).getHeight());
+        assertEquals(0, one(withRows("256")).getHeight());
+    }
+
+    /** {@code rows:279} wraps to 23, one over the lesser vault cap, so it ends the load. */
+    @Test
+    void rowsThatWrapToOverTheCapEndTheLoad() {
+        assertThrowsFor(withRows("279"));
+    }
+
+    /**
+     * {@code wid} is a {@code uint8_t} too: {@code columns:278} is 22, and the {@code D:} line is
+     * then compared with 22, not 278.
+     */
+    @Test
+    void columnsWrapToAByteBeforeTheCapAndTheLineWidthAreTested() {
+        assertEquals(22, one(withColumns("Lesser vault", "278", 22)).getWidth());
+        assertThrowsFor(withColumns("Lesser vault", "279", 23));
+    }
+
+    /** {@code min_lev} is a {@code uint8_t}: 260 is 4. */
+    @Test
+    void theMinimumDepthWrapsToAByte() {
+        assertEquals(4, one(withDepths("260", "40")).getMinLevel());
+        assertEquals(0, one(withDepths("256", "40")).getMinLevel());
+    }
+
+    /** {@code max_lev} is a {@code uint8_t}: 300 is 44. */
+    @Test
+    void theMaximumDepthWrapsToAByte() {
+        assertEquals(44, one(withDepths("1", "300")).getMaxLevel());
+    }
+
+    /**
+     * C tests {@code max-depth:} for zero on the raw value, before the narrowing, so 256 is not
+     * rewritten to the world's maximum depth: it is stored as 0.
+     */
+    @Test
+    void aMaximumDepthOf256IsStoredAsZeroNotRewritten() {
+        assertEquals(0, one(withDepths("1", "256")).getMaxLevel());
+    }
+
     // --- D: lines ---
 
     /** {@code strlen(desc) != v->wid} is {@code PARSE_ERROR_VAULT_DESC_WRONG_LENGTH}. */
@@ -300,20 +350,31 @@ class VaultAssemblerTest {
 
     // --- rating: ---
 
-    /** {@code rating} is {@code parser_getint}: signed, base 0. */
+    /**
+     * {@code rating} is read with {@code parser_getint}, so it is signed and in base 0, and then
+     * stored in the {@code uint8_t rat}, so a negative rating wraps: -3 is 253.
+     */
     @ParameterizedTest
-    @CsvSource({"-3, -3", "0, 0", "010, 8", "0x10, 16", "+7, 7"})
-    void theRatingIsASignedBaseZeroInt(String rating, int expected) {
+    @CsvSource({"-3, 253", "0, 0", "010, 8", "0x10, 16", "+7, 7"})
+    void theRatingIsASignedBaseZeroIntStoredAsAByte(String rating, int expected) {
+        assertEquals(expected, one(withRating(rating)).getRating());
+    }
+
+    /** The rating wraps modulo 256, the width of {@code uint8_t rat}. */
+    @ParameterizedTest
+    @CsvSource({"255, 255", "256, 0", "261, 5", "-256, 0", "-1, 255"})
+    void theRatingWrapsToAByte(String rating, int expected) {
         assertEquals(expected, one(withRating(rating)).getRating());
     }
 
     /**
      * Accepted deviation: C narrows {@code strtol}'s result to an {@code int}, which wraps;
-     * {@code parseIntString} clamps to {@link Integer#MAX_VALUE}.
+     * {@code parseIntString} clamps to {@link Integer#MAX_VALUE}, and the byte wrap then makes
+     * that 255.
      */
     @Test
-    void aRatingOutsideTheIntRangeIsClamped() {
-        assertEquals(Integer.MAX_VALUE, one(withRating("99999999999")).getRating());
+    void aRatingOutsideTheIntRangeIsClampedThenWrapped() {
+        assertEquals(255, one(withRating("99999999999")).getRating());
     }
 
     // --- min-depth: and max-depth: ---

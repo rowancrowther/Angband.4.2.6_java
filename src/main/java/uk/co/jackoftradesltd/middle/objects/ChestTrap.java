@@ -46,8 +46,8 @@ import java.util.List;
  *   <li>{@code effect} is a {@code List}, not a chain of {@code struct effect}. A trap carries
  *   several: "poison needle" is {@code DAMAGE} followed by {@code DRAIN_STAT}, the chain
  *   {@code parse_chest_trap_effect} builds.</li>
- *   <li>{@code msg} and {@code msg_death} are {@code ""} where C holds {@code NULL}, so a caller
- *   that tests {@code if (trap->msg)} must test for an empty string here.</li>
+ *   <li>{@code msg} and {@code msg_death} are {@code null} where C holds {@code NULL}, so a caller
+ *   that tests {@code if (trap->msg)} must test for {@code null} here.</li>
  * </ul>
  *
  * <p>Every field is final and the instances are created only by {@code ChestTrapAssembler} at load
@@ -108,8 +108,8 @@ public class ChestTrap {
      */
     private final boolean magic;
     /**
-     * The message shown when the trap is triggered: C's {@code chest_trap.msg}. {@code ""} if the
-     * record declared none, where C holds {@code NULL} and {@code chest_trap} tests for it before
+     * The message shown when the trap is triggered: C's {@code chest_trap.msg}. {@code null} if the
+     * record declared none, as C holds {@code NULL} and {@code chest_trap} tests for it before
      * calling {@code msg}.
      *
      * <p>Field message coded before 260815, commented in full on 261009.
@@ -118,7 +118,7 @@ public class ChestTrap {
     /**
      * The message shown if the trap kills the character - the phrase completing "killed by ...":
      * C's {@code chest_trap.msg_death}, used as the killer text for {@code SRC_CHEST_TRAP}.
-     * {@code ""} if the record declared none, where C holds {@code NULL}. The shipped
+     * {@code null} if the record declared none, as C holds {@code NULL}. The shipped
      * {@code chest_trap.txt} declares one only for the two poison needles ("a poison needle") and
      * the explosion device ("an exploding chest"), the three that deal direct damage.
      *
@@ -246,7 +246,7 @@ public class ChestTrap {
      *
      * <p>Function getMessage coded before 260815, commented in full on 261009.
      *
-     * @return the message shown when the trap is triggered, or {@code ""} if it declared none
+     * @return the message shown when the trap is triggered, or {@code null} if it declared none
      */
     public String getMessage() {
         return message;
@@ -259,7 +259,7 @@ public class ChestTrap {
      *
      * <p>Function getMessageDeath coded before 260815, commented in full on 261009.
      *
-     * @return the message shown if the trap kills the character, or {@code ""} if it declared none
+     * @return the message shown if the trap kills the character, or {@code null} if it declared none
      */
     public String getMessageDeath() {
         return messageDeath;

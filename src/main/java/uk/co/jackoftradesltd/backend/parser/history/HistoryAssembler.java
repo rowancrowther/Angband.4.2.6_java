@@ -66,17 +66,24 @@ import java.util.Map;
  * load it. The shipped {@code history.txt} never varies the successor within a chart, so nothing
  * shipped is affected.
  *
- * <p>Two smaller differences leave no visible effect. The charts come back in first-appearance
- * order where C's list is newest first, and a chart number above {@link Integer#MAX_VALUE} is
- * clamped where C keeps the low bits of the {@code unsigned int}; the first because the one later
- * lookup goes by chart number, the second because ParseUtils records it as an accepted deviation.
+ * <p><b>Chart order matches C.</b> C pushes each new chart onto the front of its global
+ * {@code histories} list, so the charts come back newest first: the chart that first appears last
+ * in the file is first in the list. The port builds the list in file order and returns it reversed,
+ * and a repeated chart keeps the place of its first line, as {@code findchart} reuses the chart
+ * already made.
+ *
+ * <p>One smaller difference leaves no visible effect: a chart number above {@link Integer#MAX_VALUE}
+ * is clamped where C keeps the low bits of the {@code unsigned int}, which ParseUtils records as an
+ * accepted deviation.
  *
  * <p>Mirrors C's {@code parse_history_chart}, {@code findchart} and {@code finish_parse_history}
  * ({@code init.c}), where the successor is likewise stored as a number at load and resolved to a
  * reference only once every chart has been read. C pushes each entry onto the front of its chart
- * and reverses the list afterwards; the port appends, giving the same file order.
+ * and reverses the entries afterwards; the port appends, giving the same file order inside each
+ * chart.
  *
- * <p>Class HistoryAssembler coded before 260915, commented in full on 261026.
+ * <p>Class HistoryAssembler coded before 260915, commented in full on 261026, updated on 261108
+ * once the charts came back newest first.
  *
  * @author Rowan Crowther
  */
@@ -97,7 +104,7 @@ public class HistoryAssembler implements Assembler<HistoryParseRecord, List<Play
      * {@code -} on the chart number throws (see the class comment); the following {@code < 0} test
      * can no longer fire once that is refused, and stays as a guard. The numbers are read as C's
      * {@code strtol} base 0 reads them, so {@code 010} is 8. The chart is then looked up by number,
-     * which is C's {@code findchart}: a miss creates it and appends it to the result, and a hit
+     * which is C's {@code findchart}: a miss creates it and adds it to the list being built, and a hit
      * reuses it, throwing if this record's successor differs from the one the chart was created
      * with. The entry, a roll and the record's phrase, is appended in file order.
      *
@@ -107,16 +114,20 @@ public class HistoryAssembler implements Assembler<HistoryParseRecord, List<Play
      * {@code -1} from the finish function. The resolved chart is the same object held in the result,
      * so the returned graph is linked and no chart is copied.
      *
+     * <p><b>Return order.</b> The list is built in file order and returned reversed, newest chart
+     * first, as C's {@code histories} list is. The entries inside each chart stay in file order.
+     *
      * <p>Examples: {@code chart:1:2:10} and {@code chart:1:2:100} give one chart numbered 1 with two
      * entries and successor 2; {@code chart:5:0:100} gives one terminal chart; {@code chart:1:9:100}
      * with no chart 9 throws; {@code chart:-1:2:10} throws.
      *
-     * <p>Function assemble commented in full before 260915, commented again in full on 261026.
+     * <p>Function assemble commented in full before 260915, commented again in full on 261026,
+     * updated on 261108 once the charts came back newest first.
      *
      * @param records  the raw {@link HistoryParseRecord}s in source order
      * @param filename the file the records came from, named in each thrown message
-     * @return the assembled {@link PlayerHistoryChart}s in first-appearance order, each linked to
-     *         its successor
+     * @return the assembled {@link PlayerHistoryChart}s, newest first (the reverse of the order
+     *         each chart first appears in the file), each linked to its successor
      * @throws DataFileParseException if a number cannot be read, a chart number is negative, a
      *                                chart is repeated with a different successor, or a successor
      *                                names no chart
@@ -186,6 +197,6 @@ public class HistoryAssembler implements Assembler<HistoryParseRecord, List<Play
             chart.setSuccessor(nextChart);
         }
 
-        return charts;
+        return charts.reversed();
     }
 }

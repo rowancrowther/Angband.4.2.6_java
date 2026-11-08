@@ -52,8 +52,12 @@ import java.util.List;
  * {@code brand.txt} load, the bad value is logged and thrown as a {@link DataFileParseException},
  * and no record is skipped.
  *
+ * <p><strong>At most 254 brands.</strong> C's {@code finish_parse_brand} counts the records and
+ * returns {@code PARSE_ERROR_TOO_MANY_ENTRIES} once 254 are already counted, so the 255th record
+ * is the first one refused. The same limit is applied here, and it too ends the load.
+ *
  * <p>Class BrandAssembler coded before 260915, commented in full on 261023, updated on 261105 for
- * the removal of the soft-error path.
+ * the removal of the soft-error path and on 261108 for the 254-brand limit.
  *
  * @author Rowan Crowther
  */
@@ -99,15 +103,18 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
      * {@link Integer#MAX_VALUE} where C wraps it, the accepted deviation recorded in
      * {@link ParseUtils}.
      *
+     * <p>A 255th record ends the load, as C's {@code finish_parse_brand} refuses it: the record's
+     * own checks run first, and the count is tested last, just before the brand is added.
+     *
      * <p>Function assemble coded before 260915, commented in full on 261013, rewritten for the
-     * load-ending errors on 261023.
+     * load-ending errors on 261023, updated on 261108 for the 254-brand limit.
      *
      * @param records  the raw {@link BrandParseRecord}s, in file order
      * @param filename the name of the data file, used in the error messages
      * @return the assembled brands, in reverse file order (C's {@code brands[]} order)
      * @throws DataFileParseException on a flag of {@code NONE} or one that names no
-     *                                {@link MonsterRaceFlag} member, or a number with a leading
-     *                                {@code -}
+     *                                {@link MonsterRaceFlag} member, a number with a leading
+     *                                {@code -}, or a 255th record
      */
     @Override
     public List<Brand> assemble(@NotNull List<BrandParseRecord> records,
@@ -182,7 +189,14 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
                 throw new DataFileParseException(message);
             }
 
-            brands.addFirst(new Brand(code, name, verb, rFlag, vFlag, mult, oMult, power));
+            if (brands.size() < 254)
+                brands.addFirst(new Brand(code, name, verb, rFlag, vFlag, mult, oMult, power));
+            else {
+                String message = "Brand starting at line: " + line + " of file: " + filename + " would " +
+                        "cause the brand array to overflow. Array size: " + brands.size();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
         }
 
         return brands;

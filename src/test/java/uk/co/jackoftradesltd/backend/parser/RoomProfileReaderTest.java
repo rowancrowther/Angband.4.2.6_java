@@ -332,6 +332,23 @@ class RoomProfileReaderTest {
     }
 
     /**
+     * {@code NONE} is index 0 of C's {@code room_flags[]} table, and {@code lookup_flag} starts its
+     * search at {@code FLAG_START}, past it, so {@code grab_flag} refuses it in
+     * {@code parse_room_flags}. The load stops, whether {@code NONE} stands alone or follows a good
+     * flag.
+     */
+    @Test
+    void theSentinelNoneFlagStopsTheLoad() {
+        String alone = GOOD_RECORD.replace("tval:0", "tval:0\nflags:NONE");
+        String afterAGoodFlag = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES|NONE");
+
+        assertStopsTheLoad("none-flag.txt", alone + "\n",
+                "illegal sentinel room flag value: NONE");
+        assertStopsTheLoad("good-then-none-flag.txt", afterAGoodFlag + "\n",
+                "illegal sentinel room flag value: NONE");
+    }
+
+    /**
      * The directives other than {@code flags:} are mandatory and ordered in the grammar, so a record
      * missing one is a hard error and the whole file fails closed.
      */

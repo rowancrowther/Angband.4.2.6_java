@@ -487,6 +487,24 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-25, during the `FlavourKindAssembler` port pass. Pinned by
   `FlavourKindAssemblerNumericSvalTest.aTailOfSpacesOrTabsMakesTheSymbolANameNotANumber`.
 
+## History
+
+### A chart repeated with a different successor stops the load, where C accepts it
+
+- **Java:** `HistoryAssembler.assemble`, with `PlayerHistoryChart.successorNumber` and `successor`. **C:**
+  `parse_history_chart` and `finish_parse_history` (`init.c`), `get_history` (`player-birth.c`).
+- **Differs:** C stores the successor (`isucc`, then `succ`) on every entry, `parse_history_chart` never compares it,
+  and `get_history` follows the rolled entry's own `succ`, so one chart can lead to different charts. Java holds one
+  successor per chart, set by the first line that names the chart, and throws on a later line that names a different
+  one.
+- **Reach:** none from shipped data. All 44 charts in `history.txt` (165 lines) give the same successor on every line.
+  A modded `history.txt` that varies the successor within a chart only.
+- **Revisit:** potential future work. If modded history files are ever supported, move `successorNumber` and
+  `successor` from `PlayerHistoryChart` to `PlayerHistoryEntry`, read the successor off the chosen entry in
+  `PlayerBirth.getHistory`, and drop the disagree-check in `HistoryAssembler`.
+- **Pinned by:** `aChartRepeatedWithADifferentSuccessorStopsTheLoadHereWhereCAcceptsIt` in `HistoryReaderTest`.
+- **Accepted:** 2026-11-08. Marked in the `HistoryAssembler` and `PlayerHistoryChart` Javadoc.
+
 ## Monster
 
 ### A `friends:` name of `same` is resolved by name, so it finds the first race of that name, where C points at the race itself
@@ -530,7 +548,8 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-26, during the `MonsterAssembler` port pass; the `flags:`/`flags-off:` order part folded in the
   same day. Marked in the `MonsterAssembler` comments at the flag seeding and the glyph choice. Pinned by
   `MonsterReaderTest.aFlagsOffLineBeforeBaseRemovesTheBaseFlagHereWhereCAddsItBack` and
-  `MonsterReaderTest.aGlyphLineBeforeBaseKeepsItsGlyphHereWhereCOverwritesItWithTheBases`. The new part has no test yet.
+  `MonsterReaderTest.aGlyphLineBeforeBaseKeepsItsGlyphHereWhereCOverwritesItWithTheBases`. The second part is pinned by
+  `MonsterReaderTest.aFlagsOffLineBeforeAFlagsLineNamingTheSameFlagLeavesItOffHereWhereCLeavesItOn` (added 2026-11-08).
 
 ### A second `base:` line replaces the first, where C keeps the flags of both
 
@@ -822,6 +841,28 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Reach:** none from shipped data. Both `fallback:` lines in `summon.txt` name `HI_UNDEAD`.
 - **Revisit:** if a modded `summon.txt` names a fallback that does not exist and a load error is wanted instead.
 - **Accepted:** 2026-11-07. Marked in the `SummonAssembler` Javadoc.
+
+## Brands and slays merge
+
+### An exact multiplier tie keeps the item's own brand or slay, where C keeps the higher table index
+
+- **Java:** `ObjectUtils.copyBrands` and `ObjectUtils.copySlays`. **C:** `copy_brands` and `copy_slays`
+  (`obj-slays.c`).
+- **Differs:** C ORs the source's flag array into the destination's, then compares every pair of set indices with
+  `j < i` that share a name (brands) or kill the same monsters (slays). It clears `i` when `i` has the lower multiplier
+  and otherwise clears `j`, so on an exact tie the higher index survives. Java scans the item's brands or slays for a
+  match to each source entry and replaces the item's only when the source's multiplier is strictly higher, so on a tie
+  the item's own survives. Java never reads a registry index here, and compares each source entry only against the
+  item's, not every pair in the merged set.
+- **Agrees:** every case where the two multipliers differ, which is every pair in `brand.txt` and `slay.txt`.
+- **Why:** a tie needs two entries with the same name (or monsters) and the same multiplier, and the shipped data has
+  none. `BrandSlayNoTieDataTest` fails if one is added.
+- **Reach:** none from shipped data. A modded `brand.txt` or `slay.txt` with such a pair only.
+- **Revisit:** if `BrandSlayNoTieDataTest` ever fails. The fix is a comparison of positions in
+  `ObjectRegistry.getBrands()` or `getSlays()` inside the two methods, not an order on the sets.
+- **Pinned by:** `tieKeepsDestsBrandHereWhereCKeepsTheHigherIndex` in `ObjectUtilsCopyBrandsTest` and
+  `tieKeepsDestsSlayHereWhereCKeepsTheHigherIndex` in `ObjectUtilsCopySlaysTest`.
+- **Accepted:** 2026-11-08. Marked in the `copyBrands` and `copySlays` Javadoc.
 
 ## Pending your decision
 

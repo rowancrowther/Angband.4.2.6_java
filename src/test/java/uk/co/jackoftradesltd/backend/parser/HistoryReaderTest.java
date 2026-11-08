@@ -274,14 +274,21 @@ class HistoryReaderTest {
 
     /**
      * The 44 charts of the upstream {@code history.txt} as {@code chart:next:entries:rolls}, in the
-     * order each chart first appears. Worked out from the upstream file with a line-by-line split,
-     * not from the reader.
+     * order each chart first appears in the file, which is the reverse of the order C's list and the
+     * reader return them in. Worked out from the upstream file with a line-by-line split, not from
+     * the reader.
      */
     private static final String UPSTREAM_CHARTS =
             "1:2:4:10,20,95,100|2:3:7:40,65,80,90,96,99,100|3:50:3:20,80,100|4:1:8:15,30,50,70,85,95,98,100|5:6:2:60,100|6:9:3:40,70,100|7:8:2:60,100|8:9:3:75,95,100|9:54:6:40,70,87,95,99,100|10:11:2:85,100|11:3:8:20,30,40,50,80,95,99,100|13:14:2:85,100|14:3:5:20,50,75,95,100|16:17:2:25,100|17:18:6:10,25,75,90,99,100|18:57:3:15,85,100|19:20:2:25,100|20:2:2:20,100|21:22:6:30,60,75,90,95,100|22:62:4:5,95,99,100|23:24:3:20,80,100|24:25:6:15,40,70,85,95,100|25:26:5:25,50,75,95,100|26:67:3:20,95,100|50:51:6:20,60,70,80,90,100|51:52:3:70,90,100|52:53:5:30,70,80,90,100|53:0:5:10,30,80,90,100|54:55:3:85,95,100|55:56:2:75,100|56:0:4:75,85,95,100|57:58:2:99,100|58:59:2:90,100|59:60:2:75,100|60:61:4:25,60,90,100|61:0:1:100|62:63:4:60,85,99,100|63:64:3:33,66,100|64:65:3:33,66,100|65:66:4:25,50,75,100|66:0:3:33,66,100|67:68:5:10,40,80,99,100|68:69:4:40,60,95,100|69:0:3:10,90,100";
 
     @Test
-    void everyShippedChartAgreesWithTheUpstreamTableInFirstAppearanceOrder() throws IOException {
+    void everyShippedChartAgreesWithTheUpstreamTableInNewestFirstOrder() throws IOException {
+        // The table is in file order; C's list is newest first, so the expected string is the table's
+        // charts reversed. The rolls inside each chart stay ascending.
+        List<String> fileOrder = java.util.Arrays.asList(UPSTREAM_CHARTS.split("\\|"));
+        java.util.Collections.reverse(fileOrder);
+        String expected = String.join("|", fileOrder);
+
         List<PlayerHistoryChart> charts = new HistoryReader().parseWithResults(REAL_FILE).items();
 
         StringBuilder actual = new StringBuilder();
@@ -292,7 +299,7 @@ class HistoryReaderTest {
                     .append(entriesOf(chart).stream().map(e -> String.valueOf(e.getRoll()))
                             .collect(java.util.stream.Collectors.joining(",")));
         }
-        assertEquals(UPSTREAM_CHARTS, actual.toString());
+        assertEquals(expected, actual.toString());
     }
 
     @Test
@@ -318,12 +325,26 @@ class HistoryReaderTest {
     }
 
     @Test
-    void chartsComeBackInFirstAppearanceOrderWhereCListsThemNewestFirst() throws IOException {
-        // C pushes each new chart on the front of 'histories'; the port keeps them in a List.
+    void chartsComeBackNewestFirstAsInC() throws IOException {
+        // C pushes each new chart on the front of 'histories', so the last chart to appear in the
+        // file is first in the list. Entries inside a chart stay in file order.
         ParseResult<PlayerHistoryChart> result = load("order.txt", record(7, 0, 100, "a") + record(3, 0, 100, "b") + record(5, 0, 100, "c"));
 
-        assertEquals(List.of(7, 3, 5),
+        assertEquals(List.of(5, 3, 7),
                 result.items().stream().map(PlayerHistoryChart::getChartNumber).toList());
+    }
+
+    @Test
+    void aRepeatedChartKeepsItsFirstPlaceInTheNewestFirstList() throws IOException {
+        // findchart reuses chart 7 on its second line, so only the first line creates the chart and
+        // chart 7 is the oldest, however many lines follow, and the last in the list.
+        ParseResult<PlayerHistoryChart> result = load("order-repeat.txt",
+                record(7, 0, 50, "a") + record(3, 0, 100, "b") + record(7, 0, 100, "c"));
+
+        assertEquals(List.of(3, 7),
+                result.items().stream().map(PlayerHistoryChart::getChartNumber).toList());
+        assertEquals(List.of("a", "c"),
+                entriesOf(byNumber(result.items(), 7)).stream().map(PlayerHistoryEntry::getText).toList());
     }
 
     @Test

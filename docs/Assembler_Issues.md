@@ -94,19 +94,17 @@ Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
 
 ## `pit/PitAssembler.java`: an unresolved `mon-ban:` name is an error here, silent in C
 
-Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: the `mon-ban:` loop in `PitAssembler.java` adds whatever `MonsterRegistry.lookupMonsterRace` returns, `null` included, and reports nothing. `PitAssemblerTest.aMonBanNameThatMatchesNothingIsStoredAsNull` and `PitReaderTest.anUnresolvableMonBaseEndsTheLoadButAnUnresolvableMonBanLoadsAsNull` pass. The bullets below describe the state before the fix.]
 
 - `parse_pit_mon_ban` in `mon-init.c` stores whatever `lookup_monster` returns and never checks it, so a name that
   matches nothing becomes a forbidden-monster entry with a `NULL` race. `mon_pit_hook` in `gen-room.c` compares
   `race == monster->race`, which is never true for `NULL`, so the entry does nothing.
-- `PitAssembler.java:229-235` adds an `"... unknown banned monster base: ..."` soft error and drops the whole pit.
-  `lookup_monster` matches the exact name case-insensitively and then the first name containing the text, and
-  `MonsterRegistry.lookupMonsterRace` does the same, so only a name found in no monster at all gets this far.
-- The message says "monster base" for what is a monster name; `PitAssembler.java:232`.
-- `mon-base:` is the other way round: `parse_pit_mon_base` returns `PARSE_ERROR_UNRECOGNISED_TVAL`, fatal in C, and the
-  assembler's soft error and skipped record is the port's usual partial-results rule.
-- None on the shipped data: the one `mon-ban:` resolves. `PitReaderTest.unresolvableMonsterNamesDropTheRecord` pins
-  the Java result.
+- Java now: `PitAssembler.java` (the `mon-ban:` loop) stores the `null` race and the pit is kept. `lookup_monster`
+  matches the exact name case-insensitively and then the first name containing the text, and
+  `MonsterRegistry.lookupMonsterRace` does the same, so only a name found in no monster at all gives `null`.
+- `mon-base:` is the other way round: `parse_pit_mon_base` returns `PARSE_ERROR_UNRECOGNISED_TVAL`, fatal in C, and
+  `PitAssembler.java` throws `DataFileParseException` for it.
+- None on the shipped data: the one `mon-ban:` resolves.
 
 ## `pit/PitAssembler.java`: the `room:` comment says the lexer constrains the digit, it does not
 
@@ -225,14 +223,12 @@ Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed
 
 ## `monsterbase/MonsterBaseAssembler.java`: a glyph outside the Basic Multilingual Plane is rejected
 
-Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: `MonsterBaseAssembler.java` counts code points, not UTF-16 units, and keeps a glyph above U+FFFF whole in the wide `int` half with the narrow `char` half at `'\0'`; `MonsterBaseReaderTest.aGlyphOutsideTheBasicMultilingualPlaneIsKeptWholeInTheWideHalf` and `aSupplementaryGlyphLeavesTheNarrowHalfAtNulWhileAnAsciiOneLeavesTheWideHalfAtZero` pass.]
 
-- `parse_mon_base_glyph` stores `parser_getchar` in `d_char`, a `wchar_t`, which holds any code point. The assembler
-  insists on `record.glyph().length() == 1` and stores a `char`, so a code point above U+FFFF (two UTF-16 units) is
-  a soft error that skips the record.
-- `MonsterBase.java` already says the `char` covers every glyph in `monster_base.txt`, so this is a known limit; it
-  matters only for a modded data file.
-- `MonsterBaseReaderTest.aGlyphOutsideTheBasicMultilingualPlaneIsASoftErrorHereWhereCHoldsAWideChar` pins it.
+- What C does: `parse_mon_base_glyph` stores `parser_getchar` in `d_char`, a `wchar_t`, which holds any code point, so a
+  glyph above U+FFFF loads.
+- The assembler used to insist on `record.glyph().length() == 1` and store a `char`, so a code point above U+FFFF
+  (two UTF-16 units) was a skipped record. It now accepts exactly one code point.
 
 ## `monster/MonsterAssembler.java`: `spell_power` is never defaulted to the level
 
@@ -311,7 +307,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `monster/MonsterAssembler.java`: a `friends-base:` chance above 100 is an error, C keeps it
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: the `friends-base:` loop in `MonsterAssembler.java` refuses only a leading minus and keeps any chance, as `friends:` does. `MonsterReaderTest.aFriendsBaseChanceAbove100IsKeptAsInC` passes. The bullets below describe the state before the fix.]
 
 - `parse_monster_friends_base` stores `parser_getuint(chance)` with no upper bound, as `parse_monster_friends` does. The
   `friends:` loop in `MonsterAssembler.java` agrees (`MonsterReaderTest.aFriendChanceAboveOneHundredIsKeptAsWritten`),
@@ -321,7 +317,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `monster/MonsterAssembler.java`: the group role is matched ignoring case, C is case-sensitive
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: both loops in `MonsterAssembler.java` compare the role with `equals`, so `Servant` and `Bodyguard` end the load. `MonsterReaderTest.aFriendRoleInCapitalsIsRefusedAsInCsCaseSensitiveStreq` passes. The bullets below describe the state before the fix.]
 
 - `parse_monster_friends` and `parse_monster_friends_base` compare the role with `streq(role_name, "servant")` and
   `streq(role_name, "bodyguard")`, so `Servant` is `PARSE_ERROR_INVALID_MONSTER_ROLE`.
@@ -361,20 +357,17 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [**CLOSED** 2
 
 ## `monster/MonsterAssembler.java`: an unknown `color-cycle:` group is an error, C is silent
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: the `color-cycle:` block in `MonsterAssembler.java` leaves the cycler `null` and reports nothing for an unknown group or an unknown name in a known group. `MonsterReaderTest.anUnknownColourCycleGroupIsSilentAsInC` and `anUnknownColourCycleNameInAKnownGroupIsSilentAsInC` pass. The bullets below describe the state before the fix.]
 
 - `visuals_cycler_set_cycle_for_race` in `ui-visuals.c` returns without a message when the cycle is not found, whether
   the group or the name is wrong, and `parse_monster_color_cycle` returns no error.
-- `MonsterAssembler.java` adds "unknown colour cycle name" when the group is unknown and keeps the race with a `null`
-  cycler. An unknown name in a known group is silent, as in C. The class block says a bad cross-reference drops the
-  record; this one does not.
-- `MonsterReaderTest.anUnknownColourCycleGroupIsASoftErrorButTheRaceIsKeptWhereCIsSilent` and
-  `anUnknownColourCycleNameInAKnownGroupIsSilentAsInC` pin it.
+- Java now: `MonsterAssembler.java` keeps the race with a `null` cycler for both an unknown group and an unknown name,
+  silently, as C does.
 - None on the shipped data.
 
 ## `monster/MonsterAssembler.java`: C's directive-order effects are not reproduced
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08 as an accepted deviation: registered in `docs/Accepted_Deviations.md` ("A `flags-off:` or `glyph:` line before `base:` is not overridden by the base, where C overrides it", with the `flags:`/`flags-off:` order as its second part). `MonsterReaderTest.aFlagsOffLineBeforeBaseRemovesTheBaseFlagHereWhereCAddsItBack`, `aGlyphLineBeforeBaseKeepsItsGlyphHereWhereCOverwritesItWithTheBases` and `aFlagsOffLineBeforeAFlagsLineNamingTheSameFlagLeavesItOffHereWhereCLeavesItOn` pin it.]
 
 - `parse_monster_base` copies the base's glyph into `d_char` and unions the base's flags when `base:` is read, so a
   `glyph:` or `flags-off:` line that comes before `base:` is overridden. `MonsterAssembler.java` seeds the flags from the
@@ -387,11 +380,13 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `monster/MonsterAssembler.java`: a glyph outside the Basic Multilingual Plane is rejected
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: `MonsterAssembler.java` keeps an explicit `glyph:` above U+FFFF whole in the wide half, and a monster with no `glyph:` line takes both halves of its base's glyph; `MonsterReaderTest.anExplicitGlyphOutsideTheBasicMultilingualPlaneIsKeptWhole` and `aMonsterWithoutAGlyphLineInheritsABaseGlyphOutsideTheBasicMultilingualPlane` pass.]
 
-- `parse_monster_glyph` stores `parser_getchar` in `d_char`, a `wchar_t`. `MonsterAssembler.java` insists on
-  `glyphStr.length() == 1` and stores a `char`, so a code point above U+FFFF is "illegal glyph character" and skips the
-  record. Same limit as the `monsterbase/MonsterBaseAssembler.java` entry above; matters only for a modded data file.
+- What C does: `parse_monster_glyph` stores `parser_getchar` in `d_char`, a `wchar_t`, and `parse_monster_base` copies the
+  base's `d_char` into the race, so a glyph above U+FFFF loads and is inherited.
+- `MonsterAssembler.java` used to insist on `glyphStr.length() == 1` and store a `char`, so a code point above U+FFFF
+  was "illegal glyph character" and skipped the record. It now accepts exactly one code point. Same fix as the
+  `monsterbase/MonsterBaseAssembler.java` entry above.
 
 ## `slay/SlayAssembler.java`: a missing `multiplier:`, `o-multiplier:` or `power:` skips the record, C leaves it 0
 
@@ -455,13 +450,13 @@ Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
 
 ## `brand/BrandAssembler.java`: no 254-brand limit
 
-Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: `BrandAssembler.java` adds a brand only while fewer than 254 are held and throws a `DataFileParseException` on the 255th record, as C's `finish_parse_brand` refuses it. `BrandReaderTest.exactlyTwoHundredFiftyFourBrandsLoadAsInC` and `theTwoHundredFiftyFifthBrandStopsTheLoadAsInC` pin it, and the `BrandReaderTest`, `BrandAssemblerTest`, `VisualsCycleAssemblerTest` and `VisualsReaderTest` suites passed this date. The bullets below describe the state before the fix.]
 
 - `finish_parse_brand` stops counting at 254 and returns `PARSE_ERROR_TOO_MANY_ENTRIES`; only the first 254 records
   reach `brands[]`.
 - `BrandAssembler.java` has no limit, and `ObjectDataLoader.loadBrands` documents that it applies none, so 255 brands
   load in full with no error.
-- `BrandReaderTest.moreThanTwoHundredFiftyFourBrandsAllLoadHereWhereCFailsTheParse` pins it.
+- `BrandReaderTest.moreThanTwoHundredFiftyFourBrandsAllLoadHereWhereCFailsTheParse` pinned it; the test is replaced by the two above.
 - None on the shipped data, which has ten. `ObjectDataLoader.loadSlays` documents the same unapplied limit for slays.
 
 ## `brand/BrandAssembler.java`: no range check on the three numbers
@@ -686,7 +681,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fi
 
 ## `objectproperty/ObjectPropertyAssembler.java`: an unknown `type-mult:` tval keeps the record, every other bad field skips it
 
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: the `type-mult:` loop in `ObjectPropertyAssembler.java` throws `DataFileParseException` for a tval that resolves to nothing, so the load ends as C's `PARSE_ERROR_UNRECOGNISED_TVAL` does. `ObjectPropertyReaderTest.anUnknownTypeMultTvalEndsTheLoad` passes. The bullets below describe the state before the fix.]
 
 - `parse_object_property_type_mult` returns `PARSE_ERROR_UNRECOGNISED_TVAL`, fatal in C. The assembler's usual rule for a bad
   field is `continue` out to the next record.
@@ -992,7 +987,7 @@ Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
 
 ## `flavour/FlavourAssembler.java` and `flavour/FlavourKindAssembler.java`: an unknown colour name, a negative or hex index, a bad glyph, a bad tval and a bad `fixed:` sval differ from C
 
-Found 2026-10-18 during `/port backend/parser/FlavourReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/FlavourReader.java`. Not fixed. [<span style="color:#006400">**CLOSED**</span> 26-11-08: the colour fallback, index base and sign, glyph, tval and `fixed:` sval path of `FlavourAssembler.java` and `FlavourKindAssembler.java` match C, as read this date. `FlavourReaderTest` and `FlavourAssemblerTest` passed. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1038,7 +1033,7 @@ Found 2026-10-18 during `/port backend/parser/NamesReader.java`. Not fixed.
 
 ## `history/HistoryAssembler.java`: a dangling successor and a mixed successor are soft errors, and the numbers are read in decimal
 
-Found 2026-10-18 during `/port backend/parser/HistoryReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/HistoryReader.java`. Not fixed. [<span style="color:#006400">**CLOSED**</span> 26-11-08: `HistoryAssembler.java` returns the charts newest first as C's list does, and the repeated chart with a different successor is an accepted deviation (`docs/Accepted_Deviations.md`, History). `HistoryReaderTest` passed. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1271,7 +1266,7 @@ Found 2026-10-19 during `/port GameConstantsReader.java`. Not fixed.
 
 ## `vault/VaultAssembler.java`: zero rows or columns, a case-insensitive `type:` and a row-count check differ from C, and a bad record is dropped instead of stopping the load
 
-Found 2026-10-19 during `/port VaultReader.java`. Not fixed.
+Found 2026-10-19 during `/port VaultReader.java`. Not fixed. [<span style="color:#006400">**CLOSED**</span> 26-11-08: `VaultAssembler.java` loads zero rows and columns, wraps `rows:`, `columns:`, the depths and the rating to a byte, reads `type:` case-exactly, refuses the `NONE` room flag and stops the load on every fault. `VaultAssemblerTest` and `VaultReaderTest` passed. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1303,7 +1298,7 @@ Found 2026-10-19 during `/port VaultReader.java`. Not fixed.
 
 ## `roomprofile/RoomProfileAssembler.java`: zero rows or columns, a map-shape check C does not make, an unbounded `type:`, `rating:` and `doors:`, and a Javadoc that gets the order wrong
 
-Found 2026-10-19 during `/port RoomProfileReader.java`. Not fixed.
+Found 2026-10-19 during `/port RoomProfileReader.java`. Not fixed. [<span style="color:#006400">**CLOSED**</span> 26-11-08: `RoomProfileAssembler.java` wraps `type:`, `rating:`, `rows:`, `columns:` and `doors:` to a byte, leaves the layout unchecked, refuses the `NONE` flag and returns the templates in reverse file order. `RoomProfileAssemblerTest` and `RoomProfileReaderTest` passed. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1383,7 +1378,7 @@ Found 2026-10-19 during `/port DungeonProfileReader.java`. Partly fixed 26-10-21
 
 ## `chesttrap/ChestTrapAssembler.java`: `destroy:` and `magic:` accept only `1`, and the file is rejected whole where C cannot reject it
 
-Found 2026-10-19 during `/port ChestTrapReader.java`. Not fixed.
+Found 2026-10-19 during `/port ChestTrapReader.java`. Not fixed. [<span style="color:#006400">**CLOSED**</span> 26-11-08: `destroy:` and `magic:` take any non-zero value, an absent `msg:` and `msg-death:` are `null`, and the whole-file rejection is an accepted deviation (`docs/Accepted_Deviations.md`, Chest trap). `ChestTrapAssemblerTest` and `ChestTrapReaderTest` passed. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1411,7 +1406,7 @@ Found 2026-10-19 during `/port ChestTrapReader.java`. Not fixed.
 
 ## `playertimed/PlayerTimedAssembler.java`: a one-character down message is dropped, `lower-bound:` is unchecked, unknown `flags:` tokens are ignored, `fail:` lines run in file order, and `exact` is a string test
 
-Found 2026-10-19 during `/port PlayerTimedReader.java`. Not fixed.
+Found 2026-10-19 during `/port PlayerTimedReader.java`. Not fixed. [<span style="color:#006400">**CLOSED**</span> 26-11-08: `PlayerTimedAssembler.java` keeps a one-character down message, limits `lower-bound:` to 0 to 32767, accepts only `NONSTACKING` in `flags:`, runs `fail:` lines in C's order and reads `exact` through `ParseUtils.isTrue`. `PlayerTimedReaderTest` and the `playertimed` assembler tests passed. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1448,7 +1443,7 @@ Found 2026-10-19 during `/port PlayerTimedReader.java`. Not fixed.
 
 ## `visuals/VisualsCycleAssembler.java` and `VisualsFlickerAssembler.java`: no caps on groups, cycles or steps, a file with no `cycle:` block loads empty, and flicker cycles keep every step listed
 
-Found 2026-10-19 during `/port VisualsReader.java`. Not fixed.
+Found 2026-10-19 during `/port VisualsReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08 for the caps and the empty-cycler check only: `VisualsCycleAssembler.java` stops the load on more than 512 `cycle:` lines, a 33rd colour and an empty cycler, and silently drops a ninth group and a 65th new name in a group, as C does (the 2026-10-19 answer below was "enforce as C does"). `VisualsCycleAssemblerTest`, `VisualsReaderTest` and the other suites named in the brand entry passed this date. The flicker three-step rule was closed the same date: `VisualsFlickerAssembler.java` stores exactly three steps per base colour (a fourth is dropped, a short block is padded with dark), and `FlickerTable.getAttr` answers dark for an absent base colour as C's zeroed row does. `FlickerTableTest` (10) and `VisualsReaderTest.FlickerAssemblerUnit` (23) pin it and passed this date. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1476,8 +1471,8 @@ Found 2026-10-19 during `/port VisualsReader.java`. Not fixed.
   colours the file names. A colour with five lines keeps five steps, one with one line keeps one, and an unlisted colour has no entry.
 - `VisualsReaderTest.aThirtyThirdCycleColourLoadsHereWhereCRefusesTheFile`, `aNinthGroupIsKeptHereWhereCDropsItsCycles`,
   `aSixtyFifthCycleInAGroupIsKeptHereWhereCDropsIt`, `aFiveHundredAndThirteenthCycleBlockLoadsHereWhereCRefusesTheFile` and
-  `flickerOnlyFileYieldsAnEmptyCyclerButNoErrors` pin the cycler side. The flicker side has no test, because `FlickerTable` has no
-  accessor, and `ColourCycle.colourCycle` returns `null` for an empty step list, which the assembler would store; the grammar keeps
+  `flickerOnlyFileYieldsAnEmptyCyclerButNoErrors` pin the cycler side. The flicker side had no test then, because `FlickerTable` had no
+  accessor (it has `getAttr` now), and `ColourCycle.colourCycle` returns `null` for an empty step list, which the assembler would store; the grammar keeps
   that from happening on a real file.
 
 ### Impact

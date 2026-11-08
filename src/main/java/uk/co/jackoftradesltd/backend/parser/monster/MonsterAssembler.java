@@ -340,6 +340,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 }
             } else if (base != null) {
                 glyph = base.getDefaultMonsterChar();
+                wideGlyph = base.getWideMonsterChar();
             }
             if (glyph != '\0') {
                 adc = new AngbandDisplayCharacter(glyph, colour);

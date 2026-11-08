@@ -431,16 +431,17 @@ class VaultReaderTest {
     /**
      * A rating too large for an {@code int}. C narrows {@code strtol}'s result into an {@code int},
      * which wraps; the port clamps it to {@link Integer#MAX_VALUE} instead, an accepted deviation.
+     * The byte {@code rat} then wraps that to 255.
      */
     @Test
-    void anOverflowingRatingIsClamped() throws IOException {
+    void anOverflowingRatingIsClampedThenWrappedToAByte() throws IOException {
         String huge = GOOD_RECORD.replace("name:Good vault", "name:Huge rating")
                 .replace("rating:5", "rating:99999999999");
         String path = tempFile("overflow.txt", huge + "\n");
 
         ParseResult<Vault> result = new VaultReader().parseWithResults(path);
 
-        assertEquals(Integer.MAX_VALUE, result.items().getFirst().getRating());
+        assertEquals(255, result.items().getFirst().getRating());
     }
 
     /**
@@ -614,13 +615,13 @@ class VaultReaderTest {
 
     /**
      * {@code rating:} is the one signed field: C reads it with {@code parser_getint}, so a negative
-     * rating is legal there and here.
+     * rating is legal there and here. C then stores it in the {@code uint8_t rat}, so -3 is 253.
      */
     @Test
-    void aNegativeRatingIsAccepted() throws IOException {
+    void aNegativeRatingIsAcceptedAndWrapsToAByte() throws IOException {
         ParseResult<Vault> result = parseVariant("neg-rating.txt", "rating:5", "rating:-3");
 
-        assertEquals(-3, result.items().getFirst().getRating());
+        assertEquals(253, result.items().getFirst().getRating());
     }
 
     /**

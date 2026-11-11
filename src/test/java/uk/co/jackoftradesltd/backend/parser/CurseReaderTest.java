@@ -896,12 +896,17 @@ class CurseReaderTest {
         assertEquals("0,0,6", EffectProbe.yxBase(effects.getFirst()));
     }
 
+    /**
+     * {@code init_parse_curse} registers no {@code effect-msg}, so C gives
+     * {@code PARSE_ERROR_UNDEFINED_DIRECTIVE}. The shared effect block no longer takes the line, so
+     * the load stops here too.
+     *
+     * <p>Function anEffectMsgIsARefusedLineAsInC coded on 261111, commented in full on 261111.
+     */
     @Test
-    void effectMsgIsAcceptedHereWhereCHasNoSuchDirective() throws IOException {
-        // init_parse_curse registers no effect-msg, so C gives PARSE_ERROR_UNDEFINED_DIRECTIVE.
-        ParseResult<Curse> result = load("effect-msg.txt", curse("chatty", "type:cloak\neffect:WAKE\neffect-msg:hello\ndesc:x\n"));
-
-        assertEquals(1, result.items().size());
+    void anEffectMsgIsARefusedLineAsInC() {
+        assertThrows(ParseCancellationException.class, () -> load("effect-msg.txt",
+                curse("chatty", "type:cloak\neffect:WAKE\neffect-msg:hello\ndesc:x\n")));
     }
 
     @Test

@@ -242,7 +242,7 @@ itemObject
                                         $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                                         $effectBlock.expressionChars, $effectBlock.expressionBase,
                                         $effectBlock.expressionOperation, 
-                                        $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+                                        null, $effectBlock.start.getLine())); }
         |   effectYX {
                 if (!effectsInit.isEmpty()) {
                     EffectParseRecord last = effectsInit.getLast();

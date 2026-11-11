@@ -769,13 +769,17 @@ class MonsterSpellReaderTest {
         assertEquals("0,0,", EffectProbe.yxBase(effects.getFirst()));
     }
 
+    /**
+     * C's {@code mon_spell_parser} registers no {@code effect-msg:} line, so it is
+     * {@code PARSE_ERROR_UNDEFINED_DIRECTIVE}. The shared effect block no longer takes it, so the
+     * load stops here too.
+     *
+     * <p>Function anEffectMsgIsARefusedLineAsInC coded on 261111, commented in full on 261111.
+     */
     @Test
-    void effectMsgIsAcceptedHereWhereCHasNoSuchDirective() throws IOException {
-        // C's mon_spell_parser registers no effect-msg: line, so it is PARSE_ERROR_UNDEFINED_DIRECTIVE.
-        // The shared effect block takes it.
-        ParseResult<MonsterSpellType> result = load("effect-msg.txt", entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\ndice:100\neffect-msg:Hello\n"));
-
-        assertEquals(1, result.items().size());
+    void anEffectMsgIsARefusedLineAsInC() {
+        assertThrows(ParseCancellationException.class, () -> load("effect-msg.txt",
+                entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\ndice:100\neffect-msg:Hello\n")));
     }
 
     @Test

@@ -184,7 +184,7 @@ activation
                 $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                 $effectBlock.expressionChars, $effectBlock.expressionBase,
                 $effectBlock.expressionOperation,
-                $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+                null, $effectBlock.start.getLine())); }
         |   effectYX {
                 if (!effects.isEmpty()) {
                     EffectParseRecord last = effects.getLast();

@@ -152,7 +152,7 @@ powerCutoffBlock
                   $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
                   $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                   $effectBlock.expressionChars, $effectBlock.expressionBase,
-                  $effectBlock.expressionOperation, $effectBlock.effectMessage,
+                  $effectBlock.expressionOperation, null,
                   $effectBlock.start.getLine())); }
         |   effectYX {
                 if (!effects.isEmpty()) {

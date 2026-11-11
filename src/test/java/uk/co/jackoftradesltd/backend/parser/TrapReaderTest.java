@@ -729,12 +729,16 @@ class TrapReaderTest {
         assertEquals("1,2,5", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
     }
 
-    /** C: {@code init_parse_trap} registers no {@code effect-msg}, so it is an undefined directive. */
+    /**
+     * C: {@code init_parse_trap} registers no {@code effect-msg}, so it is an undefined directive.
+     * The shared effect block no longer takes the line, so the load stops here too.
+     *
+     * <p>Function anEffectMsgIsARefusedLineAsInC coded on 261111, commented in full on 261111.
+     */
     @Test
-    void effectMsgIsAcceptedHereWhereCHasNoSuchDirective() throws IOException {
-        ParseResult<TrapKind> r = load("effect-msg.txt", "name:a:b\neffect:DAMAGE\ndice:1d4\neffect-msg:hi\n");
-
-        assertEquals(1, r.items().getFirst().getEffect().size());
+    void anEffectMsgIsARefusedLineAsInC() {
+        assertThrows(ParseCancellationException.class,
+                () -> load("effect-msg.txt", "name:a:b\neffect:DAMAGE\ndice:1d4\neffect-msg:hi\n"));
     }
 
     /** C: {@code appear} is three {@code uint}s, and {@code parser_parse} rejects a leading minus. */

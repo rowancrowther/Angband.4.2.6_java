@@ -168,7 +168,7 @@ shape
                     $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                     $effectBlock.expressionChars, $effectBlock.expressionBase,
                     $effectBlock.expressionOperation,
-                    $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+                    null, $effectBlock.start.getLine())); }
         |   effectMsg {
                 if (!effectsInit.isEmpty()) {
                     EffectParseRecord last = effectsInit.getLast();
@@ -213,7 +213,6 @@ shape
                     replaceLast(effectsInit, updated);
                 }
             }
-        
         |   blow { blowsInit.add($blow.blowStr); })*
         ;
 

@@ -182,7 +182,7 @@ trapRecord
                                         $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                                         $effectBlock.expressionChars, $effectBlock.expressionBase,
                                         $effectBlock.expressionOperation, 
-                                        $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+                                        null, $effectBlock.start.getLine())); }
         |   effectYX { if (!effectInit.isEmpty()) {
                            EffectParseRecord last = effectInit.getLast();
                            EffectParseRecord updated = last.amendYX($effectYX.y, $effectYX.x);

@@ -353,6 +353,19 @@ class ChestTrapReaderTest {
                 FULL_FILE.replace("code:POISON\n", "")));
     }
 
+    /**
+     * C ({@code obj-chest.c}) registers only {@code dice} and {@code expr} for a chest trap, so
+     * {@code effect-msg} is {@code PARSE_ERROR_UNDEFINED_DIRECTIVE}. The shared effect block no
+     * longer takes the line, so the load stops here too.
+     *
+     * <p>Function anEffectMsgIsARefusedLineAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void anEffectMsgIsARefusedLineAsInC() {
+        assertThrows(ParseCancellationException.class, () -> parse("effect-msg.txt",
+                "name:chatty\ncode:POISON\nlevel:1\neffect:DAMAGE\ndice:1d4\neffect-msg:hi\n"));
+    }
+
     // ---- Structural validation: the file is accepted or rejected whole ----
 
     @Test

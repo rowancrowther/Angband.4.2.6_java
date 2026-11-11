@@ -959,6 +959,55 @@ class PlayerClassReaderTest {
         assertEquals("0,0,2", EffectProbe.yxBase(onlySpellEffects(r).getFirst()));
     }
 
+    /**
+     * C: {@code parse_class_effect_msg} acts on the last effect of the last spell, so the message
+     * lands on {@code BOLT} and the effect before it gets none.
+     *
+     * <p>Function anEffectMsgReachesTheSpellsLastEffectAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void anEffectMsgReachesTheSpellsLastEffectAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("msg.txt", "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:arcane\n"
+                        + "spell:S:1:1:1:1\neffect:WAKE\neffect:BOLT:MISSILE\ndice:5\neffect-msg:hello\n");
+
+        List<?> effects = firstSpellEffects(r);
+        assertEquals(2, effects.size());
+        assertNull(EffectProbe.message(effects.get(0)));
+        assertEquals("hello", EffectProbe.message(effects.get(1)));
+    }
+
+    /**
+     * C: {@code parse_class_effect_msg} uses {@code string_append}, so two lines join with nothing
+     * between them.
+     *
+     * <p>Function twoEffectMsgsOnOneSpellEffectAreAppendedAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void twoEffectMsgsOnOneSpellEffectAreAppendedAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("msg-twice.txt", "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:arcane\n"
+                        + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:5\neffect-msg:one\neffect-msg:two\n");
+
+        assertEquals("onetwo", EffectProbe.message(onlySpellEffects(r).getFirst()));
+    }
+
+    /**
+     * C: with no effect on the spell yet, {@code parse_class_effect_msg} returns
+     * {@code PARSE_ERROR_NONE} and does nothing ("assume that this is human and not parser error"),
+     * so the line is dropped and the effect that follows carries no message.
+     *
+     * <p>Function anEffectMsgAheadOfASpellsFirstEffectIsDroppedAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void anEffectMsgAheadOfASpellsFirstEffectIsDroppedAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("msg-first.txt", "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:arcane\n"
+                        + "spell:S:1:1:1:1\neffect-msg:early\neffect:BOLT:MISSILE\ndice:5\n");
+
+        assertNull(EffectProbe.message(onlySpellEffects(r).getFirst()));
+    }
+
     // ---- boundaries and ordinary behaviour C and Java agree on -----------
 
     /** C: {@code N_ELEMENTS(c->title)} is 10; the eleventh title is {@code TOO_MANY_ENTRIES}. */

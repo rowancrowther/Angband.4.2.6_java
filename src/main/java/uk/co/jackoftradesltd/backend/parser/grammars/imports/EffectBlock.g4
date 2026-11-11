@@ -29,7 +29,6 @@
  *     $<char> variable placeholder. If there are no expression lines
  *     then the dice is simple, and does not have a $ in it.
  *   - expr:<expressionChar>:<base>:<operation>.
- *   - effect-msg:<free text>
  *
  * It should be noted that different grammar files use different parts of
  * the Effect system, but all should create an Effect object.
@@ -192,7 +191,7 @@ strayEffectLine
  *
  * This 'block' pulls together all the previous parts of an effect.
  *
- * effect/(effect-yx or dice)/time/effect-msg - IN THAT ORDER
+ * effect/(effect-yx or dice)/time - IN THAT ORDER
  *
  * expr is no longer part of this block as it is pulled in by
  * dice to ensure the dice/expr linking is kept clean.
@@ -209,7 +208,7 @@ strayEffectLine
 effectBlock
         returns[String typeInit, String subtypeWrapperInit, String radius, String other,
                 String diceString, String yVal, String xVal, String expressionChars, String expressionBase,
-                String expressionOperation, String effectMessage, int lineNo]
+                String expressionOperation, int lineNo]
         @init {
             String expressionString = "";
             String baseString = "";
@@ -217,7 +216,6 @@ effectBlock
             $diceString = "";
             $yVal = "";
             $xVal = "";
-            $effectMessage = null;
         }
         @after {
             $expressionChars = expressionString;
@@ -257,5 +255,4 @@ effectBlock
                 $yVal = $effectYX.y;
                 $xVal = $effectYX.x;
             })?
-            (effectMsg { $effectMessage = $effectMsg.message; })?
         ;

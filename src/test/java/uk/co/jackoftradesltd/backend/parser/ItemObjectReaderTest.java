@@ -523,15 +523,16 @@ class ItemObjectReaderTest {
     }
 
     /**
-     * A {@code dice:} that follows an {@code effect-msg:} is a line like any other and lands on the
-     * last effect.
+     * A {@code dice:} that follows another directive is a line like any other and lands on the
+     * last effect. (This test used an {@code effect-msg:} as the other directive until the object
+     * parser stopped accepting that line, as C does.)
      *
-     * <p>Function aDiceAfterAnEffectMsgReachesTheEffectAsInC coded on 261111, commented in full on 261111.
+     * <p>Function aDiceAfterAnotherDirectiveReachesTheEffectAsInC coded on 261111, commented in full on 261111.
      */
     @Test
-    void aDiceAfterAnEffectMsgReachesTheEffectAsInC() throws Exception {
-        ParseResult<ObjectKind> result = load("dice-after-msg.txt",
-                obj("rod of reach", HEAD + "effect:WAKE\neffect-msg:hello\ndice:5\n"));
+    void aDiceAfterAnotherDirectiveReachesTheEffectAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("dice-after-other.txt",
+                obj("rod of reach", HEAD + "effect:WAKE\nlevel:1\ndice:5\n"));
 
         assertEquals("0,0,5", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
     }
@@ -1374,13 +1375,14 @@ class ItemObjectReaderTest {
 
     /**
      * {@code init_parse_object} registers no {@code effect-msg} directive, so C reports an undefined
-     * directive. The shared effect block accepts it here without complaint.
+     * directive. The shared effect block no longer takes the line, so the load stops here too.
+     *
+     * <p>Function anEffectMsgIsARefusedLineAsInC coded on 261111, commented in full on 261111.
      */
     @Test
-    void effectMsgIsAcceptedHereWhereCHasNoSuchDirective() throws IOException {
-        ParseResult<ObjectKind> result = load("effect-msg.txt", obj("chatty", HEAD + "effect:HEAL_HP\ndice:5\neffect-msg:hello\n"));
-
-        assertEquals(1, result.items().size());
+    void anEffectMsgIsARefusedLineAsInC() {
+        assertThrows(ParseCancellationException.class, () -> load("effect-msg.txt",
+                obj("chatty", HEAD + "effect:HEAL_HP\ndice:5\neffect-msg:hello\n")));
     }
 
     /**

@@ -642,11 +642,15 @@ class ActivationReaderTest {
         assertEquals("22,40,20", EffectProbe.yxBase(((List<?>) field(a, "effects")).getFirst()));
     }
 
+    /**
+     * {@code act_parser} registers no {@code effect-msg}, so C gives
+     * {@code PARSE_ERROR_UNDEFINED_DIRECTIVE}. The shared effect block no longer takes the line, so
+     * the load stops here too.
+     *
+     * <p>Function anEffectMsgIsARefusedLineAsInC coded on 261111, commented in full on 261111.
+     */
     @Test
-    void effectMsgIsAcceptedHereWhereCHasNoSuchDirective() throws Exception {
-        // act_parser registers no effect-msg, so C gives PARSE_ERROR_UNDEFINED_DIRECTIVE.
-        Activation a = loadOne(record("effect-msg:hello\n"));
-
-        assertEquals(1, effectCount(a));
+    void anEffectMsgIsARefusedLineAsInC() {
+        assertThrows(ParseCancellationException.class, () -> loadOne(record("effect-msg:hello\n")));
     }
 }

@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *   <li>multi-{@code expr} caret accumulation for a complex dice;</li>
  *   <li>a {@code $}-dice with no {@code expr:} straight after it parses, as in C, which binds
  *       the variables later by name (or never);</li>
- *   <li>{@code effect-msg:} captured at the effect level;</li>
+ *   <li>{@code effect-msg:} left outside the block, with its own {@code effectMsg} rule;</li>
  *   <li>a signed (negative) {@code other} parameter;</li>
  *   <li>the {@code effect-yx:} y-then-x ordering.</li>
  * </ul>
@@ -170,15 +170,27 @@ class EffectBlockTest {
     }
 
     @Test
-    void effectMessageIsCaptured() {
+    void effectBlockStopsBeforeAnEffectMsgLine() {
         Errors errors = new Errors();
-        EffectBlock.EffectBlockContext ctx = parser(
+        EffectBlock parser = parser(
                 "effect:DAMAGE\ndice:1d$S\nexpr:S:PLAYER_LEVEL:+ 0\neffect-msg:taking warg form\n",
-                errors).effectBlock();
+                errors);
+        EffectBlock.EffectBlockContext ctx = parser.effectBlock();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals("1d$S", ctx.diceString);
-        assertEquals("taking warg form", ctx.effectMessage);
+        assertEquals(EffectBlockLexer.EFFECT_MESSAGE, parser.getCurrentToken().getType(),
+                "effect-msg: is not part of the block; Shape and PlayerClass take it themselves");
+    }
+
+    @Test
+    void effectMsgRuleCapturesItsFreeText() {
+        Errors errors = new Errors();
+        EffectBlock.EffectMsgContext ctx =
+                parser("effect-msg:taking warg form\n", errors).effectMsg();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals("taking warg form", ctx.message);
     }
 
     @Test

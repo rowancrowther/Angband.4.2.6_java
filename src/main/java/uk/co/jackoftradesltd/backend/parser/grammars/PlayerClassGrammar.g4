@@ -320,7 +320,7 @@ spellBlock
                         $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                         $effectBlock.expressionChars, $effectBlock.expressionBase,
                         $effectBlock.expressionOperation,
-                        $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+                        null, $effectBlock.start.getLine())); }
         |   effectYX {
                 if (!$effects.isEmpty()) {
                     EffectParseRecord last = $effects.getLast();
@@ -359,6 +359,13 @@ spellBlock
                     replaceLast($effects, updated);
                 }
             }
+        |   effectMsg { 
+                if (!$effects.isEmpty()) {
+                    EffectParseRecord last = $effects.getLast();
+                    EffectParseRecord updated = last.appendMessage($effectMsg.message);
+                    replaceLast($effects, updated);
+                }
+             }
         |   desc { $spellDesc = $spellDesc + $desc.description; })*
         ;
 

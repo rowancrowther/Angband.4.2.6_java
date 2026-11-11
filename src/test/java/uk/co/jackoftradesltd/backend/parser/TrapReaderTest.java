@@ -590,6 +590,25 @@ class TrapReaderTest {
         assertEquals("Look: a trap", field(t, "message"));
     }
 
+    /**
+     * C: {@code parse_trap_dice} returns {@code PARSE_ERROR_NONE} before it reads the string when the record has no
+     * effect yet, so {@code dice:garbage} ahead of the first {@code effect:} is dropped unread. The lexer refuses text
+     * that is not a dice string in any position, so the load stops here. Accepted deviation, 2026-11-11, recorded in
+     * {@code docs/Accepted_Deviations.md}.
+     */
+    @Test
+    void aDiceLineOfGarbageBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+        assertHardError("dice-garbage-early.txt", "name:a:b\ndice:garbage\neffect:DAMAGE\n");
+    }
+
+    /** The control for the pin above: a valid dice string in the same place is dropped and the record loads. */
+    @Test
+    void aValidDiceLineBeforeAnyEffectIsDroppedAsInC() throws Exception {
+        TrapKind t = load("dice-valid-early.txt", "name:a:b\ndice:1d4\neffect:DAMAGE\n").items().getFirst();
+
+        assertEquals(1, t.getEffect().size());
+    }
+
     @Test
     void flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
         assertHardError("space-flags.txt", "name:a:b\nflags:TRAP FLOOR\n");

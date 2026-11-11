@@ -473,6 +473,28 @@ recorded here as the summary states them; fill in the detail when you next touch
   matched by name.
 - **Accepted:** 2026-10-23, during the `CurseAssembler` port pass. Marked in the `CurseAssembler` class Javadoc.
 
+## Effect block
+
+### Text that is not a dice string, on a `dice:` line before the first `effect:`, ends the load, where C drops it unread
+
+- **Java:** `DICE_STRING_MODE` in `imports/EffectBlockLexer.g4` (its dice shapes come from `imports/DiceStrings.g4`).
+  **C:** `parse_trap_dice` (`init.c`), `parse_mon_spell_dice` (`mon-init.c`) and `parse_curse_dice` (`obj-init.c`).
+- **Differs:** each C parser returns `PARSE_ERROR_NONE` before it reads the string when the record has no effect yet
+  ("assume that this is human and not parser error"), so `dice:garbage` ahead of the first `effect:` is ignored. After
+  the first effect `dice_parse_string` fails and the load stops with `PARSE_ERROR_INVALID_DICE`. The Java lexer refuses
+  any `dice:` text that is not a valid dice string (`token recognition error`) in every position, before a parser rule
+  can decide to drop the line, so the early case stops the load too. After the first effect Java and C agree.
+- **Why:** the fix is to let the lexer take any text on a `dice:` line and check the string in a parser action, and
+  only when an effect exists. That reaches every importer of the shared block, moves the validation `DiceStrings.g4`
+  does in the grammar into code, and changes the error message and its position. It costs more than the case is worth.
+- **Reach:** none from shipped data. It takes a mistyped dice string placed before any `effect:` in a hand-edited file.
+  A valid dice string in that place is dropped and loads, as in C.
+- **Revisit:** if the lexer is ever changed to take any text on a `dice:` line. Then the pin below goes red, which is
+  the prompt to take this entry out.
+- **Pinned by:** `aDiceLineOfGarbageBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt` in `TrapReaderTest`, with the
+  control `aValidDiceLineBeforeAnyEffectIsDroppedAsInC`.
+- **Accepted:** 2026-11-11, Stage 6 item 2.vi of `docs/Issue_Approach_Order.md`.
+
 ## Flavour
 
 ### A `fixed:` sval with trailing spaces or tabs is looked up as a name, where C reads it as a number

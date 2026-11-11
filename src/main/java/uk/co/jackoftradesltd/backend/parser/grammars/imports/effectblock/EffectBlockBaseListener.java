@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from imports/EffectBlock.g4 by ANTLR 4.13.2
+// Generated from EffectBlock.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.imports.effectblock;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -101,6 +101,18 @@ public class EffectBlockBaseListener implements EffectBlockListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTime(EffectBlock.TimeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStrayEffectLine(EffectBlock.StrayEffectLineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStrayEffectLine(EffectBlock.StrayEffectLineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

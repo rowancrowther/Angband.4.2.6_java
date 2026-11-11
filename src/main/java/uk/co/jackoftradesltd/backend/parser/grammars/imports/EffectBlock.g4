@@ -134,7 +134,7 @@ dice
                     baseHolder = baseHolder + "^" + $expr.baseName;
                     operHolder = operHolder + "^" + $expr.operation;
                 }
-            })+)
+            })*)
             |   val=DICE_SIMPLE_VALUE {
                 $diceString = $val.getText();
             })
@@ -181,6 +181,12 @@ time
         :   TIME DICE_SIMPLE_VALUE { $timeStr = $DICE_SIMPLE_VALUE.getText(); }
         ;
 
+strayEffectLine
+        :   effectYX
+        |   dice
+        |   expr
+        ;
+
 /*
  * @author Rowan Crowther
  *
@@ -225,14 +231,31 @@ effectBlock
                 $radius = $effect.radius;
                 $other = $effect.other;
             }
+            // EffectYX then dice, dice then effectYX, dice or effectYX (or none)
             ((effectYX {
                 $yVal = $effectYX.y;
                 $xVal = $effectYX.x;
-            }) | ((dice {
+            } dice {
                 $diceString = $dice.diceString;
                 expressionString = $dice.exprChar;
                 baseString = $dice.baseName;
                 opString = $dice.operation;
-            })?))
+            }) | ( dice {
+                $diceString = $dice.diceString;
+                expressionString = $dice.exprChar;
+                baseString = $dice.baseName;
+                opString = $dice.operation;
+            } effectYX {
+                $yVal = $effectYX.y;
+                $xVal = $effectYX.x;
+            }) | dice {
+                $diceString = $dice.diceString;
+                expressionString = $dice.exprChar;
+                baseString = $dice.baseName;
+                opString = $dice.operation;
+            } | effectYX {
+                $yVal = $effectYX.y;
+                $xVal = $effectYX.x;
+            })?
             (effectMsg { $effectMessage = $effectMsg.message; })?
         ;

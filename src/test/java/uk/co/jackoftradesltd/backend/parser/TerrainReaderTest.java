@@ -515,10 +515,10 @@ class TerrainReaderTest {
         assertEquals(ColourEnum.COLOUR_WHITE, cell.getAttributeColour());
     }
 
-    /** C: {@code parser_parse} skips leading whitespace before it reads the directive. */
+    /** C: {@code parser_parse} skips leading whitespace before it reads the directive, as {@code INDENT} does. */
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        assertHardError("indented.txt", VALID_RECORD + "  priority:3\n");
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        assertEquals(3, load("indented.txt", VALID_RECORD + "  priority:3\n").items().get(0).getPriority());
     }
 
     // =====================================================================

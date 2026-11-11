@@ -58,5 +58,5 @@ STRING
 // End of a value line: consume the newline (and any preceding CR), discard it,
 // and pop back to the default mode ready for the next directive.
 FREE_TEXT_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

@@ -513,4 +513,126 @@ class BrandReaderTest {
 
         assertTrue(e.getMessage().contains("overflow"), e::getMessage);
     }
+
+    // ---- Stage 6 item 1: the shared CommentsAndEol rules, proved on one lexer -------------------
+    //
+    // BrandLexer imports CommentsAndEol and keeps every directive in the default mode, so it shows
+    // the shared rules on their own. The moded half of the same work is in ItemObjectReaderTest.
+
+    /**
+     * C drops every leading blank before it reads the directive, and its reader turns a tab into
+     * spaces, so a tab is indentation.
+     *
+     * <p>Function aLeadingTabBeforeADirectiveLoadsAsInC coded on 261109, commented in full on 261109.
+     */
+    @Test
+    void aLeadingTabBeforeADirectiveLoadsAsInC() throws IOException {
+        ParseResult<Brand> result = load("lead-tab.txt",
+                "\tcode:FIRE_3\n\tname:fire\n\tverb:burn\n\tmultiplier:3\n\to-multiplier:25\n"
+                        + "\tpower:113\n\tresist-flag:IM_FIRE\n");
+
+        assertEquals(1, result.items().size());
+        assertEquals("FIRE_3", result.items().get(0).getCode());
+        assertEquals("fire", result.items().get(0).getName());
+    }
+
+    /**
+     * C skips leading whitespace on a line and only then asks whether it starts with {@code #}, so
+     * an indented comment is a comment. Before the line-start rule the lexer had nothing for it.
+     *
+     * <p>Function aLeadingSpaceCommentIsSkippedAsInC coded on 261109, commented in full on 261109.
+     */
+    @Test
+    void aLeadingSpaceCommentIsSkippedAsInC() throws IOException {
+        ParseResult<Brand> result = load("lead-comment.txt",
+                "  # an indented comment\n" + validBrand("FIRE_3") + "    # and another, between records\n");
+
+        assertEquals(1, result.items().size());
+    }
+
+    /**
+     * C's reader returns an unterminated last line if it holds any character, and a {@code #} line
+     * is a comment whether or not a newline follows it. {@code COMMENT} used to need its
+     * {@code '\n'}, so the last line of the file was a lexer error.
+     *
+     * <p>Function aLastLineCommentWithNoNewlineLoadsAsInC coded on 261109, commented in full on 261109.
+     */
+    @Test
+    void aLastLineCommentWithNoNewlineLoadsAsInC() throws IOException {
+        ParseResult<Brand> result = load("last-comment.txt", validBrand("FIRE_3") + "# the last line, no newline");
+
+        assertEquals(1, result.items().size());
+    }
+
+    /**
+     * A tab before the newline is trailing whitespace to C, which has already turned it into
+     * spaces. {@code multiplier:3<tab>} ends in a number, which is a position where a blank is
+     * invisible. A line holding nothing but a tab is a blank line.
+     *
+     * <p>Function aTabBeforeTheNewlineLoadsAsInC coded on 261109, commented in full on 261109.
+     */
+    @Test
+    void aTabBeforeTheNewlineLoadsAsInC() throws IOException {
+        ParseResult<Brand> result = load("tab-eol.txt",
+                "code:FIRE_3\nname:fire\nverb:burn\nmultiplier:3\t\n\t\no-multiplier:25 \t \npower:113\t\n"
+                        + "resist-flag:IM_FIRE\n");
+
+        assertEquals(1, result.items().size());
+        assertEquals(3, result.items().get(0).getMultiplier());
+    }
+
+    /**
+     * C ends a line at a bare {@code '\r'} as well as at {@code '\n'} (its reader skips the
+     * {@code '\r'}, and if the next character is not {@code '\n'} it ends the line there), so
+     * {@code power:113\rresist-flag:IM_FIRE} is two directives. The lexer used to see a
+     * {@code '\r'} only directly before a {@code '\n'}.
+     *
+     * <p>Function aBareCarriageReturnBetweenTwoDirectivesIsALineEndAsInC coded on 261109, commented
+     * in full on 261109.
+     */
+    @Test
+    void aBareCarriageReturnBetweenTwoDirectivesIsALineEndAsInC() throws IOException {
+        ParseResult<Brand> result = load("bare-cr.txt",
+                "code:FIRE_3\nname:fire\nverb:burn\nmultiplier:3\no-multiplier:25\npower:113\r"
+                        + "resist-flag:IM_FIRE\n");
+
+        assertEquals(1, result.items().size());
+        assertEquals(113, result.items().get(0).getPower());
+    }
+
+    /**
+     * Blanks after the last flag of a {@code resist-flag:} or {@code vuln-flag:} line, a space or a
+     * tab, are invisible: the flag still resolves and the record still loads. C does not do this
+     * (it keeps the blank in the flag text and fails the lookup), so this is the accepted
+     * leniency recorded for Stage 6 item 1, not C's behaviour.
+     *
+     * <p>Function aBlankOrTabAfterABrandFlagIsInvisibleHereWhereCKeepsItInTheName coded on 261109,
+     * commented in full on 261109.
+     */
+    @Test
+    void aBlankOrTabAfterABrandFlagIsInvisibleHereWhereCKeepsItInTheName() throws IOException {
+        for (String blank : List.of(" ", "\t", " \t ")) {
+            ParseResult<Brand> result = load("flag-blank.txt",
+                    brand("FIRE_3", "fire", "burn", "3", "25", "113", "IM_FIRE" + blank, "HURT_FIRE" + blank));
+
+            assertEquals(1, result.items().size(), "blank [" + blank.replace("\t", "\\t") + "]");
+        }
+    }
+
+    /**
+     * An interior tab stays a tab: C's reader would turn the one in {@code name:fire<tab>brand}
+     * into spaces up to the next four-column stop, here it reaches the name unchanged. The
+     * Stage 6 decision is that only tabs at the edges of a line are handled, so this is an
+     * accepted deviation, pinned so that a later pre-lexer expansion shows up as a test to flip.
+     *
+     * <p>Function anInteriorTabIsKeptHereWhereCExpandsItToSpaces coded on 261109, commented in full
+     * on 261109.
+     */
+    @Test
+    void anInteriorTabIsKeptHereWhereCExpandsItToSpaces() throws IOException {
+        ParseResult<Brand> result = load("interior-tab.txt",
+                brand("FIRE_3", "fire\tbrand", "burn", "3", "25", "113", "IM_FIRE", ""));
+
+        assertEquals("fire\tbrand", result.items().get(0).getName());
+    }
 }

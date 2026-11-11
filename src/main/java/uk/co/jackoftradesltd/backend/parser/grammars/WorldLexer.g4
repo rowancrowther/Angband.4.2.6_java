@@ -63,5 +63,5 @@ INTEGER
  * (e.g. "Angband 1", "Town", "None").
  * cf WorldGrammar.g4's 'levelName' and 'upAndDown' rules.
  */
-NAME    :   ('A'..'Z'|'a'..'z'|' '|'0'..'9')+
+NAME    :   ~('\r' | '\n' | ':')+
         ;

@@ -57,5 +57,5 @@ STRING
         ;
 
 FREE_TEXT_EOL
-        :   '\r'* '\n'  -> skip, popMode
+        :   NL  -> skip, popMode
         ;

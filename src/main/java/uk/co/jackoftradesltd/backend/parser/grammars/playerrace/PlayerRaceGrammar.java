@@ -14,7 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerRaceGrammar.g4 by ANTLR 4.13.2
+
+// Generated from PlayerRaceGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playerrace;
 
 import org.antlr.v4.runtime.*;
@@ -45,9 +46,9 @@ public class PlayerRaceGrammar extends Parser {
 		SKILL_SAVE=6, SKILL_STEALTH=7, SKILL_SEARCH=8, SKILL_MELEE=9, SKILL_SHOOT=10, 
 		SKILL_THROW=11, SKILL_DIG=12, HITDIE=13, EXP=14, INFRAVISION=15, HISTORY=16, 
 		AGE=17, HEIGHT=18, WEIGHT=19, OBJ_FLAGS=20, PLAYER_FLAGS=21, VALUES=22, 
-		INTEGER=23, COLON=24, COMMENT=25, EOL=26, STRING=27, FREE_TEXT_EOL=28, 
-		FLAG=29, FLAG_OR=30, FLAG_EOL=31, VALUE_NAME=32, VALUE_LBRACKET=33, VALUE_INT=34, 
-		VALUE_RBRACKET=35, VALUE_OR=36, VALUE_EOL=37;
+		INTEGER=23, COLON=24, COMMENT=25, INDENT=26, EOL=27, STRING=28, FREE_TEXT_EOL=29, 
+		FLAG=30, FLAG_OR=31, FLAG_EOL=32, VALUE_NAME=33, VALUE_LBRACKET=34, VALUE_INT=35, 
+		VALUE_RBRACKET=36, VALUE_OR=37, VALUE_EOL=38;
 	public static final int
 		RULE_name = 0, RULE_stats = 1, RULE_skillDisarmPhys = 2, RULE_skillDisarmMagic = 3, 
 		RULE_skillDevice = 4, RULE_skillSave = 5, RULE_skillStealth = 6, RULE_skillSearch = 7, 
@@ -73,7 +74,7 @@ public class PlayerRaceGrammar extends Parser {
 			"'skill-melee:'", "'skill-shoot:'", "'skill-throw:'", "'skill-dig:'", 
 			"'hitdie:'", "'exp:'", "'infravision:'", "'history:'", "'age:'", "'height:'", 
 			"'weight:'", "'obj-flags:'", "'player-flags:'", "'values:'", null, "':'", 
-			null, null, null, null, null, null, null, null, "'['", null, "']'"
+			null, null, null, null, null, null, null, null, null, "'['", null, "']'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -83,8 +84,8 @@ public class PlayerRaceGrammar extends Parser {
 			"SKILL_SAVE", "SKILL_STEALTH", "SKILL_SEARCH", "SKILL_MELEE", "SKILL_SHOOT", 
 			"SKILL_THROW", "SKILL_DIG", "HITDIE", "EXP", "INFRAVISION", "HISTORY", 
 			"AGE", "HEIGHT", "WEIGHT", "OBJ_FLAGS", "PLAYER_FLAGS", "VALUES", "INTEGER", 
-			"COLON", "COMMENT", "EOL", "STRING", "FREE_TEXT_EOL", "FLAG", "FLAG_OR", 
-			"FLAG_EOL", "VALUE_NAME", "VALUE_LBRACKET", "VALUE_INT", "VALUE_RBRACKET", 
+			"COLON", "COMMENT", "INDENT", "EOL", "STRING", "FREE_TEXT_EOL", "FLAG", 
+			"FLAG_OR", "FLAG_EOL", "VALUE_NAME", "VALUE_LBRACKET", "VALUE_INT", "VALUE_RBRACKET", 
 			"VALUE_OR", "VALUE_EOL"
 		};
 	}
@@ -1894,7 +1895,7 @@ public class PlayerRaceGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001%\u0104\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001&\u0104\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002"+
@@ -1948,7 +1949,7 @@ public class PlayerRaceGrammar extends Parser {
 		"\u0000\u0000\u0000$\u0084\u0001\u0000\u0000\u0000&\u008a\u0001\u0000\u0000"+
 		"\u0000(\u0097\u0001\u0000\u0000\u0000*\u00a4\u0001\u0000\u0000\u0000,"+
 		"\u00b5\u0001\u0000\u0000\u0000.\u00fd\u0001\u0000\u0000\u000001\u0005"+
-		"\u0001\u0000\u000012\u0005\u001b\u0000\u000023\u0006\u0000\uffff\uffff"+
+		"\u0001\u0000\u000012\u0005\u001c\u0000\u000023\u0006\u0000\uffff\uffff"+
 		"\u00003\u0001\u0001\u0000\u0000\u000045\u0005\u0002\u0000\u000056\u0005"+
 		"\u0017\u0000\u000067\u0005\u0018\u0000\u000078\u0005\u0017\u0000\u0000"+
 		"89\u0005\u0018\u0000\u00009:\u0005\u0017\u0000\u0000:;\u0005\u0018\u0000"+
@@ -1984,27 +1985,27 @@ public class PlayerRaceGrammar extends Parser {
 		"\u0000\u0000\u0084\u0085\u0005\u0013\u0000\u0000\u0085\u0086\u0005\u0017"+
 		"\u0000\u0000\u0086\u0087\u0005\u0018\u0000\u0000\u0087\u0088\u0005\u0017"+
 		"\u0000\u0000\u0088\u0089\u0006\u0012\uffff\uffff\u0000\u0089%\u0001\u0000"+
-		"\u0000\u0000\u008a\u0095\u0005\u0014\u0000\u0000\u008b\u008c\u0005\u001d"+
+		"\u0000\u0000\u008a\u0095\u0005\u0014\u0000\u0000\u008b\u008c\u0005\u001e"+
 		"\u0000\u0000\u008c\u0092\u0006\u0013\uffff\uffff\u0000\u008d\u008e\u0005"+
-		"\u001e\u0000\u0000\u008e\u008f\u0005\u001d\u0000\u0000\u008f\u0091\u0006"+
+		"\u001f\u0000\u0000\u008e\u008f\u0005\u001e\u0000\u0000\u008f\u0091\u0006"+
 		"\u0013\uffff\uffff\u0000\u0090\u008d\u0001\u0000\u0000\u0000\u0091\u0094"+
 		"\u0001\u0000\u0000\u0000\u0092\u0090\u0001\u0000\u0000\u0000\u0092\u0093"+
 		"\u0001\u0000\u0000\u0000\u0093\u0096\u0001\u0000\u0000\u0000\u0094\u0092"+
 		"\u0001\u0000\u0000\u0000\u0095\u008b\u0001\u0000\u0000\u0000\u0095\u0096"+
 		"\u0001\u0000\u0000\u0000\u0096\'\u0001\u0000\u0000\u0000\u0097\u00a2\u0005"+
-		"\u0015\u0000\u0000\u0098\u0099\u0005\u001d\u0000\u0000\u0099\u009f\u0006"+
-		"\u0014\uffff\uffff\u0000\u009a\u009b\u0005\u001e\u0000\u0000\u009b\u009c"+
-		"\u0005\u001d\u0000\u0000\u009c\u009e\u0006\u0014\uffff\uffff\u0000\u009d"+
+		"\u0015\u0000\u0000\u0098\u0099\u0005\u001e\u0000\u0000\u0099\u009f\u0006"+
+		"\u0014\uffff\uffff\u0000\u009a\u009b\u0005\u001f\u0000\u0000\u009b\u009c"+
+		"\u0005\u001e\u0000\u0000\u009c\u009e\u0006\u0014\uffff\uffff\u0000\u009d"+
 		"\u009a\u0001\u0000\u0000\u0000\u009e\u00a1\u0001\u0000\u0000\u0000\u009f"+
 		"\u009d\u0001\u0000\u0000\u0000\u009f\u00a0\u0001\u0000\u0000\u0000\u00a0"+
 		"\u00a3\u0001\u0000\u0000\u0000\u00a1\u009f\u0001\u0000\u0000\u0000\u00a2"+
 		"\u0098\u0001\u0000\u0000\u0000\u00a2\u00a3\u0001\u0000\u0000\u0000\u00a3"+
 		")\u0001\u0000\u0000\u0000\u00a4\u00a5\u0005\u0016\u0000\u0000\u00a5\u00a6"+
-		"\u0005 \u0000\u0000\u00a6\u00a7\u0005!\u0000\u0000\u00a7\u00a8\u0005\""+
-		"\u0000\u0000\u00a8\u00a9\u0005#\u0000\u0000\u00a9\u00b2\u0006\u0015\uffff"+
-		"\uffff\u0000\u00aa\u00ab\u0005$\u0000\u0000\u00ab\u00ac\u0005 \u0000\u0000"+
-		"\u00ac\u00ad\u0005!\u0000\u0000\u00ad\u00ae\u0005\"\u0000\u0000\u00ae"+
-		"\u00af\u0005#\u0000\u0000\u00af\u00b1\u0006\u0015\uffff\uffff\u0000\u00b0"+
+		"\u0005!\u0000\u0000\u00a6\u00a7\u0005\"\u0000\u0000\u00a7\u00a8\u0005"+
+		"#\u0000\u0000\u00a8\u00a9\u0005$\u0000\u0000\u00a9\u00b2\u0006\u0015\uffff"+
+		"\uffff\u0000\u00aa\u00ab\u0005%\u0000\u0000\u00ab\u00ac\u0005!\u0000\u0000"+
+		"\u00ac\u00ad\u0005\"\u0000\u0000\u00ad\u00ae\u0005#\u0000\u0000\u00ae"+
+		"\u00af\u0005$\u0000\u0000\u00af\u00b1\u0006\u0015\uffff\uffff\u0000\u00b0"+
 		"\u00aa\u0001\u0000\u0000\u0000\u00b1\u00b4\u0001\u0000\u0000\u0000\u00b2"+
 		"\u00b0\u0001\u0000\u0000\u0000\u00b2\u00b3\u0001\u0000\u0000\u0000\u00b3"+
 		"+\u0001\u0000\u0000\u0000\u00b4\u00b2\u0001\u0000\u0000\u0000\u00b5\u00b6"+

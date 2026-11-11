@@ -608,37 +608,125 @@ class TrapReaderTest {
 
     /** C: {@code parse_trap_effect_yx_xtra} sets the position of the last extra effect. */
     @Test
-    void effectYxXtraIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("yx-xtra.txt", "name:a:b\neffect-xtra:DAMAGE\neffect-yx-xtra:1:2\n");
+    void effectYxXtraAfterAnExtraEffectLoadsAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("yx-xtra.txt", "name:a:b\neffect-xtra:DAMAGE\neffect-yx-xtra:1:2\n");
+
+        assertEquals(0, r.items().getFirst().getEffect().size());
+        assertEquals(1, r.items().getFirst().getEffectXtra().size());
+        assertEquals("1,2,", EffectProbe.yxBase(r.items().getFirst().getEffectXtra().getFirst()));
     }
 
     /** C: with no effect yet, {@code parse_trap_dice} returns {@code PARSE_ERROR_NONE} and does nothing. */
     @Test
-    void aDiceLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError("dice-first.txt", "name:a:b\ndice:1d4\n");
+    void aDiceLineBeforeAnyEffectIsDroppedAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("dice-first.txt", "name:a:b\ndice:1d4\neffect:DAMAGE\n");
+
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals("0,0,", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
     }
 
     @Test
-    void aDiceXtraLineBeforeAnyExtraEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError("dice-xtra-first.txt", "name:a:b\ndice-xtra:1d4\n");
+    void aDiceLineInATrapWithNoEffectAtAllIsDroppedAsInC() throws IOException {
+        ParseResult<TrapKind> r = load("dice-no-effect.txt", "name:a:b\ndice:1d4\n");
+
+        assertEquals(0, r.items().getFirst().getEffect().size());
+    }
+
+    /** C: with no extra effect yet, {@code parse_trap_dice_xtra} returns {@code PARSE_ERROR_NONE} and does nothing. */
+    @Test
+    void aDiceXtraLineBeforeAnyExtraEffectIsDroppedAsInC() throws IOException {
+        ParseResult<TrapKind> r = load("dice-xtra-first.txt", "name:a:b\ndice-xtra:1d4\n");
+
+        assertEquals(0, r.items().getFirst().getEffectXtra().size());
     }
 
     /** C: {@code parse_trap_expr} returns {@code PARSE_ERROR_NONE} when the last effect has no dice. */
     @Test
-    void anExprLineWithNoDiceBeforeItIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError("expr-no-dice.txt", "name:a:b\neffect:DAMAGE\nexpr:S:DUNGEON_LEVEL:/ 2\n");
+    void anExprLineWithNoDiceBeforeItIsIgnoredAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("expr-no-dice.txt", "name:a:b\neffect:DAMAGE\nexpr:S:DUNGEON_LEVEL:/ 2\n");
+
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals("0,0,", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
     }
 
     /** C: {@code parse_trap_dice} walks the primary list, so it still reaches {@code effect:} after an extra effect. */
     @Test
-    void aDiceLineAfterAnExtraEffectIsAHardErrorHereWhereCReachesThePrimaryEffect() throws IOException {
-        assertHardError("dice-after-xtra.txt", "name:a:b\neffect:DAMAGE\neffect-xtra:DAMAGE\ndice:1d4\n");
+    void aDiceLineAfterAnExtraEffectReachesThePrimaryEffectAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("dice-after-xtra.txt",
+                "name:a:b\neffect:DAMAGE\neffect-xtra:DAMAGE\ndice:1d4\n");
+
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals(1, r.items().getFirst().getEffectXtra().size());
+        assertEquals("0,0,1d4", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
+        assertEquals("0,0,", EffectProbe.yxBase(r.items().getFirst().getEffectXtra().getFirst()));
+    }
+
+    /** C: {@code parse_trap_effect_yx} also walks the primary list, so it reaches {@code effect:} after an extra effect. */
+    @Test
+    void anEffectYxLineAfterAnExtraEffectReachesThePrimaryEffectAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("yx-after-xtra.txt",
+                "name:a:b\neffect:DAMAGE\neffect-xtra:DAMAGE\neffect-yx:1:2\n");
+
+        assertEquals("1,2,", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
+        assertEquals("0,0,", EffectProbe.yxBase(r.items().getFirst().getEffectXtra().getFirst()));
+    }
+
+    /**
+     * C: {@code parse_trap_expr} binds to the dice of the last primary effect wherever the line
+     * falls, so an {@code expr:} after an {@code effect-xtra:} still joins the primary effect's
+     * earlier {@code expr:}.
+     */
+    @Test
+    void anExprLineAfterAnExtraEffectJoinsThePrimaryEffectsDiceAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("expr-after-xtra.txt",
+                "name:a:b\neffect:DAMAGE\ndice:$Bd$S\nexpr:S:DUNGEON_LEVEL:/ 2\n"
+                        + "effect-xtra:DAMAGE\nexpr:B:PLAYER_HP:* 2\n");
+
+        Object primary = r.items().getFirst().getEffect().getFirst();
+        assertEquals("0,0,$Bd$S", EffectProbe.yxBase(primary));
+        assertEquals("S:EFB_DUNGEON_LEVEL:/ 2|B:EFB_PLAYER_HP:* 2", EffectProbe.expressions(primary));
+        assertEquals("", EffectProbe.expressions(r.items().getFirst().getEffectXtra().getFirst()));
+    }
+
+    /**
+     * C: {@code dice_bind_expression} returns -1 for a dice string with no variable to bind, so
+     * {@code parse_trap_expr} gives {@code PARSE_ERROR_UNBOUND_EXPRESSION} and the load stops.
+     * Java loads the line and keeps the expression: the check that a letter is bound by a
+     * {@code $} in the dice string waits for the roll engine ({@code EffectAssembler.getExpressions}).
+     */
+    @Test
+    void anExprLineOnASimpleDiceStringLoadsHereWhereCRefusesTheUnboundExpression() throws Exception {
+        ParseResult<TrapKind> r = load("expr-simple-dice.txt",
+                "name:a:b\neffect:DAMAGE\ndice:1d4\nexpr:S:DUNGEON_LEVEL:/ 2\n");
+
+        Object primary = r.items().getFirst().getEffect().getFirst();
+        assertEquals("0,0,1d4", EffectProbe.yxBase(primary));
+        assertEquals("S:EFB_DUNGEON_LEVEL:/ 2", EffectProbe.expressions(primary));
+    }
+
+    /** C: {@code parse_trap_dice} frees the old dice and installs the new one, so the second {@code dice:} wins. */
+    @Test
+    void aSecondDiceLineOnThePrimaryEffectReplacesTheFirstAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("dice-twice.txt", "name:a:b\neffect:DAMAGE\ndice:1d4\ndice:2d6\n");
+
+        assertEquals("0,0,2d6", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
     }
 
     /** C: {@code effect-yx} and {@code dice} both act on the last effect, in either order. */
     @Test
-    void effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth() throws IOException {
-        assertHardError("yx-and-dice.txt", "name:a:b\neffect:DAMAGE\neffect-yx:1:2\ndice:1d4\n");
+    void effectYxThenDiceOnTheSameEffectBothLoadAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("yx-then-dice.txt", "name:a:b\neffect:DAMAGE\neffect-yx:1:2\ndice:5\n");
+
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals("1,2,5", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
+    }
+
+    @Test
+    void diceThenEffectYxOnTheSameEffectBothLoadAsInC() throws Exception {
+        ParseResult<TrapKind> r = load("dice-then-yx.txt", "name:a:b\neffect:DAMAGE\ndice:5\neffect-yx:1:2\n");
+
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals("1,2,5", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
     }
 
     /** C: {@code init_parse_trap} registers no {@code effect-msg}, so it is an undefined directive. */
@@ -687,10 +775,10 @@ class TrapReaderTest {
         assertHardError("empty-colour.txt", "name:a:b\ngraphics:^:\nname:c:d\n");
     }
 
-    /** C: {@code parser_parse} skips leading whitespace on a line. */
+    /** C: {@code parser_parse} skips leading whitespace on a line, as {@code INDENT} does. */
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        assertHardError("indented.txt", "name:a:b\n  graphics:^:w\n");
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        assertEquals(1, load("indented.txt", "name:a:b\n  graphics:^:w\n").items().size());
     }
 
     /** C: {@code list_obj_flag_names} and {@code trap_flags} hold no {@code MAX}. */

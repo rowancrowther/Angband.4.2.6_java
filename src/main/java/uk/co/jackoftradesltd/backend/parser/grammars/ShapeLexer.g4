@@ -69,7 +69,7 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   ('\r' | '\n')+ -> skip, popMode
+        :   NL+ -> skip, popMode
         ;
 
 mode VALUE_MODE;
@@ -95,7 +95,7 @@ VALUE_OR
         ;
 
 VALUE_EOL
-        :   ('\r' | '\n')+ -> skip, popMode
+        :   NL+ -> skip, popMode
         ;
 
 mode SHAPE_FREE_TEXT_MODE;

@@ -848,20 +848,52 @@ class CurseReaderTest {
     }
 
     @Test
-    void aDiceLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+    void aDiceLineBeforeAnyEffectIsDroppedAsInC() throws Exception {
         // parse_curse_dice returns PARSE_ERROR_NONE when the curse has no effect yet.
-        assertHardError("dice-first.txt", curse("early", "type:cloak\ndice:5\neffect:WAKE\ndesc:x\n"));
+        ParseResult<Curse> result = load("dice-first.txt", curse("early", "type:cloak\ndice:5\neffect:WAKE\ndesc:x\n"));
+
+        List<?> effects = result.items().get(0).getItemObject().getEffect();
+        assertEquals(1, effects.size());
+        assertEquals("0,0,", EffectProbe.yxBase(effects.getFirst()));
     }
 
     @Test
-    void effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth() throws IOException {
-        assertHardError("yx-dice.txt", curse("both", "type:cloak\neffect:TIMED_INC:POISONED\neffect-yx:2:3\ndice:5\ndesc:x\n"));
+    void anEffectYxAndAnExprLineBeforeAnyEffectAreDroppedAsInC() throws Exception {
+        // parse_curse_effect_yx and parse_curse_expr carry the same no-effect guard.
+        ParseResult<Curse> result = load("yx-expr-first.txt", curse("early",
+                "type:cloak\neffect-yx:2:3\nexpr:B:PLAYER_LEVEL:+ 0\neffect:WAKE\ndesc:x\n"));
+
+        List<?> effects = result.items().get(0).getItemObject().getEffect();
+        assertEquals(1, effects.size());
+        assertEquals("0,0,", EffectProbe.yxBase(effects.getFirst()));
     }
 
     @Test
-    void aSecondDiceLineOnOneEffectIsAHardErrorHereWhereCReplacesTheFirst() throws IOException {
+    void effectYxThenDiceOnTheSameEffectBothLoadAsInC() throws Exception {
+        ParseResult<Curse> result = load("yx-dice.txt", curse("both", "type:cloak\neffect:TIMED_INC:POISONED\neffect-yx:2:3\ndice:5\ndesc:x\n"));
+
+        List<?> effects = result.items().get(0).getItemObject().getEffect();
+        assertEquals(1, effects.size());
+        assertEquals("2,3,5", EffectProbe.yxBase(effects.getFirst()));
+    }
+
+    @Test
+    void diceThenEffectYxOnTheSameEffectBothLoadAsInC() throws Exception {
+        ParseResult<Curse> result = load("dice-yx.txt", curse("both", "type:cloak\neffect:TIMED_INC:POISONED\ndice:5\neffect-yx:2:3\ndesc:x\n"));
+
+        List<?> effects = result.items().get(0).getItemObject().getEffect();
+        assertEquals(1, effects.size());
+        assertEquals("2,3,5", EffectProbe.yxBase(effects.getFirst()));
+    }
+
+    @Test
+    void aSecondDiceLineOnOneEffectReplacesTheFirstAsInC() throws Exception {
         // parse_curse_dice frees the effect's old dice and installs the new ones.
-        assertHardError("dice2.txt", curse("twice", "type:cloak\neffect:TIMED_INC:POISONED\ndice:5\ndice:6\ndesc:x\n"));
+        ParseResult<Curse> result = load("dice2.txt", curse("twice", "type:cloak\neffect:TIMED_INC:POISONED\ndice:5\ndice:6\ndesc:x\n"));
+
+        List<?> effects = result.items().get(0).getItemObject().getEffect();
+        assertEquals(1, effects.size());
+        assertEquals("0,0,6", EffectProbe.yxBase(effects.getFirst()));
     }
 
     @Test
@@ -927,8 +959,11 @@ class CurseReaderTest {
     }
 
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        assertHardError("indent.txt", curse("odd", "type:cloak\n  desc:x\n"));
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        // parser_parse skips leading white space, and the shared INDENT rule in CommentsAndEol does too.
+        ParseResult<Curse> result = load("indent.txt", curse("odd", "type:cloak\n  desc:x\n"));
+
+        assertEquals("x", result.items().get(0).getDescription());
     }
 
     // ---- Where the assembler differs from C ------------------------------------

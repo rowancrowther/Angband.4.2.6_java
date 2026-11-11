@@ -14,7 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HintGrammar.g4 by ANTLR 4.13.2
+
+// Generated from HintGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.hint;
 
 import org.antlr.v4.runtime.*;
@@ -39,7 +40,7 @@ public class HintGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		HINT=1, INTEGER=2, COMMENT=3, EOL=4, STRING=5;
+		HINT=1, INTEGER=2, COMMENT=3, INDENT=4, EOL=5, STRING=6;
 	public static final int
 		RULE_hint = 0, RULE_hintRecord = 1, RULE_file = 2;
 	private static String[] makeRuleNames() {
@@ -57,7 +58,7 @@ public class HintGrammar extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "HINT", "INTEGER", "COMMENT", "EOL", "STRING"
+			null, "HINT", "INTEGER", "COMMENT", "INDENT", "EOL", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -280,14 +281,14 @@ public class HintGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0005\u0018\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u0006\u0018\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000"+
 		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002"+
 		"\u0005\u0002\u0011\b\u0002\n\u0002\f\u0002\u0014\t\u0002\u0001\u0002\u0001"+
 		"\u0002\u0001\u0002\u0000\u0000\u0003\u0000\u0002\u0004\u0000\u0000\u0015"+
 		"\u0000\u0006\u0001\u0000\u0000\u0000\u0002\n\u0001\u0000\u0000\u0000\u0004"+
 		"\u0012\u0001\u0000\u0000\u0000\u0006\u0007\u0005\u0001\u0000\u0000\u0007"+
-		"\b\u0005\u0005\u0000\u0000\b\t\u0006\u0000\uffff\uffff\u0000\t\u0001\u0001"+
+		"\b\u0005\u0006\u0000\u0000\b\t\u0006\u0000\uffff\uffff\u0000\t\u0001\u0001"+
 		"\u0000\u0000\u0000\n\u000b\u0003\u0000\u0000\u0000\u000b\f\u0006\u0001"+
 		"\uffff\uffff\u0000\f\u0003\u0001\u0000\u0000\u0000\r\u000e\u0003\u0002"+
 		"\u0001\u0000\u000e\u000f\u0006\u0002\uffff\uffff\u0000\u000f\u0011\u0001"+

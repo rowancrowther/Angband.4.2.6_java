@@ -14,6 +14,14 @@ import EffectBlock;
     import java.util.HashMap;
 }
 
+@members {
+             // EffectParseRecord is a record, so "updating" the last effect means
+             // swapping in a copy with one or more fields changed
+             void replaceLast(List<EffectParseRecord> list, EffectParseRecord updated) {
+                 list.set(list.size() - 1, updated);
+             }
+         }
+
 name
         returns[String nameStr, int lineNo]
         :   NAME STRING { $nameStr = $STRING.getText();
@@ -154,12 +162,58 @@ shape
         |   objFlags { oFlagsInit.addAll($objFlags.flags); }
         |   playerFlags { pFlagsInit.addAll($playerFlags.flags); }
         |   values { valuesInit.putAll($values.valueMap); }
-        |   effectBlock {  effectsInit.add(new EffectParseRecord($effectBlock.typeInit,
-                                          $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
-                                          $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
-                                          $effectBlock.expressionChars, $effectBlock.expressionBase,
-                                          $effectBlock.expressionOperation,
-                                          $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+        |   effectBlock {
+                effectsInit.add(new EffectParseRecord($effectBlock.typeInit,
+                    $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
+                    $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
+                    $effectBlock.expressionChars, $effectBlock.expressionBase,
+                    $effectBlock.expressionOperation,
+                    $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+        |   effectMsg {
+                if (!effectsInit.isEmpty()) {
+                    EffectParseRecord last = effectsInit.getLast();
+                    replaceLast(effectsInit, last.appendMessage($effectMsg.message));
+                }
+            }
+        |   effectYX {
+                if (!effectsInit.isEmpty()) {
+                    EffectParseRecord last = effectsInit.getLast();
+                    EffectParseRecord updated = last.amendYX($effectYX.y, $effectYX.x);
+                    replaceLast(effectsInit, updated);
+                }
+            }
+        |   dice {
+                if (!effectsInit.isEmpty()) {
+                    EffectParseRecord last = effectsInit.getLast();
+                    String diceStr = $dice.diceString;
+                    EffectParseRecord updated = last.amendExpression(diceStr,
+                                                                     $dice.exprChar,
+                                                                     $dice.baseName,
+                                                                     $dice.operation);
+                    replaceLast(effectsInit, updated);
+                }
+            }
+        |   expr {
+                if (!effectsInit.isEmpty() && !effectsInit.getLast().diceString().isEmpty()) {
+                    EffectParseRecord last = effectsInit.getLast();
+                    String lastDiceStr  = last.diceString();
+                    String lastExprChar = last.expressionChars().isEmpty() 
+                                        ? $expr.exprChar
+                                        : last.expressionChars() + "^" + $expr.exprChar;
+                    String lastExprBase = last.expressionBases().isEmpty() 
+                                        ? $expr.baseName
+                                        : last.expressionBases() + "^" + $expr.baseName;
+                    String lastExprOp   = last.expressionOperations().isEmpty() 
+                                        ? $expr.operation
+                                        : last.expressionOperations() + "^" + $expr.operation;
+                    EffectParseRecord updated = last.amendExpression(lastDiceStr,
+                                                lastExprChar,
+                                                lastExprBase,
+                                                lastExprOp);
+                    replaceLast(effectsInit, updated);
+                }
+            }
+        
         |   blow { blowsInit.add($blow.blowStr); })*
         ;
 

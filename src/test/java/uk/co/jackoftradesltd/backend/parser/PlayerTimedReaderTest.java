@@ -545,9 +545,9 @@ class PlayerTimedReaderTest {
     }
 
     @Test
-    void anIndentedDirectiveIsRefusedHereWhereCSkipsLeadingWhitespace() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("indent.txt", "name:FAST\n  grade:G:100:Test:Message\n"));
-
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        // parser_parse skips leading white space, and the INDENT rule in CommentsAndEol does too.
+        assertEquals(1, load("indent.txt", "name:FAST\n  grade:G:100:Test:Message\n").items().size());
     }
 
     // ---- Values: what C checks and the assembler does not -----------------

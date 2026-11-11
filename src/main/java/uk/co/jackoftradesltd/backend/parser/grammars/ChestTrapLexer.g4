@@ -167,5 +167,5 @@ STRING
  * value pops here without producing a STRING.
  */
 ROL_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

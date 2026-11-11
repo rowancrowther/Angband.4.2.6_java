@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BodyGrammar.g4 by ANTLR 4.13.2
+// Generated from BodyGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.body;
 
 import org.antlr.v4.runtime.*;
@@ -41,8 +41,8 @@ public class BodyGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		BODY=1, SLOT=2, INTEGER=3, SLOT_NAME=4, COLON=5, COMMENT=6, EOL=7, STRING=8, 
-		FREE_TEXT_EOL=9;
+		BODY=1, SLOT=2, INTEGER=3, SLOT_NAME=4, COLON=5, COMMENT=6, INDENT=7, 
+		EOL=8, STRING=9, FREE_TEXT_EOL=10;
 	public static final int
 		RULE_body = 0, RULE_slot = 1, RULE_bodyType = 2, RULE_file = 3;
 	private static String[] makeRuleNames() {
@@ -60,8 +60,8 @@ public class BodyGrammar extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "BODY", "SLOT", "INTEGER", "SLOT_NAME", "COLON", "COMMENT", "EOL", 
-			"STRING", "FREE_TEXT_EOL"
+			null, "BODY", "SLOT", "INTEGER", "SLOT_NAME", "COLON", "COMMENT", "INDENT", 
+			"EOL", "STRING", "FREE_TEXT_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -384,7 +384,7 @@ public class BodyGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\t%\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\n%\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
 		"\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001"+
@@ -393,10 +393,10 @@ public class BodyGrammar extends Parser {
 		" \u0001\u0003\u0001\u0003\u0001\u0003\u0000\u0000\u0004\u0000\u0002\u0004"+
 		"\u0006\u0000\u0000\"\u0000\b\u0001\u0000\u0000\u0000\u0002\f\u0001\u0000"+
 		"\u0000\u0000\u0004\u0012\u0001\u0000\u0000\u0000\u0006\u001e\u0001\u0000"+
-		"\u0000\u0000\b\t\u0005\u0001\u0000\u0000\t\n\u0005\b\u0000\u0000\n\u000b"+
+		"\u0000\u0000\b\t\u0005\u0001\u0000\u0000\t\n\u0005\t\u0000\u0000\n\u000b"+
 		"\u0006\u0000\uffff\uffff\u0000\u000b\u0001\u0001\u0000\u0000\u0000\f\r"+
 		"\u0005\u0002\u0000\u0000\r\u000e\u0005\u0004\u0000\u0000\u000e\u000f\u0005"+
-		"\u0005\u0000\u0000\u000f\u0010\u0005\b\u0000\u0000\u0010\u0011\u0006\u0001"+
+		"\u0005\u0000\u0000\u000f\u0010\u0005\t\u0000\u0000\u0010\u0011\u0006\u0001"+
 		"\uffff\uffff\u0000\u0011\u0003\u0001\u0000\u0000\u0000\u0012\u0013\u0003"+
 		"\u0000\u0000\u0000\u0013\u0017\u0006\u0002\uffff\uffff\u0000\u0014\u0015"+
 		"\u0003\u0002\u0001\u0000\u0015\u0016\u0006\u0002\uffff\uffff\u0000\u0016"+

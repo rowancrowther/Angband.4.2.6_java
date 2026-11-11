@@ -369,10 +369,12 @@ class RealmReaderTest {
 
 
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
-        // C: parser_parse skips leading isspace characters before it reads the directive name.
-        assertThrows(ParseCancellationException.class, () -> load("indented.txt", "name:weird\n  stat:INT\nverb:cast\nspell-noun:spell\nbook-noun:magic book\n"));
+    void anIndentedDirectiveLoadsAsInC() throws Exception {
+        // C: parser_parse skips leading isspace characters before it reads the directive name, and so
+        // does the INDENT rule in CommentsAndEol.
+        ParseResult<MagicRealm> result = load("indented.txt", "name:weird\n  stat:INT\nverb:cast\nspell-noun:spell\nbook-noun:magic book\n");
 
+        assertEquals(Stats.STAT_INT, field(result.items().get(0), "stat"));
     }
 
     @Test

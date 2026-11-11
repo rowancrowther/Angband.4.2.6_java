@@ -86,10 +86,6 @@ INTEGER
         :   '-'? ('0'..'9')+
         ;
 
-fragment EOL_FRAGMENT
-        :   '\r'* '\n'
-        ;
-
 mode FLAG_MODE;
 
 FLAG
@@ -101,7 +97,7 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   EOL_FRAGMENT -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode PT_FREE_TEXT_MODE;
@@ -111,7 +107,7 @@ STRING
         ;
 
 PT_FREE_TEXT_MODE_EOL
-        :   EOL_FRAGMENT -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode DELIMITED;
@@ -133,5 +129,5 @@ DELIM_COLON
         ;
 
 DELIM_EOL
-        :   EOL_FRAGMENT -> skip, popMode
+        :   NL -> skip, popMode
         ;

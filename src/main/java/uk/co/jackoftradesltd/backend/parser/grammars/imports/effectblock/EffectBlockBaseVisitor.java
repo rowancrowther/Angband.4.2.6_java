@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from imports/EffectBlock.g4 by ANTLR 4.13.2
+// Generated from EffectBlock.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.imports.effectblock;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -71,6 +71,13 @@ public class EffectBlockBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitTime(EffectBlock.TimeContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitStrayEffectLine(EffectBlock.StrayEffectLineContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *

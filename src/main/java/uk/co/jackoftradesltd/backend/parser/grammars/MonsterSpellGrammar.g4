@@ -13,6 +13,14 @@ import EffectBlock;
     import java.util.List;
 }
 
+@members {
+             // EffectParseRecord is a record, so "updating" the last effect means
+             // swapping in a copy with one or more fields changed
+             void replaceLast(List<EffectParseRecord> list, EffectParseRecord updated) {
+                 list.set(list.size() - 1, updated);
+             }
+         }
+
 name
         returns[String nameStr, int line]
         :   NAME STRING { $nameStr = $STRING.getText(); $line = $start.getLine(); }
@@ -124,41 +132,79 @@ powerCutoffBlock
           ;
 
  monsterSpell                                                               
-          returns[MonsterSpellParseRecord spell]
-          @init {
-              String nameStrInit = "";
-              String msgtStrInit = "";
-              String hitInit = "";
-              int lineInit = 0;
-              List<EffectParseRecord> effects = new ArrayList<>();
-              List<MonsterSpellParseRecord.MonsterSpellLevelParseRecord> levels = new ArrayList<>();
-          }
-          @after {
-              $spell = new MonsterSpellParseRecord(nameStrInit, msgtStrInit, hitInit,                                                                   
-                      effects, levels, lineInit);
-          }
-          :   name { nameStrInit = $name.nameStr; lineInit = $name.line; }
-          (   msgt { msgtStrInit = $msgt.msgTStr; }
-          |   hit { hitInit = $hit.hitVal; }
-          |   effectBlock { effects.add(new EffectParseRecord($effectBlock.typeInit,
-                      $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
-                      $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
-                      $effectBlock.expressionChars, $effectBlock.expressionBase,
-                      $effectBlock.expressionOperation, $effectBlock.effectMessage,
-                      $effectBlock.start.getLine())); }
-          |   powerCutoffBlock { levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
-                      $powerCutoffBlock.powerCutOffVal, $powerCutoffBlock.loreStr,
-                      $powerCutoffBlock.loreColourBaseStr, $powerCutoffBlock.loreColourResistStr,
-                      $powerCutoffBlock.loreColourImmuneStr, $powerCutoffBlock.messageVisStr,
-                      $powerCutoffBlock.messageInvisStr, $powerCutoffBlock.messageMissStr,
-                      $powerCutoffBlock.messageSaveStr, $powerCutoffBlock.line)); }
-          |   levelDirectives { levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
-                      null, $levelDirectives.loreStr,
-                      $levelDirectives.loreColourBaseStr, $levelDirectives.loreColourResistStr,
-                      $levelDirectives.loreColourImmuneStr, $levelDirectives.messageVisStr,
-                      $levelDirectives.messageInvisStr, $levelDirectives.messageMissStr,
-                      $levelDirectives.messageSaveStr, $levelDirectives.line)); } )+                                                                 
-          ;
+        returns[MonsterSpellParseRecord spell]
+        @init {
+          String nameStrInit = "";
+          String msgtStrInit = "";
+          String hitInit = "";
+          int lineInit = 0;
+          List<EffectParseRecord> effects = new ArrayList<>();
+          List<MonsterSpellParseRecord.MonsterSpellLevelParseRecord> levels = new ArrayList<>();
+        }
+        @after {
+          $spell = new MonsterSpellParseRecord(nameStrInit, msgtStrInit, hitInit,                                                                   
+                  effects, levels, lineInit);
+        }
+        :   name { nameStrInit = $name.nameStr; lineInit = $name.line; }
+        (   msgt { msgtStrInit = $msgt.msgTStr; }
+        |   hit { hitInit = $hit.hitVal; }
+        |   effectBlock { effects.add(new EffectParseRecord($effectBlock.typeInit,
+                  $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
+                  $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
+                  $effectBlock.expressionChars, $effectBlock.expressionBase,
+                  $effectBlock.expressionOperation, $effectBlock.effectMessage,
+                  $effectBlock.start.getLine())); }
+        |   effectYX {
+                if (!effects.isEmpty()) {
+                    EffectParseRecord last = effects.getLast();
+                    EffectParseRecord updated = last.amendYX($effectYX.y, $effectYX.x);
+                    replaceLast(effects, updated);
+                }
+            }
+        |   dice {
+                if (!effects.isEmpty()) {
+                    EffectParseRecord last = effects.getLast();
+                    String diceStr = $dice.diceString;
+                    EffectParseRecord updated = last.amendExpression(diceStr,
+                                                                     $dice.exprChar,
+                                                                     $dice.baseName,
+                                                                     $dice.operation);
+                    replaceLast(effects, updated);
+                }
+            }
+        |   expr {
+                if (!effects.isEmpty() && !effects.getLast().diceString().isEmpty()) {
+                    EffectParseRecord last = effects.getLast();
+                    String lastDiceStr  = last.diceString();
+                    String lastExprChar = last.expressionChars().isEmpty() 
+                                        ? $expr.exprChar
+                                        : last.expressionChars() + "^" + $expr.exprChar;
+                    String lastExprBase = last.expressionBases().isEmpty() 
+                                        ? $expr.baseName
+                                        : last.expressionBases() + "^" + $expr.baseName;
+                    String lastExprOp   = last.expressionOperations().isEmpty() 
+                                        ? $expr.operation
+                                        : last.expressionOperations() + "^" + $expr.operation;
+                    EffectParseRecord updated = last.amendExpression(lastDiceStr,
+                                                lastExprChar,
+                                                lastExprBase,
+                                                lastExprOp);
+                    replaceLast(effects, updated);
+                }
+            }
+        |   powerCutoffBlock { levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
+                  $powerCutoffBlock.powerCutOffVal, $powerCutoffBlock.loreStr,
+                  $powerCutoffBlock.loreColourBaseStr, $powerCutoffBlock.loreColourResistStr,
+                  $powerCutoffBlock.loreColourImmuneStr, $powerCutoffBlock.messageVisStr,
+                  $powerCutoffBlock.messageInvisStr, $powerCutoffBlock.messageMissStr,
+                  $powerCutoffBlock.messageSaveStr, $powerCutoffBlock.line)); }
+        |   levelDirectives { levels.add(new MonsterSpellParseRecord.MonsterSpellLevelParseRecord(
+                  null, $levelDirectives.loreStr,
+                  $levelDirectives.loreColourBaseStr, $levelDirectives.loreColourResistStr,
+                  $levelDirectives.loreColourImmuneStr, $levelDirectives.messageVisStr,
+                  $levelDirectives.messageInvisStr, $levelDirectives.messageMissStr,
+                  $levelDirectives.messageSaveStr, $levelDirectives.line)); } )+                                                                 
+        ;
         
 file
         returns[List<MonsterSpellParseRecord> monsterSpells]

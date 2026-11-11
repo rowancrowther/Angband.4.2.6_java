@@ -14,7 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/NamesGrammar.g4 by ANTLR 4.13.2
+
+// Generated from NamesGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.names;
 
 import org.antlr.v4.runtime.*;
@@ -39,7 +40,7 @@ public class NamesGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		SECTION=1, WORD=2, INTEGER=3, COMMENT=4, EOL=5, STRING=6;
+		SECTION=1, WORD=2, INTEGER=3, COMMENT=4, INDENT=5, EOL=6, STRING=7;
 	public static final int
 		RULE_section = 0, RULE_word = 1, RULE_record = 2, RULE_file = 3;
 	private static String[] makeRuleNames() {
@@ -57,7 +58,7 @@ public class NamesGrammar extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "SECTION", "WORD", "INTEGER", "COMMENT", "EOL", "STRING"
+			null, "SECTION", "WORD", "INTEGER", "COMMENT", "INDENT", "EOL", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -356,7 +357,7 @@ public class NamesGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0006%\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0007%\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
 		"\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0005\u0002\u0016"+
@@ -367,7 +368,7 @@ public class NamesGrammar extends Parser {
 		"\u0010\u0001\u0000\u0000\u0000\u0006\u001f\u0001\u0000\u0000\u0000\b\t"+
 		"\u0005\u0001\u0000\u0000\t\n\u0005\u0003\u0000\u0000\n\u000b\u0006\u0000"+
 		"\uffff\uffff\u0000\u000b\u0001\u0001\u0000\u0000\u0000\f\r\u0005\u0002"+
-		"\u0000\u0000\r\u000e\u0005\u0006\u0000\u0000\u000e\u000f\u0006\u0001\uffff"+
+		"\u0000\u0000\r\u000e\u0005\u0007\u0000\u0000\u000e\u000f\u0006\u0001\uffff"+
 		"\uffff\u0000\u000f\u0003\u0001\u0000\u0000\u0000\u0010\u0011\u0003\u0000"+
 		"\u0000\u0000\u0011\u0017\u0006\u0002\uffff\uffff\u0000\u0012\u0013\u0003"+
 		"\u0002\u0001\u0000\u0013\u0014\u0006\u0002\uffff\uffff\u0000\u0014\u0016"+

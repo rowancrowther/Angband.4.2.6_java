@@ -41,14 +41,15 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code "None"} that C turns into {@code NULL} for a missing neighbour is kept as the literal text
  * by {@link uk.co.jackoftradesltd.backend.parser.world.WorldAssembler}.
  *
- * <p>Error severity, as the reader documents it:
+ * <p>Every error is hard, as the reader documents it: nothing loads after either of these.
  * <ul>
- *   <li><b>Soft</b> (levels load, error comes back): a {@code record-count:} header that differs
- *   from the number of levels, and one that does not fit an {@code int}. C has no header.</li>
- *   <li><b>Hard</b> (no levels): a grammar error, and a level number that does not fit an
- *   {@code int}. C's {@code strtol} would clamp and truncate it instead.</li>
+ *   <li>A grammar error, thrown as a {@code ParseCancellationException}.</li>
+ *   <li>A level number that does not fit an {@code int}, thrown as a
+ *   {@code DataFileParseException}. C's {@code strtol} would clamp and truncate it instead.</li>
  * </ul>
- * The tests with {@code WhereC} in the name pin a place where this reader refuses input that C
+ * There is no {@code record-count:} header, as in C.
+ *
+ * <p>The tests with {@code WhereC} in the name pin a place where this reader refuses input that C
  * accepts; they are written up in {@code docs/grammar_issues.md}.
  *
  * <p>Expected values come from the C source and the upstream file, not from the Java: the shipped
@@ -230,15 +231,13 @@ class WorldReaderTest {
     // ---------------------------------------------------------------- places C is more lenient
 
     @Test
-    void aHeaderWithNoLevelsIsHardHereWhereCLoadsAnEmptyWorld() throws IOException {
+    void anEmptyFileIsHardHereWhereCLoadsAnEmptyWorld() {
         assertThrows(ParseCancellationException.class, () -> read(""));
-
     }
 
     @Test
-    void anEmptyFileIsHardHereWhereCLoadsAnEmptyWorld() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> read(""));
-
+    void aFileOfOnlyCommentsIsHardHereWhereCLoadsAnEmptyWorld() {
+        assertThrows(ParseCancellationException.class, () -> read("# nothing but a comment\n"));
     }
 
     @Test
@@ -248,9 +247,19 @@ class WorldReaderTest {
     }
 
     @Test
-    void aHyphenInANameIsHardHereWhereCTakesAnySymExceptColon() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> read("level:0:Hell-hole:None:None\n"));
+    void aHyphenInANameIsKeptAsInC() throws IOException {
+        // A sym is any text without a colon, so C keeps "Hell-hole" whole.
+        ParseResult<World> result = read("level:0:Hell-hole:None:None\n");
 
+        assertEquals(List.of(new World(0, "Hell-hole", "None", "None")), result.items());
+    }
+
+    @Test
+    void aNameOfOnlyDigitsIsHardHereWhereCTakesAnySymExceptColon() {
+        // A sym is any text without a colon, so C keeps "7" as a name. In Java the lexer's
+        // INTEGER rule is listed before NAME and wins the tie on length, so the parser sees an
+        // INTEGER where it wants a NAME.
+        assertThrows(ParseCancellationException.class, () -> read("level:5:7:None:None\n"));
     }
 
     @Test

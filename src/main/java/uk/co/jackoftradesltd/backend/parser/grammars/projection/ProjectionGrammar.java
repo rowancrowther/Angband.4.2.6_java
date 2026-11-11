@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ProjectionGrammar.g4 by ANTLR 4.13.2
+// Generated from ProjectionGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.projection;
 
 import org.antlr.v4.runtime.*;
@@ -42,8 +42,8 @@ public class ProjectionGrammar extends Parser {
 	public static final int
 		CODE=1, NAME=2, TYPE=3, DESC=4, PLAYER_DESC=5, BLIND_DESC=6, LASH_DESC=7, 
 		NUMERATOR=8, DENOMINATOR=9, DIVISOR=10, DAMAGE_CAP=11, MSGT=12, OBVIOUS=13, 
-		WAKE=14, COLOUR=15, INTEGER=16, COMMENT=17, EOL=18, SIMPLE_DICE_STRING=19, 
-		COMPLEX_DICE_STRING=20, FLAG=21, STRING=22, SIMPLE_DICE=23;
+		WAKE=14, COLOUR=15, INTEGER=16, COMMENT=17, INDENT=18, EOL=19, SIMPLE_DICE_STRING=20, 
+		COMPLEX_DICE_STRING=21, FLAG=22, STRING=23, SIMPLE_DICE=24;
 	public static final int
 		RULE_code = 0, RULE_name = 1, RULE_type = 2, RULE_desc = 3, RULE_playerDesc = 4, 
 		RULE_blindDesc = 5, RULE_lashDesc = 6, RULE_numerator = 7, RULE_denominator = 8, 
@@ -70,7 +70,7 @@ public class ProjectionGrammar extends Parser {
 		return new String[] {
 			null, "CODE", "NAME", "TYPE", "DESC", "PLAYER_DESC", "BLIND_DESC", "LASH_DESC", 
 			"NUMERATOR", "DENOMINATOR", "DIVISOR", "DAMAGE_CAP", "MSGT", "OBVIOUS", 
-			"WAKE", "COLOUR", "INTEGER", "COMMENT", "EOL", "SIMPLE_DICE_STRING", 
+			"WAKE", "COLOUR", "INTEGER", "COMMENT", "INDENT", "EOL", "SIMPLE_DICE_STRING", 
 			"COMPLEX_DICE_STRING", "FLAG", "STRING", "SIMPLE_DICE"
 		};
 	}
@@ -1193,7 +1193,7 @@ public class ProjectionGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0017\u00a2\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u0018\u00a2\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1228,29 +1228,29 @@ public class ProjectionGrammar extends Parser {
 		"N\u0001\u0000\u0000\u0000\u0018R\u0001\u0000\u0000\u0000\u001aV\u0001"+
 		"\u0000\u0000\u0000\u001cZ\u0001\u0000\u0000\u0000\u001e^\u0001\u0000\u0000"+
 		"\u0000 \u009b\u0001\u0000\u0000\u0000\"#\u0005\u0001\u0000\u0000#$\u0005"+
-		"\u0015\u0000\u0000$%\u0006\u0000\uffff\uffff\u0000%\u0001\u0001\u0000"+
-		"\u0000\u0000&\'\u0005\u0002\u0000\u0000\'(\u0005\u0016\u0000\u0000()\u0006"+
+		"\u0016\u0000\u0000$%\u0006\u0000\uffff\uffff\u0000%\u0001\u0001\u0000"+
+		"\u0000\u0000&\'\u0005\u0002\u0000\u0000\'(\u0005\u0017\u0000\u0000()\u0006"+
 		"\u0001\uffff\uffff\u0000)\u0003\u0001\u0000\u0000\u0000*+\u0005\u0003"+
-		"\u0000\u0000+,\u0005\u0016\u0000\u0000,-\u0006\u0002\uffff\uffff\u0000"+
-		"-\u0005\u0001\u0000\u0000\u0000./\u0005\u0004\u0000\u0000/0\u0005\u0016"+
+		"\u0000\u0000+,\u0005\u0017\u0000\u0000,-\u0006\u0002\uffff\uffff\u0000"+
+		"-\u0005\u0001\u0000\u0000\u0000./\u0005\u0004\u0000\u0000/0\u0005\u0017"+
 		"\u0000\u000001\u0006\u0003\uffff\uffff\u00001\u0007\u0001\u0000\u0000"+
-		"\u000023\u0005\u0005\u0000\u000034\u0005\u0016\u0000\u000045\u0006\u0004"+
+		"\u000023\u0005\u0005\u0000\u000034\u0005\u0017\u0000\u000045\u0006\u0004"+
 		"\uffff\uffff\u00005\t\u0001\u0000\u0000\u000067\u0005\u0006\u0000\u0000"+
-		"78\u0005\u0016\u0000\u000089\u0006\u0005\uffff\uffff\u00009\u000b\u0001"+
-		"\u0000\u0000\u0000:;\u0005\u0007\u0000\u0000;<\u0005\u0016\u0000\u0000"+
+		"78\u0005\u0017\u0000\u000089\u0006\u0005\uffff\uffff\u00009\u000b\u0001"+
+		"\u0000\u0000\u0000:;\u0005\u0007\u0000\u0000;<\u0005\u0017\u0000\u0000"+
 		"<=\u0006\u0006\uffff\uffff\u0000=\r\u0001\u0000\u0000\u0000>?\u0005\b"+
 		"\u0000\u0000?@\u0005\u0010\u0000\u0000@A\u0006\u0007\uffff\uffff\u0000"+
-		"A\u000f\u0001\u0000\u0000\u0000BC\u0005\t\u0000\u0000CD\u0005\u0017\u0000"+
+		"A\u000f\u0001\u0000\u0000\u0000BC\u0005\t\u0000\u0000CD\u0005\u0018\u0000"+
 		"\u0000DE\u0006\b\uffff\uffff\u0000E\u0011\u0001\u0000\u0000\u0000FG\u0005"+
 		"\n\u0000\u0000GH\u0005\u0010\u0000\u0000HI\u0006\t\uffff\uffff\u0000I"+
 		"\u0013\u0001\u0000\u0000\u0000JK\u0005\u000b\u0000\u0000KL\u0005\u0010"+
 		"\u0000\u0000LM\u0006\n\uffff\uffff\u0000M\u0015\u0001\u0000\u0000\u0000"+
-		"NO\u0005\f\u0000\u0000OP\u0005\u0015\u0000\u0000PQ\u0006\u000b\uffff\uffff"+
+		"NO\u0005\f\u0000\u0000OP\u0005\u0016\u0000\u0000PQ\u0006\u000b\uffff\uffff"+
 		"\u0000Q\u0017\u0001\u0000\u0000\u0000RS\u0005\r\u0000\u0000ST\u0005\u0010"+
 		"\u0000\u0000TU\u0006\f\uffff\uffff\u0000U\u0019\u0001\u0000\u0000\u0000"+
 		"VW\u0005\u000e\u0000\u0000WX\u0005\u0010\u0000\u0000XY\u0006\r\uffff\uffff"+
 		"\u0000Y\u001b\u0001\u0000\u0000\u0000Z[\u0005\u000f\u0000\u0000[\\\u0005"+
-		"\u0016\u0000\u0000\\]\u0006\u000e\uffff\uffff\u0000]\u001d\u0001\u0000"+
+		"\u0017\u0000\u0000\\]\u0006\u000e\uffff\uffff\u0000]\u001d\u0001\u0000"+
 		"\u0000\u0000^_\u0003\u0000\u0000\u0000_c\u0006\u000f\uffff\uffff\u0000"+
 		"`a\u0003\u0002\u0001\u0000ab\u0006\u000f\uffff\uffff\u0000bd\u0001\u0000"+
 		"\u0000\u0000c`\u0001\u0000\u0000\u0000cd\u0001\u0000\u0000\u0000de\u0001"+

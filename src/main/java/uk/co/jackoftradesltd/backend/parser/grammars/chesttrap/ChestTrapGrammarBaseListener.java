@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ChestTrapGrammar.g4 by ANTLR 4.13.2
+// Generated from ChestTrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.chesttrap;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -209,6 +209,18 @@ public class ChestTrapGrammarBaseListener implements ChestTrapGrammarListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTime(ChestTrapGrammar.TimeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStrayEffectLine(ChestTrapGrammar.StrayEffectLineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStrayEffectLine(ChestTrapGrammar.StrayEffectLineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

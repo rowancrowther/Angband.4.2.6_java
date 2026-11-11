@@ -87,5 +87,5 @@ COLON
 // End-of-line closes the value line: pop back to the default mode and discard the
 // newline (records are delimited structurally by the next keyword).
 DELIM_EOL
-        :   '\r'* '\n' -> popMode, skip
+        :   NL -> popMode, skip
         ;

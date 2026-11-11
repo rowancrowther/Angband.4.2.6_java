@@ -140,7 +140,7 @@ FLAG_OR
 
 // End of a flag line: consumed (skipped) and pops back to the default mode.
 FLAG_EOL
-        :   ' '* '\r'? '\n'+ -> skip, popMode
+        :   NL+ -> skip, popMode
         ;
 
 // FREE_TEXT_MODE - entered from the free-text directives (renderer:, priority:,

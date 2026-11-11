@@ -486,12 +486,89 @@ class ChestTrapReaderTest {
     }
 
     @Test
-    void aDiceLineBeforeAnyEffectIsRefusedHereWhereCIgnoresIt() throws IOException {
+    void aDiceLineBeforeAnyEffectIsDroppedAsInC() throws Exception {
         // parse_chest_trap_dice returns PARSE_ERROR_NONE when the trap has no effect yet ("assume
-        // that this is human and not parser error"), so C loads the record without the dice.
-        assertThrows(ParseCancellationException.class, () -> parse("stray-dice.txt",
-                FULL_FILE.replace("level:1\n\nname:gas trap", "level:1\ndice:1d4\n\nname:gas trap")));
+        // that this is human and not parser error"), so C loads the record without the dice. The
+        // stray line sits ahead of the gas trap's own effect, whose later dice: line is kept.
+        ParseResult<ChestTrap> result = parse("stray-dice.txt",
+                FULL_FILE.replace("effect:TIMED_INC:POISONED\ndice:10+d20",
+                        "dice:1d4\neffect:TIMED_INC:POISONED\ndice:10+d20"));
 
+        ChestTrap gas = byCode(result.items(), ChestTrapCode.POISON);
+        assertEquals(1, gas.getEffect().size());
+        assertEquals("0,0,10+d20", EffectProbe.yxBase(gas.getEffect().getFirst()));
+    }
+
+    @Test
+    void aDiceLineInATrapWithNoEffectAtAllIsDroppedAsInC() throws IOException {
+        ParseResult<ChestTrap> result = parse("stray-dice-no-effect.txt",
+                FULL_FILE.replace("level:1\n\nname:gas trap", "level:1\ndice:1d4\n\nname:gas trap"));
+
+        assertEquals(0, byCode(result.items(), ChestTrapCode.NO_TRAP).getEffect().size());
+    }
+
+    @Test
+    void aSecondDiceLineOnOneEffectReplacesTheFirstAsInC() throws Exception {
+        // parse_chest_trap_dice builds a new dice and installs it on the last effect, so the second
+        // dice: wins. No error.
+        ParseResult<ChestTrap> result = parse("second-dice.txt",
+                FULL_FILE.replace("dice:10+d20", "dice:10+d20\ndice:5"));
+
+        ChestTrap gas = byCode(result.items(), ChestTrapCode.POISON);
+        assertEquals(1, gas.getEffect().size());
+        assertEquals("0,0,5", EffectProbe.yxBase(gas.getEffect().getFirst()));
+    }
+
+    @Test
+    void aDiceLineSeparatedFromItsEffectByAnotherDirectiveStillBindsAsInC() throws Exception {
+        // parse_chest_trap_dice acts on the tail of the effect list wherever the line falls, so a
+        // msg: between effect: and dice: does not stop the dice reaching the effect.
+        ParseResult<ChestTrap> result = parse("dice-after-msg.txt",
+                FULL_FILE.replace("dice:10+d20\nmsg:A puff of green gas surrounds you!",
+                        "msg:A puff of green gas surrounds you!\ndice:10+d20"));
+
+        ChestTrap gas = byCode(result.items(), ChestTrapCode.POISON);
+        assertEquals("0,0,10+d20", EffectProbe.yxBase(gas.getEffect().getFirst()));
+        assertEquals("A puff of green gas surrounds you!", gas.getMessage());
+    }
+
+    @Test
+    void anExprLineAfterAnInterveningDirectiveJoinsTheLastEffectsDiceAsInC() throws Exception {
+        // parse_chest_trap_expr binds to the dice of the last effect wherever the line falls, so an
+        // expr: after a msg: still joins the expr: that followed the dice.
+        ParseResult<ChestTrap> result = parse("late-expr.txt",
+                FULL_FILE.replace("dice:10+d20\nmsg:A puff of green gas surrounds you!",
+                        "dice:$Bd$S\nexpr:S:DUNGEON_LEVEL:/ 2\n"
+                                + "msg:A puff of green gas surrounds you!\nexpr:B:PLAYER_HP:* 2"));
+
+        Object gas = byCode(result.items(), ChestTrapCode.POISON).getEffect().getFirst();
+        assertEquals("0,0,$Bd$S", EffectProbe.yxBase(gas));
+        assertEquals("S:EFB_DUNGEON_LEVEL:/ 2|B:EFB_PLAYER_HP:* 2", EffectProbe.expressions(gas));
+    }
+
+    @Test
+    void anExprLineOnAnEffectWithNoDiceIsDroppedAsInC() throws Exception {
+        // parse_chest_trap_expr returns PARSE_ERROR_NONE when the last effect has no dice yet. The
+        // dice: that follows is kept, and the dropped expr: does not bind to it.
+        ParseResult<ChestTrap> result = parse("expr-no-dice.txt",
+                FULL_FILE.replace("effect:TIMED_INC:POISONED\ndice:10+d20",
+                        "effect:TIMED_INC:POISONED\nexpr:S:DUNGEON_LEVEL:/ 2\ndice:10+d20"));
+
+        Object gas = byCode(result.items(), ChestTrapCode.POISON).getEffect().getFirst();
+        assertEquals("0,0,10+d20", EffectProbe.yxBase(gas));
+        assertEquals("", EffectProbe.expressions(gas));
+    }
+
+    @Test
+    void anExprLineBeforeAnyEffectIsDroppedAsInC() throws Exception {
+        // parse_chest_trap_expr returns PARSE_ERROR_NONE when the trap has no effect at all yet.
+        ParseResult<ChestTrap> result = parse("expr-no-effect.txt",
+                FULL_FILE.replace("effect:TIMED_INC:POISONED\ndice:10+d20",
+                        "expr:S:DUNGEON_LEVEL:/ 2\neffect:TIMED_INC:POISONED\ndice:10+d20"));
+
+        Object gas = byCode(result.items(), ChestTrapCode.POISON).getEffect().getFirst();
+        assertEquals("0,0,10+d20", EffectProbe.yxBase(gas));
+        assertEquals("", EffectProbe.expressions(gas));
     }
 
     @Test

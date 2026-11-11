@@ -30,14 +30,16 @@ import static org.junit.jupiter.api.Assertions.*;
  * with {@link WorldLexer}).
  *
  * <p>These drive the {@code file} start rule on small inline sources and assert on the extraction
- * output — {@code levels} (a {@code List<List<String>>} of {@code [depth, name, up, down, lineNumber]})
- * and the {@code declaredCount} string — plus the syntax-error count (collected via a custom
- * listener). They lock in the design decisions: every field is extracted verbatim as a {@code String}
- * (the {@code "None"} sentinel passed through, not mapped to null; the declared count left unparsed),
- * each record carries its own source line number, line numbers survive skipped comment/blank lines,
- * and the file must open with a {@code record-count} directive.
+ * output — {@code levels}, a {@code List<List<String>>} of {@code [depth, name, up, down, lineNumber]}
+ * — and on the syntax errors collected via a custom listener. They lock in the design decisions:
+ * every field is extracted verbatim as a {@code String} (the {@code "None"} sentinel passed through,
+ * not mapped to null), each record carries its own source line number, line numbers survive skipped
+ * comment/blank lines, and a record that is short of a field or has a non-integer depth is a parse
+ * error. The lexer's {@code NAME} token is permissive, so the non-integer depth is refused here
+ * rather than in {@link WorldLexer}.
  *
- * <p>Class WorldGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed.
+ * <p>Class WorldGrammarTest coded before 261104, updated on 261104 once the {@code record-count:}
+ * header was removed, and its Javadoc brought into line with the grammar on 261109.
  *
  * @author Rowan Crowther
  */
@@ -103,5 +105,20 @@ class WorldGrammarTest {
         parser("level:0:Town:None\n", errors).file();
 
         assertFalse(errors.messages.isEmpty(), "a level record missing the down field must not parse");
+    }
+
+    /**
+     * Pins that a non-integer depth is refused by the parser. The lexer is permissive and turns
+     * {@code 1.5} into a {@code NAME} token (see {@code WorldLexerTest}), so {@code levelNum}, which
+     * requires an {@code INTEGER}, is where the record is rejected.
+     *
+     * <p>Function decimalDepthIsAParseError coded on 261109, commented in full on 261109.
+     */
+    @Test
+    void decimalDepthIsAParseError() {
+        Errors errors = new Errors();
+        parser("level:1.5:Town:None:Angband 1\n", errors).file();
+
+        assertFalse(errors.messages.isEmpty(), "a decimal depth must not parse as a level record");
     }
 }

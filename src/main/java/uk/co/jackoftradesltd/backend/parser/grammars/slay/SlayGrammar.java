@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SlayGrammar.g4 by ANTLR 4.13.2
+// Generated from SlayGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.slay;
 
 import org.antlr.v4.runtime.*;
@@ -41,7 +41,8 @@ public class SlayGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		CODE=1, NAME=2, RACE_FLAG=3, BASE=4, MULTIPLIER=5, O_MULTIPLIER=6, POWER=7, 
-		MELEE_VERB=8, RANGE_VERB=9, INTEGER=10, COMMENT=11, EOL=12, FLAG=13, STRING=14;
+		MELEE_VERB=8, RANGE_VERB=9, INTEGER=10, COMMENT=11, INDENT=12, EOL=13, 
+		FLAG=14, STRING=15;
 	public static final int
 		RULE_code = 0, RULE_name = 1, RULE_raceFlag = 2, RULE_base = 3, RULE_multiplier = 4, 
 		RULE_oMultiplier = 5, RULE_power = 6, RULE_meleeVerb = 7, RULE_rangeVerb = 8, 
@@ -64,8 +65,8 @@ public class SlayGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "CODE", "NAME", "RACE_FLAG", "BASE", "MULTIPLIER", "O_MULTIPLIER", 
-			"POWER", "MELEE_VERB", "RANGE_VERB", "INTEGER", "COMMENT", "EOL", "FLAG", 
-			"STRING"
+			"POWER", "MELEE_VERB", "RANGE_VERB", "INTEGER", "COMMENT", "INDENT", 
+			"EOL", "FLAG", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -833,7 +834,7 @@ public class SlayGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000ec\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000fc\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0001\u0000\u0001\u0000\u0001"+
@@ -853,20 +854,20 @@ public class SlayGrammar extends Parser {
 		"\u0000\n*\u0001\u0000\u0000\u0000\f.\u0001\u0000\u0000\u0000\u000e2\u0001"+
 		"\u0000\u0000\u0000\u00106\u0001\u0000\u0000\u0000\u0012:\u0001\u0000\u0000"+
 		"\u0000\u0014\\\u0001\u0000\u0000\u0000\u0016\u0017\u0005\u0001\u0000\u0000"+
-		"\u0017\u0018\u0005\u000e\u0000\u0000\u0018\u0019\u0006\u0000\uffff\uffff"+
+		"\u0017\u0018\u0005\u000f\u0000\u0000\u0018\u0019\u0006\u0000\uffff\uffff"+
 		"\u0000\u0019\u0001\u0001\u0000\u0000\u0000\u001a\u001b\u0005\u0002\u0000"+
-		"\u0000\u001b\u001c\u0005\u000e\u0000\u0000\u001c\u001d\u0006\u0001\uffff"+
+		"\u0000\u001b\u001c\u0005\u000f\u0000\u0000\u001c\u001d\u0006\u0001\uffff"+
 		"\uffff\u0000\u001d\u0003\u0001\u0000\u0000\u0000\u001e\u001f\u0005\u0003"+
-		"\u0000\u0000\u001f \u0005\r\u0000\u0000 !\u0006\u0002\uffff\uffff\u0000"+
-		"!\u0005\u0001\u0000\u0000\u0000\"#\u0005\u0004\u0000\u0000#$\u0005\u000e"+
-		"\u0000\u0000$%\u0006\u0003\uffff\uffff\u0000%\u0007\u0001\u0000\u0000"+
-		"\u0000&\'\u0005\u0005\u0000\u0000\'(\u0005\n\u0000\u0000()\u0006\u0004"+
-		"\uffff\uffff\u0000)\t\u0001\u0000\u0000\u0000*+\u0005\u0006\u0000\u0000"+
-		"+,\u0005\n\u0000\u0000,-\u0006\u0005\uffff\uffff\u0000-\u000b\u0001\u0000"+
-		"\u0000\u0000./\u0005\u0007\u0000\u0000/0\u0005\n\u0000\u000001\u0006\u0006"+
-		"\uffff\uffff\u00001\r\u0001\u0000\u0000\u000023\u0005\b\u0000\u000034"+
-		"\u0005\u000e\u0000\u000045\u0006\u0007\uffff\uffff\u00005\u000f\u0001"+
-		"\u0000\u0000\u000067\u0005\t\u0000\u000078\u0005\u000e\u0000\u000089\u0006"+
+		"\u0000\u0000\u001f \u0005\u000e\u0000\u0000 !\u0006\u0002\uffff\uffff"+
+		"\u0000!\u0005\u0001\u0000\u0000\u0000\"#\u0005\u0004\u0000\u0000#$\u0005"+
+		"\u000f\u0000\u0000$%\u0006\u0003\uffff\uffff\u0000%\u0007\u0001\u0000"+
+		"\u0000\u0000&\'\u0005\u0005\u0000\u0000\'(\u0005\n\u0000\u0000()\u0006"+
+		"\u0004\uffff\uffff\u0000)\t\u0001\u0000\u0000\u0000*+\u0005\u0006\u0000"+
+		"\u0000+,\u0005\n\u0000\u0000,-\u0006\u0005\uffff\uffff\u0000-\u000b\u0001"+
+		"\u0000\u0000\u0000./\u0005\u0007\u0000\u0000/0\u0005\n\u0000\u000001\u0006"+
+		"\u0006\uffff\uffff\u00001\r\u0001\u0000\u0000\u000023\u0005\b\u0000\u0000"+
+		"34\u0005\u000f\u0000\u000045\u0006\u0007\uffff\uffff\u00005\u000f\u0001"+
+		"\u0000\u0000\u000067\u0005\t\u0000\u000078\u0005\u000f\u0000\u000089\u0006"+
 		"\b\uffff\uffff\u00009\u0011\u0001\u0000\u0000\u0000:;\u0003\u0000\u0000"+
 		"\u0000;V\u0006\t\uffff\uffff\u0000<=\u0003\u0002\u0001\u0000=>\u0006\t"+
 		"\uffff\uffff\u0000>U\u0001\u0000\u0000\u0000?@\u0003\u0004\u0002\u0000"+

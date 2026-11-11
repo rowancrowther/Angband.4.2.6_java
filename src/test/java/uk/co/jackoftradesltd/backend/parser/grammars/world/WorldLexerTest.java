@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for the generated {@link WorldLexer} (grammar-track step 8, lexer half).
@@ -36,8 +35,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * imported {@code CommentsAndEol} comment/EOL rules being skipped (so CRLF gamedata tokenises clean
  * — C9).
  *
+ * <p>{@code NAME} is deliberately permissive (anything except CR, LF and colon), so the lexer has
+ * no unrecognised-character case on value text; a malformed value is refused by the parser instead.
+ *
  * <p>Class WorldLexerTest coded before 261104, updated on 261104 once the {@code record-count:}
- * header and its {@code RECORD_COUNT} token were removed.
+ * header and its {@code RECORD_COUNT} token were removed, and on 261109 once the permissive
+ * {@code NAME} replaced the unrecognised-character test.
  *
  * @author Rowan Crowther
  */
@@ -111,9 +114,20 @@ class WorldLexerTest {
         assertEquals(0, lexErrors(src));
     }
 
+    /**
+     * Pins that {@code NAME} is deliberately permissive: it accepts anything except CR, LF and
+     * colon, so a decimal depth such as {@code 1.5} is not a lexer error. It beats {@code INTEGER}
+     * on longest match ({@code 1.5} is three characters against {@code INTEGER}'s one) and arrives
+     * as a single {@code NAME} token. Rejecting a non-integer depth is the parser's job, covered in
+     * {@code WorldGrammarTest}.
+     *
+     * <p>Function decimalDepthLexesAsOneNameToken coded on 261109, commented in full on 261109;
+     * replaces unrecognisedCharacterRaisesLexerError, whose premise (that '.' matches no token rule)
+     * was wrong.
+     */
     @Test
-    void unrecognisedCharacterRaisesLexerError() {
-        // '.' matches no token rule (values are integer-only), so a decimal depth is a lexer error.
-        assertTrue(lexErrors("level:1.5") > 0, "a '.' in a value position should be a lexer error");
+    void decimalDepthLexesAsOneNameToken() {
+        assertEquals(List.of("LEVEL=level:", "NAME=1.5"), tokens("level:1.5"));
+        assertEquals(0, lexErrors("level:1.5"), "NAME accepts '.', so there is no lexer error");
     }
 }

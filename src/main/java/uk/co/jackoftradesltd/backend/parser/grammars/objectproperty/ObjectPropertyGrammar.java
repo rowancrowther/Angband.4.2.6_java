@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectPropertyGrammar.g4 by ANTLR 4.13.2
+// Generated from ObjectPropertyGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.objectproperty;
 
 import org.antlr.v4.runtime.*;
@@ -44,9 +44,9 @@ public class ObjectPropertyGrammar extends Parser {
 	public static final int
 		NAME=1, TYPE=2, SUBTYPE=3, ID_TYPE=4, CODE=5, POWER=6, MULT=7, TYPE_MULT=8, 
 		ADJECTIVE=9, NEG_ADJECTIVE=10, MSG=11, BINDUI=12, DESC=13, COLON=14, INTEGER=15, 
-		LTHAN=16, GTHAN=17, LCASE=18, UCASE=19, COMMENT=20, EOL=21, STRING=22, 
-		EOL_POP=23, DELIM_INTEGER=24, STRING_BETWEEN_COLONS=25, DELIM_COLON=26, 
-		END_SKIP=27;
+		LTHAN=16, GTHAN=17, LCASE=18, UCASE=19, COMMENT=20, INDENT=21, EOL=22, 
+		STRING=23, EOL_POP=24, DELIM_INTEGER=25, STRING_BETWEEN_COLONS=26, DELIM_COLON=27, 
+		END_SKIP=28;
 	public static final int
 		RULE_name = 0, RULE_type = 1, RULE_subtype = 2, RULE_idType = 3, RULE_codeVal = 4, 
 		RULE_power = 5, RULE_mult = 6, RULE_typeMult = 7, RULE_adjective = 8, 
@@ -73,8 +73,9 @@ public class ObjectPropertyGrammar extends Parser {
 		return new String[] {
 			null, "NAME", "TYPE", "SUBTYPE", "ID_TYPE", "CODE", "POWER", "MULT", 
 			"TYPE_MULT", "ADJECTIVE", "NEG_ADJECTIVE", "MSG", "BINDUI", "DESC", "COLON", 
-			"INTEGER", "LTHAN", "GTHAN", "LCASE", "UCASE", "COMMENT", "EOL", "STRING", 
-			"EOL_POP", "DELIM_INTEGER", "STRING_BETWEEN_COLONS", "DELIM_COLON", "END_SKIP"
+			"INTEGER", "LTHAN", "GTHAN", "LCASE", "UCASE", "COMMENT", "INDENT", "EOL", 
+			"STRING", "EOL_POP", "DELIM_INTEGER", "STRING_BETWEEN_COLONS", "DELIM_COLON", 
+			"END_SKIP"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -1162,7 +1163,7 @@ public class ObjectPropertyGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u001b\u0094\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u001c\u0094\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1192,23 +1193,23 @@ public class ObjectPropertyGrammar extends Parser {
 		"\u0000\u0000\u0000\u0014H\u0001\u0000\u0000\u0000\u0016L\u0001\u0000\u0000"+
 		"\u0000\u0018]\u0001\u0000\u0000\u0000\u001aa\u0001\u0000\u0000\u0000\u001c"+
 		"\u008d\u0001\u0000\u0000\u0000\u001e\u001f\u0005\u0001\u0000\u0000\u001f"+
-		" \u0005\u0016\u0000\u0000 !\u0006\u0000\uffff\uffff\u0000!\u0001\u0001"+
+		" \u0005\u0017\u0000\u0000 !\u0006\u0000\uffff\uffff\u0000!\u0001\u0001"+
 		"\u0000\u0000\u0000\"#\u0005\u0002\u0000\u0000#$\u0005\u0012\u0000\u0000"+
 		"$%\u0006\u0001\uffff\uffff\u0000%\u0003\u0001\u0000\u0000\u0000&\'\u0005"+
-		"\u0003\u0000\u0000\'(\u0005\u0016\u0000\u0000()\u0006\u0002\uffff\uffff"+
+		"\u0003\u0000\u0000\'(\u0005\u0017\u0000\u0000()\u0006\u0002\uffff\uffff"+
 		"\u0000)\u0005\u0001\u0000\u0000\u0000*+\u0005\u0004\u0000\u0000+,\u0005"+
-		"\u0016\u0000\u0000,-\u0006\u0003\uffff\uffff\u0000-\u0007\u0001\u0000"+
+		"\u0017\u0000\u0000,-\u0006\u0003\uffff\uffff\u0000-\u0007\u0001\u0000"+
 		"\u0000\u0000./\u0005\u0005\u0000\u0000/0\u0005\u0013\u0000\u000001\u0006"+
 		"\u0004\uffff\uffff\u00001\t\u0001\u0000\u0000\u000023\u0005\u0006\u0000"+
 		"\u000034\u0005\u000f\u0000\u000045\u0006\u0005\uffff\uffff\u00005\u000b"+
 		"\u0001\u0000\u0000\u000067\u0005\u0007\u0000\u000078\u0005\u000f\u0000"+
 		"\u000089\u0006\u0006\uffff\uffff\u00009\r\u0001\u0000\u0000\u0000:;\u0005"+
-		"\b\u0000\u0000;<\u0005\u0019\u0000\u0000<=\u0005\u001a\u0000\u0000=>\u0005"+
-		"\u0018\u0000\u0000>?\u0006\u0007\uffff\uffff\u0000?\u000f\u0001\u0000"+
+		"\b\u0000\u0000;<\u0005\u001a\u0000\u0000<=\u0005\u001b\u0000\u0000=>\u0005"+
+		"\u0019\u0000\u0000>?\u0006\u0007\uffff\uffff\u0000?\u000f\u0001\u0000"+
 		"\u0000\u0000@A\u0005\t\u0000\u0000AB\u0005\u0012\u0000\u0000BC\u0006\b"+
 		"\uffff\uffff\u0000C\u0011\u0001\u0000\u0000\u0000DE\u0005\n\u0000\u0000"+
 		"EF\u0005\u0012\u0000\u0000FG\u0006\t\uffff\uffff\u0000G\u0013\u0001\u0000"+
-		"\u0000\u0000HI\u0005\u000b\u0000\u0000IJ\u0005\u0016\u0000\u0000JK\u0006"+
+		"\u0000\u0000HI\u0005\u000b\u0000\u0000IJ\u0005\u0017\u0000\u0000JK\u0006"+
 		"\n\uffff\uffff\u0000K\u0015\u0001\u0000\u0000\u0000LM\u0005\f\u0000\u0000"+
 		"MN\u0005\u0012\u0000\u0000NS\u0006\u000b\uffff\uffff\u0000OP\u0005\u0010"+
 		"\u0000\u0000PQ\u0005\u0013\u0000\u0000QR\u0005\u0011\u0000\u0000RT\u0006"+
@@ -1217,7 +1218,7 @@ public class ObjectPropertyGrammar extends Parser {
 		"\u0000\u0000W[\u0006\u000b\uffff\uffff\u0000XY\u0005\u000e\u0000\u0000"+
 		"YZ\u0005\u000f\u0000\u0000Z\\\u0006\u000b\uffff\uffff\u0000[X\u0001\u0000"+
 		"\u0000\u0000[\\\u0001\u0000\u0000\u0000\\\u0017\u0001\u0000\u0000\u0000"+
-		"]^\u0005\r\u0000\u0000^_\u0005\u0016\u0000\u0000_`\u0006\f\uffff\uffff"+
+		"]^\u0005\r\u0000\u0000^_\u0005\u0017\u0000\u0000_`\u0006\f\uffff\uffff"+
 		"\u0000`\u0019\u0001\u0000\u0000\u0000ab\u0003\u0000\u0000\u0000bc\u0006"+
 		"\r\uffff\uffff\u0000cd\u0003\u0002\u0001\u0000d\u0086\u0006\r\uffff\uffff"+
 		"\u0000ef\u0003\u0004\u0002\u0000fg\u0006\r\uffff\uffff\u0000g\u0087\u0001"+

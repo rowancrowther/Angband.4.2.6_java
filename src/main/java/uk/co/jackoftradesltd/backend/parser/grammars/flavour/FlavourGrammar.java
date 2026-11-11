@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/FlavourGrammar.g4 by ANTLR 4.13.2
+// Generated from FlavourGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.flavour;
 
 import org.antlr.v4.runtime.*;
@@ -41,8 +41,8 @@ public class FlavourGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		KIND=1, FIXED=2, FLAVOUR=3, INTEGER=4, COMMENT=5, EOL=6, STRING=7, COLON=8, 
-		DELIM_EOL=9;
+		KIND=1, FIXED=2, FLAVOUR=3, INTEGER=4, COMMENT=5, INDENT=6, EOL=7, STRING=8, 
+		COLON=9, DELIM_EOL=10;
 	public static final int
 		RULE_kind = 0, RULE_fixed = 1, RULE_flavour = 2, RULE_fixedOrFlavourBlock = 3, 
 		RULE_section = 4, RULE_file = 5;
@@ -55,14 +55,15 @@ public class FlavourGrammar extends Parser {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'kind:'", "'fixed:'", "'flavor:'", null, null, null, null, "':'"
+			null, "'kind:'", "'fixed:'", "'flavor:'", null, null, null, null, null, 
+			"':'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "KIND", "FIXED", "FLAVOUR", "INTEGER", "COMMENT", "EOL", "STRING", 
-			"COLON", "DELIM_EOL"
+			null, "KIND", "FIXED", "FLAVOUR", "INTEGER", "COMMENT", "INDENT", "EOL", 
+			"STRING", "COLON", "DELIM_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -547,7 +548,7 @@ public class FlavourGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\t>\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\n>\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
@@ -561,29 +562,29 @@ public class FlavourGrammar extends Parser {
 		"\u0006\b\n\u0000\u0000;\u0000\f\u0001\u0000\u0000\u0000\u0002\u0012\u0001"+
 		"\u0000\u0000\u0000\u0004\u001c\u0001\u0000\u0000\u0000\u0006,\u0001\u0000"+
 		"\u0000\u0000\b0\u0001\u0000\u0000\u0000\n7\u0001\u0000\u0000\u0000\f\r"+
-		"\u0005\u0001\u0000\u0000\r\u000e\u0005\u0007\u0000\u0000\u000e\u000f\u0005"+
-		"\b\u0000\u0000\u000f\u0010\u0005\u0007\u0000\u0000\u0010\u0011\u0006\u0000"+
+		"\u0005\u0001\u0000\u0000\r\u000e\u0005\b\u0000\u0000\u000e\u000f\u0005"+
+		"\t\u0000\u0000\u000f\u0010\u0005\b\u0000\u0000\u0010\u0011\u0006\u0000"+
 		"\uffff\uffff\u0000\u0011\u0001\u0001\u0000\u0000\u0000\u0012\u0013\u0005"+
-		"\u0002\u0000\u0000\u0013\u0014\u0005\u0007\u0000\u0000\u0014\u0015\u0005"+
-		"\b\u0000\u0000\u0015\u0016\u0005\u0007\u0000\u0000\u0016\u0017\u0005\b"+
-		"\u0000\u0000\u0017\u0018\u0005\u0007\u0000\u0000\u0018\u0019\u0005\b\u0000"+
-		"\u0000\u0019\u001a\u0005\u0007\u0000\u0000\u001a\u001b\u0006\u0001\uffff"+
-		"\uffff\u0000\u001b\u0003\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0003"+
-		"\u0000\u0000\u001d\u001e\u0005\u0007\u0000\u0000\u001e\u001f\u0005\b\u0000"+
-		"\u0000\u001f \u0005\u0007\u0000\u0000 $\u0006\u0002\uffff\uffff\u0000"+
-		"!\"\u0005\b\u0000\u0000\"#\u0005\u0007\u0000\u0000#%\u0006\u0002\uffff"+
-		"\uffff\u0000$!\u0001\u0000\u0000\u0000$%\u0001\u0000\u0000\u0000%\u0005"+
-		"\u0001\u0000\u0000\u0000&\'\u0003\u0002\u0001\u0000\'(\u0006\u0003\uffff"+
-		"\uffff\u0000(-\u0001\u0000\u0000\u0000)*\u0003\u0004\u0002\u0000*+\u0006"+
-		"\u0003\uffff\uffff\u0000+-\u0001\u0000\u0000\u0000,&\u0001\u0000\u0000"+
-		"\u0000,)\u0001\u0000\u0000\u0000-.\u0001\u0000\u0000\u0000.,\u0001\u0000"+
-		"\u0000\u0000./\u0001\u0000\u0000\u0000/\u0007\u0001\u0000\u0000\u0000"+
-		"01\u0003\u0000\u0000\u000012\u0003\u0006\u0003\u000023\u0006\u0004\uffff"+
-		"\uffff\u00003\t\u0001\u0000\u0000\u000045\u0003\b\u0004\u000056\u0006"+
-		"\u0005\uffff\uffff\u000068\u0001\u0000\u0000\u000074\u0001\u0000\u0000"+
-		"\u000089\u0001\u0000\u0000\u000097\u0001\u0000\u0000\u00009:\u0001\u0000"+
-		"\u0000\u0000:;\u0001\u0000\u0000\u0000;<\u0005\u0000\u0000\u0001<\u000b"+
-		"\u0001\u0000\u0000\u0000\u0004$,.9";
+		"\u0002\u0000\u0000\u0013\u0014\u0005\b\u0000\u0000\u0014\u0015\u0005\t"+
+		"\u0000\u0000\u0015\u0016\u0005\b\u0000\u0000\u0016\u0017\u0005\t\u0000"+
+		"\u0000\u0017\u0018\u0005\b\u0000\u0000\u0018\u0019\u0005\t\u0000\u0000"+
+		"\u0019\u001a\u0005\b\u0000\u0000\u001a\u001b\u0006\u0001\uffff\uffff\u0000"+
+		"\u001b\u0003\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0003\u0000\u0000"+
+		"\u001d\u001e\u0005\b\u0000\u0000\u001e\u001f\u0005\t\u0000\u0000\u001f"+
+		" \u0005\b\u0000\u0000 $\u0006\u0002\uffff\uffff\u0000!\"\u0005\t\u0000"+
+		"\u0000\"#\u0005\b\u0000\u0000#%\u0006\u0002\uffff\uffff\u0000$!\u0001"+
+		"\u0000\u0000\u0000$%\u0001\u0000\u0000\u0000%\u0005\u0001\u0000\u0000"+
+		"\u0000&\'\u0003\u0002\u0001\u0000\'(\u0006\u0003\uffff\uffff\u0000(-\u0001"+
+		"\u0000\u0000\u0000)*\u0003\u0004\u0002\u0000*+\u0006\u0003\uffff\uffff"+
+		"\u0000+-\u0001\u0000\u0000\u0000,&\u0001\u0000\u0000\u0000,)\u0001\u0000"+
+		"\u0000\u0000-.\u0001\u0000\u0000\u0000.,\u0001\u0000\u0000\u0000./\u0001"+
+		"\u0000\u0000\u0000/\u0007\u0001\u0000\u0000\u000001\u0003\u0000\u0000"+
+		"\u000012\u0003\u0006\u0003\u000023\u0006\u0004\uffff\uffff\u00003\t\u0001"+
+		"\u0000\u0000\u000045\u0003\b\u0004\u000056\u0006\u0005\uffff\uffff\u0000"+
+		"68\u0001\u0000\u0000\u000074\u0001\u0000\u0000\u000089\u0001\u0000\u0000"+
+		"\u000097\u0001\u0000\u0000\u00009:\u0001\u0000\u0000\u0000:;\u0001\u0000"+
+		"\u0000\u0000;<\u0005\u0000\u0000\u0001<\u000b\u0001\u0000\u0000\u0000"+
+		"\u0004$,.9";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

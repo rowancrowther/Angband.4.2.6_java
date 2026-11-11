@@ -837,8 +837,9 @@ class PlayerPropertyReaderTest {
     }
 
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        assertHardError("  type:player\ncode:ROCK\nname:A\n");
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        // parser_parse skips leading white space, and the INDENT rule in CommentsAndEol does too.
+        assertEquals(1, load("  type:player\ncode:ROCK\nname:A\n").items().size());
     }
 
     @Test

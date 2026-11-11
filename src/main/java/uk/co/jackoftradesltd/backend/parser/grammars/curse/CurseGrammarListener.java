@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/CurseGrammar.g4 by ANTLR 4.13.2
+// Generated from CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.curse;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -205,6 +205,16 @@ public interface CurseGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitEffectMsg(CurseGrammar.EffectMsgContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link CurseGrammar#strayEffectLine}.
+	 * @param ctx the parse tree
+	 */
+	void enterStrayEffectLine(CurseGrammar.StrayEffectLineContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link CurseGrammar#strayEffectLine}.
+	 * @param ctx the parse tree
+	 */
+	void exitStrayEffectLine(CurseGrammar.StrayEffectLineContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link CurseGrammar#effectBlock}.
 	 * @param ctx the parse tree

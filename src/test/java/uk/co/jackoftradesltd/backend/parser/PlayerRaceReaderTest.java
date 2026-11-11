@@ -663,10 +663,9 @@ class PlayerRaceReaderTest {
     }
 
     @Test
-    void anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("indent.txt",
-                race("In", "history:1\n  hitdie:10\n")));
-
+    void anIndentedLineLoadsAsInC() throws IOException {
+        // parser_parse skips leading white space, and the INDENT rule in CommentsAndEol does too.
+        assertEquals(1, load("indent.txt", race("In", "history:1\n  hitdie:10\n")).items().size());
     }
 
     // ---- Behaviour now matching C ------------------------------------------

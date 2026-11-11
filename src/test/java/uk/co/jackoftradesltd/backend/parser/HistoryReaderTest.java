@@ -462,10 +462,11 @@ class HistoryReaderTest {
     }
 
     @Test
-    void anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
-        // parser_parse skips leading whitespace, so C reads an indented directive.
-        assertThrows(ParseCancellationException.class, () -> load("indented.txt", "  chart:1:0:100\nphrase:x\n"));
+    void anIndentedLineLoadsAsInC() throws IOException {
+        // parser_parse skips leading whitespace, and the shared INDENT rule in CommentsAndEol does too.
+        ParseResult<PlayerHistoryChart> result = load("indented.txt", "  chart:1:0:100\nphrase:x\n");
 
+        assertEquals(1, result.items().size());
     }
 
     @Test

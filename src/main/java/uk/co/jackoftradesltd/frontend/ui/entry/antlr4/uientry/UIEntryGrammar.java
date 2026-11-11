@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/frontend/ui/entry/UIEntryGrammar.g4 by ANTLR 4.13.2
+// Generated from UIEntryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry;
 
 import org.antlr.v4.runtime.*;
@@ -42,8 +42,8 @@ public class UIEntryGrammar extends Parser {
 	public static final int
 		NAME=1, PARAMETER=2, RENDERER=3, COMBINE=4, PRIORITY=5, CATEGORY=6, FLAGS=7, 
 		DESC=8, LABEL=9, LABEL5=10, LABEL2=11, TEMPLATE=12, LTHAN=13, GTHAN=14, 
-		INTEGER=15, LCASE=16, PARAMETER_VALUE=17, COMMENT=18, EOL=19, FLAG=20, 
-		FLAG_OR=21, FLAG_EOL=22, STRING=23;
+		INTEGER=15, LCASE=16, PARAMETER_VALUE=17, COMMENT=18, INDENT=19, EOL=20, 
+		FLAG=21, FLAG_OR=22, FLAG_EOL=23, STRING=24;
 	public static final int
 		RULE_tag = 0, RULE_name = 1, RULE_parameter = 2, RULE_renderer = 3, RULE_combine = 4, 
 		RULE_priority = 5, RULE_category = 6, RULE_flags = 7, RULE_desc = 8, RULE_label = 9, 
@@ -70,8 +70,8 @@ public class UIEntryGrammar extends Parser {
 		return new String[] {
 			null, "NAME", "PARAMETER", "RENDERER", "COMBINE", "PRIORITY", "CATEGORY", 
 			"FLAGS", "DESC", "LABEL", "LABEL5", "LABEL2", "TEMPLATE", "LTHAN", "GTHAN", 
-			"INTEGER", "LCASE", "PARAMETER_VALUE", "COMMENT", "EOL", "FLAG", "FLAG_OR", 
-			"FLAG_EOL", "STRING"
+			"INTEGER", "LCASE", "PARAMETER_VALUE", "COMMENT", "INDENT", "EOL", "FLAG", 
+			"FLAG_OR", "FLAG_EOL", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -1202,7 +1202,7 @@ public class UIEntryGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0017\u00af\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u0018\u00af\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1240,28 +1240,28 @@ public class UIEntryGrammar extends Parser {
 		"%)\u0006\u0001\uffff\uffff\u0000&\'\u0003\u0000\u0000\u0000\'(\u0006\u0001"+
 		"\uffff\uffff\u0000(*\u0001\u0000\u0000\u0000)&\u0001\u0000\u0000\u0000"+
 		")*\u0001\u0000\u0000\u0000*\u0003\u0001\u0000\u0000\u0000+,\u0005\u0002"+
-		"\u0000\u0000,-\u0005\u0017\u0000\u0000-.\u0006\u0002\uffff\uffff\u0000"+
-		".\u0005\u0001\u0000\u0000\u0000/0\u0005\u0003\u0000\u000001\u0005\u0017"+
+		"\u0000\u0000,-\u0005\u0018\u0000\u0000-.\u0006\u0002\uffff\uffff\u0000"+
+		".\u0005\u0001\u0000\u0000\u0000/0\u0005\u0003\u0000\u000001\u0005\u0018"+
 		"\u0000\u000012\u0006\u0003\uffff\uffff\u00002\u0007\u0001\u0000\u0000"+
-		"\u000034\u0005\u0004\u0000\u000045\u0005\u0014\u0000\u000056\u0006\u0004"+
+		"\u000034\u0005\u0004\u0000\u000045\u0005\u0015\u0000\u000056\u0006\u0004"+
 		"\uffff\uffff\u00006\t\u0001\u0000\u0000\u000078\u0005\u0005\u0000\u0000"+
-		"89\u0005\u0017\u0000\u00009:\u0006\u0005\uffff\uffff\u0000:\u000b\u0001"+
-		"\u0000\u0000\u0000;<\u0005\u0006\u0000\u0000<=\u0005\u0017\u0000\u0000"+
+		"89\u0005\u0018\u0000\u00009:\u0006\u0005\uffff\uffff\u0000:\u000b\u0001"+
+		"\u0000\u0000\u0000;<\u0005\u0006\u0000\u0000<=\u0005\u0018\u0000\u0000"+
 		"=?\u0006\u0006\uffff\uffff\u0000>;\u0001\u0000\u0000\u0000?@\u0001\u0000"+
 		"\u0000\u0000@>\u0001\u0000\u0000\u0000@A\u0001\u0000\u0000\u0000A\r\u0001"+
-		"\u0000\u0000\u0000BC\u0005\u0007\u0000\u0000CD\u0005\u0014\u0000\u0000"+
-		"DJ\u0006\u0007\uffff\uffff\u0000EF\u0005\u0015\u0000\u0000FG\u0005\u0014"+
+		"\u0000\u0000\u0000BC\u0005\u0007\u0000\u0000CD\u0005\u0015\u0000\u0000"+
+		"DJ\u0006\u0007\uffff\uffff\u0000EF\u0005\u0016\u0000\u0000FG\u0005\u0015"+
 		"\u0000\u0000GI\u0006\u0007\uffff\uffff\u0000HE\u0001\u0000\u0000\u0000"+
 		"IL\u0001\u0000\u0000\u0000JH\u0001\u0000\u0000\u0000JK\u0001\u0000\u0000"+
 		"\u0000K\u000f\u0001\u0000\u0000\u0000LJ\u0001\u0000\u0000\u0000MN\u0005"+
-		"\b\u0000\u0000NO\u0005\u0017\u0000\u0000OQ\u0006\b\uffff\uffff\u0000P"+
+		"\b\u0000\u0000NO\u0005\u0018\u0000\u0000OQ\u0006\b\uffff\uffff\u0000P"+
 		"M\u0001\u0000\u0000\u0000QR\u0001\u0000\u0000\u0000RP\u0001\u0000\u0000"+
 		"\u0000RS\u0001\u0000\u0000\u0000S\u0011\u0001\u0000\u0000\u0000TU\u0005"+
-		"\t\u0000\u0000UV\u0005\u0017\u0000\u0000VW\u0006\t\uffff\uffff\u0000W"+
-		"\u0013\u0001\u0000\u0000\u0000XY\u0005\n\u0000\u0000YZ\u0005\u0017\u0000"+
+		"\t\u0000\u0000UV\u0005\u0018\u0000\u0000VW\u0006\t\uffff\uffff\u0000W"+
+		"\u0013\u0001\u0000\u0000\u0000XY\u0005\n\u0000\u0000YZ\u0005\u0018\u0000"+
 		"\u0000Z[\u0006\n\uffff\uffff\u0000[\u0015\u0001\u0000\u0000\u0000\\]\u0005"+
-		"\u000b\u0000\u0000]^\u0005\u0017\u0000\u0000^_\u0006\u000b\uffff\uffff"+
-		"\u0000_\u0017\u0001\u0000\u0000\u0000`a\u0005\f\u0000\u0000ab\u0005\u0017"+
+		"\u000b\u0000\u0000]^\u0005\u0018\u0000\u0000^_\u0006\u000b\uffff\uffff"+
+		"\u0000_\u0017\u0001\u0000\u0000\u0000`a\u0005\f\u0000\u0000ab\u0005\u0018"+
 		"\u0000\u0000bc\u0006\f\uffff\uffff\u0000c\u0019\u0001\u0000\u0000\u0000"+
 		"de\u0003\u0002\u0001\u0000ei\u0006\r\uffff\uffff\u0000fg\u0003\u0018\f"+
 		"\u0000gh\u0006\r\uffff\uffff\u0000hj\u0001\u0000\u0000\u0000if\u0001\u0000"+

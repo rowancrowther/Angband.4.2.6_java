@@ -112,7 +112,7 @@ OR
  * normally.
  */
 FLAG_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode REST_OF_LINE;
@@ -136,5 +136,5 @@ STRING
  * the parse still completes.
  */
 END_OF_LINE
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

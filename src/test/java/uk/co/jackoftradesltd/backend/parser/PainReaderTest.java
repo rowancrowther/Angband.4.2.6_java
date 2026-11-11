@@ -304,19 +304,20 @@ class PainReaderTest {
     // ---- Known differences from C's line handling (see docs/grammar_issues.md) ----
 
     @Test
-    void indentedDirectiveLineIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
+    void indentedDirectiveLineLoadsAsInC() throws IOException {
         // C: parser_parse skips leading isspace() before it looks for the directive, so "  type:1"
-        // reads as "type:1". CommentsAndEol only skips trailing spaces before a newline, so the
-        // lexer has no rule for a line that starts with a space. Pins the current behaviour.
-        assertThrows(ParseCancellationException.class, () -> load("indented.txt", "  " + entry(1, SEVEN)));
+        // reads as "type:1". The INDENT rule in CommentsAndEol skips it here too.
+        ParseResult<MonsterPain> result = load("indented.txt", "  " + entry(1, SEVEN));
 
+        assertEquals(1, result.items().get(0).getPainIndex());
     }
 
     @Test
-    void indentedCommentLineIsAHardErrorHereWhereCSkipsIt() throws IOException {
-        // C: after the leading whitespace is skipped, a line starting '#' is a comment. COMMENT
-        // here must start in column 0. Pins the current behaviour.
-        assertThrows(ParseCancellationException.class, () -> load("indented-comment.txt", "  # note\n" + entry(1, SEVEN)));
+    void indentedCommentLineLoadsAsInC() throws IOException {
+        // C: after the leading whitespace is skipped, a line starting '#' is a comment. INDENT takes
+        // the blanks and COMMENT takes the rest.
+        ParseResult<MonsterPain> result = load("indented-comment.txt", "  # note\n" + entry(1, SEVEN));
 
+        assertEquals(1, result.items().get(0).getPainIndex());
     }
 }

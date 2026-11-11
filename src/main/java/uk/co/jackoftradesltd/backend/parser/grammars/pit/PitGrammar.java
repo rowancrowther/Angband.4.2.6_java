@@ -42,8 +42,9 @@ public class PitGrammar extends Parser {
 	public static final int
 		NAME=1, ROOM=2, ALLOC=3, OBJ_RARITY=4, COLOUR=5, MON_BASE=6, FLAGS_REQ=7, 
 		FLAGS_BAN=8, INNATE_FREQ=9, SPELL_REQ=10, SPELL_BAN=11, MON_BAN=12, PIT_INTEGER=13, 
-		COMMENT=14, EOL=15, FLAG=16, FLAG_OR=17, FLAG_EOL=18, STRING=19, REST_OF_LINE_EOL=20, 
-		ALLOC_COLON=21, ALLOC_INTEGER=22, ALLOC_EOL=23, COLOUR_LINE=24, COLOUR_EOL=25;
+		COMMENT=14, INDENT=15, EOL=16, FLAG=17, FLAG_OR=18, FLAG_EOL=19, STRING=20, 
+		REST_OF_LINE_EOL=21, ALLOC_COLON=22, ALLOC_INTEGER=23, ALLOC_EOL=24, COLOUR_LINE=25, 
+		COLOUR_EOL=26;
 	public static final int
 		RULE_name = 0, RULE_room = 1, RULE_alloc = 2, RULE_objRarity = 3, RULE_colour = 4, 
 		RULE_monBase = 5, RULE_flagsReq = 6, RULE_flagsBan = 7, RULE_innateFreq = 8, 
@@ -63,7 +64,7 @@ public class PitGrammar extends Parser {
 			null, "'name:'", "'room:'", "'alloc:'", "'obj-rarity:'", "'color:'", 
 			"'mon-base:'", "'flags-req:'", "'flags-ban:'", "'innate-freq:'", "'spell-req:'", 
 			"'spell-ban:'", "'mon-ban:'", null, null, null, null, null, null, null, 
-			null, "':'"
+			null, null, "':'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -71,8 +72,9 @@ public class PitGrammar extends Parser {
 		return new String[] {
 			null, "NAME", "ROOM", "ALLOC", "OBJ_RARITY", "COLOUR", "MON_BASE", "FLAGS_REQ", 
 			"FLAGS_BAN", "INNATE_FREQ", "SPELL_REQ", "SPELL_BAN", "MON_BAN", "PIT_INTEGER", 
-			"COMMENT", "EOL", "FLAG", "FLAG_OR", "FLAG_EOL", "STRING", "REST_OF_LINE_EOL", 
-			"ALLOC_COLON", "ALLOC_INTEGER", "ALLOC_EOL", "COLOUR_LINE", "COLOUR_EOL"
+			"COMMENT", "INDENT", "EOL", "FLAG", "FLAG_OR", "FLAG_EOL", "STRING", 
+			"REST_OF_LINE_EOL", "ALLOC_COLON", "ALLOC_INTEGER", "ALLOC_EOL", "COLOUR_LINE", 
+			"COLOUR_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -1155,7 +1157,7 @@ public class PitGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0019\u009b\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u001a\u009b\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1184,36 +1186,36 @@ public class PitGrammar extends Parser {
 		"\u0000\u0012P\u0001\u0000\u0000\u0000\u0014[\u0001\u0000\u0000\u0000\u0016"+
 		"f\u0001\u0000\u0000\u0000\u0018j\u0001\u0000\u0000\u0000\u001a\u0094\u0001"+
 		"\u0000\u0000\u0000\u001c\u001d\u0005\u0001\u0000\u0000\u001d\u001e\u0005"+
-		"\u0013\u0000\u0000\u001e\u001f\u0006\u0000\uffff\uffff\u0000\u001f\u0001"+
+		"\u0014\u0000\u0000\u001e\u001f\u0006\u0000\uffff\uffff\u0000\u001f\u0001"+
 		"\u0001\u0000\u0000\u0000 !\u0005\u0002\u0000\u0000!\"\u0005\r\u0000\u0000"+
 		"\"#\u0006\u0001\uffff\uffff\u0000#\u0003\u0001\u0000\u0000\u0000$%\u0005"+
-		"\u0003\u0000\u0000%&\u0005\u0016\u0000\u0000&\'\u0005\u0015\u0000\u0000"+
-		"\'(\u0005\u0016\u0000\u0000()\u0006\u0002\uffff\uffff\u0000)\u0005\u0001"+
+		"\u0003\u0000\u0000%&\u0005\u0017\u0000\u0000&\'\u0005\u0016\u0000\u0000"+
+		"\'(\u0005\u0017\u0000\u0000()\u0006\u0002\uffff\uffff\u0000)\u0005\u0001"+
 		"\u0000\u0000\u0000*+\u0005\u0004\u0000\u0000+,\u0005\r\u0000\u0000,-\u0006"+
 		"\u0003\uffff\uffff\u0000-\u0007\u0001\u0000\u0000\u0000./\u0005\u0005"+
-		"\u0000\u0000/0\u0005\u0018\u0000\u000001\u0006\u0004\uffff\uffff\u0000"+
-		"1\t\u0001\u0000\u0000\u000023\u0005\u0006\u0000\u000034\u0005\u0013\u0000"+
+		"\u0000\u0000/0\u0005\u0019\u0000\u000001\u0006\u0004\uffff\uffff\u0000"+
+		"1\t\u0001\u0000\u0000\u000023\u0005\u0006\u0000\u000034\u0005\u0014\u0000"+
 		"\u000045\u0006\u0005\uffff\uffff\u00005\u000b\u0001\u0000\u0000\u0000"+
-		"67\u0005\u0007\u0000\u000078\u0005\u0010\u0000\u00008>\u0006\u0006\uffff"+
-		"\uffff\u00009:\u0005\u0011\u0000\u0000:;\u0005\u0010\u0000\u0000;=\u0006"+
+		"67\u0005\u0007\u0000\u000078\u0005\u0011\u0000\u00008>\u0006\u0006\uffff"+
+		"\uffff\u00009:\u0005\u0012\u0000\u0000:;\u0005\u0011\u0000\u0000;=\u0006"+
 		"\u0006\uffff\uffff\u0000<9\u0001\u0000\u0000\u0000=@\u0001\u0000\u0000"+
 		"\u0000><\u0001\u0000\u0000\u0000>?\u0001\u0000\u0000\u0000?\r\u0001\u0000"+
-		"\u0000\u0000@>\u0001\u0000\u0000\u0000AB\u0005\b\u0000\u0000BC\u0005\u0010"+
-		"\u0000\u0000CI\u0006\u0007\uffff\uffff\u0000DE\u0005\u0011\u0000\u0000"+
-		"EF\u0005\u0010\u0000\u0000FH\u0006\u0007\uffff\uffff\u0000GD\u0001\u0000"+
+		"\u0000\u0000@>\u0001\u0000\u0000\u0000AB\u0005\b\u0000\u0000BC\u0005\u0011"+
+		"\u0000\u0000CI\u0006\u0007\uffff\uffff\u0000DE\u0005\u0012\u0000\u0000"+
+		"EF\u0005\u0011\u0000\u0000FH\u0006\u0007\uffff\uffff\u0000GD\u0001\u0000"+
 		"\u0000\u0000HK\u0001\u0000\u0000\u0000IG\u0001\u0000\u0000\u0000IJ\u0001"+
 		"\u0000\u0000\u0000J\u000f\u0001\u0000\u0000\u0000KI\u0001\u0000\u0000"+
 		"\u0000LM\u0005\t\u0000\u0000MN\u0005\r\u0000\u0000NO\u0006\b\uffff\uffff"+
-		"\u0000O\u0011\u0001\u0000\u0000\u0000PQ\u0005\n\u0000\u0000QR\u0005\u0010"+
-		"\u0000\u0000RX\u0006\t\uffff\uffff\u0000ST\u0005\u0011\u0000\u0000TU\u0005"+
-		"\u0010\u0000\u0000UW\u0006\t\uffff\uffff\u0000VS\u0001\u0000\u0000\u0000"+
+		"\u0000O\u0011\u0001\u0000\u0000\u0000PQ\u0005\n\u0000\u0000QR\u0005\u0011"+
+		"\u0000\u0000RX\u0006\t\uffff\uffff\u0000ST\u0005\u0012\u0000\u0000TU\u0005"+
+		"\u0011\u0000\u0000UW\u0006\t\uffff\uffff\u0000VS\u0001\u0000\u0000\u0000"+
 		"WZ\u0001\u0000\u0000\u0000XV\u0001\u0000\u0000\u0000XY\u0001\u0000\u0000"+
 		"\u0000Y\u0013\u0001\u0000\u0000\u0000ZX\u0001\u0000\u0000\u0000[\\\u0005"+
-		"\u000b\u0000\u0000\\]\u0005\u0010\u0000\u0000]c\u0006\n\uffff\uffff\u0000"+
-		"^_\u0005\u0011\u0000\u0000_`\u0005\u0010\u0000\u0000`b\u0006\n\uffff\uffff"+
+		"\u000b\u0000\u0000\\]\u0005\u0011\u0000\u0000]c\u0006\n\uffff\uffff\u0000"+
+		"^_\u0005\u0012\u0000\u0000_`\u0005\u0011\u0000\u0000`b\u0006\n\uffff\uffff"+
 		"\u0000a^\u0001\u0000\u0000\u0000be\u0001\u0000\u0000\u0000ca\u0001\u0000"+
 		"\u0000\u0000cd\u0001\u0000\u0000\u0000d\u0015\u0001\u0000\u0000\u0000"+
-		"ec\u0001\u0000\u0000\u0000fg\u0005\f\u0000\u0000gh\u0005\u0013\u0000\u0000"+
+		"ec\u0001\u0000\u0000\u0000fg\u0005\f\u0000\u0000gh\u0005\u0014\u0000\u0000"+
 		"hi\u0006\u000b\uffff\uffff\u0000i\u0017\u0001\u0000\u0000\u0000jk\u0003"+
 		"\u0000\u0000\u0000k\u008d\u0006\f\uffff\uffff\u0000lm\u0003\u0002\u0001"+
 		"\u0000mn\u0006\f\uffff\uffff\u0000n\u008e\u0001\u0000\u0000\u0000op\u0003"+

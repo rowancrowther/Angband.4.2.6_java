@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/RealmGrammar.g4 by ANTLR 4.13.2
+// Generated from RealmGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.realm;
 
 import org.antlr.v4.runtime.*;
@@ -41,7 +41,7 @@ public class RealmGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		NAME=1, STAT=2, VERB=3, SPELL_NOUN=4, BOOK_NOUN=5, INTEGER=6, COMMENT=7, 
-		EOL=8, STRING=9, FREE_TEXT_EOL=10;
+		INDENT=8, EOL=9, STRING=10, FREE_TEXT_EOL=11;
 	public static final int
 		RULE_name = 0, RULE_stat = 1, RULE_verb = 2, RULE_spellNoun = 3, RULE_bookNoun = 4, 
 		RULE_realm = 5, RULE_file = 6;
@@ -61,7 +61,7 @@ public class RealmGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "NAME", "STAT", "VERB", "SPELL_NOUN", "BOOK_NOUN", "INTEGER", "COMMENT", 
-			"EOL", "STRING", "FREE_TEXT_EOL"
+			"INDENT", "EOL", "STRING", "FREE_TEXT_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -567,7 +567,7 @@ public class RealmGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\n>\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000b>\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
@@ -582,15 +582,15 @@ public class RealmGrammar extends Parser {
 		"\u0000\u0000\u0000\u0004\u0016\u0001\u0000\u0000\u0000\u0006\u001a\u0001"+
 		"\u0000\u0000\u0000\b\u001e\u0001\u0000\u0000\u0000\n\"\u0001\u0000\u0000"+
 		"\u0000\f7\u0001\u0000\u0000\u0000\u000e\u000f\u0005\u0001\u0000\u0000"+
-		"\u000f\u0010\u0005\t\u0000\u0000\u0010\u0011\u0006\u0000\uffff\uffff\u0000"+
+		"\u000f\u0010\u0005\n\u0000\u0000\u0010\u0011\u0006\u0000\uffff\uffff\u0000"+
 		"\u0011\u0001\u0001\u0000\u0000\u0000\u0012\u0013\u0005\u0002\u0000\u0000"+
-		"\u0013\u0014\u0005\t\u0000\u0000\u0014\u0015\u0006\u0001\uffff\uffff\u0000"+
+		"\u0013\u0014\u0005\n\u0000\u0000\u0014\u0015\u0006\u0001\uffff\uffff\u0000"+
 		"\u0015\u0003\u0001\u0000\u0000\u0000\u0016\u0017\u0005\u0003\u0000\u0000"+
-		"\u0017\u0018\u0005\t\u0000\u0000\u0018\u0019\u0006\u0002\uffff\uffff\u0000"+
+		"\u0017\u0018\u0005\n\u0000\u0000\u0018\u0019\u0006\u0002\uffff\uffff\u0000"+
 		"\u0019\u0005\u0001\u0000\u0000\u0000\u001a\u001b\u0005\u0004\u0000\u0000"+
-		"\u001b\u001c\u0005\t\u0000\u0000\u001c\u001d\u0006\u0003\uffff\uffff\u0000"+
+		"\u001b\u001c\u0005\n\u0000\u0000\u001c\u001d\u0006\u0003\uffff\uffff\u0000"+
 		"\u001d\u0007\u0001\u0000\u0000\u0000\u001e\u001f\u0005\u0005\u0000\u0000"+
-		"\u001f \u0005\t\u0000\u0000 !\u0006\u0004\uffff\uffff\u0000!\t\u0001\u0000"+
+		"\u001f \u0005\n\u0000\u0000 !\u0006\u0004\uffff\uffff\u0000!\t\u0001\u0000"+
 		"\u0000\u0000\"#\u0003\u0000\u0000\u0000#0\u0006\u0005\uffff\uffff\u0000"+
 		"$%\u0003\u0002\u0001\u0000%&\u0006\u0005\uffff\uffff\u0000&1\u0001\u0000"+
 		"\u0000\u0000\'(\u0003\u0004\u0002\u0000()\u0006\u0005\uffff\uffff\u0000"+

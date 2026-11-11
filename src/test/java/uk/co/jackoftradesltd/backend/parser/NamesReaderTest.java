@@ -391,17 +391,18 @@ class NamesReaderTest {
     }
 
     /**
-     * Where C and the grammar differ, written up in {@code docs/grammar_issues.md}: C skips leading
-     * whitespace on a line before it reads the directive, so an indented line, an indented comment
-     * and a tab-only line are all fine to it. The lexer takes none of them, and a comment on the
-     * last line needs its newline.
+     * C skips leading whitespace on a line before it reads the directive, so an indented line, an
+     * indented comment, a tab-only line and a comment on the last line with no newline are all fine
+     * to it. The lexer now takes all four.
+     *
+     * <p>Function leadingWhitespaceBeforeADirectiveLoadsAsInC coded on 261109, commented in full on
+     * 261109. It replaces leadingWhitespaceBeforeADirectiveIsAHardErrorWhereCSkipsIt.
      */
     @Test
-    void leadingWhitespaceBeforeADirectiveIsAHardErrorWhereCSkipsIt() throws IOException {
-        for (String bad : List.of("  word:indented\n", "  # indented comment\n", "\t\n",
+    void leadingWhitespaceBeforeADirectiveLoadsAsInC() {
+        for (String ok : List.of("  word:indented\n", "  # indented comment\n", "\t\n",
                 "# no newline")) {
-            assertThrows(ParseCancellationException.class, () -> load("ws.txt", "section:1\n" + bad), bad);
-
+            assertDoesNotThrow(() -> load("ws.txt", "section:1\n" + ok), ok);
         }
     }
 

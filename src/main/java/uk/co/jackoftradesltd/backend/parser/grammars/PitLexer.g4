@@ -85,12 +85,6 @@ PIT_INTEGER
         :   '-'? ('0'..'9')+
         ;
 
-// Local end-of-line fragment, reused by every mode's pop rule below. Kept as a
-// fragment (never a token) because line ends inside a mode are always skipped.
-fragment PIT_EOL
-        :   '\r'* '\n'
-        ;
-
 // --- FLAG_MODE: the '|'-separated flag/spell lists ------------------------
 mode FLAG_MODE;
 
@@ -106,7 +100,7 @@ FLAG_OR
 
 // End of the flag line: leave the mode and drop the newline.
 FLAG_EOL
-        :   PIT_EOL -> popMode, skip
+        :   NL -> popMode, skip
         ;
 
 // --- REST_OF_LINE: verbatim free text (names, monster names) --------------
@@ -118,7 +112,7 @@ STRING
         ;
 
 REST_OF_LINE_EOL
-        :   PIT_EOL -> popMode, skip
+        :   NL -> popMode, skip
         ;
 
 // --- ALLOC_MODE: the "rarity:level" pair ----------------------------------
@@ -135,7 +129,7 @@ ALLOC_INTEGER
         ;
 
 ALLOC_EOL
-        :   PIT_EOL -> popMode, skip
+        :   NL -> popMode, skip
         ;
 
 // --- COLOUR_MODE: a colour code or colour name ----------------------------
@@ -148,5 +142,5 @@ COLOUR_LINE
         ;
 
 COLOUR_EOL
-        :   PIT_EOL -> popMode, skip
+        :   NEWLINE -> popMode, skip
         ;

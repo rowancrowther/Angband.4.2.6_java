@@ -41,8 +41,9 @@ public class ObjectBaseGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		DEFAULT_MAX_STACK=1, DEFAULT_BREAK_CHANCE=2, NAME=3, GRAPHICS=4, BREAK=5, 
-		MAX_STACK=6, FLAGS=7, INTEGER=8, COMMENT=9, EOL=10, T_VAL=11, T_VAL_COLON=12, 
-		NAME_EOL=13, STRING=14, STRING_EOL=15, FLAG=16, FLAG_OR=17, FLAG_EOL=18;
+		MAX_STACK=6, FLAGS=7, INTEGER=8, COMMENT=9, INDENT=10, EOL=11, T_VAL=12, 
+		T_VAL_COLON=13, NAME_EOL=14, STRING=15, STRING_EOL=16, FLAG=17, FLAG_OR=18, 
+		FLAG_EOL=19;
 	public static final int
 		RULE_default_value = 0, RULE_name = 1, RULE_graphics = 2, RULE_break_chance = 3, 
 		RULE_max_stack = 4, RULE_flags = 5, RULE_object_base = 6, RULE_file = 7;
@@ -57,15 +58,16 @@ public class ObjectBaseGrammar extends Parser {
 	private static String[] makeLiteralNames() {
 		return new String[] {
 			null, "'default:max-stack:'", "'default:break-chance:'", "'name:'", "'graphics:'", 
-			"'break:'", "'max-stack:'", "'flags:'", null, null, null, null, "':'"
+			"'break:'", "'max-stack:'", "'flags:'", null, null, null, null, null, 
+			"':'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "DEFAULT_MAX_STACK", "DEFAULT_BREAK_CHANCE", "NAME", "GRAPHICS", 
-			"BREAK", "MAX_STACK", "FLAGS", "INTEGER", "COMMENT", "EOL", "T_VAL", 
-			"T_VAL_COLON", "NAME_EOL", "STRING", "STRING_EOL", "FLAG", "FLAG_OR", 
+			"BREAK", "MAX_STACK", "FLAGS", "INTEGER", "COMMENT", "INDENT", "EOL", 
+			"T_VAL", "T_VAL_COLON", "NAME_EOL", "STRING", "STRING_EOL", "FLAG", "FLAG_OR", 
 			"FLAG_EOL"
 		};
 	}
@@ -743,7 +745,8 @@ public class ObjectBaseGrammar extends Parser {
 				                    newBase = new ObjectBaseParseRecord(base.name(), base.tVal(), base.colour(),
 				                    base.flags(),
 				                    base.breakChance().isEmpty() ? defaultBreakChance : base.breakChance(),
-				                    base.maxStack().isEmpty() ? defaultMaxStack : base.maxStack(), base.line());
+				                    base.maxStack().isEmpty()    ? defaultMaxStack    : base.maxStack(), 
+				                    base.line());
 				                } else {
 				                    newBase = base;
 				                }
@@ -773,7 +776,7 @@ public class ObjectBaseGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0012f\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0013f\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0001"+
 		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0003"+
@@ -799,22 +802,22 @@ public class ObjectBaseGrammar extends Parser {
 		"\u0015\u0005\b\u0000\u0000\u0015\u0017\u0006\u0000\uffff\uffff\u0000\u0016"+
 		"\u0010\u0001\u0000\u0000\u0000\u0016\u0013\u0001\u0000\u0000\u0000\u0017"+
 		"\u0001\u0001\u0000\u0000\u0000\u0018\u0019\u0005\u0003\u0000\u0000\u0019"+
-		"\u001a\u0005\u000b\u0000\u0000\u001a\u001b\u0005\f\u0000\u0000\u001b\u001c"+
-		"\u0005\u000e\u0000\u0000\u001c\u001d\u0001\u0000\u0000\u0000\u001d$\u0006"+
+		"\u001a\u0005\f\u0000\u0000\u001a\u001b\u0005\r\u0000\u0000\u001b\u001c"+
+		"\u0005\u000f\u0000\u0000\u001c\u001d\u0001\u0000\u0000\u0000\u001d$\u0006"+
 		"\u0001\uffff\uffff\u0000\u001e\u001f\u0005\u0003\u0000\u0000\u001f \u0005"+
-		"\u000b\u0000\u0000 !\u0005\r\u0000\u0000!\"\u0001\u0000\u0000\u0000\""+
+		"\f\u0000\u0000 !\u0005\u000e\u0000\u0000!\"\u0001\u0000\u0000\u0000\""+
 		"$\u0006\u0001\uffff\uffff\u0000#\u0018\u0001\u0000\u0000\u0000#\u001e"+
 		"\u0001\u0000\u0000\u0000$\u0003\u0001\u0000\u0000\u0000%&\u0005\u0004"+
-		"\u0000\u0000&\'\u0005\u000e\u0000\u0000\'(\u0006\u0002\uffff\uffff\u0000"+
+		"\u0000\u0000&\'\u0005\u000f\u0000\u0000\'(\u0006\u0002\uffff\uffff\u0000"+
 		"(\u0005\u0001\u0000\u0000\u0000)*\u0005\u0005\u0000\u0000*+\u0005\b\u0000"+
 		"\u0000+,\u0006\u0003\uffff\uffff\u0000,\u0007\u0001\u0000\u0000\u0000"+
 		"-.\u0005\u0006\u0000\u0000./\u0005\b\u0000\u0000/0\u0006\u0004\uffff\uffff"+
-		"\u00000\t\u0001\u0000\u0000\u000012\u0005\u0007\u0000\u000023\u0005\u0010"+
-		"\u0000\u000039\u0006\u0005\uffff\uffff\u000045\u0005\u0011\u0000\u0000"+
-		"56\u0005\u0010\u0000\u000068\u0006\u0005\uffff\uffff\u000074\u0001\u0000"+
+		"\u00000\t\u0001\u0000\u0000\u000012\u0005\u0007\u0000\u000023\u0005\u0011"+
+		"\u0000\u000039\u0006\u0005\uffff\uffff\u000045\u0005\u0012\u0000\u0000"+
+		"56\u0005\u0011\u0000\u000068\u0006\u0005\uffff\uffff\u000074\u0001\u0000"+
 		"\u0000\u00008;\u0001\u0000\u0000\u000097\u0001\u0000\u0000\u00009:\u0001"+
 		"\u0000\u0000\u0000:<\u0001\u0000\u0000\u0000;9\u0001\u0000\u0000\u0000"+
-		"<=\u0005\u0012\u0000\u0000=\u000b\u0001\u0000\u0000\u0000>?\u0003\u0002"+
+		"<=\u0005\u0013\u0000\u0000=\u000b\u0001\u0000\u0000\u0000>?\u0003\u0002"+
 		"\u0001\u0000?@\u0006\u0006\uffff\uffff\u0000@A\u0003\u0004\u0002\u0000"+
 		"AE\u0006\u0006\uffff\uffff\u0000BC\u0003\u0006\u0003\u0000CD\u0006\u0006"+
 		"\uffff\uffff\u0000DF\u0001\u0000\u0000\u0000EB\u0001\u0000\u0000\u0000"+

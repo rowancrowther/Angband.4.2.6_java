@@ -14,6 +14,14 @@ import EffectBlock;
     import java.util.ArrayList;
 }
 
+@members {
+    // EffectParseRecord is a record, so "updating" the last effect means
+    // swapping in a copy with one or more fields changed
+    void replaceLast(List<EffectParseRecord> list, EffectParseRecord updated) {
+        list.set(list.size() - 1, updated);
+    }
+}
+
 name
         returns[String nameStr, int line]
         :   NAME FREE_TEXT { $nameStr = $FREE_TEXT.getText();
@@ -125,6 +133,44 @@ curseRecord
                 $effectBlock.expressionChars, $effectBlock.expressionBase,
                 $effectBlock.expressionOperation,
                 $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+        |   effectYX {
+                if (!effects.isEmpty()) {
+                    EffectParseRecord last = effects.getLast();
+                    EffectParseRecord updated = last.amendYX($effectYX.y, $effectYX.x);
+                    replaceLast(effects, updated);
+                }
+            }
+        |   dice {
+                if (!effects.isEmpty()) {
+                    EffectParseRecord last = effects.getLast();
+                    String diceStr = $dice.diceString;
+                    EffectParseRecord updated = last.amendExpression(diceStr,
+                                                                     $dice.exprChar,
+                                                                     $dice.baseName,
+                                                                     $dice.operation);
+                    replaceLast(effects, updated);
+                }
+            }
+        |   expr {
+                if (!effects.isEmpty() && !effects.getLast().diceString().isEmpty()) {
+                    EffectParseRecord last = effects.getLast();
+                    String lastDiceStr  = last.diceString();
+                    String lastExprChar = last.expressionChars().isEmpty() 
+                                        ? $expr.exprChar
+                                        : last.expressionChars() + "^" + $expr.exprChar;
+                    String lastExprBase = last.expressionBases().isEmpty() 
+                                        ? $expr.baseName
+                                        : last.expressionBases() + "^" + $expr.baseName;
+                    String lastExprOp   = last.expressionOperations().isEmpty() 
+                                        ? $expr.operation
+                                        : last.expressionOperations() + "^" + $expr.operation;
+                    EffectParseRecord updated = last.amendExpression(lastDiceStr,
+                                                lastExprChar,
+                                                lastExprBase,
+                                                lastExprOp);
+                    replaceLast(effects, updated);
+                }
+            }
         |   flags { flagsListInit.addAll($flags.flagList); }
         |   values { valuesInit.putAll($values.valueMap); }
         |   msg { 

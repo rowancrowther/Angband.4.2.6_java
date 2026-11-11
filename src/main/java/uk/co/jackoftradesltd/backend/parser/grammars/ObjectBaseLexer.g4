@@ -92,7 +92,7 @@ T_VAL_COLON
         ;
 
 NAME_EOL
-        :   '\r'? '\n' -> mode(DEFAULT_MODE)
+        :   NL -> mode(DEFAULT_MODE)
         ;
 
 // One line of arbitrary text (the plural name after name:, or the colour after
@@ -105,7 +105,7 @@ STRING
         ;
 
 STRING_EOL
-        :   '\r'? '\n'  -> skip, mode(DEFAULT_MODE)
+        :   NL  -> skip, mode(DEFAULT_MODE)
         ;
 
 // A '|'-separated list of flag names (flags:). FLAG wraps the shared FLAG_BODY
@@ -122,5 +122,5 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   ('\r'? '\n') -> popMode
+        :   NL -> popMode
         ;

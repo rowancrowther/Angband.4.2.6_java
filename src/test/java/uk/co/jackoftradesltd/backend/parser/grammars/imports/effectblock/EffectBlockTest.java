@@ -23,7 +23,8 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit tests for the generated {@link EffectBlock} parser (paired with {@link EffectBlockLexer}).
@@ -33,7 +34,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * custom error listener). They lock in the design decisions verified during development:
  * <ul>
  *   <li>multi-{@code expr} caret accumulation for a complex dice;</li>
- *   <li>the biconditional — a {@code $}-dice with no {@code expr:} is a parse error;</li>
+ *   <li>a {@code $}-dice with no {@code expr:} straight after it parses, as in C, which binds
+ *       the variables later by name (or never);</li>
  *   <li>{@code effect-msg:} captured at the effect level;</li>
  *   <li>a signed (negative) {@code other} parameter;</li>
  *   <li>the {@code effect-yx:} y-then-x ordering.</li>
@@ -128,13 +130,43 @@ class EffectBlockTest {
         assertEquals("5+1d5", ctx.timeStr);
     }
 
+    /**
+     * C ({@code dice_parse_string} in {@code z-dice.c}) accepts a {@code $} variable and records it
+     * as waiting for a value; nothing needs binding at parse time. So a complex {@code dice:} with
+     * no {@code expr:} after it is legal, and reaches the caller as a complex string with empty
+     * expression strings.
+     *
+     * <p>Function complexDiceWithoutExprLoadsAsInC coded on 261111, commented in full on 261111.
+     */
     @Test
-    void complexDiceWithoutExprIsRejected() {
+    void complexDiceWithoutExprLoadsAsInC() {
         Errors errors = new Errors();
-        parser("effect:BALL:FIRE:2\ndice:$B\n", errors).effectBlock();
+        EffectBlock.EffectBlockContext ctx = parser("effect:BALL:FIRE:2\ndice:$B\n", errors).effectBlock();
 
-        assertFalse(errors.messages.isEmpty(),
-                "a $-dice with no expr: must be a parse error (the complex <=> expr biconditional)");
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals("$B", ctx.diceString);
+        assertEquals("", ctx.expressionChars);
+        assertEquals("", ctx.expressionBase);
+        assertEquals("", ctx.expressionOperation);
+    }
+
+    /**
+     * The block ends cleanly at the next {@code effect:} when the complex dice before it had no
+     * {@code expr:}: the second effect starts a new block, which the caller loops on.
+     *
+     * <p>Function complexDiceWithoutExprStopsBeforeTheNextEffect coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void complexDiceWithoutExprStopsBeforeTheNextEffect() {
+        Errors errors = new Errors();
+        EffectBlock parser = parser("effect:DAMAGE\ndice:$B+1d4\neffect:WAKE\n", errors);
+        EffectBlock.EffectBlockContext ctx = parser.effectBlock();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals("$B+1d4", ctx.diceString);
+        assertEquals("", ctx.expressionChars);
+        assertEquals(EffectBlockLexer.EFFECT, parser.getCurrentToken().getType(),
+                "the second effect: line must be left unconsumed");
     }
 
     @Test

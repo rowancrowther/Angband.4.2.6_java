@@ -795,15 +795,29 @@ class PitReaderTest {
     /**
      * The handlers split the value with {@code strtok(flags, " |")}, so a space separates codes as well
      * as a bar, and leading, trailing and doubled separators are skipped. The lexer only knows
-     * {@code FLAG_OR}, a bar with an optional space either side.
+     * {@code FLAG_OR}, a bar with an optional space either side. Blanks before the line end are the
+     * exception: {@code CommentsAndEol} absorbs them (see
+     * {@link #aTrailingBlankAfterAFlagListIsIgnoredAsInC}).
      */
     @Test
     void spaceSeparatedOrPaddedFlagListsAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        for (String line : List.of("flags-req:ANIMAL EVIL", "flags-req: ANIMAL", "flags-req:ANIMAL ",
+        for (String line : List.of("flags-req:ANIMAL EVIL", "flags-req: ANIMAL",
                 "flags-req:ANIMAL |", "spell-ban:BR_FIRE BR_COLD")) {
             assertThrows(ParseCancellationException.class, () -> load("padded-flags.txt", "name:Padded\n" + line), line);
 
         }
+    }
+
+    /**
+     * {@code strtok(flags, " |")} skips a trailing separator, so {@code flags-req:ANIMAL } loads the
+     * one flag.
+     */
+    @Test
+    void aTrailingBlankAfterAFlagListIsIgnoredAsInC() throws Exception {
+        ParseResult<PitProfile> result = load("trailing-blank-flags.txt", "name:Padded\nflags-req:ANIMAL \n");
+
+        Flag<MonsterRaceFlag> flags = field(result.items().getFirst(), "flags");
+        assertEquals(1, flags.count());
     }
 
     /**
@@ -828,6 +842,18 @@ class PitReaderTest {
 
             assertEquals(List.of(e.getValue()), field(result.items().getFirst(), "colours"), e.getKey());
         }
+    }
+
+    /**
+     * {@code parse_pit_color} reads the value with {@code parser_getsym}, which skips no blanks, so a
+     * value of one blank goes to {@code color_char_to_attr}, which answers {@code COLOUR_DARK} for
+     * {@code ' '}. A blank is not an empty value.
+     */
+    @Test
+    void aColourOfOnlyABlankIsDarkAsInC() throws Exception {
+        ParseResult<PitProfile> result = load("colour-blank.txt", "name:Blank", "color: ");
+
+        assertEquals(List.of(ColourEnum.COLOUR_DARK), field(result.items().getFirst(), "colours"));
     }
 
     /**

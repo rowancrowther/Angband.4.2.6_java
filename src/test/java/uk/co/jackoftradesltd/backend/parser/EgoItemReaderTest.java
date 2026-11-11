@@ -1162,14 +1162,30 @@ class EgoItemReaderTest {
     /**
      * {@code grab_int_range} takes {@code <int><whitespace><optional "to"><whitespace><int>} and
      * ignores trailing spaces, and {@code strtol} skips leading ones. The lexer matches the literal
-     * {@code " to "} and nothing else around the figures.
+     * {@code " to "} and nothing else around the figures, apart from blanks before the line end,
+     * which {@code CommentsAndEol} now absorbs (see
+     * {@link #aTrailingBlankAfterTheAllocRangeIsIgnoredAsInC}).
      */
     @Test
     void allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
         assertHardError("alloc-wide.txt", "alloc:10:5  to  20\n");
         assertHardError("alloc-tabs.txt", "alloc:10:5\tto\t20\n");
         assertHardError("alloc-leading.txt", "alloc:10: 5 to 20\n");
-        assertHardError("alloc-trailing.txt", "alloc:10:5 to 20 \n");
+    }
+
+    /**
+     * {@code grab_int_range} ignores trailing spaces, so {@code alloc:10:5 to 20 } loads as 10, 5, 20.
+     */
+    @Test
+    void aTrailingBlankAfterTheAllocRangeIsIgnoredAsInC() throws Exception {
+        EgoItem e = loadOne("alloc-trailing.txt", "type:sword\nalloc:10:5 to 20 \n");
+
+        int prob = field(e, "allocProb");
+        int min = field(e, "allocMin");
+        int max = field(e, "allocMax");
+        assertEquals(10, prob);
+        assertEquals(5, min);
+        assertEquals(20, max);
     }
 
     /**

@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from VisualsGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.visuals;
 
@@ -40,9 +41,9 @@ public class VisualsGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		FLICKER=1, FLICKER_COLOUR=2, CYCLE=3, CYCLE_COLOUR=4, COMMENT=5, EOL=6, 
-		STRING=7, ROL_EOL=8, COLOUR_LINE=9, SWAP_COLON=10, COLOUR_EOL=11, DELIM_COLON=12, 
-		STRING_BETWEEN_COLON=13, POP_EOL=14;
+		FLICKER=1, FLICKER_COLOUR=2, CYCLE=3, CYCLE_COLOUR=4, COMMENT=5, INDENT=6, 
+		EOL=7, STRING=8, ROL_EOL=9, COLOUR_LINE=10, SWAP_COLON=11, COLOUR_EOL=12, 
+		DELIM_COLON=13, STRING_BETWEEN_COLON=14, POP_EOL=15;
 	public static final int
 		RULE_flicker = 0, RULE_flickerColour = 1, RULE_flickerBlock = 2, RULE_cycle = 3, 
 		RULE_cycleColour = 4, RULE_cycleBlock = 5, RULE_file = 6;
@@ -63,7 +64,7 @@ public class VisualsGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "FLICKER", "FLICKER_COLOUR", "CYCLE", "CYCLE_COLOUR", "COMMENT", 
-			"EOL", "STRING", "ROL_EOL", "COLOUR_LINE", "SWAP_COLON", "COLOUR_EOL", 
+			"INDENT", "EOL", "STRING", "ROL_EOL", "COLOUR_LINE", "SWAP_COLON", "COLOUR_EOL", 
 			"DELIM_COLON", "STRING_BETWEEN_COLON", "POP_EOL"
 		};
 	}
@@ -592,7 +593,7 @@ public class VisualsGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000eA\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000fA\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001"+
@@ -607,19 +608,19 @@ public class VisualsGrammar extends Parser {
 		"\u0001\u0000\u0000\u0000\u0002\u0014\u0001\u0000\u0000\u0000\u0004\u0018"+
 		"\u0001\u0000\u0000\u0000\u0006!\u0001\u0000\u0000\u0000\b\'\u0001\u0000"+
 		"\u0000\u0000\n+\u0001\u0000\u0000\u0000\f:\u0001\u0000\u0000\u0000\u000e"+
-		"\u000f\u0005\u0001\u0000\u0000\u000f\u0010\u0005\t\u0000\u0000\u0010\u0011"+
-		"\u0005\n\u0000\u0000\u0011\u0012\u0005\u0007\u0000\u0000\u0012\u0013\u0006"+
+		"\u000f\u0005\u0001\u0000\u0000\u000f\u0010\u0005\n\u0000\u0000\u0010\u0011"+
+		"\u0005\u000b\u0000\u0000\u0011\u0012\u0005\b\u0000\u0000\u0012\u0013\u0006"+
 		"\u0000\uffff\uffff\u0000\u0013\u0001\u0001\u0000\u0000\u0000\u0014\u0015"+
-		"\u0005\u0002\u0000\u0000\u0015\u0016\u0005\t\u0000\u0000\u0016\u0017\u0006"+
+		"\u0005\u0002\u0000\u0000\u0015\u0016\u0005\n\u0000\u0000\u0016\u0017\u0006"+
 		"\u0001\uffff\uffff\u0000\u0017\u0003\u0001\u0000\u0000\u0000\u0018\u0019"+
 		"\u0003\u0000\u0000\u0000\u0019\u001d\u0006\u0002\uffff\uffff\u0000\u001a"+
 		"\u001b\u0003\u0002\u0001\u0000\u001b\u001c\u0006\u0002\uffff\uffff\u0000"+
 		"\u001c\u001e\u0001\u0000\u0000\u0000\u001d\u001a\u0001\u0000\u0000\u0000"+
 		"\u001e\u001f\u0001\u0000\u0000\u0000\u001f\u001d\u0001\u0000\u0000\u0000"+
 		"\u001f \u0001\u0000\u0000\u0000 \u0005\u0001\u0000\u0000\u0000!\"\u0005"+
-		"\u0003\u0000\u0000\"#\u0005\r\u0000\u0000#$\u0005\f\u0000\u0000$%\u0005"+
-		"\u0007\u0000\u0000%&\u0006\u0003\uffff\uffff\u0000&\u0007\u0001\u0000"+
-		"\u0000\u0000\'(\u0005\u0004\u0000\u0000()\u0005\t\u0000\u0000)*\u0006"+
+		"\u0003\u0000\u0000\"#\u0005\u000e\u0000\u0000#$\u0005\r\u0000\u0000$%"+
+		"\u0005\b\u0000\u0000%&\u0006\u0003\uffff\uffff\u0000&\u0007\u0001\u0000"+
+		"\u0000\u0000\'(\u0005\u0004\u0000\u0000()\u0005\n\u0000\u0000)*\u0006"+
 		"\u0004\uffff\uffff\u0000*\t\u0001\u0000\u0000\u0000+,\u0003\u0006\u0003"+
 		"\u0000,0\u0006\u0005\uffff\uffff\u0000-.\u0003\b\u0004\u0000./\u0006\u0005"+
 		"\uffff\uffff\u0000/1\u0001\u0000\u0000\u00000-\u0001\u0000\u0000\u0000"+

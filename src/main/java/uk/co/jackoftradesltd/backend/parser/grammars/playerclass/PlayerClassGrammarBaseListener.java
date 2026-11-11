@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerClassGrammar.g4 by ANTLR 4.13.2
+// Generated from PlayerClassGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playerclass;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -485,6 +485,18 @@ public class PlayerClassGrammarBaseListener implements PlayerClassGrammarListene
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTime(PlayerClassGrammar.TimeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStrayEffectLine(PlayerClassGrammar.StrayEffectLineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStrayEffectLine(PlayerClassGrammar.StrayEffectLineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ChestTrapGrammar.g4 by ANTLR 4.13.2
+// Generated from ChestTrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.chesttrap;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -118,6 +118,12 @@ public interface ChestTrapGrammarVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTime(ChestTrapGrammar.TimeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ChestTrapGrammar#strayEffectLine}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStrayEffectLine(ChestTrapGrammar.StrayEffectLineContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ChestTrapGrammar#effectBlock}.
 	 * @param ctx the parse tree

@@ -61,7 +61,7 @@ VALUE_OR
         ;
 
 VALUE_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 VALUE_INT
@@ -79,5 +79,5 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TrapGrammar.g4 by ANTLR 4.13.2
+// Generated from TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -202,6 +202,18 @@ public class TrapGrammarBaseListener implements TrapGrammarListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterEffectYxXtra(TrapGrammar.EffectYxXtraContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEffectYxXtra(TrapGrammar.EffectYxXtraContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterEffectXtraBlock(TrapGrammar.EffectXtraBlockContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -305,6 +317,18 @@ public class TrapGrammarBaseListener implements TrapGrammarListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTime(TrapGrammar.TimeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStrayEffectLine(TrapGrammar.StrayEffectLineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStrayEffectLine(TrapGrammar.StrayEffectLineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

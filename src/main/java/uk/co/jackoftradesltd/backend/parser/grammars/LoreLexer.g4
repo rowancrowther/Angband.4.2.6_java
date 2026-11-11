@@ -21,10 +21,12 @@
 
 lexer grammar LoreLexer;
 
+import CommentsAndEol;
+
 // A blank line on its own (not part of a comment block - lore.txt has no
 // comment syntax at all, unlike every gamedata file).
 EOL
-        :   ' '* '\r'? '\n' -> skip
+        :   NL -> skip
         ;
 
 // "name:" - switches to MONSTER_NAME_MODE to capture the rest of the line
@@ -140,7 +142,7 @@ OR
 
 // End of a flags: line - pops back to the default mode.
 FLAG_EOL
-        :   '\r'? '\n' -> popMode, skip
+        :   NL -> popMode, skip
         ;
 
 // Entered after spells: to tokenize a '|'-separated spell-name list.
@@ -153,7 +155,7 @@ SPELL
 
 // End of a spells: line - pops back to the default mode.
 SPELL_EOL
-        :   '\r'? '\n' -> popMode, skip
+        :   NL -> popMode, skip
         ;
 
 // The " | " separator between spell names on a spells: line.
@@ -200,5 +202,5 @@ fragment M_FRAGMENT
 
 // End of a blow: line - pops back to the default mode.
 BLOW_EOL
-        :   '\r'? '\n' -> popMode, skip
+        :   NL -> popMode, skip
         ;

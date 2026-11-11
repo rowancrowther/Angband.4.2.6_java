@@ -43,6 +43,10 @@ EFFECT_XTRA
         :   'effect-xtra:'
         ;
 
+EFFECT_YX_XTRA
+        :   'effect-yx-xtra:'
+        ;
+
 DICE_XTRA
         :   'dice-xtra:' -> pushMode(DICE_STRING_MODE)
         ;
@@ -53,10 +57,6 @@ EXPR_XTRA
 
 MSG_XTRA
         :   'msg-xtra:' -> pushMode(REST_OF_LINE)
-        ;
-
-fragment TRAP_EOL
-        :   '\r'* '\n'
         ;
 
 mode EXPR_XTRA_MODE;
@@ -111,7 +111,7 @@ EXPR_XTRA_OP
  * the EOL characters.
  */
 EXPR_XTRA_EOL
-        :   TRAP_EOL -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode DELIMITED_MODE;
@@ -129,7 +129,7 @@ DELIMITED_STRING
         ;
 
 DELIMITED_EOL
-        :   TRAP_EOL -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode REST_OF_LINE;
@@ -139,7 +139,7 @@ STRING
         ;
 
 REST_OF_LINE_EOL
-        :   TRAP_EOL -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode FLAGS_MODE;
@@ -153,5 +153,5 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   TRAP_EOL -> skip, popMode
+        :   NL -> skip, popMode
         ;

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TrapGrammar.g4 by ANTLR 4.13.2
+// Generated from TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -166,6 +166,16 @@ public interface TrapGrammarListener extends ParseTreeListener {
 	 */
 	void exitExprXtra(TrapGrammar.ExprXtraContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link TrapGrammar#effectYxXtra}.
+	 * @param ctx the parse tree
+	 */
+	void enterEffectYxXtra(TrapGrammar.EffectYxXtraContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TrapGrammar#effectYxXtra}.
+	 * @param ctx the parse tree
+	 */
+	void exitEffectYxXtra(TrapGrammar.EffectYxXtraContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link TrapGrammar#effectXtraBlock}.
 	 * @param ctx the parse tree
 	 */
@@ -255,6 +265,16 @@ public interface TrapGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTime(TrapGrammar.TimeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link TrapGrammar#strayEffectLine}.
+	 * @param ctx the parse tree
+	 */
+	void enterStrayEffectLine(TrapGrammar.StrayEffectLineContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link TrapGrammar#strayEffectLine}.
+	 * @param ctx the parse tree
+	 */
+	void exitStrayEffectLine(TrapGrammar.StrayEffectLineContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link TrapGrammar#effectBlock}.
 	 * @param ctx the parse tree

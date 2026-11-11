@@ -662,12 +662,16 @@ class VaultReaderTest {
 
     /**
      * C's {@code parser_parse} skips leading whitespace on a line before it looks at it. The shared
-     * lexer rules do not, so an indented directive is a lexer error and the file yields nothing.
+     * {@code INDENT} rule does the same, so an indented directive loads.
+     *
+     * <p>Function anIndentedDirectiveLoadsAsInC coded on 261109, commented in full on 261109. It
+     * replaces anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent.
      */
     @Test
-    void anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> parseVariant("indent.txt", "rating:5", "  rating:5"));
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        int expected = parseVariant("plain.txt", "rating:5", "rating:5").items().size();
 
+        assertEquals(expected, parseVariant("indent.txt", "rating:5", "  rating:5").items().size());
     }
 
     /**

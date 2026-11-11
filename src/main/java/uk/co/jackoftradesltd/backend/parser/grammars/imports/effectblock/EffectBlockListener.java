@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from imports/EffectBlock.g4 by ANTLR 4.13.2
+// Generated from EffectBlock.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.imports.effectblock;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -84,6 +84,16 @@ public interface EffectBlockListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTime(EffectBlock.TimeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EffectBlock#strayEffectLine}.
+	 * @param ctx the parse tree
+	 */
+	void enterStrayEffectLine(EffectBlock.StrayEffectLineContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EffectBlock#strayEffectLine}.
+	 * @param ctx the parse tree
+	 */
+	void exitStrayEffectLine(EffectBlock.StrayEffectLineContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link EffectBlock#effectBlock}.
 	 * @param ctx the parse tree

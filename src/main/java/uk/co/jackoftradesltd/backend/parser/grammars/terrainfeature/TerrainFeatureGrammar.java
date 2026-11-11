@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TerrainFeatureGrammar.g4 by ANTLR 4.13.2
+// Generated from TerrainFeatureGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.terrainfeature;
 
 import org.antlr.v4.runtime.*;
@@ -43,9 +43,9 @@ public class TerrainFeatureGrammar extends Parser {
 		CODE=1, NAME=2, MIMIC=3, PRIORITY=4, FLAGS=5, DIGGING=6, WALK_MESSAGE=7, 
 		RUN_MESSAGE=8, HURT_MESSAGE=9, DIE_MESSAGE=10, CONFUSED_MESSAGE=11, LOOK_PREFIX=12, 
 		LOOK_IN_PREPOSITION=13, RESIST_FLAG=14, DESC=15, INTEGER=16, COMMENT=17, 
-		EOL=18, GRAPHICS=19, COLOUR_ONLY=20, GLYPH_ONLY=21, STRING=22, FLAG=23, 
-		FLAG_OR=24, FLAG_EOL=25, COLOUR_VALUES=26, GLYPH_VALUES=27, GLYPH_COLON_SWITCH=28, 
-		GLYPH_EOL=29;
+		INDENT=18, EOL=19, GRAPHICS=20, COLOUR_ONLY=21, GLYPH_ONLY=22, STRING=23, 
+		FLAG=24, FLAG_OR=25, FLAG_EOL=26, COLOUR_VALUES=27, GLYPH_VALUES=28, GLYPH_COLON_SWITCH=29, 
+		GLYPH_EOL=30;
 	public static final int
 		RULE_code = 0, RULE_name = 1, RULE_graphics = 2, RULE_mimic = 3, RULE_priority = 4, 
 		RULE_flags = 5, RULE_digging = 6, RULE_walk_message = 7, RULE_run_message = 8, 
@@ -67,8 +67,8 @@ public class TerrainFeatureGrammar extends Parser {
 			null, "'code:'", "'name:'", "'mimic:'", "'priority:'", "'flags:'", "'digging:'", 
 			"'walk-msg:'", "'run-msg:'", "'hurt-msg:'", "'die-msg:'", "'confused-msg:'", 
 			"'look-prefix:'", "'look-in-preposition:'", "'resist-flag:'", "'desc:'", 
-			null, null, null, "'graphics:'", "'color:'", "'glyph:'", null, null, 
-			null, null, null, null, "':'"
+			null, null, null, null, "'graphics:'", "'color:'", "'glyph:'", null, 
+			null, null, null, null, null, "':'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -76,8 +76,8 @@ public class TerrainFeatureGrammar extends Parser {
 		return new String[] {
 			null, "CODE", "NAME", "MIMIC", "PRIORITY", "FLAGS", "DIGGING", "WALK_MESSAGE", 
 			"RUN_MESSAGE", "HURT_MESSAGE", "DIE_MESSAGE", "CONFUSED_MESSAGE", "LOOK_PREFIX", 
-			"LOOK_IN_PREPOSITION", "RESIST_FLAG", "DESC", "INTEGER", "COMMENT", "EOL", 
-			"GRAPHICS", "COLOUR_ONLY", "GLYPH_ONLY", "STRING", "FLAG", "FLAG_OR", 
+			"LOOK_IN_PREPOSITION", "RESIST_FLAG", "DESC", "INTEGER", "COMMENT", "INDENT", 
+			"EOL", "GRAPHICS", "COLOUR_ONLY", "GLYPH_ONLY", "STRING", "FLAG", "FLAG_OR", 
 			"FLAG_EOL", "COLOUR_VALUES", "GLYPH_VALUES", "GLYPH_COLON_SWITCH", "GLYPH_EOL"
 		};
 	}
@@ -1445,7 +1445,7 @@ public class TerrainFeatureGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u001d\u00b5\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u001e\u00b5\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1483,36 +1483,36 @@ public class TerrainFeatureGrammar extends Parser {
 		"]\u0001\u0000\u0000\u0000\u0018a\u0001\u0000\u0000\u0000\u001ae\u0001"+
 		"\u0000\u0000\u0000\u001ci\u0001\u0000\u0000\u0000\u001eq\u0001\u0000\u0000"+
 		"\u0000 u\u0001\u0000\u0000\u0000\"\u00ae\u0001\u0000\u0000\u0000$%\u0005"+
-		"\u0001\u0000\u0000%&\u0005\u0017\u0000\u0000&\'\u0005\u0019\u0000\u0000"+
+		"\u0001\u0000\u0000%&\u0005\u0018\u0000\u0000&\'\u0005\u001a\u0000\u0000"+
 		"\'(\u0006\u0000\uffff\uffff\u0000(\u0001\u0001\u0000\u0000\u0000)*\u0005"+
-		"\u0002\u0000\u0000*+\u0005\u0016\u0000\u0000+,\u0006\u0001\uffff\uffff"+
-		"\u0000,\u0003\u0001\u0000\u0000\u0000-.\u0005\u0013\u0000\u0000./\u0005"+
-		"\u001b\u0000\u0000/0\u0005\u001c\u0000\u000001\u0005\u001a\u0000\u0000"+
+		"\u0002\u0000\u0000*+\u0005\u0017\u0000\u0000+,\u0006\u0001\uffff\uffff"+
+		"\u0000,\u0003\u0001\u0000\u0000\u0000-.\u0005\u0014\u0000\u0000./\u0005"+
+		"\u001c\u0000\u0000/0\u0005\u001d\u0000\u000001\u0005\u001b\u0000\u0000"+
 		"12\u0006\u0002\uffff\uffff\u00002\u0005\u0001\u0000\u0000\u000034\u0005"+
-		"\u0003\u0000\u000045\u0005\u0017\u0000\u000056\u0005\u0019\u0000\u0000"+
+		"\u0003\u0000\u000045\u0005\u0018\u0000\u000056\u0005\u001a\u0000\u0000"+
 		"67\u0006\u0003\uffff\uffff\u00007\u0007\u0001\u0000\u0000\u000089\u0005"+
 		"\u0004\u0000\u00009:\u0005\u0010\u0000\u0000:;\u0006\u0004\uffff\uffff"+
-		"\u0000;\t\u0001\u0000\u0000\u0000<=\u0005\u0005\u0000\u0000=>\u0005\u0017"+
-		"\u0000\u0000>D\u0006\u0005\uffff\uffff\u0000?@\u0005\u0018\u0000\u0000"+
-		"@A\u0005\u0017\u0000\u0000AC\u0006\u0005\uffff\uffff\u0000B?\u0001\u0000"+
+		"\u0000;\t\u0001\u0000\u0000\u0000<=\u0005\u0005\u0000\u0000=>\u0005\u0018"+
+		"\u0000\u0000>D\u0006\u0005\uffff\uffff\u0000?@\u0005\u0019\u0000\u0000"+
+		"@A\u0005\u0018\u0000\u0000AC\u0006\u0005\uffff\uffff\u0000B?\u0001\u0000"+
 		"\u0000\u0000CF\u0001\u0000\u0000\u0000DB\u0001\u0000\u0000\u0000DE\u0001"+
 		"\u0000\u0000\u0000EG\u0001\u0000\u0000\u0000FD\u0001\u0000\u0000\u0000"+
-		"GH\u0005\u0019\u0000\u0000H\u000b\u0001\u0000\u0000\u0000IJ\u0005\u0006"+
+		"GH\u0005\u001a\u0000\u0000H\u000b\u0001\u0000\u0000\u0000IJ\u0005\u0006"+
 		"\u0000\u0000JK\u0005\u0010\u0000\u0000KL\u0006\u0006\uffff\uffff\u0000"+
-		"L\r\u0001\u0000\u0000\u0000MN\u0005\u0007\u0000\u0000NO\u0005\u0016\u0000"+
+		"L\r\u0001\u0000\u0000\u0000MN\u0005\u0007\u0000\u0000NO\u0005\u0017\u0000"+
 		"\u0000OP\u0006\u0007\uffff\uffff\u0000P\u000f\u0001\u0000\u0000\u0000"+
-		"QR\u0005\b\u0000\u0000RS\u0005\u0016\u0000\u0000ST\u0006\b\uffff\uffff"+
-		"\u0000T\u0011\u0001\u0000\u0000\u0000UV\u0005\t\u0000\u0000VW\u0005\u0016"+
+		"QR\u0005\b\u0000\u0000RS\u0005\u0017\u0000\u0000ST\u0006\b\uffff\uffff"+
+		"\u0000T\u0011\u0001\u0000\u0000\u0000UV\u0005\t\u0000\u0000VW\u0005\u0017"+
 		"\u0000\u0000WX\u0006\t\uffff\uffff\u0000X\u0013\u0001\u0000\u0000\u0000"+
-		"YZ\u0005\n\u0000\u0000Z[\u0005\u0016\u0000\u0000[\\\u0006\n\uffff\uffff"+
+		"YZ\u0005\n\u0000\u0000Z[\u0005\u0017\u0000\u0000[\\\u0006\n\uffff\uffff"+
 		"\u0000\\\u0015\u0001\u0000\u0000\u0000]^\u0005\u000b\u0000\u0000^_\u0005"+
-		"\u0016\u0000\u0000_`\u0006\u000b\uffff\uffff\u0000`\u0017\u0001\u0000"+
-		"\u0000\u0000ab\u0005\f\u0000\u0000bc\u0005\u0016\u0000\u0000cd\u0006\f"+
+		"\u0017\u0000\u0000_`\u0006\u000b\uffff\uffff\u0000`\u0017\u0001\u0000"+
+		"\u0000\u0000ab\u0005\f\u0000\u0000bc\u0005\u0017\u0000\u0000cd\u0006\f"+
 		"\uffff\uffff\u0000d\u0019\u0001\u0000\u0000\u0000ef\u0005\r\u0000\u0000"+
-		"fg\u0005\u0016\u0000\u0000gh\u0006\r\uffff\uffff\u0000h\u001b\u0001\u0000"+
-		"\u0000\u0000ij\u0005\u000e\u0000\u0000jk\u0005\u0017\u0000\u0000kl\u0006"+
-		"\u000e\uffff\uffff\u0000lm\u0005\u0019\u0000\u0000m\u001d\u0001\u0000"+
-		"\u0000\u0000no\u0005\u000f\u0000\u0000op\u0005\u0016\u0000\u0000pr\u0006"+
+		"fg\u0005\u0017\u0000\u0000gh\u0006\r\uffff\uffff\u0000h\u001b\u0001\u0000"+
+		"\u0000\u0000ij\u0005\u000e\u0000\u0000jk\u0005\u0018\u0000\u0000kl\u0006"+
+		"\u000e\uffff\uffff\u0000lm\u0005\u001a\u0000\u0000m\u001d\u0001\u0000"+
+		"\u0000\u0000no\u0005\u000f\u0000\u0000op\u0005\u0017\u0000\u0000pr\u0006"+
 		"\u000f\uffff\uffff\u0000qn\u0001\u0000\u0000\u0000rs\u0001\u0000\u0000"+
 		"\u0000sq\u0001\u0000\u0000\u0000st\u0001\u0000\u0000\u0000t\u001f\u0001"+
 		"\u0000\u0000\u0000uv\u0003\u0000\u0000\u0000vw\u0006\u0010\uffff\uffff"+

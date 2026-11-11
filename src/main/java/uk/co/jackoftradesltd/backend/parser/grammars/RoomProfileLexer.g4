@@ -90,7 +90,7 @@ FLAG_OR
  * lexed normally.
  */
 FLAG_EOF
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode REST_OF_LINE;
@@ -111,5 +111,5 @@ STRING
  * End of a name:/tval:/D: line — pops back to the default mode.
  */
 END_OF_LINE
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

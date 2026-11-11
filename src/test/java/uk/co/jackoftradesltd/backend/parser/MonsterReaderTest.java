@@ -731,6 +731,13 @@ class MonsterReaderTest {
     }
 
     @Test
+    void aMimicObjectNameOfOnlyABlankEndsTheLoad() {
+        // mimic takes sym fields, so C reads the sval " " (strtok on ':' skips nothing), lookup_sval
+        // finds no such object and the parse errors. The lexer now returns the blank as a value.
+        assertRefusedWith("blank-mimic-sval.txt", rec("Nope", "mimic:potion: "), "illegal mimic value:  ");
+    }
+
+    @Test
     void aFriendChanceAboveOneHundredIsKeptAsWritten() throws Exception {
         // C's parse_monster_friends reads the chance with parser_getuint and applies no upper
         // bound, so 101 and 200 are valid and stored unchanged (they only ever behave as 100).
@@ -943,9 +950,11 @@ class MonsterReaderTest {
     }
 
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        // parser_parse skips leading isspace before reading the directive.
-        assertThrows(ParseCancellationException.class, () -> load("indent.txt", rec("Solo", "  speed:110")));
+    void anIndentedDirectiveLoadsAsInC() throws Exception {
+        // parser_parse skips leading isspace before reading the directive, and so does the INDENT rule.
+        ParseResult<MonsterRace> r = load("indent.txt", rec("Solo", "  speed:110"));
+
+        assertEquals(110, (int) field(byName(r, "Solo"), "speed"));
     }
 
     // =====================================================================

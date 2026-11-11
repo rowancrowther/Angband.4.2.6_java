@@ -974,12 +974,14 @@ class ObjectPropertyReaderTest {
 
     /**
      * {@code parser_parse} skips leading blanks on every line, so an indented directive is valid in C.
-     * The shared {@code CommentsAndEol} rules do not, and the file loads as nothing.
+     * The {@code INDENT} rule in the shared {@code CommentsAndEol} does the same, so it loads.
+     *
+     * <p>Function anIndentedDirectiveLoadsAsInC coded on 261109, commented in full on 261109. It
+     * replaces anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent.
      */
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\n  code:STR\n"));
-
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        assertEquals("x", load("name:x\ntype:stat\n  code:STR\n").items().get(0).getName());
     }
 
     /**

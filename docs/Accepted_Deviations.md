@@ -864,6 +864,34 @@ recorded here as the summary states them; fill in the detail when you next touch
   `tieKeepsDestsSlayHereWhereCKeepsTheHigherIndex` in `ObjectUtilsCopySlaysTest`.
 - **Accepted:** 2026-11-08. Marked in the `copyBrands` and `copySlays` Javadoc.
 
+## Put off until later, accepted for now
+
+Deviations you have accepted for the time being, with the fix agreed in principle and deferred. Each one is a real gap
+to close, not a permanent choice, so it is worth a line in `docs/ROADMAP.md` too. The entries use the same fields as
+above, and **Later** says what the fix is. When one is fixed, delete the entry and its pinning test's `WhereC` name.
+Move an entry up into its own section instead if you decide to keep the deviation for good.
+
+### World: a level, up or down name made only of digits is refused, where C keeps it
+
+- **Java:** `WorldLexer.g4` (the `INTEGER` and `NAME` rules) and `WorldGrammar.g4` (the `levelName` and `upAndDown`
+  rules). **C:** `parse_world_level` (`init.c`), registered as `level int depth sym name sym up sym down`.
+- **Differs:** a `sym` in C is any text without a colon, so `level:5:7:None:None` loads a level named `7`. Java's `NAME`
+  is `~('\r' | '\n' | ':')+`, which matches `7`, but `INTEGER` (`'-'? ('0'..'9')+`) matches it too, at the same length,
+  and is listed first, so the lexer returns `INTEGER`. The grammar wants `NAME` in the name, up and down fields, so the
+  line is a syntax error and the whole file is refused. The same goes for `-5`, `007` and any other name that is only an
+  optional minus and digits, in any of the three fields. The depth field is not affected: it wants `INTEGER`.
+- **Agrees:** a name with any other character in it (`Hell-hole`, `Angband 7`, `7th`), which lexes as `NAME`.
+- **Reach:** none from shipped data. Every name in `world.txt` is `Town` or `Angband N`, with a word in it. A modded
+  `world.txt` that names a level with a bare number only.
+- **Later:** make `NAME` win for the name fields. The options are a lexer mode that switches after the depth field's
+  colon, or a parser rule that takes `NAME | INTEGER` in `levelName` and `upAndDown` and reads `getText()`. The second
+  needs no lexer change. Then flip the pinning test to expect `World(5, "7", "None", "None")`, rename it, and update
+  the `WorldGrammar.g4` / `WorldLexer.g4` entry in `docs/grammar_issues.md`.
+- **Pinned by:** `aNameOfOnlyDigitsIsHardHereWhereCTakesAnySymExceptColon` in `WorldReaderTest`. It goes red when the
+  lexer is changed, which is the prompt to take this entry out.
+- **Accepted:** 2026-11-09, found while bringing `WorldReaderTest` up to date after the `record-count:` header and the
+  name restriction were removed. Written up in `docs/grammar_issues.md`.
+
 ## Pending your decision
 
 - The five `objDescNameFormat` divergences (Part G; `docs/ItemObject_round2/part_G.md`). All unreachable from shipped

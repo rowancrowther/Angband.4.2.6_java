@@ -89,7 +89,7 @@ CURSE_COLON
         ;
 
 CURSE_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode COMBAT_MODE;
@@ -103,7 +103,7 @@ COMBAT_COLON
         ;
 
 COMBAT_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode ALLOC_MODE;
@@ -121,7 +121,7 @@ ALLOC_TO
         ;
 
 ALLOC_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode VALUE_MODE;
@@ -151,7 +151,7 @@ VALUE_OR
         ;
 
 VALUE_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode FLAG_MODE;
@@ -165,7 +165,7 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode FREE_TEXT;
@@ -175,7 +175,7 @@ STRING
         ;
 
 FREE_TEXT_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode ITEM_MODE;
@@ -189,5 +189,5 @@ ITEM_COLON
         ;
 
 ITEM_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

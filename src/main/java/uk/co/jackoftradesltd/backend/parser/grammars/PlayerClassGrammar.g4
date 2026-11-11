@@ -19,6 +19,14 @@ import EffectBlock;
     import java.util.HashMap;
 }
 
+@members {
+             // EffectParseRecord is a record, so "updating" the last effect means
+             // swapping in a copy with one or more fields changed
+             void replaceLast(List<EffectParseRecord> list, EffectParseRecord updated) {
+                 list.set(list.size() - 1, updated);
+             }
+         }
+
 name
         returns[String nameStr, int lineNo]
         :   NAME STRING { $nameStr = $STRING.getText(); $lineNo = $start.getLine(); }
@@ -240,7 +248,7 @@ bookProperties
             }
         ;
 
-bookBlock[List<ClassEquipParseRecord> equipInit]
+bookBlock [List<ClassEquipParseRecord> equipInit]
         returns[String oBase, String locFrom, String nameStr,
             String noOfSpells, String realm, String glyph,
             String colour, String cost, String commonness,
@@ -307,13 +315,51 @@ spellBlock
                     $fail = $spell.fail;
                     $exper = $spell.exper;
                     $line = $spell.line; }
-            ((effectBlock { $effects.add(new EffectParseRecord($effectBlock.typeInit,
+            (effectBlock { $effects.add(new EffectParseRecord($effectBlock.typeInit,
                         $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
                         $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
                         $effectBlock.expressionChars, $effectBlock.expressionBase,
                         $effectBlock.expressionOperation,
-                        $effectBlock.effectMessage, $effectBlock.start.getLine())); })
-        |   (desc { $spellDesc = $spellDesc + $desc.description; }))*
+                        $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+        |   effectYX {
+                if (!$effects.isEmpty()) {
+                    EffectParseRecord last = $effects.getLast();
+                    EffectParseRecord updated = last.amendYX($effectYX.y, $effectYX.x);
+                    replaceLast($effects, updated);
+                }
+            }
+        |   dice {
+                if (!$effects.isEmpty()) {
+                    EffectParseRecord last = $effects.getLast();
+                    String diceStr = $dice.diceString;
+                    EffectParseRecord updated = last.amendExpression(diceStr,
+                                                                     $dice.exprChar,
+                                                                     $dice.baseName,
+                                                                     $dice.operation);
+                    replaceLast($effects, updated);
+                }
+            }
+        |   expr {
+                if (!$effects.isEmpty() && !$effects.getLast().diceString().isEmpty()) {
+                    EffectParseRecord last = $effects.getLast();
+                    String lastDiceStr  = last.diceString();
+                    String lastExprChar = last.expressionChars().isEmpty() 
+                                        ? $expr.exprChar
+                                        : last.expressionChars() + "^" + $expr.exprChar;
+                    String lastExprBase = last.expressionBases().isEmpty() 
+                                        ? $expr.baseName
+                                        : last.expressionBases() + "^" + $expr.baseName;
+                    String lastExprOp   = last.expressionOperations().isEmpty() 
+                                        ? $expr.operation
+                                        : last.expressionOperations() + "^" + $expr.operation;
+                    EffectParseRecord updated = last.amendExpression(lastDiceStr,
+                                                lastExprChar,
+                                                lastExprBase,
+                                                lastExprOp);
+                    replaceLast($effects, updated);
+                }
+            }
+        |   desc { $spellDesc = $spellDesc + $desc.description; })*
         ;
 
 playerClass

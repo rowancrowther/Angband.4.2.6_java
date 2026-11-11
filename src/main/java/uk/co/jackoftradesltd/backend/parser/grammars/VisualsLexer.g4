@@ -25,7 +25,7 @@ STRING
         ;
 
 ROL_EOL
-        :   '\r'* '\n' -> skip, mode(DEFAULT_MODE)
+        :   NL -> skip, mode(DEFAULT_MODE)
         ;
 
 mode COLOUR;
@@ -39,7 +39,7 @@ SWAP_COLON
         ;
 
 COLOUR_EOL
-        :   '\r'* '\n' -> skip, mode(DEFAULT_MODE)
+        :   NEWLINE -> skip, mode(DEFAULT_MODE)
         ;
 
 mode DELIMITED;
@@ -53,5 +53,5 @@ STRING_BETWEEN_COLON
         ;
 
 POP_EOL
-        :   '\r'* '\n' -> skip, mode(DEFAULT_MODE)
+        :   NL -> skip, mode(DEFAULT_MODE)
         ;

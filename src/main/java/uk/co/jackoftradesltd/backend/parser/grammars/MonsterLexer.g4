@@ -138,10 +138,6 @@ MON_INTEGER
         :   '-'? ('0'..'9')+
         ;
 
-fragment MON_EOL
-        :   '\r'* '\n'
-        ;
-
 mode REST_OF_LINE;
 
 STRING
@@ -149,7 +145,7 @@ STRING
         ;
 
 ROL_EOL
-        :   MON_EOL -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode BLOW_MODE;
@@ -167,7 +163,7 @@ BLOW_WORD
         ;
 
 BLOW_EOL
-        :   MON_EOL -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode FLAG_MODE;
@@ -181,7 +177,7 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   MON_EOL -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode DELIMITED;
@@ -195,7 +191,7 @@ DELIMITED_STRING
         ;
 
 DELIMITED_EOL
-        :   MON_EOL -> skip, popMode
+        :   NEWLINE -> skip, popMode
         ;
 
 mode FRIENDS_MODE;
@@ -217,7 +213,7 @@ FRIEND_NAME
         ;
 
 FRIEND_EOL
-        :   MON_EOL -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode DROP_MODE;
@@ -235,7 +231,7 @@ DROP_STRING
         ;
 
 DROP_EOL
-        :   MON_EOL -> popMode, skip
+        :   NL -> popMode, skip
         ;
 
 mode COLOUR_MODE;
@@ -245,5 +241,5 @@ COLOUR_LINE
         ;
 
 COLOUR_EOL
-        :   MON_EOL -> popMode, skip
+        :   NEWLINE -> popMode, skip
         ;

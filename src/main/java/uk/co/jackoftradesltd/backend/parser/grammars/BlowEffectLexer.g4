@@ -170,5 +170,5 @@ STRING
  * default mode so the next directive keyword is matched normally.
  */
 EOL_POP
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

@@ -103,7 +103,7 @@ STRING
         ;
 
 EOL_POP
-        :   '\r'* '\n' -> popMode, skip
+        :   NL -> popMode, skip
         ;
 
 // Colon-delimited value list for type-mult: (sym ":" int). DELIM_INTEGER precedes
@@ -124,6 +124,6 @@ DELIM_COLON
         ;
 
 END_SKIP
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 

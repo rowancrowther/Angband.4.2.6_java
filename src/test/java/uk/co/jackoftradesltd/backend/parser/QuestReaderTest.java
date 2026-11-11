@@ -457,17 +457,17 @@ class QuestReaderTest {
     }
 
     @Test
-    void anIndentedLineIsRefusedHereWhereCSkipsTheIndent() throws IOException {
+    void anIndentedLineLoadsAsInC() throws IOException {
         String text = "\nname:Sauron\n  level:99\nrace:Sauron, the Sorcerer\nnumber:1\n";
-        assertThrows(ParseCancellationException.class, () -> load("indent.txt", text));
 
+        assertEquals(1, load("indent.txt", text).items().size());
     }
 
     @Test
-    void aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt() throws IOException {
+    void aFinalCommentWithoutANewlineLoadsAsInC() throws IOException {
         String text = quest("Sauron", "99", "Sauron, the Sorcerer", "1") + "# end";
-        assertThrows(ParseCancellationException.class, () -> load("lastcomment.txt", text));
 
+        assertEquals(1, load("lastcomment.txt", text).items().size());
     }
 
     @Test

@@ -333,6 +333,40 @@ class PlayerClassReaderTest {
         assertTrue(this.<ClassMagic>castMagic(r).isCaster());
     }
 
+    @Test
+    void effectYxThenDiceOnTheSameSpellEffectBothLoadAsInC() throws Exception {
+        // C: parse_class_effect_yx and parse_class_dice both act on the spell's last effect.
+        ParseResult<PlayerClass> r = load("yx-dice.txt", "name:TestMage\nmagic:1:100:1\n"
+                        + "book:magic book:town:[Test Book]:1:arcane\n"
+                        + "spell:Test Bolt:1:1:20:4\n"
+                        + "effect:BOLT:MISSILE\neffect-yx:2:3\ndice:5\n");
+
+        assertEquals("2,3,5", EffectProbe.yxBase(onlySpellEffects(r).getFirst()));
+    }
+
+    @Test
+    void diceThenEffectYxOnTheSameSpellEffectBothLoadAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("dice-yx.txt", "name:TestMage\nmagic:1:100:1\n"
+                        + "book:magic book:town:[Test Book]:1:arcane\n"
+                        + "spell:Test Bolt:1:1:20:4\n"
+                        + "effect:BOLT:MISSILE\ndice:5\neffect-yx:2:3\n");
+
+        assertEquals("2,3,5", EffectProbe.yxBase(onlySpellEffects(r).getFirst()));
+    }
+
+    private List<?> onlySpellEffects(ParseResult<PlayerClass> r) throws Exception {
+        List<?> effects = firstSpellEffects(r);
+        assertEquals(1, effects.size());
+        return effects;
+    }
+
+    /** The first spell's effect list, whatever its size (an effect-less spell gives an empty list). */
+    private List<?> firstSpellEffects(ParseResult<PlayerClass> r) throws Exception {
+        MagicBook book = this.<List<MagicBook>>field(castMagic(r), ClassMagic.class, "magicBooks").getFirst();
+        Object spell = this.<List<?>>field(book, MagicBook.class, "spells").getFirst();
+        return field(spell, spell.getClass(), "effects");
+    }
+
     private ClassMagic castMagic(ParseResult<PlayerClass> r) throws Exception {
         return field(r.items().getFirst(), "magic");
     }
@@ -897,11 +931,32 @@ class PlayerClassReaderTest {
 
     /** C: {@code dice:} with no effect before it is ignored ("assume that this is human"). */
     @Test
-    void aDiceLineWithNoEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("dice-no-effect.txt", "name:Caster\nmagic:1:100:1\n"
+    void aDiceLineWithNoEffectIsDroppedAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("dice-no-effect.txt", "name:Caster\nmagic:1:100:1\n"
                         + "book:magic book:town:[B]:1:arcane\n"
-                        + "spell:S:1:1:1:1\ndice:1\n"));
+                        + "spell:S:1:1:1:1\ndice:1\n");
 
+        assertEquals(0, firstSpellEffects(r).size());
+    }
+
+    @Test
+    void strayEffectLinesAheadOfASpellsFirstEffectAreDroppedAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("stray-first.txt", "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:arcane\n"
+                        + "spell:S:1:1:1:1\ndice:1\neffect-yx:2:3\nexpr:B:PLAYER_LEVEL:+ 0\neffect:BOLT:MISSILE\n");
+
+        assertEquals(1, onlySpellEffects(r).size());
+        assertEquals("0,0,", EffectProbe.yxBase(onlySpellEffects(r).getFirst()));
+    }
+
+    @Test
+    void aSecondDiceLineOnASpellsEffectReplacesTheFirstAsInC() throws Exception {
+        // C: parse_class_dice frees the effect's old dice and installs the new one, so no error.
+        ParseResult<PlayerClass> r = load("second-dice.txt", "name:Caster\nmagic:1:100:1\n"
+                        + "book:magic book:town:[B]:1:arcane\n"
+                        + "spell:S:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\ndice:2\n");
+
+        assertEquals("0,0,2", EffectProbe.yxBase(onlySpellEffects(r).getFirst()));
     }
 
     // ---- boundaries and ordinary behaviour C and Java agree on -----------

@@ -31,7 +31,19 @@ lexer grammar CommentsAndEol;
  * This is all skipped.
  */
 COMMENT
-        :   '#' (~'\n')* '\n' -> skip
+        :   '#' (~('\n' | '\r'))* (NL | EOF) -> skip
+        ;
+
+fragment NL
+        :   (' ' | '\t')* ('\r'+ '\n'? | '\n')
+        ;
+
+fragment NEWLINE
+        :   '\r'+ '\n'? | '\n'
+        ;
+
+INDENT
+        :   { getCharPositionInLine() == 0 }? (' ' | '\t')+ -> skip
         ;
 
 /*
@@ -41,5 +53,5 @@ COMMENT
  * then a \n. This is all skipped.
  */
 EOL
-        :   ' '* '\r'? '\n' -> skip
+        :   NL -> skip
         ;

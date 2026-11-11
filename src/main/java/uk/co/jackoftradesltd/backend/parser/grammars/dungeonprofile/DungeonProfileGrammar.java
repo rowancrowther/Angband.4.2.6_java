@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/DungeonProfileGrammar.g4 by ANTLR 4.13.2
+// Generated from DungeonProfileGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.dungeonprofile;
 
 import org.antlr.v4.runtime.*;
@@ -25,6 +25,7 @@ import org.antlr.v4.runtime.atn.ParserATNSimulator;
 import org.antlr.v4.runtime.atn.PredictionContextCache;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
+import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftradesltd.backend.parser.dungeonprofile.DungeonProfileParseRecord;
 import uk.co.jackoftradesltd.backend.parser.dungeonprofile.DungeonProfileParseRecord.Params;
@@ -44,8 +45,8 @@ public class DungeonProfileGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		NAME=1, PARAMS=2, TUNNEL=3, STREAMER=4, ROOM=5, MIN_LEVEL=6, ALLOC=7, 
-		INTEGER=8, COLON=9, COMMENT=10, EOL=11, TEXT_BETWEEN_COLON=12, DELIMITER=13, 
-		STRING=14, END_OF_MODE=15;
+		INTEGER=8, COLON=9, COMMENT=10, INDENT=11, EOL=12, TEXT_BETWEEN_COLON=13, 
+		DELIMITER=14, STRING=15, END_OF_MODE=16;
 	public static final int
 		RULE_name = 0, RULE_params = 1, RULE_tunnel = 2, RULE_streamer = 3, RULE_alloc = 4, 
 		RULE_minLevel = 5, RULE_room = 6, RULE_profile = 7, RULE_file = 8;
@@ -67,8 +68,8 @@ public class DungeonProfileGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "NAME", "PARAMS", "TUNNEL", "STREAMER", "ROOM", "MIN_LEVEL", "ALLOC", 
-			"INTEGER", "COLON", "COMMENT", "EOL", "TEXT_BETWEEN_COLON", "DELIMITER", 
-			"STRING", "END_OF_MODE"
+			"INTEGER", "COLON", "COMMENT", "INDENT", "EOL", "TEXT_BETWEEN_COLON", 
+			"DELIMITER", "STRING", "END_OF_MODE"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -141,6 +142,11 @@ public class DungeonProfileGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof DungeonProfileGrammarListener ) ((DungeonProfileGrammarListener)listener).exitName(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DungeonProfileGrammarVisitor ) return ((DungeonProfileGrammarVisitor<? extends T>)visitor).visitName(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final NameContext name() throws RecognitionException {
@@ -194,6 +200,11 @@ public class DungeonProfileGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof DungeonProfileGrammarListener ) ((DungeonProfileGrammarListener)listener).exitParams(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DungeonProfileGrammarVisitor ) return ((DungeonProfileGrammarVisitor<? extends T>)visitor).visitParams(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -276,6 +287,11 @@ public class DungeonProfileGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof DungeonProfileGrammarListener ) ((DungeonProfileGrammarListener)listener).exitTunnel(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DungeonProfileGrammarVisitor ) return ((DungeonProfileGrammarVisitor<? extends T>)visitor).visitTunnel(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -368,6 +384,11 @@ public class DungeonProfileGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof DungeonProfileGrammarListener ) ((DungeonProfileGrammarListener)listener).exitStreamer(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DungeonProfileGrammarVisitor ) return ((DungeonProfileGrammarVisitor<? extends T>)visitor).visitStreamer(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final StreamerContext streamer() throws RecognitionException {
@@ -453,6 +474,11 @@ public class DungeonProfileGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof DungeonProfileGrammarListener ) ((DungeonProfileGrammarListener)listener).exitAlloc(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DungeonProfileGrammarVisitor ) return ((DungeonProfileGrammarVisitor<? extends T>)visitor).visitAlloc(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final AllocContext alloc() throws RecognitionException {
@@ -496,6 +522,11 @@ public class DungeonProfileGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof DungeonProfileGrammarListener ) ((DungeonProfileGrammarListener)listener).exitMinLevel(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DungeonProfileGrammarVisitor ) return ((DungeonProfileGrammarVisitor<? extends T>)visitor).visitMinLevel(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -555,6 +586,11 @@ public class DungeonProfileGrammar extends Parser {
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof DungeonProfileGrammarListener ) ((DungeonProfileGrammarListener)listener).exitRoom(this);
+		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DungeonProfileGrammarVisitor ) return ((DungeonProfileGrammarVisitor<? extends T>)visitor).visitRoom(this);
+			else return visitor.visitChildren(this);
 		}
 	}
 
@@ -694,6 +730,11 @@ public class DungeonProfileGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof DungeonProfileGrammarListener ) ((DungeonProfileGrammarListener)listener).exitProfile(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DungeonProfileGrammarVisitor ) return ((DungeonProfileGrammarVisitor<? extends T>)visitor).visitProfile(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final ProfileContext profile() throws RecognitionException {
@@ -815,6 +856,11 @@ public class DungeonProfileGrammar extends Parser {
 		public void exitRule(ParseTreeListener listener) {
 			if ( listener instanceof DungeonProfileGrammarListener ) ((DungeonProfileGrammarListener)listener).exitFile(this);
 		}
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if ( visitor instanceof DungeonProfileGrammarVisitor ) return ((DungeonProfileGrammarVisitor<? extends T>)visitor).visitFile(this);
+			else return visitor.visitChildren(this);
+		}
 	}
 
 	public final FileContext file() throws RecognitionException {
@@ -858,7 +904,7 @@ public class DungeonProfileGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000fu\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0010u\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001"+
@@ -882,7 +928,7 @@ public class DungeonProfileGrammar extends Parser {
 		" \u0001\u0000\u0000\u0000\u0006,\u0001\u0000\u0000\u0000\b:\u0001\u0000"+
 		"\u0000\u0000\n>\u0001\u0000\u0000\u0000\fB\u0001\u0000\u0000\u0000\u000e"+
 		"S\u0001\u0000\u0000\u0000\u0010n\u0001\u0000\u0000\u0000\u0012\u0013\u0005"+
-		"\u0001\u0000\u0000\u0013\u0014\u0005\u000e\u0000\u0000\u0014\u0015\u0006"+
+		"\u0001\u0000\u0000\u0013\u0014\u0005\u000f\u0000\u0000\u0014\u0015\u0006"+
 		"\u0000\uffff\uffff\u0000\u0015\u0001\u0001\u0000\u0000\u0000\u0016\u0017"+
 		"\u0005\u0002\u0000\u0000\u0017\u0018\u0005\b\u0000\u0000\u0018\u0019\u0005"+
 		"\t\u0000\u0000\u0019\u001a\u0005\b\u0000\u0000\u001a\u001b\u0005\t\u0000"+
@@ -900,7 +946,7 @@ public class DungeonProfileGrammar extends Parser {
 		"\u0000\u0000:;\u0005\u0007\u0000\u0000;<\u0005\b\u0000\u0000<=\u0006\u0004"+
 		"\uffff\uffff\u0000=\t\u0001\u0000\u0000\u0000>?\u0005\u0006\u0000\u0000"+
 		"?@\u0005\b\u0000\u0000@A\u0006\u0005\uffff\uffff\u0000A\u000b\u0001\u0000"+
-		"\u0000\u0000BC\u0005\u0005\u0000\u0000CD\u0005\f\u0000\u0000DE\u0005\b"+
+		"\u0000\u0000BC\u0005\u0005\u0000\u0000CD\u0005\r\u0000\u0000DE\u0005\b"+
 		"\u0000\u0000EF\u0005\t\u0000\u0000FG\u0005\b\u0000\u0000GH\u0005\t\u0000"+
 		"\u0000HI\u0005\b\u0000\u0000IJ\u0005\t\u0000\u0000JK\u0005\b\u0000\u0000"+
 		"KL\u0005\t\u0000\u0000LM\u0005\b\u0000\u0000MN\u0005\t\u0000\u0000NO\u0005"+

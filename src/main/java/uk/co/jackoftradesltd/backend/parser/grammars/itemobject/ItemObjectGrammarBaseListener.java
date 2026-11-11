@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ItemObjectGrammar.g4 by ANTLR 4.13.2
+// Generated from ItemObjectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.itemobject;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -377,6 +377,18 @@ public class ItemObjectGrammarBaseListener implements ItemObjectGrammarListener 
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitEffectMsg(ItemObjectGrammar.EffectMsgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStrayEffectLine(ItemObjectGrammar.StrayEffectLineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStrayEffectLine(ItemObjectGrammar.StrayEffectLineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

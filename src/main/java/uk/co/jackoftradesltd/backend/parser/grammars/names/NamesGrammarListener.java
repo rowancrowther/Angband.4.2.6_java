@@ -14,7 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/NamesGrammar.g4 by ANTLR 4.13.2
+
+// Generated from NamesGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.names;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;

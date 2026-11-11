@@ -14,7 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/WorldGrammar.g4 by ANTLR 4.13.2
+
+// Generated from WorldGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.world;
 
 import org.antlr.v4.runtime.*;
@@ -38,7 +39,7 @@ public class WorldGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		LEVEL=1, COLON=2, INTEGER=3, NAME=4, COMMENT=5, EOL=6;
+		LEVEL=1, COLON=2, INTEGER=3, NAME=4, COMMENT=5, INDENT=6, EOL=7;
 	public static final int
 		RULE_levelNum = 0, RULE_levelName = 1, RULE_upAndDown = 2, RULE_line = 3, 
 		RULE_file = 4;
@@ -57,7 +58,7 @@ public class WorldGrammar extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "LEVEL", "COLON", "INTEGER", "NAME", "COMMENT", "EOL"
+			null, "LEVEL", "COLON", "INTEGER", "NAME", "COMMENT", "INDENT", "EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -419,7 +420,7 @@ public class WorldGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0006\'\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0007\'\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0001"+
 		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001"+
 		"\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001"+

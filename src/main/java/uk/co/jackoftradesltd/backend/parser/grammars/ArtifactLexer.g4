@@ -82,10 +82,6 @@ fragment INT_FRAGMENT
         :   '-'? ('0'..'9')+
         ;
 
-fragment EOL_POP_MODE
-        :   ' '* '\r'* '\n'
-        ;
-
 mode ALLOC_MODE;
 
 ALLOC_INT
@@ -101,7 +97,7 @@ ALLOC_TO
         ;
 
 ALLOC_EOL
-        :   EOL_POP_MODE -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode ARTIFACT_FREE_TEXT;
@@ -111,7 +107,7 @@ STRING
         ;
 
 ARTIFACT_FREE_TEXT_EOL
-        :   EOL_POP_MODE -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode DELIMITED_STRINGS;
@@ -129,7 +125,7 @@ DELIM_COLON
         ;
 
 END_SKIP
-        :   EOL_POP_MODE -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode FLAGS_MODE;
@@ -143,7 +139,7 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   EOL_POP_MODE -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode VALUES_MODE;
@@ -169,5 +165,5 @@ VALUES_OR
         ;
 
 VALUES_EOL
-        :   EOL_POP_MODE -> skip, popMode
+        :   NL -> skip, popMode
         ;

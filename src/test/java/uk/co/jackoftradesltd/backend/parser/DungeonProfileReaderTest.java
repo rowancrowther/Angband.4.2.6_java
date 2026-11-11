@@ -773,21 +773,37 @@ class DungeonProfileReaderTest {
 
     /**
      * C: {@code parser_getint} reads in base 0 and ignores anything after the value up to the
-     * next {@code :}, and the parser skips leading whitespace, so {@code alloc:0x10}, an indented
-     * {@code alloc:5} and {@code alloc:5:junk} are all accepted. Each is a lexer or syntax error
-     * here and costs the whole file.
+     * next {@code :}, so {@code alloc:0x10} and {@code alloc:5:junk} are both accepted. Each is a
+     * lexer or syntax error here and costs the whole file.
      */
     @Test
-    void hexIndentedAndTrailingFieldValuesAreRefusedHereWhereCAcceptsThem() throws IOException {
-        for (String line : List.of("alloc:0x10", "  alloc:5", "alloc:5:junk")) {
+    void hexAndTrailingFieldValuesAreRefusedHereWhereCAcceptsThem() throws IOException {
+        for (String line : List.of("alloc:0x10", "alloc:5:junk")) {
             String path = tempFile("odd.txt", String.join("\n",
-                    "name:odd",
+                    "name:town",
                     line,
                     ""));
 
             assertThrows(ParseCancellationException.class, () -> new DungeonProfileReader().parseWithResults(path), line);
 
         }
+    }
+
+    /**
+     * C: the parser skips leading whitespace, so an indented {@code alloc:5} sets the weight to 5.
+     * The {@code INDENT} rule in {@code CommentsAndEol} skips whitespace at column 0, so the line
+     * loads as in C.
+     */
+    @Test
+    void anIndentedAllocLineLoadsAsInC() throws IOException {
+        String path = tempFile("indented.txt", String.join("\n",
+                "name:town",
+                "  alloc:5",
+                ""));
+
+        ParseResult<CaveProfile> result = new DungeonProfileReader().parseWithResults(path);
+
+        assertEquals(5, result.items().getFirst().getAlloc());
     }
 
     /**

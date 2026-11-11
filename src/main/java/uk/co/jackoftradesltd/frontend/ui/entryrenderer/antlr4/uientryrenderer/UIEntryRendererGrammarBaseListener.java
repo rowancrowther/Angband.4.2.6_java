@@ -14,7 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/frontend/ui/entryrenderer/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
+
+// Generated from UIEntryRendererGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entryrenderer.antlr4.uientryrenderer;
 
 import org.antlr.v4.runtime.ParserRuleContext;

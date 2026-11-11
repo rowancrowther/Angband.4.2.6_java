@@ -681,18 +681,92 @@ class MonsterSpellReaderTest {
     }
 
     @Test
-    void effectYxAndDiceOnTheSameEffectAreASyntaxErrorHereWhereCTakesBoth() throws IOException {
+    void effectYxThenDiceOnTheSameEffectBothLoadAsInC() throws Exception {
         // C: effect-yx and dice both attach to the last effect, in either order.
-        assertThrows(ParseCancellationException.class, () -> load("yx-dice.txt", entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\neffect-yx:1:2\ndice:100\n")));
+        ParseResult<MonsterSpellType> r = load("yx-dice.txt", entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\neffect-yx:1:2\ndice:100\n"));
 
+        List<Object> effects = effectsOf(r.items().get(0));
+        assertEquals(1, effects.size());
+        assertEquals("1,2,100", EffectProbe.yxBase(effects.getFirst()));
+    }
+
+    /**
+     * C ({@code parse_mon_spell_dice}) frees the last effect's old dice and installs the new one, so
+     * a second {@code dice:} on one effect replaces the first.
+     *
+     * <p>Function aSecondDiceLineOnOneEffectReplacesTheFirstAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void aSecondDiceLineOnOneEffectReplacesTheFirstAsInC() throws Exception {
+        ParseResult<MonsterSpellType> r = load("dice-twice.txt", entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\ndice:100\ndice:200\n"));
+
+        List<Object> effects = effectsOf(r.items().get(0));
+        assertEquals(1, effects.size());
+        assertEquals("0,0,200", EffectProbe.yxBase(effects.getFirst()));
     }
 
     @Test
-    void aDiceLineBeforeAnyEffectIsASyntaxErrorHereWhereCIgnoresIt() throws IOException {
+    void diceThenEffectYxOnTheSameEffectBothLoadAsInC() throws Exception {
+        ParseResult<MonsterSpellType> r = load("dice-yx.txt", entry("BLINK", "TELEPORT", "effect:TELEPORT:AWAY\ndice:100\neffect-yx:1:2\n"));
+
+        List<Object> effects = effectsOf(r.items().get(0));
+        assertEquals(1, effects.size());
+        assertEquals("1,2,100", EffectProbe.yxBase(effects.getFirst()));
+    }
+
+    @Test
+    void aDiceLineBeforeAnyEffectIsDroppedAsInC() throws Exception {
         // C: parse_mon_spell_dice returns PARSE_ERROR_NONE when the record has no effect yet,
         // "assume that this is human and not parser error".
-        assertThrows(ParseCancellationException.class, () -> load("orphan-dice.txt", entry("BLINK", "TELEPORT", "dice:100\n")));
+        ParseResult<MonsterSpellType> r = load("orphan-dice.txt", entry("BLINK", "TELEPORT", "dice:100\n"));
 
+        assertEquals(0, effectsOf(r.items().get(0)).size());
+    }
+
+    @Test
+    void strayEffectLinesAheadOfTheFirstEffectAreDroppedAsInC() throws Exception {
+        // parse_mon_spell_effect_yx and parse_mon_spell_expr have the same no-effect guard.
+        ParseResult<MonsterSpellType> r = load("stray-first.txt", entry("BLINK", "TELEPORT",
+                "dice:100\neffect-yx:1:2\nexpr:B:PLAYER_LEVEL:+ 0\neffect:TELEPORT:AWAY\n"));
+
+        List<Object> effects = effectsOf(r.items().get(0));
+        assertEquals(1, effects.size());
+        assertEquals("0,0,", EffectProbe.yxBase(effects.getFirst()));
+    }
+
+    @Test
+    void aDiceLineSeparatedFromItsEffectByAnotherDirectiveStillReachesThatEffectAsInC() throws Exception {
+        // C: parse_mon_spell_dice acts on the last effect of the record wherever the line falls,
+        // so a hit: between the effect: and the dice: makes no difference.
+        ParseResult<MonsterSpellType> r = load("dice-separated.txt", entry("BLINK", "TELEPORT",
+                "effect:TELEPORT:AWAY\nhit:50\ndice:100\n"));
+
+        List<Object> effects = effectsOf(r.items().get(0));
+        assertEquals(1, effects.size());
+        assertEquals("0,0,100", EffectProbe.yxBase(effects.getFirst()));
+    }
+
+    @Test
+    void anEffectYxLineSeparatedFromItsEffectByAnotherDirectiveStillReachesThatEffectAsInC() throws Exception {
+        // C: parse_mon_spell_effect_yx also takes the last effect of the record, wherever it falls.
+        ParseResult<MonsterSpellType> r = load("yx-separated.txt", entry("BLINK", "TELEPORT",
+                "effect:TELEPORT:AWAY\nhit:50\neffect-yx:3:4\n"));
+
+        List<Object> effects = effectsOf(r.items().get(0));
+        assertEquals(1, effects.size());
+        assertEquals("3,4,", EffectProbe.yxBase(effects.getFirst()));
+    }
+
+    @Test
+    void anExprLineOnAnEffectWithNoDiceIsIgnoredAsInC() throws Exception {
+        // C: parse_mon_spell_expr returns PARSE_ERROR_NONE when the last effect has no dice,
+        // "assume that this is human and not parser error".
+        ParseResult<MonsterSpellType> r = load("expr-no-dice.txt", entry("BLINK", "TELEPORT",
+                "effect:TELEPORT:AWAY\nexpr:B:PLAYER_LEVEL:+ 0\n"));
+
+        List<Object> effects = effectsOf(r.items().get(0));
+        assertEquals(1, effects.size());
+        assertEquals("0,0,", EffectProbe.yxBase(effects.getFirst()));
     }
 
     @Test

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ActivationsGrammar.g4 by ANTLR 4.13.2
+// Generated from ActivationsGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.activations;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -197,6 +197,18 @@ public class ActivationsGrammarBaseListener implements ActivationsGrammarListene
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTime(ActivationsGrammar.TimeContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterStrayEffectLine(ActivationsGrammar.StrayEffectLineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitStrayEffectLine(ActivationsGrammar.StrayEffectLineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

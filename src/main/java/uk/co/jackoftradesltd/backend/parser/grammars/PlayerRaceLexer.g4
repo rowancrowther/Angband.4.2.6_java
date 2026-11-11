@@ -110,7 +110,7 @@ STRING
         ;
 
 FREE_TEXT_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode FLAG_MODE;
@@ -124,7 +124,7 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode VALUE_MODE;
@@ -150,5 +150,5 @@ VALUE_OR
         ;
 
 VALUE_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

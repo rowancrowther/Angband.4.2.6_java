@@ -572,26 +572,74 @@ class ActivationReaderTest {
     }
 
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        // parser_parse skips leading white space; the shared CommentsAndEol rules do not.
-        assertHardError("name:T\n  level:4\neffect:CURE:POISONED\n");
+    void anIndentedDirectiveLoadsAsInC() throws Exception {
+        // parser_parse skips leading white space, and the shared INDENT rule in CommentsAndEol does too.
+        assertEquals(4, level(loadOne("name:T\n  level:4\neffect:CURE:POISONED\n")));
     }
 
     @Test
-    void aDiceLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+    void aDiceLineBeforeAnyEffectIsDroppedAsInC() throws Exception {
         // parse_act_dice: "If there is no effect, assume that this is human and not parser error."
-        assertHardError("name:T\ndice:20\neffect:CURE:POISONED\n");
+        Activation a = loadOne("name:T\ndice:20\neffect:CURE:POISONED\n");
+
+        assertEquals(1, effectCount(a));
+        assertEquals("0,0,", EffectProbe.yxBase(((List<?>) field(a, "effects")).getFirst()));
     }
 
     @Test
-    void anEffectYxLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError("name:T\neffect-yx:22:40\neffect:CURE:POISONED\n");
+    void anEffectYxLineBeforeAnyEffectIsDroppedAsInC() throws Exception {
+        // parse_act_effect_yx has the same no-effect guard as parse_act_dice.
+        Activation a = loadOne("name:T\neffect-yx:22:40\neffect:CURE:POISONED\n");
+
+        assertEquals(1, effectCount(a));
+        assertEquals("0,0,", EffectProbe.yxBase(((List<?>) field(a, "effects")).getFirst()));
     }
 
     @Test
-    void effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth() throws IOException {
-        assertHardError("name:T\neffect:CURE:POISONED\neffect-yx:22:40\ndice:20\n");
-        assertHardError("name:T\neffect:CURE:POISONED\ndice:20\neffect-yx:22:40\n");
+    void anExprLineBeforeAnyEffectIsDroppedAsInC() throws Exception {
+        // parse_act_expr: "If there is no effect, assume that this is human and not parser error."
+        Activation a = loadOne("name:T\nexpr:B:PLAYER_LEVEL:+ 0\neffect:CURE:POISONED\n");
+
+        assertEquals(1, effectCount(a));
+        assertEquals("0,0,", EffectProbe.yxBase(((List<?>) field(a, "effects")).getFirst()));
+    }
+
+    @Test
+    void aStrayEffectLineInARecordWithNoEffectLoadsAsInC() throws Exception {
+        Activation a = loadOne("name:T\ndice:20\ndesc:hi\n");
+
+        assertEquals(0, effectCount(a));
+        assertEquals("hi", desc(a));
+    }
+
+    @Test
+    void effectYxThenDiceOnTheSameEffectBothLoadAsInC() throws Exception {
+        Activation a = loadOne("name:T\neffect:CURE:POISONED\neffect-yx:22:40\ndice:20\n");
+
+        assertEquals(1, effectCount(a));
+        assertEquals("22,40,20", EffectProbe.yxBase(((List<?>) field(a, "effects")).getFirst()));
+    }
+
+    /**
+     * C ({@code parse_act_dice}) frees the last effect's old dice and installs the new one, so a
+     * second {@code dice:} on one effect replaces the first.
+     *
+     * <p>Function aSecondDiceLineOnOneEffectReplacesTheFirstAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void aSecondDiceLineOnOneEffectReplacesTheFirstAsInC() throws Exception {
+        Activation a = loadOne("name:T\neffect:CURE:POISONED\ndice:20\ndice:30\n");
+
+        assertEquals(1, effectCount(a));
+        assertEquals("0,0,30", EffectProbe.yxBase(((List<?>) field(a, "effects")).getFirst()));
+    }
+
+    @Test
+    void diceThenEffectYxOnTheSameEffectBothLoadAsInC() throws Exception {
+        Activation a = loadOne("name:T\neffect:CURE:POISONED\ndice:20\neffect-yx:22:40\n");
+
+        assertEquals(1, effectCount(a));
+        assertEquals("22,40,20", EffectProbe.yxBase(((List<?>) field(a, "effects")).getFirst()));
     }
 
     @Test

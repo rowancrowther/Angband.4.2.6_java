@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/GameConstantsGrammar.g4 by ANTLR 4.13.2
+// Generated from GameConstantsGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.gameconstants;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -25,30 +25,25 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link GameConstantsGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface GameConstantsGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link GameConstantsGrammar#field}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitField(GameConstantsGrammar.FieldContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link GameConstantsGrammar#line}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitLine(GameConstantsGrammar.LineContext ctx);
-
-    /**
-     * Visit a parse tree produced by {@link GameConstantsGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(GameConstantsGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link GameConstantsGrammar#field}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitField(GameConstantsGrammar.FieldContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link GameConstantsGrammar#line}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLine(GameConstantsGrammar.LineContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link GameConstantsGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(GameConstantsGrammar.FileContext ctx);
 }

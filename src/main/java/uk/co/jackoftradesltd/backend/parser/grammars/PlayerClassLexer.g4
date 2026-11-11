@@ -138,7 +138,7 @@ PROP_TO
         ;
 
 PROP_EOL
-        :   EOL_SKIP -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode DELIMITED_STRINGS;
@@ -156,11 +156,7 @@ DELIM_COLON
         ;
 
 END_SKIP
-        :   EOL_SKIP -> skip, popMode
-        ;
-
-fragment EOL_SKIP
-        :   '\r'* '\n'
+        :   NL -> skip, popMode
         ;
 
 mode FLAG_MODE;
@@ -174,7 +170,7 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   EOL_SKIP -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode CLASS_FREE_TEXT_MODE;
@@ -184,5 +180,5 @@ STRING
         ;
 
 FREE_TEXT_EOL
-        :   EOL_SKIP -> skip, popMode
+        :   NL -> skip, popMode
         ;

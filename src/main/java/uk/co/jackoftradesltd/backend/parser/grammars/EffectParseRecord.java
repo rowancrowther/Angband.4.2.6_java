@@ -65,4 +65,27 @@ public record EffectParseRecord(String typeInit,
                                 String expressionOperations,
                                 String effectMessage,
                                 int line) {
+    
+    public EffectParseRecord amendYX(String yVal, String xVal) {
+        return new EffectParseRecord(this.typeInit(), this.subTypeWrapper(), this.radius(),
+                this.other(), this.diceString(), yVal, xVal, this.expressionChars(),
+                this.expressionBases(), this.expressionOperations(), this.effectMessage(), this.line);
+    }
+    
+    public EffectParseRecord amendExpression(String diceStr, 
+                                             String expressionChar,
+                                             String expressionBase,
+                                             String expressionOperation) {
+        return new EffectParseRecord(this.typeInit(), this.subTypeWrapper(), this.radius(),
+                this.other(), diceStr, this.yVal(), this.xVal(),
+                expressionChar, expressionBase, expressionOperation, this.effectMessage(), this.line);
+    }
+    
+    public EffectParseRecord appendMessage(String text) {
+        String joined = (this.effectMessage() == null) ? text : this.effectMessage() + text;
+        return new EffectParseRecord(this.typeInit(), this.subTypeWrapper(), this.radius(),
+                this.other(), this.diceString(), this.yVal(), this.xVal(),
+                this.expressionChars(), this.expressionBases(), this.expressionOperations(), 
+                joined, this.line);
+    }
 }

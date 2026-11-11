@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TrapGrammar.g4 by ANTLR 4.13.2
+// Generated from TrapGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.trap;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -113,6 +113,12 @@ public interface TrapGrammarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExprXtra(TrapGrammar.ExprXtraContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link TrapGrammar#effectYxXtra}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEffectYxXtra(TrapGrammar.EffectYxXtraContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link TrapGrammar#effectXtraBlock}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
@@ -166,6 +172,12 @@ public interface TrapGrammarVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTime(TrapGrammar.TimeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link TrapGrammar#strayEffectLine}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStrayEffectLine(TrapGrammar.StrayEffectLineContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link TrapGrammar#effectBlock}.
 	 * @param ctx the parse tree

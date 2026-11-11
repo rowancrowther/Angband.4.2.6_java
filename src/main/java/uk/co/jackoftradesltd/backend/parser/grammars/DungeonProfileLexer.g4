@@ -187,7 +187,7 @@ TEXT_BETWEEN_COLON
  * one malformed line cannot leave every following line lexing in this mode.
  */
 DELIMITER
-        :   (':' | '\n' | '\r') -> skip, popMode
+        :   (':' | NL) -> skip, popMode
         ;
 
 /*
@@ -213,5 +213,5 @@ STRING
  * Ends the name line: drop the line end and return to the default mode.
  */
 END_OF_MODE
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

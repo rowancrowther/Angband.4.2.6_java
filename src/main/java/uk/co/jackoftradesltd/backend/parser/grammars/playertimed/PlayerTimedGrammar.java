@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerTimedGrammar.g4 by ANTLR 4.13.2
+// Generated from PlayerTimedGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playertimed;
 
 import org.antlr.v4.runtime.*;
@@ -46,9 +46,9 @@ public class PlayerTimedGrammar extends Parser {
 		NAME=1, DESC=2, GRADE=3, ON_END=4, ON_INCREASE=5, ON_DECREASE=6, MSGT=7, 
 		FAIL=8, ON_BEGIN_EFFECT=9, ON_END_EFFECT=10, EFFECT_DICE=11, RESIST=12, 
 		BRAND=13, SLAY=14, FLAG_SYNONYM=15, LOWER_BOUND=16, FLAGS=17, INTEGER=18, 
-		COMMENT=19, EOL=20, FLAG=21, FLAG_OR=22, FLAG_EOL=23, STRING=24, PT_FREE_TEXT_MODE_EOL=25, 
-		DELIM_INTEGER=26, DELIM_COLOUR_CODE=27, DELIM_BETWEEN_COLONS=28, DELIM_COLON=29, 
-		DELIM_EOL=30;
+		COMMENT=19, INDENT=20, EOL=21, FLAG=22, FLAG_OR=23, FLAG_EOL=24, STRING=25, 
+		PT_FREE_TEXT_MODE_EOL=26, DELIM_INTEGER=27, DELIM_COLOUR_CODE=28, DELIM_BETWEEN_COLONS=29, 
+		DELIM_COLON=30, DELIM_EOL=31;
 	public static final int
 		RULE_name = 0, RULE_desc = 1, RULE_grade = 2, RULE_onEnd = 3, RULE_onIncrease = 4, 
 		RULE_onDecrease = 5, RULE_msgt = 6, RULE_fail = 7, RULE_onBeginEffect = 8, 
@@ -70,7 +70,7 @@ public class PlayerTimedGrammar extends Parser {
 			"'on-decrease:'", "'msgt:'", "'fail:'", "'on-begin-effect:'", "'on-end-effect:'", 
 			"'effect-dice:'", "'resist:'", "'brand:'", "'slay:'", "'flag-synonym:'", 
 			"'lower-bound:'", "'flags:'", null, null, null, null, null, null, null, 
-			null, null, null, null, "':'"
+			null, null, null, null, null, "':'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -79,7 +79,7 @@ public class PlayerTimedGrammar extends Parser {
 			null, "NAME", "DESC", "GRADE", "ON_END", "ON_INCREASE", "ON_DECREASE", 
 			"MSGT", "FAIL", "ON_BEGIN_EFFECT", "ON_END_EFFECT", "EFFECT_DICE", "RESIST", 
 			"BRAND", "SLAY", "FLAG_SYNONYM", "LOWER_BOUND", "FLAGS", "INTEGER", "COMMENT", 
-			"EOL", "FLAG", "FLAG_OR", "FLAG_EOL", "STRING", "PT_FREE_TEXT_MODE_EOL", 
+			"INDENT", "EOL", "FLAG", "FLAG_OR", "FLAG_EOL", "STRING", "PT_FREE_TEXT_MODE_EOL", 
 			"DELIM_INTEGER", "DELIM_COLOUR_CODE", "DELIM_BETWEEN_COLONS", "DELIM_COLON", 
 			"DELIM_EOL"
 		};
@@ -1477,7 +1477,7 @@ public class PlayerTimedGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u001e\u00c5\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u001f\u00c5\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1517,45 +1517,45 @@ public class PlayerTimedGrammar extends Parser {
 		"k\u0001\u0000\u0000\u0000\u0018o\u0001\u0000\u0000\u0000\u001as\u0001"+
 		"\u0000\u0000\u0000\u001cy\u0001\u0000\u0000\u0000\u001e}\u0001\u0000\u0000"+
 		"\u0000 \u0088\u0001\u0000\u0000\u0000\"\u00be\u0001\u0000\u0000\u0000"+
-		"$%\u0005\u0001\u0000\u0000%&\u0005\u0015\u0000\u0000&\'\u0006\u0000\uffff"+
+		"$%\u0005\u0001\u0000\u0000%&\u0005\u0016\u0000\u0000&\'\u0006\u0000\uffff"+
 		"\uffff\u0000\'\u0001\u0001\u0000\u0000\u0000()\u0005\u0002\u0000\u0000"+
-		")*\u0005\u0018\u0000\u0000*+\u0006\u0001\uffff\uffff\u0000+\u0003\u0001"+
-		"\u0000\u0000\u0000,-\u0005\u0003\u0000\u0000-.\u0005\u001b\u0000\u0000"+
-		"./\u0005\u001d\u0000\u0000/0\u0005\u001a\u0000\u000001\u0005\u001d\u0000"+
-		"\u000012\u0005\u001c\u0000\u000023\u0005\u001d\u0000\u000034\u0005\u001c"+
-		"\u0000\u00004:\u0006\u0002\uffff\uffff\u000058\u0005\u001d\u0000\u0000"+
-		"67\u0005\u001c\u0000\u000079\u0006\u0002\uffff\uffff\u000086\u0001\u0000"+
+		")*\u0005\u0019\u0000\u0000*+\u0006\u0001\uffff\uffff\u0000+\u0003\u0001"+
+		"\u0000\u0000\u0000,-\u0005\u0003\u0000\u0000-.\u0005\u001c\u0000\u0000"+
+		"./\u0005\u001e\u0000\u0000/0\u0005\u001b\u0000\u000001\u0005\u001e\u0000"+
+		"\u000012\u0005\u001d\u0000\u000023\u0005\u001e\u0000\u000034\u0005\u001d"+
+		"\u0000\u00004:\u0006\u0002\uffff\uffff\u000058\u0005\u001e\u0000\u0000"+
+		"67\u0005\u001d\u0000\u000079\u0006\u0002\uffff\uffff\u000086\u0001\u0000"+
 		"\u0000\u000089\u0001\u0000\u0000\u00009;\u0001\u0000\u0000\u0000:5\u0001"+
 		"\u0000\u0000\u0000:;\u0001\u0000\u0000\u0000;\u0005\u0001\u0000\u0000"+
-		"\u0000<=\u0005\u0004\u0000\u0000=>\u0005\u0018\u0000\u0000>?\u0006\u0003"+
+		"\u0000<=\u0005\u0004\u0000\u0000=>\u0005\u0019\u0000\u0000>?\u0006\u0003"+
 		"\uffff\uffff\u0000?\u0007\u0001\u0000\u0000\u0000@A\u0005\u0005\u0000"+
-		"\u0000AB\u0005\u0018\u0000\u0000BC\u0006\u0004\uffff\uffff\u0000C\t\u0001"+
-		"\u0000\u0000\u0000DE\u0005\u0006\u0000\u0000EF\u0005\u0018\u0000\u0000"+
+		"\u0000AB\u0005\u0019\u0000\u0000BC\u0006\u0004\uffff\uffff\u0000C\t\u0001"+
+		"\u0000\u0000\u0000DE\u0005\u0006\u0000\u0000EF\u0005\u0019\u0000\u0000"+
 		"FG\u0006\u0005\uffff\uffff\u0000G\u000b\u0001\u0000\u0000\u0000HI\u0005"+
-		"\u0007\u0000\u0000IJ\u0005\u0015\u0000\u0000JK\u0006\u0006\uffff\uffff"+
-		"\u0000K\r\u0001\u0000\u0000\u0000LM\u0005\b\u0000\u0000MN\u0005\u001a"+
-		"\u0000\u0000NO\u0005\u001d\u0000\u0000OP\u0005\u001c\u0000\u0000PQ\u0006"+
+		"\u0007\u0000\u0000IJ\u0005\u0016\u0000\u0000JK\u0006\u0006\uffff\uffff"+
+		"\u0000K\r\u0001\u0000\u0000\u0000LM\u0005\b\u0000\u0000MN\u0005\u001b"+
+		"\u0000\u0000NO\u0005\u001e\u0000\u0000OP\u0005\u001d\u0000\u0000PQ\u0006"+
 		"\u0007\uffff\uffff\u0000Q\u000f\u0001\u0000\u0000\u0000RS\u0005\t\u0000"+
-		"\u0000ST\u0005\u001c\u0000\u0000TX\u0006\b\uffff\uffff\u0000UV\u0005\u001d"+
-		"\u0000\u0000VW\u0005\u001c\u0000\u0000WY\u0006\b\uffff\uffff\u0000XU\u0001"+
+		"\u0000ST\u0005\u001d\u0000\u0000TX\u0006\b\uffff\uffff\u0000UV\u0005\u001e"+
+		"\u0000\u0000VW\u0005\u001d\u0000\u0000WY\u0006\b\uffff\uffff\u0000XU\u0001"+
 		"\u0000\u0000\u0000XY\u0001\u0000\u0000\u0000Y\u0011\u0001\u0000\u0000"+
-		"\u0000Z[\u0005\n\u0000\u0000[\\\u0005\u001c\u0000\u0000\\`\u0006\t\uffff"+
-		"\uffff\u0000]^\u0005\u001d\u0000\u0000^_\u0005\u001c\u0000\u0000_a\u0006"+
+		"\u0000Z[\u0005\n\u0000\u0000[\\\u0005\u001d\u0000\u0000\\`\u0006\t\uffff"+
+		"\uffff\u0000]^\u0005\u001e\u0000\u0000^_\u0005\u001d\u0000\u0000_a\u0006"+
 		"\t\uffff\uffff\u0000`]\u0001\u0000\u0000\u0000`a\u0001\u0000\u0000\u0000"+
 		"ae\u0001\u0000\u0000\u0000bc\u0005\u000b\u0000\u0000cd\u0005\u0012\u0000"+
 		"\u0000df\u0006\t\uffff\uffff\u0000eb\u0001\u0000\u0000\u0000ef\u0001\u0000"+
 		"\u0000\u0000f\u0013\u0001\u0000\u0000\u0000gh\u0005\f\u0000\u0000hi\u0005"+
-		"\u0015\u0000\u0000ij\u0006\n\uffff\uffff\u0000j\u0015\u0001\u0000\u0000"+
-		"\u0000kl\u0005\r\u0000\u0000lm\u0005\u0015\u0000\u0000mn\u0006\u000b\uffff"+
+		"\u0016\u0000\u0000ij\u0006\n\uffff\uffff\u0000j\u0015\u0001\u0000\u0000"+
+		"\u0000kl\u0005\r\u0000\u0000lm\u0005\u0016\u0000\u0000mn\u0006\u000b\uffff"+
 		"\uffff\u0000n\u0017\u0001\u0000\u0000\u0000op\u0005\u000e\u0000\u0000"+
-		"pq\u0005\u0015\u0000\u0000qr\u0006\f\uffff\uffff\u0000r\u0019\u0001\u0000"+
-		"\u0000\u0000st\u0005\u000f\u0000\u0000tu\u0005\u001c\u0000\u0000uv\u0005"+
-		"\u001d\u0000\u0000vw\u0005\u001a\u0000\u0000wx\u0006\r\uffff\uffff\u0000"+
+		"pq\u0005\u0016\u0000\u0000qr\u0006\f\uffff\uffff\u0000r\u0019\u0001\u0000"+
+		"\u0000\u0000st\u0005\u000f\u0000\u0000tu\u0005\u001d\u0000\u0000uv\u0005"+
+		"\u001e\u0000\u0000vw\u0005\u001b\u0000\u0000wx\u0006\r\uffff\uffff\u0000"+
 		"x\u001b\u0001\u0000\u0000\u0000yz\u0005\u0010\u0000\u0000z{\u0005\u0012"+
 		"\u0000\u0000{|\u0006\u000e\uffff\uffff\u0000|\u001d\u0001\u0000\u0000"+
-		"\u0000}~\u0005\u0011\u0000\u0000~\u007f\u0005\u0015\u0000\u0000\u007f"+
-		"\u0085\u0006\u000f\uffff\uffff\u0000\u0080\u0081\u0005\u0016\u0000\u0000"+
-		"\u0081\u0082\u0005\u0015\u0000\u0000\u0082\u0084\u0006\u000f\uffff\uffff"+
+		"\u0000}~\u0005\u0011\u0000\u0000~\u007f\u0005\u0016\u0000\u0000\u007f"+
+		"\u0085\u0006\u000f\uffff\uffff\u0000\u0080\u0081\u0005\u0017\u0000\u0000"+
+		"\u0081\u0082\u0005\u0016\u0000\u0000\u0082\u0084\u0006\u000f\uffff\uffff"+
 		"\u0000\u0083\u0080\u0001\u0000\u0000\u0000\u0084\u0087\u0001\u0000\u0000"+
 		"\u0000\u0085\u0083\u0001\u0000\u0000\u0000\u0085\u0086\u0001\u0000\u0000"+
 		"\u0000\u0086\u001f\u0001\u0000\u0000\u0000\u0087\u0085\u0001\u0000\u0000"+

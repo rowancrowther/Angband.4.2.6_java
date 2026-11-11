@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/frontend/ui/entrybase/UIEntryBaseGrammar.g4 by ANTLR 4.13.2
+// Generated from UIEntryBaseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entrybase.antlr4.uientrybase;
 
 import org.antlr.v4.runtime.*;
@@ -41,7 +41,7 @@ public class UIEntryBaseGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		NAME=1, RENDERER=2, COMBINE=3, CATEGORY=4, FLAGS=5, DESC=6, INTEGER=7, 
-		LCASE=8, COMMENT=9, EOL=10, FLAG=11, OR=12, FLAG_EOL=13, STRING=14;
+		LCASE=8, COMMENT=9, INDENT=10, EOL=11, FLAG=12, OR=13, FLAG_EOL=14, STRING=15;
 	public static final int
 		RULE_name = 0, RULE_renderer = 1, RULE_combine = 2, RULE_category = 3, 
 		RULE_flags = 4, RULE_desc = 5, RULE_entryBase = 6, RULE_file = 7;
@@ -63,7 +63,7 @@ public class UIEntryBaseGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "NAME", "RENDERER", "COMBINE", "CATEGORY", "FLAGS", "DESC", "INTEGER", 
-			"LCASE", "COMMENT", "EOL", "FLAG", "OR", "FLAG_EOL", "STRING"
+			"LCASE", "COMMENT", "INDENT", "EOL", "FLAG", "OR", "FLAG_EOL", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -647,7 +647,7 @@ public class UIEntryBaseGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000eE\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000fE\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0001"+
 		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001"+
@@ -667,26 +667,26 @@ public class UIEntryBaseGrammar extends Parser {
 		"\u0013\u0006\u0000\uffff\uffff\u0000\u0013\u0001\u0001\u0000\u0000\u0000"+
 		"\u0014\u0015\u0005\u0002\u0000\u0000\u0015\u0016\u0005\b\u0000\u0000\u0016"+
 		"\u0017\u0006\u0001\uffff\uffff\u0000\u0017\u0003\u0001\u0000\u0000\u0000"+
-		"\u0018\u0019\u0005\u0003\u0000\u0000\u0019\u001a\u0005\u000b\u0000\u0000"+
-		"\u001a\u001b\u0006\u0002\uffff\uffff\u0000\u001b\u0005\u0001\u0000\u0000"+
-		"\u0000\u001c\u001d\u0005\u0004\u0000\u0000\u001d\u001e\u0005\u000e\u0000"+
-		"\u0000\u001e \u0006\u0003\uffff\uffff\u0000\u001f\u001c\u0001\u0000\u0000"+
-		"\u0000 !\u0001\u0000\u0000\u0000!\u001f\u0001\u0000\u0000\u0000!\"\u0001"+
-		"\u0000\u0000\u0000\"\u0007\u0001\u0000\u0000\u0000#$\u0005\u0005\u0000"+
-		"\u0000$%\u0005\u000b\u0000\u0000%&\u0006\u0004\uffff\uffff\u0000&\t\u0001"+
-		"\u0000\u0000\u0000\'(\u0005\u0006\u0000\u0000()\u0005\u000e\u0000\u0000"+
-		")+\u0006\u0005\uffff\uffff\u0000*\'\u0001\u0000\u0000\u0000+,\u0001\u0000"+
-		"\u0000\u0000,*\u0001\u0000\u0000\u0000,-\u0001\u0000\u0000\u0000-\u000b"+
-		"\u0001\u0000\u0000\u0000./\u0003\u0000\u0000\u0000/0\u0006\u0006\uffff"+
-		"\uffff\u000001\u0003\u0002\u0001\u000012\u0006\u0006\uffff\uffff\u0000"+
-		"23\u0003\u0004\u0002\u000034\u0006\u0006\uffff\uffff\u000045\u0003\u0006"+
-		"\u0003\u000056\u0006\u0006\uffff\uffff\u000067\u0003\b\u0004\u000078\u0006"+
-		"\u0006\uffff\uffff\u000089\u0003\n\u0005\u00009:\u0006\u0006\uffff\uffff"+
-		"\u0000:\r\u0001\u0000\u0000\u0000;<\u0003\f\u0006\u0000<=\u0006\u0007"+
-		"\uffff\uffff\u0000=?\u0001\u0000\u0000\u0000>;\u0001\u0000\u0000\u0000"+
-		"?@\u0001\u0000\u0000\u0000@>\u0001\u0000\u0000\u0000@A\u0001\u0000\u0000"+
-		"\u0000AB\u0001\u0000\u0000\u0000BC\u0005\u0000\u0000\u0001C\u000f\u0001"+
-		"\u0000\u0000\u0000\u0003!,@";
+		"\u0018\u0019\u0005\u0003\u0000\u0000\u0019\u001a\u0005\f\u0000\u0000\u001a"+
+		"\u001b\u0006\u0002\uffff\uffff\u0000\u001b\u0005\u0001\u0000\u0000\u0000"+
+		"\u001c\u001d\u0005\u0004\u0000\u0000\u001d\u001e\u0005\u000f\u0000\u0000"+
+		"\u001e \u0006\u0003\uffff\uffff\u0000\u001f\u001c\u0001\u0000\u0000\u0000"+
+		" !\u0001\u0000\u0000\u0000!\u001f\u0001\u0000\u0000\u0000!\"\u0001\u0000"+
+		"\u0000\u0000\"\u0007\u0001\u0000\u0000\u0000#$\u0005\u0005\u0000\u0000"+
+		"$%\u0005\f\u0000\u0000%&\u0006\u0004\uffff\uffff\u0000&\t\u0001\u0000"+
+		"\u0000\u0000\'(\u0005\u0006\u0000\u0000()\u0005\u000f\u0000\u0000)+\u0006"+
+		"\u0005\uffff\uffff\u0000*\'\u0001\u0000\u0000\u0000+,\u0001\u0000\u0000"+
+		"\u0000,*\u0001\u0000\u0000\u0000,-\u0001\u0000\u0000\u0000-\u000b\u0001"+
+		"\u0000\u0000\u0000./\u0003\u0000\u0000\u0000/0\u0006\u0006\uffff\uffff"+
+		"\u000001\u0003\u0002\u0001\u000012\u0006\u0006\uffff\uffff\u000023\u0003"+
+		"\u0004\u0002\u000034\u0006\u0006\uffff\uffff\u000045\u0003\u0006\u0003"+
+		"\u000056\u0006\u0006\uffff\uffff\u000067\u0003\b\u0004\u000078\u0006\u0006"+
+		"\uffff\uffff\u000089\u0003\n\u0005\u00009:\u0006\u0006\uffff\uffff\u0000"+
+		":\r\u0001\u0000\u0000\u0000;<\u0003\f\u0006\u0000<=\u0006\u0007\uffff"+
+		"\uffff\u0000=?\u0001\u0000\u0000\u0000>;\u0001\u0000\u0000\u0000?@\u0001"+
+		"\u0000\u0000\u0000@>\u0001\u0000\u0000\u0000@A\u0001\u0000\u0000\u0000"+
+		"AB\u0001\u0000\u0000\u0000BC\u0005\u0000\u0000\u0001C\u000f\u0001\u0000"+
+		"\u0000\u0000\u0003!,@";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

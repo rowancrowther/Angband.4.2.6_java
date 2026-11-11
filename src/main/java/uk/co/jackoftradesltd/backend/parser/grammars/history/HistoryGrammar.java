@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HistoryGrammar.g4 by ANTLR 4.13.2
+// Generated from HistoryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.history;
 
 import org.antlr.v4.runtime.*;
@@ -39,7 +39,8 @@ public class HistoryGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		CHART=1, PHRASE=2, INTEGER=3, COLON=4, COMMENT=5, EOL=6, STRING=7, STRING_EOL=8;
+		CHART=1, PHRASE=2, INTEGER=3, COLON=4, COMMENT=5, INDENT=6, EOL=7, STRING=8, 
+		STRING_EOL=9;
 	public static final int
 		RULE_chart = 0, RULE_phrase = 1, RULE_record = 2, RULE_file = 3;
 	private static String[] makeRuleNames() {
@@ -57,8 +58,8 @@ public class HistoryGrammar extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "CHART", "PHRASE", "INTEGER", "COLON", "COMMENT", "EOL", "STRING", 
-			"STRING_EOL"
+			null, "CHART", "PHRASE", "INTEGER", "COLON", "COMMENT", "INDENT", "EOL", 
+			"STRING", "STRING_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -359,7 +360,7 @@ public class HistoryGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\b$\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\t$\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
 		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001"+
@@ -372,16 +373,16 @@ public class HistoryGrammar extends Parser {
 		"\u0005\u0004\u0000\u0000\u000b\f\u0005\u0003\u0000\u0000\f\r\u0005\u0004"+
 		"\u0000\u0000\r\u000e\u0005\u0003\u0000\u0000\u000e\u000f\u0006\u0000\uffff"+
 		"\uffff\u0000\u000f\u0001\u0001\u0000\u0000\u0000\u0010\u0011\u0005\u0002"+
-		"\u0000\u0000\u0011\u0012\u0005\u0007\u0000\u0000\u0012\u0013\u0006\u0001"+
-		"\uffff\uffff\u0000\u0013\u0003\u0001\u0000\u0000\u0000\u0014\u0015\u0003"+
-		"\u0000\u0000\u0000\u0015\u0016\u0006\u0002\uffff\uffff\u0000\u0016\u0017"+
-		"\u0003\u0002\u0001\u0000\u0017\u0018\u0006\u0002\uffff\uffff\u0000\u0018"+
-		"\u0005\u0001\u0000\u0000\u0000\u0019\u001d\u0006\u0003\uffff\uffff\u0000"+
-		"\u001a\u001b\u0003\u0004\u0002\u0000\u001b\u001c\u0006\u0003\uffff\uffff"+
-		"\u0000\u001c\u001e\u0001\u0000\u0000\u0000\u001d\u001a\u0001\u0000\u0000"+
-		"\u0000\u001e\u001f\u0001\u0000\u0000\u0000\u001f\u001d\u0001\u0000\u0000"+
-		"\u0000\u001f \u0001\u0000\u0000\u0000 !\u0001\u0000\u0000\u0000!\"\u0005"+
-		"\u0000\u0000\u0001\"\u0007\u0001\u0000\u0000\u0000\u0001\u001f";
+		"\u0000\u0000\u0011\u0012\u0005\b\u0000\u0000\u0012\u0013\u0006\u0001\uffff"+
+		"\uffff\u0000\u0013\u0003\u0001\u0000\u0000\u0000\u0014\u0015\u0003\u0000"+
+		"\u0000\u0000\u0015\u0016\u0006\u0002\uffff\uffff\u0000\u0016\u0017\u0003"+
+		"\u0002\u0001\u0000\u0017\u0018\u0006\u0002\uffff\uffff\u0000\u0018\u0005"+
+		"\u0001\u0000\u0000\u0000\u0019\u001d\u0006\u0003\uffff\uffff\u0000\u001a"+
+		"\u001b\u0003\u0004\u0002\u0000\u001b\u001c\u0006\u0003\uffff\uffff\u0000"+
+		"\u001c\u001e\u0001\u0000\u0000\u0000\u001d\u001a\u0001\u0000\u0000\u0000"+
+		"\u001e\u001f\u0001\u0000\u0000\u0000\u001f\u001d\u0001\u0000\u0000\u0000"+
+		"\u001f \u0001\u0000\u0000\u0000 !\u0001\u0000\u0000\u0000!\"\u0005\u0000"+
+		"\u0000\u0001\"\u0007\u0001\u0000\u0000\u0000\u0001\u001f";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

@@ -498,10 +498,10 @@ class MonsterBaseReaderTest {
     }
 
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-        // parser_parse skips leading isspace before reading the directive.
-        String body = "name:orc\n  glyph:o\npain:1\ndesc:Orc\n";
-        assertThrows(ParseCancellationException.class, () -> load("indent.txt", body));
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        // parser_parse skips leading isspace before reading the directive, and so does the INDENT rule.
+        ParseResult<MonsterBase> result = load("indent.txt", "name:orc\n  glyph:o\npain:1\ndesc:Orc\n");
 
+        assertEquals('o', result.items().get(0).getDefaultMonsterChar());
     }
 }

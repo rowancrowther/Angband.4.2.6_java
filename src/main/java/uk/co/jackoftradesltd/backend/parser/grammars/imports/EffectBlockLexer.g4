@@ -241,5 +241,5 @@ EXPR_OP
  * the EOL characters.
  */
 EXPR_EOL
-        :   '\r'* '\n' -> popMode, skip
+        :   NL -> popMode, skip
         ;

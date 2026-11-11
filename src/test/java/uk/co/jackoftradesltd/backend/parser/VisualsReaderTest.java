@@ -583,11 +583,11 @@ class VisualsReaderTest {
         }
 
         @Test
-        void anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent() throws IOException {
-            // parser_parse skips leading whitespace; the shared CommentsAndEol rules do not.
-            assertThrows(ParseCancellationException.class, () -> new VisualsReader().parseCyclerWithResults(
-                    write("indent.txt", "cycle:g:n\n  cycle-color:r\n").toString()));
+        void anIndentedDirectiveLoadsAsInC() throws IOException {
+            // parser_parse skips leading whitespace, and the INDENT rule in CommentsAndEol does too.
+            VisualsCycler cycler = cycler("indent.txt", "cycle:g:n\n  cycle-color:r\n");
 
+            assertEquals(ColourEnum.COLOUR_RED, cycler.getByGroup("g").get("n").getColour(0));
         }
 
         // ---- The caps C enforces (matched by VisualsCycleAssembler from 261030) ----

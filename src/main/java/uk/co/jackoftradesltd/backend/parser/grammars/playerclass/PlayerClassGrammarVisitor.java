@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerClassGrammar.g4 by ANTLR 4.13.2
+// Generated from PlayerClassGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playerclass;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -256,6 +256,12 @@ public interface PlayerClassGrammarVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTime(PlayerClassGrammar.TimeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerClassGrammar#strayEffectLine}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStrayEffectLine(PlayerClassGrammar.StrayEffectLineContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlayerClassGrammar#effectBlock}.
 	 * @param ctx the parse tree

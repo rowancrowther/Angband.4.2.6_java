@@ -565,27 +565,85 @@ class ShapeReaderTest {
     }
 
     @Test
-    void anEffectMessageBeforeTheFirstEffectIsAHardErrorWhereCDropsItSilently() throws IOException {
+    void anEffectMessageBeforeTheFirstEffectIsDroppedAsInC() throws Exception {
         // The upstream werewolf record opens its effects with an effect-msg line; parse_shape_effect_msg
         // returns PARSE_ERROR_NONE when shape->effect is NULL. The shipped copy moves that line down.
-        assertThrows(ParseCancellationException.class, () -> load("msg-first.txt", shape("w",
-                "effect-msg:taking form\neffect:DAMAGE\ndice:5\n")));
+        ParseResult<PlayerShape> r = load("msg-first.txt", shape("w",
+                "effect-msg:taking form\neffect:DAMAGE\ndice:5\n"));
 
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertNull(EffectProbe.message(r.items().getFirst().getEffect().getFirst()));
     }
 
     @Test
-    void diceBeforeTheFirstEffectIsAHardErrorWhereCIgnoresIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("dice-first.txt", shape("w",
-                "dice:5\neffect:DAMAGE\n")));
+    void effectYxThenDiceOnTheSameEffectBothLoadAsInC() throws Exception {
+        // C: parse_shape_effect_yx and parse_shape_dice both act on the last effect.
+        ParseResult<PlayerShape> r = load("yx-dice.txt", shape("w", "effect:DAMAGE\neffect-yx:1:2\ndice:5\n"));
 
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals("1,2,5", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
+    }
+
+    /**
+     * C ({@code parse_shape_dice}) frees the last effect's old dice and installs the new one, so a
+     * second {@code dice:} on one effect replaces the first.
+     *
+     * <p>Function aSecondDiceLineOnOneEffectReplacesTheFirstAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void aSecondDiceLineOnOneEffectReplacesTheFirstAsInC() throws Exception {
+        ParseResult<PlayerShape> r = load("dice-twice.txt", shape("w", "effect:DAMAGE\ndice:5\ndice:6\n"));
+
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals("0,0,6", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
     }
 
     @Test
-    void aSecondEffectMessageIsAHardErrorWhereCAppendsIt() throws IOException {
-        // parse_shape_effect_msg uses string_append, so two lines join in C.
-        assertThrows(ParseCancellationException.class, () -> load("msg-twice.txt", shape("w",
-                "effect:DAMAGE\ndice:5\neffect-msg:one\neffect-msg:two\n")));
+    void diceThenEffectYxOnTheSameEffectBothLoadAsInC() throws Exception {
+        ParseResult<PlayerShape> r = load("dice-yx.txt", shape("w", "effect:DAMAGE\ndice:5\neffect-yx:1:2\n"));
 
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals("1,2,5", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
+    }
+
+    @Test
+    void diceBeforeTheFirstEffectIsDroppedAsInC() throws Exception {
+        // parse_shape_dice returns PARSE_ERROR_NONE when the shape has no effect yet.
+        ParseResult<PlayerShape> r = load("dice-first.txt", shape("w", "dice:5\neffect:DAMAGE\n"));
+
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals("0,0,", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
+    }
+
+    @Test
+    void effectYxAndExprBeforeTheFirstEffectAreDroppedAsInC() throws Exception {
+        ParseResult<PlayerShape> r = load("yx-expr-first.txt", shape("w",
+                "effect-yx:1:2\nexpr:B:PLAYER_LEVEL:+ 0\neffect:DAMAGE\n"));
+
+        assertEquals(1, r.items().getFirst().getEffect().size());
+        assertEquals("0,0,", EffectProbe.yxBase(r.items().getFirst().getEffect().getFirst()));
+    }
+
+    @Test
+    void twoEffectMessagesOnOneEffectAreAppendedAsInC() throws Exception {
+        // parse_shape_effect_msg uses string_append, so two lines join in C, with nothing between them.
+        ParseResult<PlayerShape> r = load("msg-twice.txt", shape("w",
+                "effect:DAMAGE\ndice:5\neffect-msg:one\neffect-msg:two\n"));
+
+        assertEquals("onetwo", EffectProbe.message(r.items().getFirst().getEffect().getFirst()));
+    }
+
+    @Test
+    void anEffectMessageAfterAnotherDirectiveReachesTheLastEffectAsInC() throws Exception {
+        // parse_shape_effect_msg acts on the last effect of the record wherever the line falls, so a
+        // message after combat: lands on DAMAGE and the later effect gets none.
+        ParseResult<PlayerShape> r = load("msg-late.txt", shape("w",
+                "effect:DAMAGE\ndice:5\ncombat:1:2:3\neffect-msg:late\neffect:CURE:AFRAID\n"));
+
+        List<?> effects = r.items().getFirst().getEffect();
+        assertEquals(2, effects.size());
+        assertEquals("late", EffectProbe.message(effects.get(0)));
+        assertNull(EffectProbe.message(effects.get(1)));
     }
 
     @Test
@@ -687,19 +745,19 @@ class ShapeReaderTest {
     }
 
     @Test
-    void anIndentedDirectiveIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("indent.txt", shape("a", "  combat:1:1:1\n")));
-
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        // parser_parse skips leading white space, and the INDENT rule in CommentsAndEol does too.
+        assertEquals(1, load("indent.txt", shape("a", "  combat:1:1:1\n")).items().size());
     }
 
     @Test
-    void theShippedFileDiffersFromUpstreamInThreeLinesThatTheseTestsDependOn() throws IOException {
-        // lib/gamedata/shape.txt drops the blank after "values:" on bear,
-        // and moves the werewolf effect-msg below its first effect; the upstream file loads in none of those forms.
+    void theShippedFileDiffersFromUpstreamInOneLineThatTheseTestsDependOn() throws IOException {
+        // lib/gamedata/shape.txt drops the blank after "values:" on bear; the upstream file does not load
+        // in that form. The werewolf effect-msg is back in upstream order, above its first effect, where
+        // C drops it and Java now does too.
         String text = Files.readString(Path.of(REAL_FILE));
 
-        assertFalse(text.contains("record-count:"));
         assertFalse(text.contains("values: "));
-        assertTrue(text.indexOf("effect-msg:taking werewolf form") > text.indexOf("effect:PROJECT_LOS:TURN_ALL"));
+        assertTrue(text.indexOf("effect-msg:taking werewolf form") < text.indexOf("effect:PROJECT_LOS:TURN_ALL"));
     }
 }

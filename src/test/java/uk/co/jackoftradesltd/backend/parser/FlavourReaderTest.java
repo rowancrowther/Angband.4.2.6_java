@@ -489,13 +489,17 @@ class FlavourReaderTest {
     }
 
     /**
-     * {@code parser_parse} skips leading whitespace; {@code CommentsAndEol.g4} does not, so an
-     * indented directive is a syntax error. The shared gap is already recorded for the realm
-     * reader.
+     * {@code parser_parse} skips leading whitespace, and so does the {@code INDENT} rule in
+     * {@code CommentsAndEol.g4}, so an indented directive loads as it does in C.
+     *
+     * <p>Function anIndentedLineLoadsAsInC coded on 261109, commented in full on 261109. It replaces
+     * anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace.
      */
     @Test
-    void anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace() throws IOException {
-        assertHardError("indent.txt", "kind:ring:=\n  flavor:2:Green:Foo\n");
+    void anIndentedLineLoadsAsInC() throws IOException {
+        ParseResult<FlavourKind> result = load("indent.txt", "kind:ring:=\n  flavor:2:Green:Foo\n");
+
+        assertEquals(1, result.items().getFirst().getFlavours().size());
     }
 
     /**

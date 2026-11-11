@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from BlowMethodGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.blowmethod;
 
@@ -40,7 +41,7 @@ public class BlowMethodGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		NAME=1, CUT=2, STUN=3, MISS=4, PHYS=5, MSG=6, ACT=7, DESC=8, INTEGER=9, 
-		COMMENT=10, EOL=11, STRING=12, FREE_TEXT_EOL=13;
+		COMMENT=10, INDENT=11, EOL=12, STRING=13, FREE_TEXT_EOL=14;
 	public static final int
 		RULE_name = 0, RULE_cut = 1, RULE_stun = 2, RULE_miss = 3, RULE_phys = 4, 
 		RULE_msg = 5, RULE_act = 6, RULE_desc = 7, RULE_blow = 8, RULE_file = 9;
@@ -62,7 +63,7 @@ public class BlowMethodGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "NAME", "CUT", "STUN", "MISS", "PHYS", "MSG", "ACT", "DESC", "INTEGER", 
-			"COMMENT", "EOL", "STRING", "FREE_TEXT_EOL"
+			"COMMENT", "INDENT", "EOL", "STRING", "FREE_TEXT_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -769,7 +770,7 @@ public class BlowMethodGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\r[\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000e[\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000"+
@@ -787,7 +788,7 @@ public class BlowMethodGrammar extends Parser {
 		"\u0000\u0000\u0000\u0006 \u0001\u0000\u0000\u0000\b$\u0001\u0000\u0000"+
 		"\u0000\n(\u0001\u0000\u0000\u0000\f-\u0001\u0000\u0000\u0000\u000e1\u0001"+
 		"\u0000\u0000\u0000\u00105\u0001\u0000\u0000\u0000\u0012T\u0001\u0000\u0000"+
-		"\u0000\u0014\u0015\u0005\u0001\u0000\u0000\u0015\u0016\u0005\f\u0000\u0000"+
+		"\u0000\u0014\u0015\u0005\u0001\u0000\u0000\u0015\u0016\u0005\r\u0000\u0000"+
 		"\u0016\u0017\u0006\u0000\uffff\uffff\u0000\u0017\u0001\u0001\u0000\u0000"+
 		"\u0000\u0018\u0019\u0005\u0002\u0000\u0000\u0019\u001a\u0005\t\u0000\u0000"+
 		"\u001a\u001b\u0006\u0001\uffff\uffff\u0000\u001b\u0003\u0001\u0000\u0000"+
@@ -796,11 +797,11 @@ public class BlowMethodGrammar extends Parser {
 		"\u0000 !\u0005\u0004\u0000\u0000!\"\u0005\t\u0000\u0000\"#\u0006\u0003"+
 		"\uffff\uffff\u0000#\u0007\u0001\u0000\u0000\u0000$%\u0005\u0005\u0000"+
 		"\u0000%&\u0005\t\u0000\u0000&\'\u0006\u0004\uffff\uffff\u0000\'\t\u0001"+
-		"\u0000\u0000\u0000(+\u0005\u0006\u0000\u0000)*\u0005\f\u0000\u0000*,\u0006"+
+		"\u0000\u0000\u0000(+\u0005\u0006\u0000\u0000)*\u0005\r\u0000\u0000*,\u0006"+
 		"\u0005\uffff\uffff\u0000+)\u0001\u0000\u0000\u0000+,\u0001\u0000\u0000"+
 		"\u0000,\u000b\u0001\u0000\u0000\u0000-.\u0005\u0007\u0000\u0000./\u0005"+
-		"\f\u0000\u0000/0\u0006\u0006\uffff\uffff\u00000\r\u0001\u0000\u0000\u0000"+
-		"12\u0005\b\u0000\u000023\u0005\f\u0000\u000034\u0006\u0007\uffff\uffff"+
+		"\r\u0000\u0000/0\u0006\u0006\uffff\uffff\u00000\r\u0001\u0000\u0000\u0000"+
+		"12\u0005\b\u0000\u000023\u0005\r\u0000\u000034\u0006\u0007\uffff\uffff"+
 		"\u00004\u000f\u0001\u0000\u0000\u000056\u0003\u0000\u0000\u00006N\u0006"+
 		"\b\uffff\uffff\u000078\u0003\u0002\u0001\u000089\u0006\b\uffff\uffff\u0000"+
 		"9M\u0001\u0000\u0000\u0000:;\u0003\u0004\u0002\u0000;<\u0006\b\uffff\uffff"+

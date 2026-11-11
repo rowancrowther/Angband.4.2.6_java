@@ -99,7 +99,7 @@ CURSE_INT
         ;
 
 CURSE_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode FLAGS_MODE;
@@ -113,7 +113,7 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode ALLOC_MODE;
@@ -131,7 +131,7 @@ ALLOC_TO
         ;
 
 ALLOC_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode OBJ_FREE_TEXT_MODE;
@@ -163,7 +163,7 @@ VALUE_RBRACKET
         ;
 
 VALUE_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;
 
 mode OBJECT_RAND_MODE;
@@ -177,5 +177,5 @@ RAND_COLON
         ;
 
 RAND_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

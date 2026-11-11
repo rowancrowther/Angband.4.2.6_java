@@ -32,6 +32,8 @@
  */
 lexer grammar AngbandDisplayCharacter;
 
+import CommentsAndEol;
+
 /*
  * @author Rowan Crowther
  *
@@ -118,5 +120,5 @@ GLYPH_COLON_SWITCH
  * skips the EOL token
  */
 GLYPH_EOL
-        :   '\r'* '\n' -> mode(DEFAULT_MODE), skip
+        :   NL -> mode(DEFAULT_MODE), skip
         ;

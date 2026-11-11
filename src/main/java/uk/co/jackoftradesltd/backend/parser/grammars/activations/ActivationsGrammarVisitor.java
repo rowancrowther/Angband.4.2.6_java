@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ActivationsGrammar.g4 by ANTLR 4.13.2
+// Generated from ActivationsGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.activations;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -112,6 +112,12 @@ public interface ActivationsGrammarVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTime(ActivationsGrammar.TimeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link ActivationsGrammar#strayEffectLine}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitStrayEffectLine(ActivationsGrammar.StrayEffectLineContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link ActivationsGrammar#effectBlock}.
 	 * @param ctx the parse tree

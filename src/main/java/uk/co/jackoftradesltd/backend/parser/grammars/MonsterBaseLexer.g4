@@ -100,5 +100,5 @@ FLAG_OR
         ;
 
 FLAG_EOL
-        :   ('\r' | '\n')+ -> popMode
+        :   NL+ -> popMode
         ;

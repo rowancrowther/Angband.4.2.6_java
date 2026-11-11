@@ -71,5 +71,5 @@ STRING
 // preceding STRING) is deliberate: it makes an empty value such as "msg:" legal - see
 // the mode note in the header block above.
 FREE_TEXT_EOL
-        :   '\r'* '\n' -> skip, popMode
+        :   NL -> skip, popMode
         ;

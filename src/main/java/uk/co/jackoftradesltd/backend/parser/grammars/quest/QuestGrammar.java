@@ -14,7 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/QuestGrammar.g4 by ANTLR 4.13.2
+
+// Generated from QuestGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.quest;
 
 import org.antlr.v4.runtime.*;
@@ -39,7 +40,8 @@ public class QuestGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		NAME=1, LEVEL=2, RACE=3, NUMBER=4, INTEGER=5, COMMENT=6, EOL=7, STRING=8;
+		NAME=1, LEVEL=2, RACE=3, NUMBER=4, INTEGER=5, COMMENT=6, INDENT=7, EOL=8, 
+		STRING=9;
 	public static final int
 		RULE_name = 0, RULE_level = 1, RULE_race = 2, RULE_number = 3, RULE_quest = 4, 
 		RULE_file = 5;
@@ -58,8 +60,8 @@ public class QuestGrammar extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "NAME", "LEVEL", "RACE", "NUMBER", "INTEGER", "COMMENT", "EOL", 
-			"STRING"
+			null, "NAME", "LEVEL", "RACE", "NUMBER", "INTEGER", "COMMENT", "INDENT", 
+			"EOL", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -463,7 +465,7 @@ public class QuestGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\b/\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\t/\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
 		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001"+
@@ -475,11 +477,11 @@ public class QuestGrammar extends Parser {
 		"\u0000\u0000\u0000\u0002\u0010\u0001\u0000\u0000\u0000\u0004\u0014\u0001"+
 		"\u0000\u0000\u0000\u0006\u0018\u0001\u0000\u0000\u0000\b\u001c\u0001\u0000"+
 		"\u0000\u0000\n(\u0001\u0000\u0000\u0000\f\r\u0005\u0001\u0000\u0000\r"+
-		"\u000e\u0005\b\u0000\u0000\u000e\u000f\u0006\u0000\uffff\uffff\u0000\u000f"+
+		"\u000e\u0005\t\u0000\u0000\u000e\u000f\u0006\u0000\uffff\uffff\u0000\u000f"+
 		"\u0001\u0001\u0000\u0000\u0000\u0010\u0011\u0005\u0002\u0000\u0000\u0011"+
 		"\u0012\u0005\u0005\u0000\u0000\u0012\u0013\u0006\u0001\uffff\uffff\u0000"+
 		"\u0013\u0003\u0001\u0000\u0000\u0000\u0014\u0015\u0005\u0003\u0000\u0000"+
-		"\u0015\u0016\u0005\b\u0000\u0000\u0016\u0017\u0006\u0002\uffff\uffff\u0000"+
+		"\u0015\u0016\u0005\t\u0000\u0000\u0016\u0017\u0006\u0002\uffff\uffff\u0000"+
 		"\u0017\u0005\u0001\u0000\u0000\u0000\u0018\u0019\u0005\u0004\u0000\u0000"+
 		"\u0019\u001a\u0005\u0005\u0000\u0000\u001a\u001b\u0006\u0003\uffff\uffff"+
 		"\u0000\u001b\u0007\u0001\u0000\u0000\u0000\u001c\u001d\u0003\u0000\u0000"+

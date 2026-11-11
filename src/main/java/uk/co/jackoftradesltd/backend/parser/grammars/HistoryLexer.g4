@@ -25,5 +25,5 @@ STRING
         ;
 
 STRING_EOL
-        :   '\r'* '\n' -> popMode, skip
+        :   NL -> popMode, skip
         ;

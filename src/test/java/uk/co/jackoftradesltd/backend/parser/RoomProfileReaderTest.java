@@ -485,13 +485,18 @@ class RoomProfileReaderTest {
 
     /**
      * C: {@code parser_parse} skips leading whitespace on a line before looking for the directive.
-     * An indented directive is a lexer error here.
+     * The {@code INDENT} rule does the same, so an indented directive loads.
+     *
+     * <p>Function anIndentedDirectiveLoadsAsInC coded on 261109, commented in full on 261109. It
+     * replaces anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent.
      */
     @Test
-    void anIndentedDirectiveIsRefusedHereWhereCSkipsTheIndent() throws IOException {
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
         String indented = GOOD_RECORD.replace("rating:1", "  rating:1");
+        int expected = new RoomProfileReader().parseWithResults(tempFile("plain.txt", GOOD_RECORD + "\n")).items().size();
 
-        assertWholeFileRefused("indented.txt", indented + "\n");
+        assertEquals(expected,
+                new RoomProfileReader().parseWithResults(tempFile("indented.txt", indented + "\n")).items().size());
     }
 
     /**
@@ -518,12 +523,18 @@ class RoomProfileReaderTest {
 
     /**
      * C: {@code parser_parse} skips a {@code #} comment with or without a final newline. The lexer's
-     * {@code COMMENT} rule ends on {@code \n}, so a comment on the last line with no newline is a
-     * lexer error.
+     * {@code COMMENT} rule ends at a line end or at end of file, so a comment on the last line with
+     * no newline loads.
+     *
+     * <p>Function aFinalCommentWithoutANewlineLoadsAsInC coded on 261109, commented in full on 261109.
+     * It replaces aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt.
      */
     @Test
-    void aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt() throws IOException {
-        assertWholeFileRefused("tail-comment.txt", GOOD_RECORD + "\n# the end");
+    void aFinalCommentWithoutANewlineLoadsAsInC() throws IOException {
+        int expected = new RoomProfileReader().parseWithResults(tempFile("plain.txt", GOOD_RECORD + "\n")).items().size();
+
+        assertEquals(expected,
+                new RoomProfileReader().parseWithResults(tempFile("tail-comment.txt", GOOD_RECORD + "\n# the end")).items().size());
     }
 
     /**

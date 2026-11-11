@@ -14,7 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowEffectGrammar.g4 by ANTLR 4.13.2
+
+// Generated from BlowEffectGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.bloweffect;
 
 import org.antlr.v4.runtime.*;
@@ -40,7 +41,7 @@ public class BlowEffectGrammar extends Parser {
 	public static final int
 		NAME=1, POWER=2, EVAL=3, DESC=4, LORE_COLOUR_BASE=5, LORE_COLOUR_RESIST=6, 
 		LORE_COLOUR_IMMUNE=7, EFFECT_TYPE=8, RESIST=9, LASH=10, INTEGER=11, COMMENT=12, 
-		EOL=13, STRING=14, EOL_POP=15;
+		INDENT=13, EOL=14, STRING=15, EOL_POP=16;
 	public static final int
 		RULE_name = 0, RULE_power = 1, RULE_eval = 2, RULE_desc = 3, RULE_loreColourBase = 4, 
 		RULE_loreColourResist = 5, RULE_loreColourImmune = 6, RULE_effectType = 7, 
@@ -66,7 +67,7 @@ public class BlowEffectGrammar extends Parser {
 		return new String[] {
 			null, "NAME", "POWER", "EVAL", "DESC", "LORE_COLOUR_BASE", "LORE_COLOUR_RESIST", 
 			"LORE_COLOUR_IMMUNE", "EFFECT_TYPE", "RESIST", "LASH", "INTEGER", "COMMENT", 
-			"EOL", "STRING", "EOL_POP"
+			"INDENT", "EOL", "STRING", "EOL_POP"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -835,7 +836,7 @@ public class BlowEffectGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000fk\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0010k\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0001"+
@@ -857,22 +858,22 @@ public class BlowEffectGrammar extends Parser {
 		"\u0000\f0\u0001\u0000\u0000\u0000\u000e4\u0001\u0000\u0000\u0000\u0010"+
 		"8\u0001\u0000\u0000\u0000\u0012<\u0001\u0000\u0000\u0000\u0014@\u0001"+
 		"\u0000\u0000\u0000\u0016d\u0001\u0000\u0000\u0000\u0018\u0019\u0005\u0001"+
-		"\u0000\u0000\u0019\u001a\u0005\u000e\u0000\u0000\u001a\u001b\u0006\u0000"+
+		"\u0000\u0000\u0019\u001a\u0005\u000f\u0000\u0000\u001a\u001b\u0006\u0000"+
 		"\uffff\uffff\u0000\u001b\u0001\u0001\u0000\u0000\u0000\u001c\u001d\u0005"+
 		"\u0002\u0000\u0000\u001d\u001e\u0005\u000b\u0000\u0000\u001e\u001f\u0006"+
 		"\u0001\uffff\uffff\u0000\u001f\u0003\u0001\u0000\u0000\u0000 !\u0005\u0003"+
 		"\u0000\u0000!\"\u0005\u000b\u0000\u0000\"#\u0006\u0002\uffff\uffff\u0000"+
-		"#\u0005\u0001\u0000\u0000\u0000$%\u0005\u0004\u0000\u0000%&\u0005\u000e"+
+		"#\u0005\u0001\u0000\u0000\u0000$%\u0005\u0004\u0000\u0000%&\u0005\u000f"+
 		"\u0000\u0000&\'\u0006\u0003\uffff\uffff\u0000\'\u0007\u0001\u0000\u0000"+
-		"\u0000()\u0005\u0005\u0000\u0000)*\u0005\u000e\u0000\u0000*+\u0006\u0004"+
+		"\u0000()\u0005\u0005\u0000\u0000)*\u0005\u000f\u0000\u0000*+\u0006\u0004"+
 		"\uffff\uffff\u0000+\t\u0001\u0000\u0000\u0000,-\u0005\u0006\u0000\u0000"+
-		"-.\u0005\u000e\u0000\u0000./\u0006\u0005\uffff\uffff\u0000/\u000b\u0001"+
-		"\u0000\u0000\u000001\u0005\u0007\u0000\u000012\u0005\u000e\u0000\u0000"+
+		"-.\u0005\u000f\u0000\u0000./\u0006\u0005\uffff\uffff\u0000/\u000b\u0001"+
+		"\u0000\u0000\u000001\u0005\u0007\u0000\u000012\u0005\u000f\u0000\u0000"+
 		"23\u0006\u0006\uffff\uffff\u00003\r\u0001\u0000\u0000\u000045\u0005\b"+
-		"\u0000\u000056\u0005\u000e\u0000\u000067\u0006\u0007\uffff\uffff\u0000"+
-		"7\u000f\u0001\u0000\u0000\u000089\u0005\t\u0000\u00009:\u0005\u000e\u0000"+
+		"\u0000\u000056\u0005\u000f\u0000\u000067\u0006\u0007\uffff\uffff\u0000"+
+		"7\u000f\u0001\u0000\u0000\u000089\u0005\t\u0000\u00009:\u0005\u000f\u0000"+
 		"\u0000:;\u0006\b\uffff\uffff\u0000;\u0011\u0001\u0000\u0000\u0000<=\u0005"+
-		"\n\u0000\u0000=>\u0005\u000e\u0000\u0000>?\u0006\t\uffff\uffff\u0000?"+
+		"\n\u0000\u0000=>\u0005\u000f\u0000\u0000>?\u0006\t\uffff\uffff\u0000?"+
 		"\u0013\u0001\u0000\u0000\u0000@A\u0003\u0000\u0000\u0000A]\u0006\n\uffff"+
 		"\uffff\u0000BC\u0003\u0002\u0001\u0000CD\u0006\n\uffff\uffff\u0000D^\u0001"+
 		"\u0000\u0000\u0000EF\u0003\u0004\u0002\u0000FG\u0006\n\uffff\uffff\u0000"+

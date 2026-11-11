@@ -472,15 +472,15 @@ class GameConstantsReaderTest {
     }
 
     /**
-     * An indented line is hard here. C's {@code parse_file()} skips leading whitespace before the
-     * directive, so {@code "  world:max-depth:7"} loads.
+     * An indented line loads. C's {@code parse_file()} skips leading whitespace before the
+     * directive, and so does the {@code INDENT} rule, so {@code "  world:max-depth:7"} loads.
      *
-     * <p>Function anIndentedLineIsRefusedHereWhereCSkipsTheIndent coded on 261019, commented in full
-     * on 261019.
+     * <p>Function anIndentedLineLoadsAsInC coded on 261109, commented in full on 261109. It replaces
+     * anIndentedLineIsRefusedHereWhereCSkipsTheIndent.
      */
     @Test
-    void anIndentedLineIsRefusedHereWhereCSkipsTheIndent() throws IOException {
-        grammarRefusal("  world:max-depth:7\n");
+    void anIndentedLineLoadsAsInC() throws IOException {
+        assertEquals(7, load("  world:max-depth:7\n").world().maxDepth());
     }
 
     /**
@@ -509,15 +509,15 @@ class GameConstantsReaderTest {
     }
 
     /**
-     * A comment on the last line with no newline after it is hard here: the lexer's {@code COMMENT}
-     * rule needs the {@code \n}. C skips it.
+     * A comment on the last line with no newline after it loads: the lexer's {@code COMMENT} rule
+     * ends at a line end or at end of file, as C skips it.
      *
-     * <p>Function aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt coded on 261019, commented in
-     * full on 261019.
+     * <p>Function aFinalCommentWithoutANewlineLoadsAsInC coded on 261109, commented in full on 261109.
+     * It replaces aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt.
      */
     @Test
-    void aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt() throws IOException {
-        grammarRefusal("world:max-depth:7\n# the end");
+    void aFinalCommentWithoutANewlineLoadsAsInC() throws IOException {
+        assertEquals(7, load("world:max-depth:7\n# the end").world().maxDepth());
     }
 
     /**

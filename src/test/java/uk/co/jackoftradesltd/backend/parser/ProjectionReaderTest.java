@@ -414,8 +414,12 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void anIndentedDirectiveIsAHardErrorWhereCSkipsTheIndent() throws IOException {
-        assertHardError("indent.txt", shipped().replaceFirst("(?m)^desc:acid", "  desc:acid"));
+    void anIndentedDirectiveLoadsAsInC() throws IOException {
+        // parser_parse skips leading white space, and the INDENT rule in CommentsAndEol does too.
+        int expected = load("plain.txt", shipped()).items().size();
+
+        assertEquals(expected,
+                load("indent.txt", shipped().replaceFirst("(?m)^desc:acid", "  desc:acid")).items().size());
     }
 
     // ---- Where the assembler differs from C (docs/Assembler_Issues.md) -------------------------

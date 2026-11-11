@@ -302,6 +302,240 @@ class ItemObjectReaderTest {
         assertSameDice(Random.parseStr("100+1d50"), result.items().get(0).getTime());
     }
 
+    /** C: {@code parse_object_effect_yx} and {@code parse_object_dice} both act on the last effect, in either order. */
+    @Test
+    void effectYxThenDiceOnTheSameEffectBothLoadAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("yx-dice.txt", obj("rod of reach", HEAD + "effect:WAKE\neffect-yx:2:3\ndice:5\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("2,3,5", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+    }
+
+    @Test
+    void diceThenEffectYxOnTheSameEffectBothLoadAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("dice-yx.txt", obj("rod of reach", HEAD + "effect:WAKE\ndice:5\neffect-yx:2:3\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("2,3,5", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+    }
+
+    // ---- Stray dice:, effect-yx: and expr: lines (Issue_Approach_Order Stage 6 item 2.i, ii) ----
+
+    /**
+     * C ({@code obj-init.c}, {@code parse_object_dice}) returns no error and does nothing when the
+     * kind has no effect yet, so a {@code dice:} line ahead of the first {@code effect:} is dropped
+     * and the effect that follows keeps its defaults.
+     *
+     * <p>Function diceBeforeTheFirstEffectIsDroppedAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void diceBeforeTheFirstEffectIsDroppedAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("dice-first.txt", obj("rod of nothing", HEAD + "dice:5\neffect:WAKE\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("0,0,", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+    }
+
+    /**
+     * C ({@code parse_object_effect_yx}) drops an {@code effect-yx:} line ahead of the first
+     * {@code effect:} in the same way.
+     *
+     * <p>Function effectYxBeforeTheFirstEffectIsDroppedAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void effectYxBeforeTheFirstEffectIsDroppedAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("yx-first.txt", obj("rod of nothing", HEAD + "effect-yx:2:3\neffect:WAKE\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("0,0,", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+    }
+
+    /**
+     * C ({@code parse_object_expr}) drops an {@code expr:} line when the kind has no effect, so one
+     * ahead of the first {@code effect:} binds to nothing.
+     *
+     * <p>Function exprBeforeTheFirstEffectIsDroppedAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void exprBeforeTheFirstEffectIsDroppedAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("expr-first.txt",
+                obj("rod of nothing", HEAD + "expr:B:PLAYER_LEVEL:* 3\neffect:WAKE\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("0,0,", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+        assertEquals("", EffectProbe.expressions(result.items().get(0).getEffect().getFirst()));
+    }
+
+    /**
+     * A record whose only effect lines are strays has no effects at all, and the load goes on to the
+     * next directive.
+     *
+     * <p>Function strayLinesWithNoEffectLeaveTheKindWithNoEffectsAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void strayLinesWithNoEffectLeaveTheKindWithNoEffectsAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("strays-only.txt", obj("rod of nothing",
+                HEAD + "dice:$B+1d25\nexpr:B:PLAYER_LEVEL:* 3\neffect-yx:2:3\nlevel:1\n"));
+
+        assertEquals(1, result.items().size());
+        assertEquals(0, result.items().get(0).getEffect().size());
+    }
+
+    /**
+     * Stray lines ahead of the first effect do not leak onto it: a {@code dice:} written after the
+     * effect is the only one that lands.
+     *
+     * <p>Function strayLinesBeforeAnEffectDoNotReachItAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void strayLinesBeforeAnEffectDoNotReachItAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("strays-then-effect.txt", obj("rod of nothing",
+                HEAD + "dice:5\neffect-yx:1:1\nexpr:B:PLAYER_LEVEL:* 3\neffect:WAKE\ndice:6\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("0,0,6", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+        assertEquals("", EffectProbe.expressions(result.items().get(0).getEffect().getFirst()));
+    }
+
+    /**
+     * C acts on the kind's last effect wherever the line falls, so a {@code dice:} separated from
+     * its {@code effect:} by another directive still reaches it.
+     *
+     * <p>Function diceSeparatedFromItsEffectStillReachesItAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void diceSeparatedFromItsEffectStillReachesItAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("dice-apart.txt", obj("rod of reach", HEAD + "effect:WAKE\nlevel:1\ndice:5\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("0,0,5", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+    }
+
+    /**
+     * The same holds for {@code effect-yx:}: one separated from its {@code effect:} by another
+     * directive still reaches it.
+     *
+     * <p>Function effectYxSeparatedFromItsEffectStillReachesItAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void effectYxSeparatedFromItsEffectStillReachesItAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("yx-apart.txt", obj("rod of reach", HEAD + "effect:WAKE\nlevel:1\neffect-yx:2:3\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("2,3,", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+    }
+
+    /**
+     * With two effects, a late {@code dice:} lands on the second one and leaves the first alone.
+     *
+     * <p>Function aLateDiceReachesTheLastOfSeveralEffectsAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void aLateDiceReachesTheLastOfSeveralEffectsAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("dice-last.txt",
+                obj("rod of two things", HEAD + "effect:WAKE\neffect:ACQUIRE\nlevel:1\ndice:9\n"));
+
+        List<?> effects = result.items().get(0).getEffect();
+        assertEquals(2, effects.size());
+        assertEquals("0,0,", EffectProbe.yxBase(effects.get(0)));
+        assertEquals("0,0,9", EffectProbe.yxBase(effects.get(1)));
+    }
+
+    /**
+     * C ({@code parse_object_dice}) frees the old dice and installs the new one, so a second
+     * {@code dice:} on one effect replaces the first. A second {@code effect-yx:} overwrites in the
+     * same way.
+     *
+     * <p>Function aSecondDiceOrEffectYxReplacesTheFirstAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void aSecondDiceOrEffectYxReplacesTheFirstAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("replace.txt", obj("rod of reach",
+                HEAD + "effect:WAKE\ndice:5\ndice:7\neffect-yx:2:3\neffect-yx:4:5\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("4,5,7", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+    }
+
+    /**
+     * A replaced complex {@code dice:} takes its own {@code expr:} lines with it: only the second
+     * dice's expression is left on the effect.
+     *
+     * <p>Function aSecondComplexDiceTakesItsOwnExprLinesAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void aSecondComplexDiceTakesItsOwnExprLinesAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("replace-complex.txt", obj("rod of reach", HEAD + "effect:WAKE\n"
+                + "dice:$B+1d25\nexpr:B:PLAYER_LEVEL:* 3\ndice:$C+1d4\nexpr:C:PLAYER_LEVEL:+ 1\n"));
+
+        Object effect = result.items().get(0).getEffect().getFirst();
+        assertEquals("0,0,$C+1d4", EffectProbe.yxBase(effect));
+        assertEquals("C:EFB_PLAYER_LEVEL:+ 1", EffectProbe.expressions(effect));
+    }
+
+    /**
+     * C ({@code dice_parse_string}) accepts a {@code $} variable and leaves it waiting for a value,
+     * so a complex {@code dice:} followed by another directive instead of an {@code expr:} loads:
+     * the raw string lands on the effect and no expression is bound. The line after it still
+     * belongs to the object.
+     *
+     * <p>Function aComplexDiceWithNoExprLoadsAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void aComplexDiceWithNoExprLoadsAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("complex-no-expr.txt",
+                obj("rod of reach", HEAD + "effect:WAKE\ndice:$B+1d25\nlevel:1\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        Object effect = result.items().get(0).getEffect().getFirst();
+        assertEquals("0,0,$B+1d25", EffectProbe.yxBase(effect));
+        assertEquals("", EffectProbe.expressions(effect));
+    }
+
+    /**
+     * C ({@code parse_object_expr}) does nothing when the last effect has no dice, so an
+     * {@code expr:} straight after a bare {@code effect:} is ignored.
+     *
+     * <p>Function anExprWithNoDiceIsIgnoredAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void anExprWithNoDiceIsIgnoredAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("expr-no-dice.txt",
+                obj("rod of reach", HEAD + "effect:WAKE\nexpr:B:PLAYER_LEVEL:* 3\n"));
+
+        assertEquals(1, result.items().get(0).getEffect().size());
+        assertEquals("", EffectProbe.expressions(result.items().get(0).getEffect().getFirst()));
+    }
+
+    /**
+     * An {@code expr:} line that falls after another directive still binds to the dice already on
+     * the last effect, and joins the expression that came with it.
+     *
+     * <p>Function aLateExprJoinsTheDiceItFollowsAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void aLateExprJoinsTheDiceItFollowsAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("expr-late.txt", obj("rod of reach", HEAD + "effect:WAKE\n"
+                + "dice:$B+1d25\nexpr:B:PLAYER_LEVEL:* 3\nlevel:1\nexpr:B:PLAYER_LEVEL:+ 1\n"));
+
+        assertEquals("B:EFB_PLAYER_LEVEL:* 3|B:EFB_PLAYER_LEVEL:+ 1",
+                EffectProbe.expressions(result.items().get(0).getEffect().getFirst()));
+    }
+
+    /**
+     * A {@code dice:} that follows an {@code effect-msg:} is a line like any other and lands on the
+     * last effect.
+     *
+     * <p>Function aDiceAfterAnEffectMsgReachesTheEffectAsInC coded on 261111, commented in full on 261111.
+     */
+    @Test
+    void aDiceAfterAnEffectMsgReachesTheEffectAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("dice-after-msg.txt",
+                obj("rod of reach", HEAD + "effect:WAKE\neffect-msg:hello\ndice:5\n"));
+
+        assertEquals("0,0,5", EffectProbe.yxBase(result.items().get(0).getEffect().getFirst()));
+    }
+
     /**
      * With several effects the old design hung the time on the last one only. The kind holds it
      * once, whatever the number of effects.
@@ -1621,5 +1855,87 @@ class ItemObjectReaderTest {
         fine.pileChance = "25";
         fine.pileNumber = "2d3";
         assertDoesNotThrow(fine::build);
+    }
+
+    // ---- Stage 6 item 1: the mode newline rules take the shared blanks, tabs and \r ------------
+    //
+    // The default-mode half of the same work is proved on BrandLexer in BrandReaderTest. Here every
+    // line that pushes a mode ({@code flags:}, {@code alloc:}, {@code values:}, {@code pval:}) ends
+    // in that mode's own newline rule, which has to take what the shared NL fragment takes.
+
+    /**
+     * C's reader has already turned a tab into spaces by the time it parses, so blanks and tabs
+     * before the newline are trailing whitespace on a flag list, an alloc range, a value list and a
+     * number. Each of those lines ends in its own mode's newline rule.
+     *
+     * <p>Function modeLinesTakeBlanksAndTabsBeforeTheNewlineAsInC coded on 261109, commented in full
+     * on 261109.
+     */
+    @Test
+    void modeLinesTakeBlanksAndTabsBeforeTheNewlineAsInC() throws Exception {
+        for (String blank : List.of(" ", "\t", " \t ")) {
+            String shown = "blank [" + blank.replace("\t", "\\t") + "]";
+            ParseResult<ObjectKind> result = load("mode-blank.txt", obj("blanks", HEAD
+                    + "flags:EASY_KNOW | SHOW_DICE" + blank + "\n"
+                    + "alloc:70:1 to 100" + blank + "\n"
+                    + "values:STR[1]" + blank + "\n"
+                    + "pval:7" + blank + "\n"
+                    + "weight:5\n"));
+
+            ObjectKind kind = result.items().get(0);
+            assertEquals(1, result.items().size(), shown);
+            assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW), shown);
+            assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_SHOW_DICE), shown);
+            assertEquals(70, (int) kindField(kind, "alloc_prob"), shown);
+            assertEquals(100, (int) kindField(kind, "alloc_max"), shown);
+            assertEquals(5, kind.getWeight(), shown);
+        }
+    }
+
+    /**
+     * C ends a line at a bare {@code '\r'} and at {@code '\r\r\n'} as well as at {@code '\n'}, so the
+     * directive after a moded line is read whichever of the three ended it. The weight after each
+     * line shows the mode popped and the next directive was seen.
+     *
+     * <p>Function modeLinesEndAtABareCarriageReturnAsInC coded on 261109, commented in full on 261109.
+     */
+    @Test
+    void modeLinesEndAtABareCarriageReturnAsInC() throws Exception {
+        for (String eol : List.of("\r", "\r\n", "\r\r\n")) {
+            String shown = "line end " + eol.replace("\r", "\\r").replace("\n", "\\n");
+            ParseResult<ObjectKind> result = load("mode-cr.txt", "name:cr" + "\n" + HEAD
+                    + "flags:EASY_KNOW" + eol
+                    + "alloc:70:1 to 100" + eol
+                    + "values:STR[1]" + eol
+                    + "pval:7" + eol
+                    + "weight:5" + eol
+                    + "cost:9" + eol);
+
+            ObjectKind kind = result.items().get(0);
+            assertEquals(1, result.items().size(), shown);
+            assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW), shown);
+            assertEquals(70, (int) kindField(kind, "alloc_prob"), shown);
+            assertEquals(5, kind.getWeight(), shown);
+            assertEquals(9, kind.getCost(), shown);
+        }
+    }
+
+    /**
+     * Indentation before a directive and before a comment is skipped by the line-start rule, the
+     * moded directives included: the rule is in the default mode, and each pop returns to it at the
+     * start of a fresh line.
+     *
+     * <p>Function modeLinesAfterIndentationLoadAsInC coded on 261109, commented in full on 261109.
+     */
+    @Test
+    void modeLinesAfterIndentationLoadAsInC() throws Exception {
+        ParseResult<ObjectKind> result = load("mode-indent.txt", "name:indented\n"
+                + "\ttype:sword\n  graphics:|:w\n\tflags:EASY_KNOW\n  # indented comment\n"
+                + "\talloc:70:1 to 100\n\tweight:5\n");
+
+        ObjectKind kind = result.items().get(0);
+        assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW));
+        assertEquals(70, (int) kindField(kind, "alloc_prob"));
+        assertEquals(5, kind.getWeight());
     }
 }

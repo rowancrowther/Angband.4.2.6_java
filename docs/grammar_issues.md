@@ -448,6 +448,10 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixe
   `aDiceLineBeforeAnyEffectIsASyntaxErrorHereWhereCIgnoresIt` and `effectMsgIsAcceptedHereWhereCHasNoSuchDirective` pin
   the three.
 - None on the shipped data: no spell uses `effect-yx:` or `effect-msg:`, and every `dice:` follows its `effect:`.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-09] The `effect-yx:` and `dice:` on one effect half: `effectBlock` now takes either, both in
+  either order, or neither, and `MonsterSpellReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC` and
+  `diceThenEffectYxOnTheSameEffectBothLoadAsInC` pin it. The before-first-`effect:` and `effect-msg:` halves stay open
+  (Stage 6 item 2 in `Issue_Approach_Order.md`).
 - The block is shared by every grammar that takes effects, so those grammars have the same shape; the C parsers differ
   from one another in which of the lines they register.
 
@@ -896,6 +900,9 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
   `aSecondDiceLineOnOneEffectIsAHardErrorHereWhereCReplacesTheFirst` and
   `effectMsgIsAcceptedHereWhereCHasNoSuchDirective` pin the four. Several `effect:` lines on one curse work in both
   (`severalEffectsOnOneCurseAllLoadInOrder`).
+- [<span style="color:#006400">**CLOSED**</span> 26-11-09] The `effect-yx:` and `dice:` on one effect case: the pin is now
+  `CurseReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC`, with `diceThenEffectYxOnTheSameEffectBothLoadAsInC` for the
+  other order. The `dice:` before the first `effect:`, the second `dice:` and `effect-msg:` cases stay open.
 - None on the shipped data: no curse uses `effect-yx:` or `effect-msg:`, and every `dice:` follows its `effect:`.
 - Same shared-block cause as the `MonsterSpellGrammar.g4` and `ItemObjectGrammar.g4` entries above; the second-`dice:`
   case is new to this one.
@@ -1005,6 +1012,9 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
   `anEffectYxLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt`,
   `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth` and
   `effectMsgIsAcceptedHereWhereCHasNoSuchDirective` pin the four.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-09] The `effect-yx:` and `dice:` on one effect case: the pins are now
+  `ActivationReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC` and `diceThenEffectYxOnTheSameEffectBothLoadAsInC`. The
+  two before-first-`effect:` pins and `effect-msg:` stay open.
 - None on the shipped data: 11 `effect-yx:` lines and 157 `dice:` lines, every one after its `effect:`, and never both on
   one effect.
 
@@ -1683,6 +1693,9 @@ Found 2026-10-18 during `/port backend/parser/TrapReader.java`. Not fixed.
   `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth`, `effectMsgIsAcceptedHereWhereCHasNoSuchDirective`,
   `aNegativeAppearValueLoadsHereWhereCRejectsIt`, `aSpaceInsideTheVisibilityDiceIsAHardErrorHereWhereCSkipsIt` and
   `anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite` pin them.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-09] The `effect-yx` and `dice` on one effect pin: `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth` is now
+  `TrapReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC`, with `diceThenEffectYxOnTheSameEffectBothLoadAsInC`
+  for the other order. The other pins in the list stay open.
 
 ### Impact
 
@@ -1810,9 +1823,9 @@ Found 2026-10-19 during `/port TerrainReader.java`. Not fixed.
 - `.idea/misc.xml`: the `TerrainFeatureLexer.g4` and `TerrainFeatureGrammar.g4` entries have an empty `outputDir` and `pkg`, though the
   generated parser sits in `grammars/terrainfeature`. The committed parser has the same ATN as a fresh generation.
 
-## `WorldGrammar.g4` and `WorldLexer.g4`: a required `record-count:` header and at least one level, no fields after `down`, names of letters, digits and spaces, and base-10 depths differ from C
+## `WorldGrammar.g4` and `WorldLexer.g4`: at least one level, no fields after `down`, digit-only names and base-10 depths differ from C
 
-Found 2026-10-19 during `/port WorldReader.java`. Not fixed.
+Found 2026-10-19 during `/port WorldReader.java`; updated 2026-11-09 after the `record-count:` header and the name restriction were removed. Not fixed.
 
 ### What C does
 
@@ -1824,22 +1837,23 @@ Found 2026-10-19 during `/port WorldReader.java`. Not fixed.
 
 ### What Java does
 
-- `WorldGrammar.g4`: `file` is `recordCount (line)+ EOF`. A file with no header, or a header and no levels (`record-count:0`), or an
-  empty file, is a syntax error. Nothing loads.
+- `WorldGrammar.g4`: `file` is `(line)+ EOF`. An empty file, or one of only comments, is a syntax error. Nothing loads.
 - `line` ends at `upAndDown`, so `level:0:Town:None:Angband 1:extra` is a syntax error where C ignores `extra`.
-- `WorldLexer.g4`: `NAME` is letters, digits and spaces, so `Hell-hole` or `Angband 1'` is a lexer error where C keeps it.
+- `WorldLexer.g4`: `NAME` is `~('\r' | '\n' | ':')+`, so a hyphen or apostrophe in a name now loads, as in C. `INTEGER` is listed before `NAME`
+  and wins a tie on length, so a name made only of digits (`level:5:7:None:None`) lexes as `INTEGER` and is a syntax error where C keeps it.
 - `INTEGER` is `'-'? ('0'..'9')+`, so `level:0x10:...` is a syntax error and `010` is 10, not 8.
 - A depth outside `int` is a hard error from `WorldReader`; C clamps it to a `long` and truncates it to `int`.
-- `WorldReaderTest.aHeaderWithNoLevelsIsHardHereWhereCLoadsAnEmptyWorld`, `anEmptyFileIsHardHereWhereCLoadsAnEmptyWorld`,
-  `aMissingHeaderIsAHardErrorHereWhereCHasNone`, `aFieldAfterTheDownNameIsHardHereWhereCIgnoresIt`,
-  `aHyphenInANameIsHardHereWhereCTakesAnySymExceptColon`, `aHexadecimalDepthIsHardHereWhereCReadsBaseZero` and
-  `aLeadingZeroDepthIsReadAsDecimalWhereCReadsItAsOctal` pin them.
+- `WorldReaderTest.anEmptyFileIsHardHereWhereCLoadsAnEmptyWorld`, `aFileOfOnlyCommentsIsHardHereWhereCLoadsAnEmptyWorld`,
+  `aFieldAfterTheDownNameIsHardHereWhereCIgnoresIt`, `aNameOfOnlyDigitsIsHardHereWhereCTakesAnySymExceptColon`,
+  `aHexadecimalDepthIsHardHereWhereCReadsBaseZero` and `aLeadingZeroDepthIsReadAsDecimalWhereCReadsItAsOctal` pin them.
+  `aHyphenInANameIsKeptAsInC` pins the case that now matches C.
+- The digit-only name is accepted for now and put off: see "Put off until later, accepted for now" in
+  `docs/Accepted_Deviations.md`.
 
 ### Impact
 
 - None on the shipped data: all 128 levels have plain decimal depths, names of letters, digits and spaces, and four fields.
-- `lib/gamedata/world.txt` differs from the upstream file in the `record-count:128` header and the comment above it.
-- A modded file that drops the header, uses a hyphen or apostrophe in a level name, or ends up with no levels loses the whole file.
+- A modded file that names a level with digits alone, or ends up with no levels, loses the whole file.
 
 ## `GameConstantsGrammar.g4` and `GameConstantsLexer.g4`: lines with a field after the value, indents, hex and octal values, lower-case message names and a last-line comment differ from C
 

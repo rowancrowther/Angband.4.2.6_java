@@ -80,7 +80,7 @@ name
  */
 aim
         returns[String aimBool]
-        :   AIM INTEGER { $aimBool = $INTEGER.getText(); }
+        :   AIM EFFECT_INTEGER { $aimBool = $EFFECT_INTEGER.getText(); }
         ;
 
 /*
@@ -92,7 +92,7 @@ aim
  */
 level
         returns[String levelInt]
-        :   LEVEL INTEGER { $levelInt = $INTEGER.getText(); }
+        :   LEVEL EFFECT_INTEGER { $levelInt = $EFFECT_INTEGER.getText(); }
         ;
 
 /*
@@ -104,7 +104,7 @@ level
  */
 power
         returns[String powerInt]
-        :   POWER INTEGER { $powerInt = $INTEGER.getText(); }
+        :   POWER EFFECT_INTEGER { $powerInt = $EFFECT_INTEGER.getText(); }
         ;
 
 /*

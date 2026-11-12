@@ -18,8 +18,8 @@
 // Parser for lib/gamedata/slay.txt (see SlayLexer for the token definitions and
 // the C cross-reference). Extraction-only: every rule returns raw strings that
 // are assembled into domain slays - with race-flag / monster-base resolution
-// and the "exactly one of race-flag or base" validation - by SlayAssembler.
-// Cf. init_parse_slay() (src/obj-init.c:786).
+// and the refusal of a slay naming both race-flag and base - by SlayAssembler.
+// Cf. init_parse_slay() in obj-init.c.
 //
 // @author Rowan Crowther
 
@@ -65,19 +65,19 @@ base
 // "multiplier:<n>" - standard-combat damage multiplier.
 multiplier
         returns[String mult]
-        :   MULTIPLIER INTEGER { $mult = $INTEGER.getText(); }
+        :   MULTIPLIER UINT { $mult = $UINT.getText(); }
         ;
 
 // "o-multiplier:<n>" - O-combat damage multiplier.
 oMultiplier
         returns[String oMult]
-        :   O_MULTIPLIER INTEGER { $oMult = $INTEGER.getText(); }
+        :   O_MULTIPLIER UINT { $oMult = $UINT.getText(); }
         ;
 
 // "power:<n>" - object-power weighting.
 power
         returns[String powerInt]
-        :   POWER INTEGER { $powerInt = $INTEGER.getText(); }
+        :   POWER UINT { $powerInt = $UINT.getText(); }
         ;
 
 // "melee-verb:<text>" - verb shown on a susceptible melee hit.
@@ -95,8 +95,9 @@ rangeVerb
 // One slay record: a mandatory code header followed by its directives in any
 // order and any number (mirrors the C parser's keyword dispatch). Each field
 // defaults to the empty string when absent, and a repeated directive keeps the
-// last value, as in C. The grammar intentionally does NOT enforce "exactly one
-// of race-flag / base" - that semantic constraint lives in SlayAssembler.
+// last value, as in C except for race-flag: and base:, which C refuses to
+// repeat. The grammar intentionally does NOT refuse a slay naming both
+// race-flag and base - that semantic constraint lives in SlayAssembler.
 slay
         returns[SlayParseRecord record]
         @init {

@@ -473,6 +473,63 @@ recorded here as the summary states them; fill in the detail when you next touch
   matched by name.
 - **Accepted:** 2026-10-23, during the `CurseAssembler` port pass. Marked in the `CurseAssembler` class Javadoc.
 
+### An empty `values:` bracket, such as `STR[]`, is a lexer error, where C reads it as 0
+
+- **Java:** the `VALUE_INT` rule in `CurseLexer.g4`, which wants at least one digit between `[` and `]`. **C:**
+  `find_value_arg` (`datafile.c`), called by `grab_index_and_int` for `parse_curse_values` (`obj-init.c`).
+- **Differs:** C calls `strtol` in base 10 and only tests that the character it stopped on is `]`. With no digits
+  `strtol` stops at once on the `]`, so `STR[]` is `STR` with 0. Java has no token for an empty bracket, so the file
+  loads as nothing.
+- **Why:** an empty bracket is a typing slip in a hand-edited file, and reading it as 0 would hide a value the author
+  forgot to write.
+- **Reach:** none from shipped data. Every `values:` entry in `curse.txt` has a number.
+- **Revisit:** if a modded file is ever expected to leave a value out. Then `VALUE_INT` becomes optional and the
+  assembler reads an absent value as 0.
+- **Pinned by:** `anEmptyValueBracketIsAHardErrorHereWhereCReadsZero` in `CurseReaderTest`.
+- **Accepted:** 2026-11-12, raised while checking the `UINT`/`INTEGER` rules of `CurseLexer.g4`.
+
+### A blank between `[` and the number in a `values:` entry is a lexer error, where C skips it
+
+- **Java:** the `VALUE_INT` rule in `CurseLexer.g4`, which has no rule for a leading blank. **C:** `find_value_arg`
+  (`datafile.c`), which calls `strtol`, and `strtol` skips leading white space.
+- **Differs:** `STR[ 5]` is `STR` with 5 in C. In Java the blank has no rule and the file loads as nothing. This is the
+  "A blank between a directive's colon and its number" entry under "Numbers in every data file", seen from the
+  bracket instead of the colon.
+- **Why:** the same reason as that entry: a typing slip in a hand-edited file, not something the shipped file writes.
+- **Reach:** none from shipped data. No `values:` entry in `curse.txt` has a blank after `[`.
+- **Revisit:** with the general leading-blank entry. If a numeric rule is ever given a leading-blank allowance, add
+  this one with it.
+- **Pinned by:** `aBlankBeforeAValueIsAHardErrorHereWhereCSkipsIt` in `CurseReaderTest`.
+- **Accepted:** 2026-11-12, raised while checking the `UINT`/`INTEGER` rules of `CurseLexer.g4`.
+
+### Text after the closing `]` of a `values:` entry is a lexer error, where C ignores it
+
+- **Java:** the `R_BRACKET` and `SWITCH_VALUE` rules in `CurseLexer.g4`, which expect a `|` or the end of the line
+  after `]`. **C:** `find_value_arg` (`datafile.c`) and `grab_index_and_int`.
+- **Differs:** C reads the number up to the first `]`, cuts the name at the `[`, and never looks past the `]`. So
+  `STR[5]x` and `STR[5]]` are `STR` with 5. In Java the extra text has no rule and the file loads as nothing. A second
+  `values:` entry after a `|` is a separate case and loads in both.
+- **Why:** text after a `]` is a typing slip in a hand-edited file, and a lexer that swallowed it would hide a
+  mistyped `|` between two entries.
+- **Reach:** none from shipped data. Every `values:` entry in `curse.txt` ends in `]` or is followed by a `|`.
+- **Revisit:** if a modded file is ever expected to carry stray text after a bracket.
+- **Pinned by:** `textAfterTheClosingBracketIsAHardErrorHereWhereCIgnoresIt` in `CurseReaderTest`.
+- **Accepted:** 2026-11-12, raised while checking the `UINT`/`INTEGER` rules of `CurseLexer.g4`.
+
+### A `values:` number at or beyond the `int` range is clamped or kept, where C refuses it
+
+- **Java:** `CurseAssembler.assemble` (the `values` loop), reading the text through `ParseUtils.parseIntString`.
+  **C:** `find_value_arg` (`datafile.c`).
+- **Differs:** C refuses a value with `lv <= INT_MIN` or `lv >= INT_MAX`, so the load stops on `STR[2147483648]`,
+  `STR[2147483647]` and `STR[-2147483648]`. Java clamps `2147483648` to 2147483647 and keeps `-2147483648`, and loads
+  both. This is a narrow case of the general rule that numbers outside the `int` range are handled by
+  `parseIntString` and not by C's wrapping.
+- **Why:** no modifier or resistance level comes near these values, and shipped data cannot reach them.
+- **Reach:** none from shipped data. The largest magnitude in `curse.txt` is 10.
+- **Revisit:** if a range check is ever added to `parseIntString`. Then these two pins flip.
+- **Pinned by:** `aValueOutsideTheIntRangeIsClampedHereWhereCRefusesIt` in `CurseReaderTest`.
+- **Accepted:** 2026-11-12, raised while checking the `UINT`/`INTEGER` rules of `CurseLexer.g4`.
+
 ## Effect block
 
 ### Text that is not a dice string, on a `dice:` line before the first `effect:`, ends the load, where C drops it unread
@@ -686,6 +743,70 @@ recorded here as the summary states them; fill in the detail when you next touch
   `ProjectionReaderTest`. The agreeing forms are pinned by `denominatorFormsGiveTheValuesOfCsParseRandom`.
 - **Accepted:** 2026-11-12, Stage 6 item 3 of `docs/Issue_Approach_Order.md`.
 
+## Shape
+
+The four entries below are the `shape.txt` `values:` bracket, the same four cases the Curse section records for
+`curse.txt`. Both files are read in C by `find_value_arg` (`datafile.c`), through `grab_int_value` and
+`grab_index_and_int`. A hex or letter-only figure is not here because Java now agrees with C: `VALUE_INT` in
+`ShapeLexer.g4` takes decimal digits only, as `strtol` in base 10 does.
+
+### An empty `values:` bracket, such as `STR[]`, is a lexer error, where C reads it as 0
+
+- **Java:** the `VALUE_INT` rule in `ShapeLexer.g4`, which wants at least one digit between `[` and `]`. **C:**
+  `find_value_arg` (`datafile.c`), called by `parse_shape_values` (`init.c`).
+- **Differs:** C calls `strtol` in base 10 and only tests that the character it stopped on is `]`. With no digits
+  `strtol` stops at once on the `]`, so `STR[]` is `STR` with 0. Java has no token for an empty bracket, so the file
+  loads as nothing.
+- **Why:** an empty bracket is a typing slip in a hand-edited file, and reading it as 0 would hide a value the author
+  forgot to write.
+- **Reach:** none from shipped data. Every `values:` entry in `shape.txt` has a number.
+- **Revisit:** if a modded file is ever expected to leave a value out. Then `VALUE_INT` becomes optional and the
+  assembler reads an absent value as 0.
+- **Pinned by:** `anEmptyValuesBracketIsAHardErrorHereWhereCReadsZero` in `ShapeReaderTest`.
+- **Accepted:** 2026-11-12, raised while checking the `values:` modes of `ShapeLexer.g4`.
+
+### A blank between `[` and the number in a `values:` entry is a lexer error, where C skips it
+
+- **Java:** the `VALUE_INT` rule in `ShapeLexer.g4`, which has no rule for a leading blank. **C:** `find_value_arg`
+  (`datafile.c`), which calls `strtol`, and `strtol` skips leading white space.
+- **Differs:** `STR[ 3]` is `STR` with 3 in C. In Java the blank has no rule and the file loads as nothing. This is the
+  "A blank between a directive's colon and its number" entry under "Numbers in every data file", seen from the
+  bracket instead of the colon.
+- **Why:** the same reason as that entry: a typing slip in a hand-edited file, not something the shipped file writes.
+- **Reach:** none from shipped data. No `values:` entry in `shape.txt` has a blank after `[`.
+- **Revisit:** with the general leading-blank entry. If a numeric rule is ever given a leading-blank allowance, add
+  this one with it.
+- **Pinned by:** `aBlankBeforeAValuesFigureIsAHardErrorHereWhereCSkipsIt` in `ShapeReaderTest`.
+- **Accepted:** 2026-11-12, raised while checking the `values:` modes of `ShapeLexer.g4`.
+
+### Text after the closing `]` of a `values:` entry is a lexer error, where C ignores it
+
+- **Java:** the `VALUE_R_BRACKET` and `VALUE_BREAK` rules in `ShapeLexer.g4`, which expect a `|` or the end of the line
+  after `]`. **C:** `find_value_arg` (`datafile.c`) and `grab_index_and_int`.
+- **Differs:** C reads the number up to the first `]`, cuts the name at the `[`, and never looks past the `]`. So
+  `STR[3]x` and `STR[3]]` are `STR` with 3. In Java the extra text has no rule and the file loads as nothing. A second
+  `values:` entry after a `|` is a separate case and loads in both.
+- **Why:** text after a `]` is a typing slip in a hand-edited file, and a lexer that swallowed it would hide a
+  mistyped `|` between two entries.
+- **Reach:** none from shipped data. Every `values:` entry in `shape.txt` ends in `]` or is followed by a `|`.
+- **Revisit:** if a modded file is ever expected to carry stray text after a bracket.
+- **Pinned by:** `textAfterTheClosingBracketIsAHardErrorHereWhereCIgnoresIt` in `ShapeReaderTest`.
+- **Accepted:** 2026-11-12, raised while checking the `values:` modes of `ShapeLexer.g4`.
+
+### A `values:` number at or beyond the `int` range is clamped or kept, where C refuses it
+
+- **Java:** `ShapeAssembler.assemble` (the `values` loop), reading the text through `ParseUtils.parseIntString`.
+  **C:** `find_value_arg` (`datafile.c`).
+- **Differs:** C refuses a value with `lv <= INT_MIN` or `lv >= INT_MAX`, so the load stops on `STR[99999999999]`,
+  `STR[2147483647]` and `STR[-2147483648]`. Java clamps `99999999999` to 2147483647 and keeps `2147483647` and
+  `-2147483648`, and loads all three. This is a narrow case of the general rule that numbers outside the `int` range are
+  handled by `parseIntString` and not by C's wrapping.
+- **Why:** no modifier or resistance level comes near these values, and shipped data cannot reach them.
+- **Reach:** none from shipped data. The largest magnitude in `shape.txt` is 10.
+- **Revisit:** if a range check is ever added to `parseIntString`. Then the pin below flips.
+- **Pinned by:** `aValuesFigureAtOrBeyondTheIntRangeIsKeptOrClampedWhereCRefusesIt` in `ShapeReaderTest`.
+- **Accepted:** 2026-11-12, raised while checking the `values:` modes of `ShapeLexer.g4`.
+
 ## Slay
 
 ### A `base:` line in `slay.txt` is resolved, where C refuses every one
@@ -705,6 +826,35 @@ recorded here as the summary states them; fill in the detail when you next touch
   branch refuses every name.
 - **Accepted:** 2026-10-29, during the `SlayAssembler` port pass. Marked in the `SlayAssembler` Javadoc. Pinned by
   `SlayAssemblerTest.aBaseThatMatchesALoadedMonsterBaseResolvesHereWhereCRefusesEveryBase`.
+
+### Blanks after a `race-flag:` value are skipped, where C refuses the flag
+
+- **Java:** `SlayLexer.g4` (`FLAG_MODE`, `FLAG`) and `SlayAssembler.assemble`. **C:** `parser_parse` (`parser.c`),
+  `parse_slay_race_flag` (`obj-init.c`) and `lookup_flag` (`datafile.c`).
+- **Differs:** C cuts a `sym` field at `:` with `strtok` and nothing strips the end of the line, so
+  `race-flag:EVIL` followed by blanks passes `"EVIL  "` to `lookup_flag`, which compares with `streq` and returns
+  `FLAG_END`. The handler returns `PARSE_ERROR_INVALID_FLAG` and the load stops. Java lexes `EVIL` as the `FLAG` and the
+  default mode skips the blanks, so the slay loads with `RF_EVIL`.
+- **Why:** a trailing blank is invisible in an editor, and the shipped files do carry them on other directives. Refusing
+  the flag for text nobody can see helps no one.
+- **Reach:** none from shipped data, where no `race-flag:` line has trailing blanks. A hand-edited `slay.txt` only.
+- **Revisit:** if a modded file needs C's refusal. `FLAG_MODE` would then have to take the blanks into the token.
+- **Accepted:** 2026-11-12, during the `SlayLexer` / `SlayGrammar` review. Pinned by
+  `SlayReaderTest.blanksAfterARaceFlagLoadHereWhereCRefusesThem`.
+
+### A `base:` value runs to the end of the line, where C cuts it at the first colon
+
+- **Java:** `SlayLexer.g4` (`BASE`, `FREE_TEXT_MODE`, `STRING`) and `SlayAssembler.assemble`. **C:**
+  `parser_parse` (`parser.c`) and `parse_slay_base` (`obj-init.c`), registered as `base sym base`.
+- **Differs:** the C field is a `sym`, tokenized on `:`, and text after the last registered field is dropped without
+  error. `base:ancient dragon:junk` looks up `ancient dragon` and loads. Java reads the whole line as one `STRING`, so the
+  lookup is for `ancient dragon:junk`, which matches no base, and the load stops.
+- **Why:** `BASE` shares `FREE_TEXT_MODE` with the real `str` directives (`name:`, `melee-verb:`), which do take the
+  colon. Giving a base a mode of its own for a case no file contains is not worth a second mode.
+- **Reach:** none from shipped data, where no slay uses `base:` at all. Also needs a modded file with a stray colon.
+- **Revisit:** if `base:` is ever used in shipped data, or a modded file with a trailing `:field` needs to load.
+- **Accepted:** 2026-11-12, during the `SlayLexer` / `SlayGrammar` review. Pinned by
+  `SlayReaderTest.aBaseValueRunsPastAColonWhereCCutsItThere`.
 
 ## Tval
 
@@ -907,6 +1057,86 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Pinned by:** `tieKeepsDestsBrandHereWhereCKeepsTheHigherIndex` in `ObjectUtilsCopyBrandsTest` and
   `tieKeepsDestsSlayHereWhereCKeepsTheHigherIndex` in `ObjectUtilsCopySlaysTest`.
 - **Accepted:** 2026-11-08. Marked in the `copyBrands` and `copySlays` Javadoc.
+
+## Numbers in every data file
+
+These three entries cover every game data file and its lexer, not one. They are about the text of a number field, which
+C reads with `strtol` or `strtoul` and the lexers read with a token rule, and about the `:` that separates fields.
+
+### A blank between a directive's colon and its number is a lexer error, where C skips it
+
+- **Java:** every numeric token rule in the lexers under `parser/grammars` (the `INTEGER`, `INT` and `UINT` families,
+  and `PIT_INTEGER`). None has a rule for a leading blank. **C:** `parser_parse` (`parser.c`), which cuts an `int` or
+  `uint` field at the next `:` with `strtok` and then calls `strtol` or `strtoul` in base 0. Both skip leading white
+  space.
+- **Differs:** `room: 3`, `hit: 50`, `power-cutoff: 10` and the like are 3, 50 and 10 in C. In Java the blank has no
+  rule, so the lexer reports a token recognition error and the file loads as nothing.
+- **Why:** the lexers are deliberately strict about what may follow a keyword's colon, and a blank there is a typing
+  slip in a hand-edited file, not something the shipped files do.
+- **Reach:** none from shipped data. A search of `lib/gamedata` on 2026-11-12 found no numeric directive with a blank
+  after its colon (text keys such as `desc:` and `name:` excluded, as is the unused `old_class.txt`). It takes a modded
+  file. The `Projection` entry for `denominator:` is this deviation seen from one file.
+- **Checked:** the rule bodies of the `INTEGER`, `INT` and `UINT` families listed by name. The numeric tokens defined
+  through a fragment (`INT_FRAGMENT`, `INTEGER_FRAGMENT`, `SIMPLE_DICE_STRING`) were not read one by one.
+- **Revisit:** if a numeric rule is ever given a leading-blank allowance. Then add one for every lexer, not one file.
+- **Pinned by:** `aBlankBeforeANumberIsAHardErrorWhereCSkipsIt` in `PitReaderTest`, for the four `UINT`-family rules
+  and `PIT_INTEGER`; and `aLeadingBlankOrAnExtraColonFieldInAnIntegerIsAHardErrorWhereCAcceptsIt` in
+  `ProjectionReaderTest`, for `ProjectionLexer.g4`'s `INTEGER` (its `" 1"` case). The `Projection` pin named in that
+  entry covers `denominator:`.
+- **Accepted:** 2026-11-12, raised while checking the `UINT` and `PIT_INTEGER` rules of `PitLexer.g4`.
+
+### Text after a number, or an extra `:` field, is an error, where C ignores it
+
+- **Java:** the numeric token rules, and in the four lexers that have a `UINT` tail (`PitLexer.g4`,
+  `PainLexer.g4`, `BlowMethodLexer.g4`, `MonsterSpellLexer.g4`) the `:` that ends that tail. **C:** `parser_parse`
+  (`parser.c`). It cuts each `int` or `uint` field at a `:`, `strtol` and `strtoul` stop at the first character they
+  cannot use, and once the last registered field is read, anything left on the line is dropped without an error.
+- **Differs:** two shapes.
+  - **Text on the number itself:** `5xyz` is 5 in C. The four `UINT` rules take the whole field up to a `:` or the end
+    of the line, so they agree, as does `ProjectionLexer.g4`'s `INTEGER` (2026-11-12). A rule with no tail (`PIT_INTEGER`, and any `'-'? ('0'..'9')+` rule that remains) leaves the
+    `xyz` to the next rule, which has none for it, and the load stops.
+  - **A `:` after the last field:** `room:3:x`, `obj-rarity:5:x` and `alloc:1:2:3` read as 3, 5 and 1 and 2 in C. In
+    Java the tail stops at the `:`, which has no rule in that mode (or, after `alloc:`, is read as one more field), so
+    the load stops.
+- **Why:** shipped files never write either, and a lexer that swallowed the rest of the line would hide a typo in a
+  field that a modder meant to be read.
+- **Reach:** none from shipped data. `pit.txt`'s 115 numeric lines are plain digits, and no numeric directive in
+  `lib/gamedata` has letters after its number. A trailing blank or tab after a number, which shipped files do have
+  (`numerator:1  ` in `projection.txt`, `armor:0:0 ` in `artifact.txt`), is not part of this entry: C reads
+  it, and a Java reader that refused it would fail on shipped data, which is a bug, not a deviation.
+- **Revisit:** if a modded file is ever expected to carry stray text after a number. Then the tail rule and the `:`
+  handling change together, in every lexer that has one.
+- **Pinned by:** `aTailOnAUintLoadsAsCDoesButOneOnInnateFreqIsAHardError` and `anExtraColonFieldIsAHardErrorWhereCIgnoresIt`
+  in `PitReaderTest`, and the `"1:2"` case of `aLeadingBlankOrAnExtraColonFieldInAnIntegerIsAHardErrorWhereCAcceptsIt`
+  in `ProjectionReaderTest`. `ProjectionLexer.g4`'s `INTEGER` now takes a tail, so it agrees with C on text within a
+  field (`1abc` is 1), pinned by `aPlusSignHexPrefixOrTrailingTextOnAUintLoadsAsCDoes`; only the `:` is left of it here.
+  `aTrailingBlankAfterANumberLoadsAsInC` in `PitReaderTest` pins the boundary: a trailing
+  blank is not part of the deviation. MonsterSpell is pinned (2026-11-12) by `aBlankBeforeAHitOrAColonFieldAfterItIsRefusedWhereCAcceptsIt`,
+  `aPowerCutoffWithNoDigitIsRefusedAsInC`, `anEffectYxWithABadOrMissingFieldIsRefusedAsInC` and
+  `anEffectRadiusWithNoDigitOrAnExtraFieldIsRefused` in `MonsterSpellReaderTest`, with
+  `aTrailingBlankAfterAHitLoadsAsInC` as its boundary. The other two `UINT`-tail lexers (Pain, BlowMethod) are not
+  pinned.
+- **Accepted:** 2026-11-12, raised while checking the `UINT` and `PIT_INTEGER` rules of `PitLexer.g4`.
+
+### An empty `:` field on an effect line, trailing or doubled, is an error, where C skips it
+
+- **Java:** the `effect` rule of `EffectBlock.g4`, which expects a `UCASE` or `EFFECT_INTEGER` after every `:`. **C:**
+  `parser_parse` (`parser.c`). It cuts each `sym`, `int` and `uint` field with `strtok(sp, ":")`, and `strtok` skips
+  empty tokens, so a `:` that ends the line, or two in a row, produces no field. A field marked optional
+  (`effect sym eff ?sym type ?int radius ?int other`) is then simply absent.
+- **Differs:** in C `effect:BOLT:ARROW:5:` is radius 5 with no other, `effect:BOLT:ARROW:` and `effect:BOLT:` are an
+  effect with no radius or no sub-type, `effect:BOLT:ARROW:5::3` is radius 5 and other 3, `effect:BOLT:ARROW::3` is
+  radius 3, and `effect:BOLT::ARROW:5` is sub-type ARROW and radius 5. In Java each of the six is a syntax error and the
+  file loads as nothing. A field that is not optional is refused by both (`effect-yx:1:` is a missing field in C).
+- **Why:** an empty field is a typing slip in a hand-edited file, and reading `::3` as "radius 3" would move a value
+  into a different field from the one the author's colon count says.
+- **Reach:** none from shipped data. A search of `lib/gamedata` on 2026-11-12 found no `effect:` line with a trailing or
+  doubled `:`. Checked through the monster spell reader only; the other files that use `EffectBlock.g4` share the rule
+  but were not run.
+- **Revisit:** if a modded file is ever expected to carry an empty field. Then the `effect` rule changes once, for
+  every file that imports `EffectBlock.g4`.
+- **Pinned by:** `anEmptyColonFieldOnAnEffectLineIsRefusedWhereCSkipsIt` in `MonsterSpellReaderTest`.
+- **Accepted:** 2026-11-12, raised while checking `EFFECT_INTEGER` and `HIT_UINT` in `MonsterSpellLexer.g4`.
 
 ## Put off until later, accepted for now
 

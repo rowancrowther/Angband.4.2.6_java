@@ -35,12 +35,12 @@ curseType
 
 weight
         returns[String weightAdj]
-        :   WEIGHT INTEGER { $weightAdj = $INTEGER.getText(); }
+        :   WEIGHT EFFECT_INTEGER { $weightAdj = $EFFECT_INTEGER.getText(); }
         ;
 
 combat
         returns[String toh, String toa, String tod]
-        :   COMBAT h=INTEGER COLON d=INTEGER COLON a=INTEGER {
+        :   COMBAT h=EFFECT_INTEGER COLON d=EFFECT_INTEGER COLON a=EFFECT_INTEGER {
                 $toh = $h.getText();
                 $tod = $d.getText();
                 $toa = $a.getText();
@@ -59,10 +59,10 @@ flags
 values
         returns[Map<String, String> valueMap]
         :   { $valueMap = new HashMap<>(); }
-            VALUES vf1=VALUE_FLAG LBRACKET vi1=VALUE_INT RBRACKET {
+            VALUES vf1=VALUE_FLAG vi1=VALUE_INT {
                 $valueMap.put($vf1.getText(), $vi1.getText());
             }
-            (VALUE_OR vf2=VALUE_FLAG LBRACKET vi2=VALUE_INT RBRACKET {
+            (VALUE_OR vf2=VALUE_FLAG vi2=VALUE_INT {
                 $valueMap.put($vf2.getText(), $vi2.getText());
             })*
         ;

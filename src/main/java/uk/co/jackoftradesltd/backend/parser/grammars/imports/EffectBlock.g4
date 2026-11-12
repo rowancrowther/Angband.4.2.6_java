@@ -61,14 +61,14 @@ effect
             $radius = "";
             $other = "";
         }
-        :   EFFECT t=UCASE {
+        :   EFFECT t=TYPE {
                 $type = $t.getText();
             }
-            (COLON st=UCASE {
+            (st=SUBTYPE {
                 $wrapper = $st.getText();
-            } (COLON rad=INTEGER {
+            } (rad=R_P_EFFECT_INTEGER {
                 $radius = $rad.getText();
-            } (COLON oth=INTEGER {
+            } (oth=R_P_EFFECT_INTEGER {
                 $other = $oth.getText();
             })?)?)?
         ;
@@ -82,7 +82,7 @@ effect
  */
 effectYX
         returns[String y, String x]
-        :   EFFECT_YX yVal=INTEGER COLON xVal=INTEGER {
+        :   EFFECT_YX yVal=YX_INTEGER xVal=YX_INTEGER {
                 $y = $yVal.getText();
                 $x = $xVal.getText();
             }

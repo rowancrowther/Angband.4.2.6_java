@@ -23,7 +23,7 @@ FLAGS
         ;
 
 VALUES
-        :   'values:' -> pushMode(VALUES_MODE)
+        :   'values:' -> pushMode(VALUE_FLAG_MODE)
         ;
 
 CURSE_MSG
@@ -42,30 +42,38 @@ CONFLICT_FLAGS
         :   'conflict-flags:' -> pushMode(FLAG_MODE)
         ;
 
-mode VALUES_MODE;
-
-LBRACKET
-        :   '['
-        ;
-
-RBRACKET
-        :   ']'
-        ;
+mode VALUE_FLAG_MODE;
 
 VALUE_FLAG
-        :   FLAG_BODY
+        :   FLAG_BODY -> mode(VALUE_L_BRACKET)
         ;
 
+mode VALUE_L_BRACKET;
+
+L_BRACKET
+        : '[' -> skip, mode(VALUE_UINT_MODE)
+        ;
+
+mode VALUE_UINT_MODE;
+
+VALUE_INT
+        :   ('-' | '+')? ('0'..'9')+ -> mode(VALUE_R_BRACKET)
+        ;
+
+mode VALUE_R_BRACKET;
+
+R_BRACKET
+        :   ']' -> skip, mode(SWITCH_VALUE)
+        ;
+
+mode SWITCH_VALUE;
+
 VALUE_OR
-        :   ' '? '|' ' '?
+        :   ' '? '|' ' '? -> mode(VALUE_FLAG_MODE)
         ;
 
 VALUE_EOL
-        :   NL -> skip, popMode
-        ;
-
-VALUE_INT
-        :   '-'? ('0'..'9')+
+        :   NL -> skip, mode(DEFAULT_MODE)
         ;
 
 mode FLAG_MODE;

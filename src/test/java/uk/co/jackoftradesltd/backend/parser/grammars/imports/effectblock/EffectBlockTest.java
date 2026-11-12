@@ -63,6 +63,8 @@ class EffectBlockTest {
      */
     private EffectBlock parser(String src, Errors errors) {
         EffectBlockLexer lexer = new EffectBlockLexer(CharStreams.fromString(src));
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(errors);
         EffectBlock parser = new EffectBlock(new CommonTokenStream(lexer));
         parser.removeErrorListeners();
         parser.addErrorListener(errors);
@@ -237,5 +239,90 @@ class EffectBlockTest {
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         assertEquals("$B+m$M", ctx.diceString);
+    }
+
+    /**
+     * Radius and other come through as the text written, whatever the shape: sign, 0x prefix,
+     * leading zero, hex letters, trailing text. Turning the text into a number is the assembler's
+     * job, so nothing is refused here.
+     *
+     * <p>Function radiusAndOtherKeepTheTextAsWritten coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void radiusAndOtherKeepTheTextAsWritten() {
+        String[][] cases = {{"-5", "+3"}, {"0x10", "010"}, {"ff", "5abc"}, {"0X1f", "-0"}};
+        for (String[] c : cases) {
+            Errors errors = new Errors();
+            EffectBlock.EffectBlockContext ctx =
+                    parser("effect:BOLT:ARROW:" + c[0] + ":" + c[1] + "\n", errors).effectBlock();
+
+            assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+            assertEquals("ARROW", ctx.subtypeWrapperInit);
+            assertEquals(c[0], ctx.radius);
+            assertEquals(c[1], ctx.other);
+        }
+    }
+
+    /**
+     * A radius with no other parameter leaves {@code other} empty.
+     *
+     * <p>Function aRadiusAloneLeavesOtherEmpty coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aRadiusAloneLeavesOtherEmpty() {
+        Errors errors = new Errors();
+        EffectBlock.EffectBlockContext ctx = parser("effect:BALL:FIRE:2\n", errors).effectBlock();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals("2", ctx.radius);
+        assertEquals("", ctx.other);
+    }
+
+    /**
+     * {@code effect-yx:} values come through as the text written, whatever the shape.
+     *
+     * <p>Function effectYxKeepsTheTextAsWritten coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void effectYxKeepsTheTextAsWritten() {
+        String[][] cases = {{"-1", "+2"}, {"0x10", "010"}, {"ff", "5abc"}};
+        for (String[] c : cases) {
+            Errors errors = new Errors();
+            EffectBlock.EffectBlockContext ctx =
+                    parser("effect:DAMAGE\neffect-yx:" + c[0] + ":" + c[1] + "\n", errors).effectBlock();
+
+            assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+            assertEquals(c[0], ctx.yVal);
+            assertEquals(c[1], ctx.xVal);
+        }
+    }
+
+    /**
+     * {@code effect-yx:} with only one value is a syntax error, as in C where both are required.
+     *
+     * <p>Function effectYxWithOneValueIsASyntaxError coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void effectYxWithOneValueIsASyntaxError() {
+        Errors errors = new Errors();
+        parser("effect:DAMAGE\neffect-yx:1\n", errors).effectBlock();
+
+        assertTrue(!errors.messages.isEmpty(), "effect-yx:1 has no x value");
+    }
+
+    /**
+     * A blank before the radius or y is reported as an error through the lexer.
+     *
+     * <p>Function aBlankBeforeARadiusOrYIsAnError coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aBlankBeforeARadiusOrYIsAnError() {
+        Errors radius = new Errors();
+        parser("effect:BOLT:ARROW: 5\n", radius).effectBlock();
+        assertTrue(!radius.messages.isEmpty(), "a blank before the radius");
+
+        Errors yx = new Errors();
+        parser("effect:DAMAGE\neffect-yx: 1:2\n", yx).effectBlock();
+        assertTrue(!yx.messages.isEmpty(), "a blank before y");
     }
 }

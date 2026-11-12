@@ -44,7 +44,7 @@ public class TrapGrammar extends Parser {
 		NAME=1, APPEAR=2, VISIBILITY=3, DESC=4, FLAGS=5, MSG=6, SAVE=7, MSG_GOOD=8, 
 		MSG_BAD=9, EFFECT_XTRA=10, EFFECT_YX_XTRA=11, DICE_XTRA=12, EXPR_XTRA=13, 
 		MSG_XTRA=14, COMMENT=15, INDENT=16, EOL=17, EFFECT=18, EFFECT_MESSAGE=19, 
-		DICE=20, TIME=21, EFFECT_YX=22, EXPR=23, COLON=24, UCASE=25, INTEGER=26, 
+		DICE=20, TIME=21, EFFECT_YX=22, EXPR=23, COLON=24, UCASE=25, EFFECT_INTEGER=26, 
 		SIMPLE_DICE_STRING=27, COMPLEX_DICE_STRING=28, GRAPHICS=29, COLOUR_ONLY=30, 
 		GLYPH_ONLY=31, EXPR_XTRA_CHAR=32, EXPR_XTRA_COLON=33, EXPR_XTRA_UCASE=34, 
 		EXPR_XTRA_OP=35, EXPR_XTRA_EOL=36, DELIMITER_COLON=37, DELIMITED_INTEGER=38, 
@@ -86,14 +86,14 @@ public class TrapGrammar extends Parser {
 			null, "NAME", "APPEAR", "VISIBILITY", "DESC", "FLAGS", "MSG", "SAVE", 
 			"MSG_GOOD", "MSG_BAD", "EFFECT_XTRA", "EFFECT_YX_XTRA", "DICE_XTRA", 
 			"EXPR_XTRA", "MSG_XTRA", "COMMENT", "INDENT", "EOL", "EFFECT", "EFFECT_MESSAGE", 
-			"DICE", "TIME", "EFFECT_YX", "EXPR", "COLON", "UCASE", "INTEGER", "SIMPLE_DICE_STRING", 
-			"COMPLEX_DICE_STRING", "GRAPHICS", "COLOUR_ONLY", "GLYPH_ONLY", "EXPR_XTRA_CHAR", 
-			"EXPR_XTRA_COLON", "EXPR_XTRA_UCASE", "EXPR_XTRA_OP", "EXPR_XTRA_EOL", 
-			"DELIMITER_COLON", "DELIMITED_INTEGER", "DELIMITED_STRING", "DELIMITED_EOL", 
-			"STRING", "REST_OF_LINE_EOL", "FLAG", "FLAG_OR", "FLAG_EOL", "FREE_TEXT", 
-			"DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", "EXPR_CHAR", "EXPR_COLON", 
-			"EXPR_UCASE", "EXPR_OP", "EXPR_EOL", "COLOUR_VALUES", "GLYPH_VALUES", 
-			"GLYPH_COLON_SWITCH", "GLYPH_EOL"
+			"DICE", "TIME", "EFFECT_YX", "EXPR", "COLON", "UCASE", "EFFECT_INTEGER", 
+			"SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", "GRAPHICS", "COLOUR_ONLY", 
+			"GLYPH_ONLY", "EXPR_XTRA_CHAR", "EXPR_XTRA_COLON", "EXPR_XTRA_UCASE", 
+			"EXPR_XTRA_OP", "EXPR_XTRA_EOL", "DELIMITER_COLON", "DELIMITED_INTEGER", 
+			"DELIMITED_STRING", "DELIMITED_EOL", "STRING", "REST_OF_LINE_EOL", "FLAG", 
+			"FLAG_OR", "FLAG_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", 
+			"EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL", "COLOUR_VALUES", 
+			"GLYPH_VALUES", "GLYPH_COLON_SWITCH", "GLYPH_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -820,9 +820,9 @@ public class TrapGrammar extends Parser {
 		public TerminalNode COLON(int i) {
 			return getToken(TrapGrammar.COLON, i);
 		}
-		public List<TerminalNode> INTEGER() { return getTokens(TrapGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(TrapGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(TrapGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(TrapGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectXtraContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -874,7 +874,7 @@ public class TrapGrammar extends Parser {
 					setState(127);
 					match(COLON);
 					setState(128);
-					((EffectXtraContext)_localctx).r = match(INTEGER);
+					((EffectXtraContext)_localctx).r = match(EFFECT_INTEGER);
 					 ((EffectXtraContext)_localctx).radius =  ((EffectXtraContext)_localctx).r.getText(); 
 					setState(133);
 					_errHandler.sync(this);
@@ -884,7 +884,7 @@ public class TrapGrammar extends Parser {
 						setState(130);
 						match(COLON);
 						setState(131);
-						((EffectXtraContext)_localctx).p = match(INTEGER);
+						((EffectXtraContext)_localctx).p = match(EFFECT_INTEGER);
 						 ((EffectXtraContext)_localctx).parameter =  ((EffectXtraContext)_localctx).p.getText(); 
 						}
 					}
@@ -1047,9 +1047,9 @@ public class TrapGrammar extends Parser {
 		public Token xVal;
 		public TerminalNode EFFECT_YX_XTRA() { return getToken(TrapGrammar.EFFECT_YX_XTRA, 0); }
 		public TerminalNode COLON() { return getToken(TrapGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(TrapGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(TrapGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(TrapGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(TrapGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectYxXtraContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1079,11 +1079,11 @@ public class TrapGrammar extends Parser {
 			setState(151);
 			match(EFFECT_YX_XTRA);
 			setState(152);
-			((EffectYxXtraContext)_localctx).yVal = match(INTEGER);
+			((EffectYxXtraContext)_localctx).yVal = match(EFFECT_INTEGER);
 			setState(153);
 			match(COLON);
 			setState(154);
-			((EffectYxXtraContext)_localctx).xVal = match(INTEGER);
+			((EffectYxXtraContext)_localctx).xVal = match(EFFECT_INTEGER);
 			 ((EffectYxXtraContext)_localctx).y =  ((EffectYxXtraContext)_localctx).yVal.getText(); ((EffectYxXtraContext)_localctx).x =  ((EffectYxXtraContext)_localctx).xVal.getText(); 
 			}
 		}
@@ -1664,9 +1664,9 @@ public class TrapGrammar extends Parser {
 		public TerminalNode COLON(int i) {
 			return getToken(TrapGrammar.COLON, i);
 		}
-		public List<TerminalNode> INTEGER() { return getTokens(TrapGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(TrapGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(TrapGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(TrapGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1726,7 +1726,7 @@ public class TrapGrammar extends Parser {
 					setState(237);
 					match(COLON);
 					setState(238);
-					((EffectContext)_localctx).rad = match(INTEGER);
+					((EffectContext)_localctx).rad = match(EFFECT_INTEGER);
 
 					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
 					            
@@ -1738,7 +1738,7 @@ public class TrapGrammar extends Parser {
 						setState(240);
 						match(COLON);
 						setState(241);
-						((EffectContext)_localctx).oth = match(INTEGER);
+						((EffectContext)_localctx).oth = match(EFFECT_INTEGER);
 
 						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
 						            
@@ -1772,9 +1772,9 @@ public class TrapGrammar extends Parser {
 		public Token xVal;
 		public TerminalNode EFFECT_YX() { return getToken(TrapGrammar.EFFECT_YX, 0); }
 		public TerminalNode COLON() { return getToken(TrapGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(TrapGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(TrapGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(TrapGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(TrapGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectYXContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1804,11 +1804,11 @@ public class TrapGrammar extends Parser {
 			setState(249);
 			match(EFFECT_YX);
 			setState(250);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			((EffectYXContext)_localctx).yVal = match(EFFECT_INTEGER);
 			setState(251);
 			match(COLON);
 			setState(252);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
+			((EffectYXContext)_localctx).xVal = match(EFFECT_INTEGER);
 
 			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
 			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();

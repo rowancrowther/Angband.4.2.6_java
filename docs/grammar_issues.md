@@ -52,7 +52,7 @@ Found 2026-10-17 during `/port backend/parser/BlowEffectReader.java`. Not fixed.
 
 ## `PainLexer.g4`: a negative `type:` serial is accepted, C rejects it
 
-Found 2026-10-17 during `/port backend/parser/PainReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PainReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `PainLexer.g4` now has `UINT` in place of `INTEGER`: an optional sign, an optional `0x` prefix, digits, and a tail up to the colon or the end of the line. `PainAssembler` refuses a leading `-` (`-0` too) and reads the serial in base 0 through `ParseUtils.parseIntString`. Pinned by `negativeTypeSerialStopsTheLoad`, `aSerialIsReadAsStrtoulReadsIt`, `aSerialStrtoulRefusesEndsTheLoad` and `aDoubleSignedSerialIsRefusedByTheLexer` in `PainReaderTest`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -167,7 +167,7 @@ Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. Not fixed.
 
 ## `BlowMethodLexer.g4`: `INTEGER` is decimal-only and a leading zero reads as true
 
-Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `BlowMethodLexer.g4` now has the same `UINT` token as `PainLexer.g4`. The assembler refuses a leading `-` and decides truth through `ParseUtils.isTrue`, so `cut:00` is false and `cut:-0` ends the load. Pinned by `leadingZeroFlagReadsFalseAsInC`, `negativeFlagEndsTheLoadAsParserGetuintRefusesIt` and `aDoubleSignedFlagIsRefusedByTheLexer` in `BlowMethodReaderTest`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -369,7 +369,7 @@ Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
 
 ## `PitLexer.g4`: a leading minus is accepted on `room:`, `alloc:` and `obj-rarity:`, C rejects it
 
-Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `PitLexer.g4` now has `UINT` (`room:`), `ALLOC_UINT` and `OBJ_RARITY_UINT`, each with sign, `0x` prefix and tail. `innate-freq:` is an `int` in C, so `PIT_INTEGER` keeps its minus sign and has no tail. The assembler refuses a leading `-` on the unsigned three. Pinned by `roomIsReadAsStrtoulReadsIt`, `theNumbersAreReadAsStrtoulReadsThem`, `aNumberStrtoulRefusesEndsTheLoad`, `aNegativeUnsignedValueStopsTheLoad` and `aDoubleSignedNumberIsRefusedByTheLexer` in `PitReaderTest`. The bullets below describe the state before the fix.]
 
 - `init_parse_pit` registers those three as `uint`, and `parser_parse` in `parser.c` refuses a `uint` token that starts
   with `-` (`PARSE_ERROR_NOT_NUMBER`). It also reads with `strtoul` in base 0, so `0x1` and octal are numbers.
@@ -457,7 +457,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixe
 
 ## `MonsterSpellGrammar.g4`: a negative `hit:` is accepted, C rejects it
 
-Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `MonsterSpellLexer.g4` has its own `HIT_UINT` (sign, `0x` prefix, tail), and the assembler refuses a leading `-` and reads base 0. Pinned by `aNegativeHitStopsTheLoadAsCDoes`, `aHitReadsAsStrtoulDoes` and `aHitWithNoDigitIsRefusedAsInC` in `MonsterSpellReaderTest`. The bullets below describe the state before the fix.]
 
 - `hit` is a `uint` in `init_parse_mon_spell`, and `parser.c` rejects a `uint` token that starts with `-` with
   `PARSE_ERROR_NOT_NUMBER`.
@@ -517,7 +517,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed
 
 ## `MonsterBaseLexer.g4`: `pain:` is decimal-only, and a leading minus is accepted
 
-Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `MonsterBaseLexer.g4` now has `UINT`, and the assembler refuses a leading `-` and reads base 0, so `pain:010` is 8 and `pain:-1` ends the load. Pinned by `aLeadingZeroPainIsReadAsOctalAsInC` and `aNegativePainIsAFatalLoadErrorAsInC` in `MonsterBaseReaderTest`. The bullets below describe the state before the fix.]
 
 - `init_parse_mon_base` registers `pain` as `uint`, which `parser_parse` in `parser.c` reads with `strtoul(tok, &z, 0)`
   (base 0, so `0x1` and octal `010` are numbers) and refuses when the token starts with `-`.
@@ -607,7 +607,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `MonsterLexer.g4`: integers are decimal-only, and a leading minus is accepted on unsigned fields
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `MonsterLexer.g4` now reads the `int` fields through `INTEGER` (sign, `0x` prefix) and the `uint` fields through `MON_UINT`, `FRIEND_UINT` and `DROP_UINT` (sign, `0x` prefix, tail). The assembler refuses a leading `-` on the unsigned ones and reads base 0. Pinned by `aLeadingZeroSpeedIsReadAsOctalAsInC`, `aHexSpeedIsReadAsSixteenAsInC`, `aNegativeSpellPowerIsRefusedAsInCsUint`, `aNegativeDropChanceIsRefusedAsInCsUint`, `aDropWithANegativeMinOrMaxIsRefusedAsInCsUint` and `aNegativeFriendChanceIsRefusedAsInCsUint` in `MonsterReaderTest`. One case stays an accepted deviation: a negative `spell-power:` overwritten by a later `depth:` (`Accepted_Deviations.md`, "Monster"). The bullets below describe the state before the fix.]
 
 - `int` fields (`speed`, `hit-points`, `light`, `hearing`, `smell`, `armor-class`, `sleepiness`, `depth`, `rarity`,
   `experience`, `innate-freq`, `spell-freq`) are read by `parser_parse` with `strtol(tok, &z, 0)`, base 0, so `010` is 8
@@ -639,7 +639,7 @@ Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
 
 ## `SlayLexer.g4`: `INTEGER` accepts a leading minus and decimal only, and the comment says the assembler checks the range
 
-Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: the token is now `UINT`, which takes an optional sign, an optional `0x` prefix and a tail, so `multiplier:0x10` lexes. `SlayAssembler.assemble` refuses a leading `-` first and then reads the text in base 0 through `ParseUtils.parseIntString`, so `010` is 8, as in C, and the comment above `UINT` is true. The pinning tests are now `SlayReaderTest.negativeMultiplierStopsTheLoadAsParserGetUintRefusesIt` and `SlayAssemblerTest.aLeadingZeroIsOctalAsStrtoulBaseZeroReadsIt`. The bullets below describe the state before the fix.]
 
 - `multiplier`, `o-multiplier` and `power` are registered as `uint`. `parser_parse` in `parser.c` reads a `uint` with
   `strtoul(tok, &z, 0)` and returns `PARSE_ERROR_NOT_NUMBER` when the token starts with `-`, and base 0 means `010` is 8
@@ -665,7 +665,7 @@ Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
 
 ## `SlayGrammar.g4` and `SlayLexer.g4`: comments cite C line numbers
 
-Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: both headers now name `init_parse_slay()` and `slay_parser` in `obj-init.c` with no line numbers. The bullets below describe the state before the fix.]
 
 - `SlayGrammar.g4` cites `init_parse_slay() (src/obj-init.c:786)`, and `SlayLexer.g4` cites `init_parse_slay()
   (src/obj-init.c:786-798)` and `slay_parser (src/obj-init.c:851)`.
@@ -701,7 +701,7 @@ Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
 
 ## `BrandLexer.g4`: `INTEGER` accepts a leading minus and decimal only, and the comment says the assembler checks the range
 
-Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: the token is now `UINT`, which takes an optional sign, an optional `0x` or `0X` prefix, hex digits and a tail, so `multiplier:0x10` lexes and loads as 16, and `010` is 8. `BrandAssembler.assemble` already read the text through `ParseUtils.parseIntString` and refused a leading `-` through `ParseUtils.minusFound` (the `Integer.parseInt` claim below was out of date before this fix), and the comment above `UINT` in `BrandLexer.g4` now says what the rule takes. The pinning tests are now `BrandReaderTest.negativeMultiplierEndsTheLoadAsCParserGetUintDoes`, `minusZeroEndsTheLoadAsInC`, `leadingZeroNumberIsOctalAsInC`, `hexNumberIsSixteenAsStrtoulBaseZeroReadsIt`, `anUpperCasePrefixAndUpperCaseDigitsAreHexToo`, `aPlusSignBeforeAHexNumberIsAccepted` and `aMinusSignBeforeAHexNumberEndsTheLoad`. The bullets below describe the state before the fix.]
 
 - `multiplier`, `o-multiplier` and `power` are registered as `uint`, so `parser_parse` in `parser.c` reads them with
   `strtoul(tok, &z, 0)`, refuses a token that starts with `-`, and reads `010` as 8 and `0x10` as 16.
@@ -922,7 +922,7 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
 
 ## `CurseLexer.g4`: integers are decimal-only with no plus sign, C reads them with `strtol` base 0
 
-Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `weight:` and the three `combat:` numbers now lex as `EFFECT_INTEGER` from `imports/EffectBlockLexer.g4` (sign, `0x` prefix, tail), read in base 0. The `values:` figures stay decimal, as `find_value_arg` reads them in base 10. Pinned by `aLeadingZeroWeightIsOctalAsInC`, `aHexWeightIsReadAsSixteenAsInC`, `aPlusSignOnACombatNumberIsReadAsInC`, `aLeadingZeroValueIsDecimalAsInC` and `aHexPrefixOnAValueIsAHardErrorAsInC` in `CurseReaderTest`. The bullets below describe the state before the fix.]
 
 - `parser_parse` in `parser.c` reads an `int` field (`weight:` and the three `combat:` numbers) with `strtol(tok, &z, 0)`.
   Base 0 means `010` is 8, `0x10` is 16 and `+1` is 1.
@@ -985,7 +985,7 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
 
 ## `EffectBlockLexer.g4`: `aim:`, `level:` and `power:` are decimal-only, and a leading minus is accepted on the unsigned two
 
-Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `imports/EffectBlockLexer.g4` now has `EFFECT_INTEGER` (sign, `0x` prefix, tail), and `ActivationAssembler` refuses a leading `-` on `power:` and reads base 0. Pinned by `aNegativePowerStopsTheLoadAsInC`, `aLeadingZeroLevelIsReadAsOctalAsInC` and `aHexLevelIsReadAsSixteenAsInC` in `ActivationReaderTest`. A minus on `aim:` stays an accepted deviation (`Accepted_Deviations.md`, "Activation"), pinned by `aLeadingMinusOnAimIsReadAsASignHereWhereCStopsTheLoad`. The bullets below describe the state before the fix.]
 
 - `init_parse_act` registers `aim uint`, `level int` and `power uint`. `parser_parse` reads an `int` with
   `strtol(tok, &z, 0)`, base 0, so `010` is 8 and `0x10` is 16, and refuses a `uint` token that starts with `-` as
@@ -1105,7 +1105,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fi
 
 ## `ObjectPropertyLexer.g4`: integers are decimal-only with no plus sign, C reads them with `strtol` base 0
 
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `INTEGER`, `BINDUI_INTEGER` and `DELIM_INTEGER` in `ObjectPropertyLexer.g4` now take a sign and a `0x` prefix and the assembler reads base 0. They have no tail, which is an accepted difference ("Numbers in every data file" in `Accepted_Deviations.md`). Pinned by `anyIntFieldIsReadInBaseZeroAsInC` and `auxInBaseZeroIsTrueExactlyWhenTheNumberIsNotZero` in `ObjectPropertyReaderTest`. The bullets below describe the state before the fix.]
 
 - `parser_parse` in `parser.c` reads an `int` field (`power:`, `mult:`, the `type-mult:` figure and both `bindui:` figures)
   with `strtol(tok, &z, 0)`. Base 0 means `010` is 8, `0x10` is 16 and `+1` is 1.
@@ -1170,7 +1170,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `EgoItemsLexer.g4`: integers are decimal-only with no plus sign or leading space, C reads them with `strtol` base 0
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `INTEGER` in `EgoItemsLexer.g4` takes a sign, a `0x` prefix and a tail. `ALLOC_UINT` stays decimal with a sign, as `grab_int_range` reads base 10. A new `VALUE_INTEGER` carries a signed bracketed figure, and `values` and `minValues` in `EgoItemsGrammar.g4` both accept it, so `RES_FIRE[+1]` and `min-values:STEALTH[+2]` load. A `values:` modifier with a leading `+` is still refused, as C's `dice_parse_string` refuses it. Pinned by `integersWithAPlusSignOrAHexOrOctalPrefixLoadAsInC`, `aPlusSignInsideBracketsLoadsAsInC` and `aPlusSignOnAModifierValueIsRefusedAsInCsDiceParser` in `EgoItemReaderTest`. A blank before a number stays an accepted deviation (`aBlankBeforeANumberIsAHardErrorWhereCSkipsIt`). The bullets below describe the state before the fix.]
 
 - `parser_parse` in `parser.c` reads an `int` field (`info:`, `alloc:`'s commonness, `min-combat:`) with `strtol(tok, &z, 0)`,
   so leading whitespace is skipped, `+5` is 5 and `0x10` is 16. The bracketed figure of a `RES_` value and of `min-values:`
@@ -1237,7 +1237,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `ArtifactLexer.g4`: integers are decimal-only with no plus sign or leading space, C reads them with `strtol` base 0
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `ArtifactLexer.g4` now builds `ARTIFACT_INTEGER` and `DELIM_INTEGER` from `INT_FRAGMENT` (sign, `0x` prefix), with a tail on the default-mode figures, and the assembler reads base 0. Pinned by `aPlusSignOrAHexPrefixLoadsAsInC`, `aLeadingZeroIsOctalAsInC` and `attackBonusesTakeASignHexAndOctalAsInC` in `ArtifactReaderTest`. A blank before a number stays an accepted deviation (`aBlankBeforeAnIntegerIsALexerErrorHereWhereCAcceptsIt`). The bullets below describe the state before the fix.]
 
 - `parser_parse` reads an `int` with `strtol(tok, &z, 0)`: leading blanks skipped, `+5` is 5, `0x10` is 16, `010` is 8.
 - `ArtifactLexer.g4:85` `INT_FRAGMENT` is `'-'? ('0'..'9')+`, so the first three are lexer errors and `010` reads as 10. The
@@ -1326,7 +1326,7 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
 
 ## `ProjectionLexer.g4`: integers are decimal-only with a leading minus, C reads them with `strtoul` base 0
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `INTEGER` now takes an optional `-` or `+`, an optional `0x` prefix, hex digits and a tail up to a `:` or the end of the line. `ProjectionAssembler.assemble` refuses a leading `-` first and reads the rest in base 0 through `ParseUtils.parseIntString`, so `+1`, `0x10`, `010` and `1abc` give 1, 16, 8 and 1, as in C. What is left is a leading blank and a `:` field after the number, both accepted deviations under "Numbers in every data file" in `docs/Accepted_Deviations.md`. The pinning tests are now `ProjectionReaderTest.aPlusSignHexPrefixOrTrailingTextOnAUintLoadsAsCDoes`, `aUintWithNoDigitOrWithAMinusSignIsRefusedAsInC`, `aLeadingBlankOrAnExtraColonFieldInAnIntegerIsAHardErrorWhereCAcceptsIt` and `aLeadingZeroUintReadsAsOctalAsCDoes`. The bullets below describe the state before the fix.]
 
 - `numerator:`, `divisor:`, `damage-cap:`, `obvious:` and `wake:` are `uint` in C. `parser_parse` calls `strtoul(tok, &z, 0)` and
   refuses a value only when no digit was read or the first character is `-`. So ` 1`, `+1`, `0x10` (16), `010` (8) and `1abc`
@@ -1419,7 +1419,7 @@ Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
 
 ## `ShapeLexer.g4`: integers are decimal-only with no plus sign or leading blank, C reads them with `strtol` base 0
 
-Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `combat:` and the eight `skill-*:` lines now lex as `EFFECT_INTEGER` (sign, `0x` prefix, tail), read in base 0. The bracketed `values:` figure stays a signed decimal, as `find_value_arg` reads it in base 10. Pinned by `aPlusSignInAFigureIsReadAsStrtolReadsIt`, `aValuesFigureIsReadInBaseTenWithOrWithoutASign` and `aHexValuesFigureIsAHardErrorAsInC` in `ShapeReaderTest`. A blank before a figure stays an accepted deviation (`aBlankBeforeAValuesFigureIsAHardErrorHereWhereCSkipsIt`). The bullets below describe the state before the fix.]
 
 - `parser_getint` in `parser.c` reads with `strtol(..., 0)`, which takes a plus sign, leading blanks, and octal and hex.
   `combat:+5:0:0`, `skill-dig:+5`, `skill-dig: 5` and `combat: 1 : 2 : 3` all load in C.

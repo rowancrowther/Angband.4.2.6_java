@@ -47,7 +47,7 @@ GLYPH
         ;
 
 // "pain:<index>" - which pain.txt message set these monsters use; the value is
-// a bare INTEGER.
+// a bare UINT.
 PAIN
         :   'pain:'
         ;
@@ -65,9 +65,19 @@ DESC
         : 'desc:' -> pushMode(FREE_TEXT)
         ;
 
-// A bare non-negative integer - the pain-message-set index.
-INTEGER
-        :   '-'? ('0'..'9')+
+// The value of "pain:<n>" - C's "pain uint index" field, read by parser_parse in
+// parser.c with strtoul in base 0. The token follows that reading:
+//  - an optional '-' or '+' sign. A '-' is kept so the assembler can refuse it,
+//    "-0" included, as C does for a uint.
+//  - an optional 0x or 0X prefix, then one or more digits. a-f are allowed with
+//    or without the prefix, so "ff" lexes here; the assembler refuses it
+//    because strtoul finds no digit in it.
+//  - any tail up to the colon or the end of the line, because strtoul stops at
+//    the first character it cannot use and ignores the rest ("5abc" is 5, and a
+//    trailing blank or tab is part of the tail). A decimal digit run is the
+//    same token, so 010 is read as octal by the assembler, not here.
+UINT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
         ;
 
 // Value mode for glyph: exactly one character, then pop back.

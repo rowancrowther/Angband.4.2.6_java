@@ -40,7 +40,7 @@ public class PainGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		TYPE=1, MESSAGE=2, INTEGER=3, COMMENT=4, INDENT=5, EOL=6, STRING=7;
+		TYPE=1, MESSAGE=2, UINT=3, COMMENT=4, INDENT=5, EOL=6, STRING=7;
 	public static final int
 		RULE_type = 0, RULE_message = 1, RULE_painEntry = 2, RULE_file = 3;
 	private static String[] makeRuleNames() {
@@ -58,7 +58,7 @@ public class PainGrammar extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "TYPE", "MESSAGE", "INTEGER", "COMMENT", "INDENT", "EOL", "STRING"
+			null, "TYPE", "MESSAGE", "UINT", "COMMENT", "INDENT", "EOL", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -116,9 +116,9 @@ public class PainGrammar extends Parser {
 	public static class TypeContext extends ParserRuleContext {
 		public String typeNum;
 		public int line;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode TYPE() { return getToken(PainGrammar.TYPE, 0); }
-		public TerminalNode INTEGER() { return getToken(PainGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(PainGrammar.UINT, 0); }
 		public TypeContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -147,10 +147,10 @@ public class PainGrammar extends Parser {
 			setState(8);
 			match(TYPE);
 			setState(9);
-			((TypeContext)_localctx).INTEGER = match(INTEGER);
+			((TypeContext)_localctx).UINT = match(UINT);
 
 			                ((TypeContext)_localctx).line =  _localctx.start.getLine();
-			                ((TypeContext)_localctx).typeNum =  ((TypeContext)_localctx).INTEGER.getText();
+			                ((TypeContext)_localctx).typeNum =  ((TypeContext)_localctx).UINT.getText();
 			            
 			}
 		}

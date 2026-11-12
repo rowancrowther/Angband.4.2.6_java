@@ -390,7 +390,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style=
 
 ## `slay/SlayAssembler.java`: a missing `multiplier:`, `o-multiplier:` or `power:` skips the record, C leaves it 0
 
-Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `SlayAssembler.assemble` turns empty text into 0 for the three numbers and into `null` for `name`, `melee-verb` and `range-verb`, as the zeroed C record leaves them. The pinning tests are now `SlayReaderTest.missingPowerLoadsAsZeroAsInC`, `missingMultiplierLoadsAsZeroAsInC` and `missingNameAndVerbsLoadAsNullAsInC`. The bullets below describe the state before the fix.]
 
 - `parse_slay_multiplier`, `parse_slay_o_multiplier` and `parse_slay_power` in `obj-init.c` only run when the line is
   present, and the slay is allocated with `mem_zalloc`, so a record that leaves one out loads with 0 in that field.
@@ -403,7 +403,7 @@ Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
 
 ## `slay/SlayAssembler.java`: `race-flag:NONE` is accepted, C rejects it
 
-Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: `SlayAssembler.assemble` refuses `RF_NONE` with a fatal `DataFileParseException`, as `lookup_flag` never matches index 0. The pinning tests are now `SlayAssemblerTest.raceFlagNoneIsRefusedAsLookupFlagSkipsIndexZero` and `SlayReaderTest.raceFlagNoneStopsTheLoadAsLookupFlagSkipsIndexZero`. The bullets below describe the state before the fix.]
 
 - `parse_slay_race_flag` calls `lookup_flag`, which starts at `FLAG_START` (1), so the `NONE` entry at index 0 of
   `mon_race_flags` is never matched and the handler returns `PARSE_ERROR_INVALID_FLAG`. The comment in `slay.txt` also

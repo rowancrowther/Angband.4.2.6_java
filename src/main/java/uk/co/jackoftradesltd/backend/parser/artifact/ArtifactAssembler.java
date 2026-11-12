@@ -124,17 +124,34 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      * {@link DataFileParseException}. The grammar refuses a numeric sval first, so only a record
      * built by hand reaches it.
      *
+     * <p>The {@code attack:} dice string is read by {@link Random#parseStr}, and its dice and
+     * sides become the artifact's base damage, C's {@code dd} and {@code ds}. A record with no
+     * {@code attack:} line has base damage 0 and 0, and the to-hit and to-damage figures, which
+     * share the line, parse to 0.
+     *
+     * <p>Every base element ends up marked ignore, as C's {@code parse_artifact_name} marks them
+     * when the record opens. The {@code IGNORE_} and {@code HATES_} flags and the {@code RES_}
+     * levels add to that entry and do not clear it.
+     *
+     * <p>A {@code graphics:} line sets the glyph and colour of the kind of the last
+     * {@code base-object:} line, and only a kind with {@code KF_INSTA_ART} (a special artifact's
+     * kind) takes it. A colour that matches no name or code is white, as C's
+     * {@code color_text_to_attr} and {@code color_char_to_attr} both default. A new special kind
+     * starts as a red {@code *}, until a {@code graphics:} line replaces it.
+     *
      * <p>As C's {@code artifact_parser} does, the load ends at the first bad field. That covers an
      * unknown tvalue or base object, a malformed integer, an unknown flag, modifier, element,
      * brand, slay or curse, a {@code values:} figure of {@code INT_MAX} or {@code INT_MIN} or
-     * beyond, an {@code alloc:} figure outside 0 to 255, a malformed {@code time:} dice string, and
-     * a {@code graphics:} line on a kind without {@code KF_INSTA_ART}. Each one is logged and
+     * beyond, an {@code alloc:} figure outside 0 to 255, a base damage dice string that
+     * {@link Random#parseStr} refuses, a malformed {@code time:} dice string, and a
+     * {@code graphics:} line on a kind without {@code KF_INSTA_ART}. Each one is logged and
      * thrown as a {@link DataFileParseException}.
      *
      * <p>Function assemble coded before 260915, commented in full on 260915, rewritten for the
      * load-ending errors on 261023, special-kind level note added on 261023, absent-text,
      * zero-power curse and no-base-object notes added on 261106, rewritten for the per-line level
-     * snapshot, the msg/desc null note and the numeric-sval deviation on 261107.
+     * snapshot, the msg/desc null note and the numeric-sval deviation on 261107, attack, ignored
+     * elements and graphics notes added on 261112.
      *
      * @param records  the raw artifact records from the grammar, in file order
      * @param filename the name of the data file, used in the error messages
@@ -169,7 +186,20 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             int toa = ParseUtils.parseIntString("Artifact", record.toa(), line, filename, "To AC");
             
             // String Base damage
-            String baseDamageString = record.baseDamage();
+            int baseDamDD = 0;
+            int baseDamDS = 0;
+            if (!record.baseDamage().isEmpty()) {
+                String baseDamageString = record.baseDamage();
+                Random baseDamage = Random.parseStr(baseDamageString);
+                if (baseDamage == null) {
+                    String message = "Artifact at line: " + line + " of file: " + filename + " has " +
+                            "an unknown base damage value: " + baseDamageString;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
+                baseDamDD = baseDamage.getDice();
+                baseDamDS = baseDamage.getSides();
+            }
             
             // Integer weight
             int weight = ParseUtils.parseIntString("Artifact", record.weight(), line, filename, "Weight");
@@ -193,6 +223,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     }
                 } catch (IllegalArgumentException e) {
                     boolean eFlagFound = ParseUtils.grabElementFlag(elInfo, flag);
+                    
                     if (!eFlagFound) {
                         String message = "Artifact at line: " + line + " of file: " + filename + " has " +
                                 "an unknown ignore/hates flag: " + flag;
@@ -364,7 +395,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 }
             }
             
-            // Guard against a empty objectBases
+            // Refuse a record with no base-object: line
             if (record.baseObjects().isEmpty()) {
                 String message = "Artifact at line: "+ line + " of file: " + filename + " has " +
                         "no assigned bases";
@@ -429,10 +460,10 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 }
             }
 
-            // Object bases noted in this artifact
+            // The artifact's own base type is the last base-object: line's
             TValue lastTValue = TValue.fromName(baseParseRecord.tValue());
 
-            // Special light
+            // Fall back to TV_NONE if the name does not resolve
             if (lastTValue == null) {
                 lastTValue = TValue.TV_NONE;
             }
@@ -457,7 +488,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
 
             // Artifact constructor
             Artifact artifact = new Artifact(name, text, lastTValue, baseParseRecord.sValue(), toh, tod, toa,
-                    baseAC, baseDamageString, weight, cost, flags, modifiers, elInfo,
+                    baseAC, baseDamDD, baseDamDS, weight, cost, flags, modifiers, elInfo,
                     brands, slays, curses, level, commonness, min, max, artActivation,
                     activationMsg, artTime);
             
@@ -477,12 +508,12 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     kindActivations.add(kindActivation);
             }
 
-            // Kind time, if not already set
+            // Special light recharge time on the kind, when the record has a time: line
             if (kindTime != null) {
                 kind.setTime(kindTime);
             }            
 
-            // Agnband Display Character
+            // Angband display character (graphics: line)
             if (!record.glyph().isEmpty() && !record.colour().isEmpty()) {
                 ParseUtils.GlyphCharacter glyphCharacter = ParseUtils.parseADCGlyph(record.glyph());
 

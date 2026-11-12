@@ -35,7 +35,7 @@ import DiceStrings, CommentsAndEol;
  * cf EffectBlock.g4's 'effect' rule.
  */
 EFFECT
-        :   'effect:'
+        :   'effect:' -> mode(TYPE_MODE)
         ;
 
 /*
@@ -92,7 +92,7 @@ TIME
  * cf EffectBlock.g4's 'effectYX' rule.
  */
 EFFECT_YX
-        :   'effect-yx:'
+        :   'effect-yx:' -> pushMode(YX_INTEGER_MODE)
         ;
 
 /*
@@ -123,19 +123,93 @@ COLON
 /*
  * @author Rowan Crowther
  *
- * An uppercase symbol used to determine TYPE/SUBTYPE in EFFECT lines.
+ * An "int" or "uint" field value, read the way C's strtol/strtoul in base 0 read one. Used for
+ * effect:'s optional radius/other segments, effect-yx:'s y and x, and by the grammars that
+ * import this lexer for their own integer directives (power-cutoff:, level:, weight: and so on).
+ *
+ * The token is:
+ *  - an optional '+' or '-' sign. A '-' is kept as text so the assembler can refuse it where C
+ *    refuses it (a uint, "-0" included).
+ *  - an optional 0x or 0X prefix, then one or more digits. a-f are allowed with or without the
+ *    prefix, so "ff" lexes here; the assembler refuses it because strtol finds no digit in it.
+ *  - any tail up to a ':' or the end of the line, because strtol stops at the first character it
+ *    cannot use and ignores the rest ("5abc" is 5, and a trailing blank or tab is part of the
+ *    tail). A decimal digit run is the same token, so 010 is read as octal by the assembler,
+ *    not here.
+ *
+ * Nothing allows a blank before the number, or an empty ':' field (trailing or doubled), where C
+ * skips both; see docs/Accepted_Deviations.md, "Numbers in every data file".
+ *
+ * Token EFFECT_INTEGER coded before 261112, commented in full on 261112.
  */
-UCASE
-        :   ('a'..'z' | 'A'..'Z' | '_' | '-')+
+EFFECT_INTEGER
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
         ;
+
+mode YX_INTEGER_MODE;
+
+YX_INTEGER
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
+        ;
+
+YX_COLON
+        :   ':' -> skip
+        ;
+
+YX_EOL
+        :   NL -> skip, popMode
+        ;
+
+mode TYPE_MODE;
 
 /*
  * @author Rowan Crowther
  *
- * A bare signed integer - used for effect:'s optional radius/other segments.
+ * An uppercase symbol used to determine TYPE/SUBTYPE in EFFECT lines.
  */
-INTEGER
-        :   '-'? ('0'..'9')+
+TYPE
+        :   ('a'..'z' | 'A'..'Z' | '_' | '-')+
+        ;
+
+TYPE_MODE_COLON
+        :   ':' -> skip, mode(SUBTYPE_MODE)
+        ;
+
+TYPE_EOL
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+mode SUBTYPE_MODE;
+
+/*
+ * @author Rowan Crowther
+ *
+ * An uppercase symbol used to determine TYPE/SUBTYPE in EFFECT lines.
+ */
+SUBTYPE
+        :   ('a'..'z' | 'A'..'Z' | '_' | '-')+
+        ;
+
+SUBTYPETYPE_MODE_COLON
+        :   ':' -> skip, mode(EFFECT_RAD_AND_PARM)
+        ;
+
+SUBTYPE_EOL
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+mode EFFECT_RAD_AND_PARM;
+
+R_P_EFFECT_INTEGER
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
+        ;
+
+R_P_COLON
+        :   ':' -> skip
+        ;
+
+R_P_EOL
+        :   NL -> skip, mode(DEFAULT_MODE)
         ;
 
 /*

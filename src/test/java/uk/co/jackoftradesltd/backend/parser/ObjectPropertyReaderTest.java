@@ -959,17 +959,79 @@ class ObjectPropertyReaderTest {
     }
 
     /**
-     * C reads {@code power:} and {@code mult:} with {@code strtol} in base 0: {@code 010} is 8, and
-     * {@code +5} and {@code 0x10} are numbers. The assembler reads {@code 010} as 8 as C does, but the
-     * lexer's {@code INTEGER} is decimal only, so {@code +5} and {@code 0x10} are lexer errors.
+     * C reads every {@code int} field of this file with {@code strtol} in base 0: {@code power:},
+     * {@code mult:}, the {@code type-mult:} figure, the {@code bindui:} aux flag and its optional value.
+     * So {@code +5} is 5, {@code 0x10} and {@code 0X10} are 16, {@code 010} is 8, {@code -0x10} is -16
+     * and {@code 08} is 0 (the {@code 8} is not an octal digit, so it stops the read). The lexer's
+     * {@code INTEGER} and {@code DELIM_INTEGER} keep the text and the assembler converts it.
+     *
+     * <p>Function anyIntFieldIsReadInBaseZeroAsInC coded on 261112, commented in full on 261112. It
+     * replaces anOctalPowerIsReadAsInCButASignOrHexIsALexerError.
      */
     @Test
-    void anOctalPowerIsReadAsInCButASignOrHexIsALexerError() throws IOException {
-        ObjectProperty octal = load("name:x\ntype:stat\ncode:STR\npower:010\n").items().get(0);
+    void anyIntFieldIsReadInBaseZeroAsInC() throws IOException {
+        String[][] cases = {{"+5", "5"}, {"0x10", "16"}, {"0X1f", "31"}, {"010", "8"}, {"-0x10", "-16"},
+                {"-010", "-8"}, {"08", "0"}, {"-7", "-7"}, {"0", "0"}};
+        for (String[] c : cases) {
+            int expected = Integer.parseInt(c[1]);
+            ObjectProperty p = load("name:x\ntype:stat\ncode:STR\npower:" + c[0] + "\nmult:" + c[0]
+                    + "\ntype-mult:ring:" + c[0] + "\n").items().get(0);
+            assertEquals(expected, p.getPower(), "power:" + c[0]);
+            assertEquals(expected, p.getMultiplier(), "mult:" + c[0]);
+            assertEquals(expected, p.getTypeMult(TValue.TV_RING), "type-mult:ring:" + c[0]);
+            ObjectProperty b = load("name:x\ntype:stat\ncode:STR\nbindui:entry:1:" + c[0] + "\n")
+                    .items().get(0);
+            assertEquals(expected, b.getBoundEntries().get(0).value(), "bindui value " + c[0]);
+        }
+    }
 
-        assertEquals(8, octal.getPower());
-        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\npower:+5\n"));
-        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\npower:0x10\n"));
+    /**
+     * The aux flag is the same figure read as C's {@code parser_getint(p, "aux") != 0}: any spelling
+     * of a non-zero number is true, any spelling of zero ({@code 0x0}, {@code 00}, {@code 08}) false.
+     */
+    @Test
+    void auxInBaseZeroIsTrueExactlyWhenTheNumberIsNotZero() throws IOException {
+        for (String t : new String[]{"+1", "0x10", "010", "-1", "0x1"})
+            assertTrue(load("name:x\ntype:stat\ncode:STR\nbindui:entry:" + t + "\n").items().get(0)
+                    .getBoundEntries().get(0).aux(), "aux " + t);
+        for (String f : new String[]{"+0", "0x0", "00", "08"})
+            assertFalse(load("name:x\ntype:stat\ncode:STR\nbindui:entry:" + f + "\n").items().get(0)
+                    .getBoundEntries().get(0).aux(), "aux " + f);
+    }
+
+    /**
+     * A figure with no digit ({@code ff}, hex letters without {@code 0x}) is {@code NOT_NUMBER} in C
+     * and ends the load here. It lexes as {@code INTEGER} (the rule accepts a-f) and the assembler
+     * refuses it.
+     */
+    @Test
+    void hexLettersWithoutAPrefixEndTheLoad() throws IOException {
+        assertStopsTheLoad("name:x\ntype:stat\ncode:STR\npower:ff\n", 1, "power");
+    }
+
+    /**
+     * {@code INTEGER} accepts the letters a-f, so a word made only of them ties on length with
+     * {@code LCASE} and {@code INTEGER}, coming first in the lexer, wins the token. The directive
+     * that wants a word then fails to parse, though C takes any string for an adjective.
+     */
+    @Test
+    void anAdjectiveMadeOnlyOfHexLettersStillLoads() throws IOException {
+        assertEquals("deaf", field(load("name:x\ntype:stat\ncode:STR\nadjective:deaf\n").items().get(0),
+                "adjective"));
+    }
+
+    /** As {@link #anAdjectiveMadeOnlyOfHexLettersStillLoads()}, for {@code neg-adjective:}. */
+    @Test
+    void aNegAdjectiveMadeOnlyOfHexLettersStillLoads() throws IOException {
+        assertEquals("bad", field(load("name:x\ntype:stat\ncode:STR\nneg-adjective:bad\n").items().get(0),
+                "negAdjective"));
+    }
+
+    /** As {@link #anAdjectiveMadeOnlyOfHexLettersStillLoads()}, for the {@code bindui:} entry name. */
+    @Test
+    void aBinduiNameMadeOnlyOfHexLettersStillLoads() throws IOException {
+        assertEquals("face<FACE>", load("name:x\ntype:stat\ncode:STR\nbindui:face<FACE>:1\n").items().get(0)
+                .getBoundEntries().get(0).entry());
     }
 
     /**

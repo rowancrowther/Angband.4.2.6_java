@@ -389,9 +389,35 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void aPlusSignHexPrefixTrailingTextOrLeadingBlankInAnIntegerIsAHardErrorWhereCAcceptsIt() throws IOException {
-        // strtoul with base 0 skips leading blanks, takes +5 and 0x10, and ignores trailing text.
-        for (String value : List.of("+1", "0x1", "1abc", " 1")) {
+    void aPlusSignHexPrefixOrTrailingTextOnAUintLoadsAsCDoes() throws Exception {
+        // strtoul with base 0 takes +1 and 0x10, and stops at the first character it cannot use.
+        // INTEGER takes the sign, the 0x prefix and the rest of the field, and ParseUtils reads the digits.
+        // Each pair is the text after "numerator:" and the number C reads from it.
+        String[][] cases = {
+                {"+1", "1"}, {"0x1", "1"}, {"0x10", "16"}, {"0X10", "16"}, {"1abc", "1"}, {"5 6", "5"},
+                {"0x", "0"}, {"08", "0"}
+        };
+        for (String[] c : cases) {
+            ParseResult<Projection> result = load("uint.txt", shipped().replaceFirst("numerator:1", "numerator:" + c[0]));
+
+            assertEquals(Integer.parseInt(c[1]), (int) field(result.items().getFirst(), "numerator"), c[0]);
+        }
+    }
+
+    @Test
+    void aUintWithNoDigitOrWithAMinusSignIsRefusedAsInC() throws IOException {
+        // strtoul leaves z == tok for abc, + and -, and parser_parse refuses a token that starts with '-'.
+        for (String value : List.of("abc", "ab", "+", "-", "-1")) {
+            assertThrows(RuntimeException.class,
+                    () -> load("uint-bad.txt", shipped().replaceFirst("numerator:1", "numerator:" + value)), value);
+        }
+    }
+
+    @Test
+    void aLeadingBlankOrAnExtraColonFieldInAnIntegerIsAHardErrorWhereCAcceptsIt() throws IOException {
+        // strtoul skips leading blanks, and parser_parse drops anything after the last field of the line.
+        // Accepted deviations: "Numbers in every data file" in docs/Accepted_Deviations.md.
+        for (String value : List.of(" 1", "1:2")) {
             assertHardError("int.txt", shipped().replaceFirst("numerator:1", "numerator:" + value));
         }
     }

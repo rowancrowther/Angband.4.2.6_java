@@ -355,7 +355,7 @@ class ItemObjectSimilarTest {
             assertTrue(first.similar(second, mode()));
 
             set(second, "artifact", new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0,
-                    "0", 0, 0, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), java.util.Set.of(),
+                    0, 0, 0, 0, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), java.util.Set.of(),
                     java.util.Set.of(), new TreeMap<>(Curse.CURSE_ORDER), 0, 0, 0, 0, null, null, null));
             assertFalse(first.similar(second, mode()));
         }

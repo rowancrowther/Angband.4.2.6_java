@@ -54,8 +54,8 @@ glyph
 // template use.
 pain
         returns[String monPain]
-        :   PAIN INTEGER {
-            $monPain = $INTEGER.getText();
+        :   PAIN UINT {
+            $monPain = $UINT.getText();
         }
         ;
 

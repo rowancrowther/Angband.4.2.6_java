@@ -37,11 +37,11 @@ CODE
         ;
 
 POWER
-        :   'power:'
+        :   'power:' -> pushMode(INTEGER_MODE)
         ;
 
 MULT
-        :   'mult:'
+        :   'mult:' -> pushMode(INTEGER_MODE)
         ;
 
 TYPE_MULT
@@ -61,7 +61,7 @@ MSG
         ;
 
 BINDUI
-        :   'bindui:'
+        :   'bindui:' -> mode(BINDUI_INTRO_MODE)
         ;
 
 DESC
@@ -70,18 +70,6 @@ DESC
 
 COLON
         :   ':'
-        ;
-
-INTEGER
-        :   '-'? ('0'..'9')+
-        ;
-
-LTHAN
-        :   '<'
-        ;
-
-GTHAN
-        :   '>'
         ;
 
 // Lower-case token for single-word values (type:, adjective:, neg-adjective:).
@@ -93,6 +81,51 @@ LCASE
 // trailing digits, which several codes carry.
 UCASE
         :   FLAG_BODY
+        ;
+
+mode BINDUI_INTRO_MODE;
+
+// Lower-case token for single-word values (type:, adjective:, neg-adjective:).
+BINDUI_LCASE
+        :   ('a'..'z' | '0'..'9' | '_')+
+        ;
+
+BINDUI_INTRO_COLON
+        :   ':' -> skip, mode(BINDUI_INTEGER_MODE)
+        ;
+
+BINDUI_LTHAN
+        :   '<' -> skip, mode(BINDUI_TAG_MODE)
+        ;
+
+mode BINDUI_TAG_MODE;
+
+BINDUI_UCASE
+        :   FLAG_BODY
+        ;
+
+BINDUI_GTHAN
+        :   '>' -> skip, mode(BINDUI_INTEGER_MODE)
+        ;
+
+mode BINDUI_INTEGER_MODE;
+
+BINDUI_INTEGER
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+
+        ;
+
+BINDUI_COLON
+        :   ':' -> skip
+        ;
+
+BINDUI_NL
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+mode INTEGER_MODE;
+
+INTEGER
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ -> popMode
         ;
 
 // Free-form value text to end of line, popped back to the default mode on newline.
@@ -112,7 +145,7 @@ EOL_POP
 mode DELIMITER;
 
 DELIM_INTEGER
-        :   '-'? ('0'..'9')+
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ 
         ;
 
 STRING_BETWEEN_COLONS

@@ -1011,9 +1011,15 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aBareNumberFriendCountIsAHardErrorHereWhereCReadsItAsARandomValue() throws IOException {
-        // parse_random accepts "5" (a base and no dice); the lexer reads it as FRIEND_INTEGER.
-        assertThrows(ParseCancellationException.class, () -> load("friend-bare.txt", rec("Solo", "friends:100:5:Somebody")));
+    void aBareNumberFriendCountLoadsAsInCWhereParseRandomAcceptsIt() throws Exception {
+        // parse_random accepts "5" (a base and no dice); FRIEND_DICE now takes a bare number too.
+        ParseResult<MonsterRace> r = load("friend-bare.txt", rec("Solo", "friends:100:5:Somebody"));
+        List<?> friends = field(byName(r, "Solo"), "friends");
+        assertEquals(1, friends.size());
+        assertEquals(Integer.valueOf(100), declaredField(friends.get(0), "percentChance"));
+        // C keeps only number.dice and number.sides, so the base of 5 is dropped: 0 dice, 0 sides.
+        assertEquals(Integer.valueOf(0), declaredField(friends.get(0), "numberDice"));
+        assertEquals(Integer.valueOf(0), declaredField(friends.get(0), "numberSides"));
     }
 
     @Test
@@ -1024,8 +1030,10 @@ class MonsterReaderTest {
     }
 
     @Test
-    void aHexSpeedIsAHardErrorHereWhereCReadsItAsSixteen() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("speed-hex.txt", rec("Solo", "speed:0x10")));
+    void aHexSpeedIsReadAsSixteenAsInC() throws Exception {
+        // strtol(tok, &z, 0): 0x10 is 16 in C, and INTEGER now takes the 0x prefix.
+        ParseResult<MonsterRace> r = load("speed-hex.txt", rec("Solo", "speed:0x10"));
+        assertEquals(16, (int) field(byName(r, "Solo"), "speed"));
     }
 
     @Test

@@ -108,7 +108,7 @@ code
  */
 level
         returns[String levelStr]
-        :   LEVEL l=INTEGER { $levelStr = $l.getText(); }
+        :   LEVEL l=EFFECT_INTEGER { $levelStr = $l.getText(); }
         ;
 
 /*
@@ -119,7 +119,7 @@ level
  */
 destroy 
         returns[String destroyStr]
-        :   DESTROY d=INTEGER { $destroyStr = $d.getText(); }
+        :   DESTROY d=EFFECT_INTEGER { $destroyStr = $d.getText(); }
         ;
 
 /*
@@ -129,7 +129,7 @@ destroy
  */
 magic
         returns[String magicStr]
-        :   MAGIC m=INTEGER { $magicStr = $m.getText(); }
+        :   MAGIC m=EFFECT_INTEGER { $magicStr = $m.getText(); }
         ;
 
 /*

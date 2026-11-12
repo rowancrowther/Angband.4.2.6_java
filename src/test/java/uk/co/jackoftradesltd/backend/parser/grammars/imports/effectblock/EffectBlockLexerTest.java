@@ -75,8 +75,99 @@ class EffectBlockLexerTest {
     @Test
     void effectHeaderTokenises() {
         assertEquals(
-                List.of("EFFECT=effect:", "UCASE=BALL", "COLON=:", "UCASE=FIRE", "COLON=:", "INTEGER=2"),
+                List.of("EFFECT=effect:", "TYPE=BALL", "SUBTYPE=FIRE", "R_P_EFFECT_INTEGER=2"),
                 tokens("effect:BALL:FIRE:2"));
+    }
+
+    /**
+     * The shapes of a number that C's {@code strtol}/{@code strtoul} in base 0 read, and the
+     * lexer therefore has to hand on whole: a sign (a '-' is kept for the assembler to refuse on a
+     * uint), a 0x prefix, hex letters with or without the prefix, a leading zero (octal, read by
+     * the assembler), text after the digits, and a trailing blank.
+     */
+    private static final List<String> NUMBER_SHAPES =
+            List.of("5", "-5", "+3", "0", "-0", "0x10", "0X1f", "010", "ff", "5abc", "5 ", "5\t");
+
+    /**
+     * Radius and other-parameter of {@code effect:} are two {@code R_P_EFFECT_INTEGER} tokens; the
+     * colon between them is skipped in this mode.
+     *
+     * <p>Function radiusAndOtherAreTwoTokens coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void radiusAndOtherAreTwoTokens() {
+        assertEquals(
+                List.of("EFFECT=effect:", "TYPE=BOLT", "SUBTYPE=ARROW",
+                        "R_P_EFFECT_INTEGER=-5", "R_P_EFFECT_INTEGER=+3"),
+                tokens("effect:BOLT:ARROW:-5:+3"));
+    }
+
+    /**
+     * Every shape in {@link #NUMBER_SHAPES} is one {@code R_P_EFFECT_INTEGER} holding the text as
+     * written, as the radius and as the other parameter.
+     *
+     * <p>Function effectRadiusAndOtherReadEveryShapeOfNumber coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void effectRadiusAndOtherReadEveryShapeOfNumber() {
+        for (String n : NUMBER_SHAPES) {
+            assertEquals(List.of("EFFECT=effect:", "TYPE=BOLT", "SUBTYPE=ARROW", "R_P_EFFECT_INTEGER=" + n),
+                    tokens("effect:BOLT:ARROW:" + n), "radius " + n);
+            assertEquals(List.of("EFFECT=effect:", "TYPE=BOLT", "SUBTYPE=ARROW",
+                            "R_P_EFFECT_INTEGER=1", "R_P_EFFECT_INTEGER=" + n),
+                    tokens("effect:BOLT:ARROW:1:" + n), "other " + n);
+        }
+    }
+
+    /**
+     * A blank before the number is a lexer error where C skips it (accepted deviation, "Numbers in
+     * every data file").
+     *
+     * <p>Function aBlankBeforeAnEffectRadiusIsALexerError coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aBlankBeforeAnEffectRadiusIsALexerError() {
+        assertTrue(lexErrors("effect:BOLT:ARROW: 5") > 0, "a blank before the radius");
+        assertTrue(lexErrors("effect:BOLT:ARROW:1: 5") > 0, "a blank before the other parameter");
+    }
+
+    /**
+     * {@code effect-yx:} gives two {@code YX_INTEGER} tokens, each of every shape in
+     * {@link #NUMBER_SHAPES}.
+     *
+     * <p>Function effectYxReadsEveryShapeOfNumberForYAndX coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void effectYxReadsEveryShapeOfNumberForYAndX() {
+        for (String n : NUMBER_SHAPES) {
+            assertEquals(List.of("EFFECT_YX=effect-yx:", "YX_INTEGER=" + n, "YX_INTEGER=2"),
+                    tokens("effect-yx:" + n + ":2"), "y " + n);
+            assertEquals(List.of("EFFECT_YX=effect-yx:", "YX_INTEGER=1", "YX_INTEGER=" + n),
+                    tokens("effect-yx:1:" + n), "x " + n);
+        }
+    }
+
+    /**
+     * A blank before the y value is a lexer error where C skips it.
+     *
+     * <p>Function aBlankBeforeAnEffectYxValueIsALexerError coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aBlankBeforeAnEffectYxValueIsALexerError() {
+        assertTrue(lexErrors("effect-yx: 1:2") > 0, "a blank before y");
+    }
+
+    /**
+     * {@code EFFECT_INTEGER}, the default-mode number the importing grammars use for their own
+     * integer directives, reads the same shapes.
+     *
+     * <p>Function effectIntegerReadsEveryShapeOfNumber coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void effectIntegerReadsEveryShapeOfNumber() {
+        for (String n : NUMBER_SHAPES) {
+            assertEquals(List.of("EFFECT_INTEGER=" + n), tokens(n), n);
+        }
     }
 
     @Test

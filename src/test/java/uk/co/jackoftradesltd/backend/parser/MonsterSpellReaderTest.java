@@ -794,6 +794,210 @@ class MonsterSpellReaderTest {
         }
     }
 
+    // ---- Numbers: hit: (uint), power-cutoff:, effect-yx: and effect: radius/other (int) ----
+
+    /**
+     * Load one spell whose only variable part is the directive text, with the lore line every
+     * record needs to be valid. The lore line goes after the directive, so a {@code power-cutoff:}
+     * has text under it.
+     *
+     * <p>Function loadWith coded on 261112, commented in full on 261112.
+     *
+     * @param directives the line(s) under test, each ending in a newline
+     * @return the reader's result for a one-spell file
+     */
+    private ParseResult<MonsterSpellType> loadWith(String directives) throws IOException {
+        return load("number-" + System.nanoTime() + ".txt",
+                "name:BLINK\nmsgt:TELEPORT\n" + directives + "lore:x\n");
+    }
+
+    /**
+     * C reads {@code hit:} as a {@code uint} with {@code strtoul} in base 0 ({@code parser_parse} in
+     * {@code parser.c}): an optional {@code +}, a {@code 0x} prefix for hex, a leading 0 for octal,
+     * and text after the digits is ignored. {@code 08} is 0 because the 8 is not an octal digit, and
+     * {@code 0x} on its own is 0 because the prefix is read as the digit 0.
+     *
+     * <p>Function aHitReadsAsStrtoulDoes coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aHitReadsAsStrtoulDoes() throws Exception {
+        Object[][] cases = {{"5", 5}, {"0", 0}, {"+5", 5}, {"0x10", 16}, {"0xff", 255}, {"010", 8},
+                {"08", 0}, {"0x", 0}, {"5abc", 5}};
+        for (Object[] c : cases) {
+            ParseResult<MonsterSpellType> result = loadWith("hit:" + c[0] + "\n");
+            assertEquals(c[1], field(result.items().get(0), "hit"), "hit:" + c[0]);
+        }
+    }
+
+    /**
+     * C refuses a {@code uint} in which {@code strtoul} finds no digit ({@code ff} without the
+     * {@code 0x}, a lone sign, nothing at all). {@code ff} reaches the assembler and is refused
+     * there; the other two have no {@code HIT_UINT} to lex.
+     *
+     * <p>Function aHitWithNoDigitIsRefusedAsInC coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aHitWithNoDigitIsRefusedAsInC() {
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> loadWith("hit:ff\n"), "hit:ff");
+        assertTrue(e.getMessage().contains("invalid hit value: ff"), e::getMessage);
+
+        for (String hit : new String[]{"+", ""}) {
+            assertThrows(ParseCancellationException.class, () -> loadWith("hit:" + hit + "\n"),
+                    "hit:" + hit);
+        }
+    }
+
+    /**
+     * A blank or tab between the number and the end of the line is part of the {@code HIT_UINT}
+     * tail and reads as in C. Shipped files write such blanks elsewhere, so this is the boundary of
+     * the accepted tail deviation, not part of it.
+     *
+     * <p>Function aTrailingBlankAfterAHitLoadsAsInC coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aTrailingBlankAfterAHitLoadsAsInC() throws Exception {
+        for (String hit : new String[]{"100  ", "100\t"}) {
+            ParseResult<MonsterSpellType> result = loadWith("hit:" + hit + "\n");
+            assertEquals(100, field(result.items().get(0), "hit"), "hit:" + hit);
+        }
+    }
+
+    /**
+     * Accepted deviation (docs/Accepted_Deviations.md, "Numbers in every data file"): C's
+     * {@code strtoul} skips a blank before the number, and {@code hit:} being the last field C
+     * drops anything after a {@code :}. The lexer refuses both.
+     *
+     * <p>Function aBlankBeforeAHitOrAColonFieldAfterItIsRefusedWhereCAcceptsIt coded on 261112,
+     * commented in full on 261112.
+     */
+    @Test
+    void aBlankBeforeAHitOrAColonFieldAfterItIsRefusedWhereCAcceptsIt() {
+        for (String hit : new String[]{"  5", "5:6"}) {
+            assertThrows(ParseCancellationException.class, () -> loadWith("hit:" + hit + "\n"),
+                    "hit:" + hit);
+        }
+    }
+
+    /**
+     * C reads {@code power-cutoff:} as an {@code int} with {@code strtol} in base 0, so it takes a
+     * sign of either kind, hex, octal and trailing text, and {@code -0} is 0. The spell has the
+     * implicit level 0 first, then the level with the cutoff.
+     *
+     * <p>Function aPowerCutoffReadsAsStrtolDoes coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aPowerCutoffReadsAsStrtolDoes() throws Exception {
+        Object[][] cases = {{"10", 10}, {"-5", -5}, {"+5", 5}, {"0x10", 16}, {"-0x10", -16},
+                {"0xff", 255}, {"010", 8}, {"08", 0}, {"-0", 0}, {"5abc", 5}, {"10  ", 10}};
+        for (Object[] c : cases) {
+            ParseResult<MonsterSpellType> result = loadWith("power-cutoff:" + c[0] + "\n");
+            assertEquals(List.of(0, c[1]), powersOf(result.items().get(0)), "power-cutoff:" + c[0]);
+        }
+    }
+
+    /**
+     * C refuses an {@code int} in which {@code strtol} finds no digit, and a missing value. The
+     * second pair is the accepted deviation: a blank before the number, and a {@code :} field
+     * after it, which C skips and drops.
+     *
+     * <p>Function aPowerCutoffWithNoDigitIsRefusedAsInC coded on 261112, commented in full on
+     * 261112.
+     */
+    @Test
+    void aPowerCutoffWithNoDigitIsRefusedAsInC() {
+        for (String power : new String[]{"ff", "-", "", "  5", "5:6"}) {
+            assertThrows(Exception.class, () -> loadWith("power-cutoff:" + power + "\n"),
+                    "power-cutoff:" + power);
+        }
+    }
+
+    /**
+     * {@code effect-yx:} is two {@code int} fields; each reads as {@code strtol} base 0 does, and
+     * text after the digits, or a trailing blank, is ignored.
+     *
+     * <p>Function anEffectYxReadsAsStrtolDoes coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void anEffectYxReadsAsStrtolDoes() throws Exception {
+        Object[][] cases = {{"1:2", 1, 2}, {"-3:4", -3, 4}, {"+3:4", 3, 4}, {"0x10:010", 16, 8},
+                {"3abc:4", 3, 4}, {"3:4abc", 3, 4}, {"3:4  ", 3, 4}};
+        for (Object[] c : cases) {
+            ParseResult<MonsterSpellType> result = loadWith("effect:BOLT:ARROW\neffect-yx:" + c[0] + "\n");
+            Object effect = effectsOf(result.items().get(0)).getFirst();
+            assertEquals(c[1], field(effect, "y"), "effect-yx:" + c[0] + " y");
+            assertEquals(c[2], field(effect, "x"), "effect-yx:" + c[0] + " x");
+        }
+    }
+
+    /**
+     * C refuses an {@code effect-yx:} with a field that holds no digit or with a field missing. The
+     * extra {@code :3} of {@code 1:2:3} is the accepted deviation: C drops it, the lexer refuses
+     * it.
+     *
+     * <p>Function anEffectYxWithABadOrMissingFieldIsRefusedAsInC coded on 261112, commented in
+     * full on 261112.
+     */
+    @Test
+    void anEffectYxWithABadOrMissingFieldIsRefusedAsInC() {
+        for (String yx : new String[]{"ff:1", "1:ff", "1:", "1", "1:2:3"}) {
+            assertThrows(ParseCancellationException.class,
+                    () -> loadWith("effect:BOLT:ARROW\neffect-yx:" + yx + "\n"), "effect-yx:" + yx);
+        }
+    }
+
+    /**
+     * The optional radius and other fields of {@code effect:} are {@code int} fields cut at the
+     * {@code :}, so each reads as {@code strtol} base 0 does, with text after the digits ignored.
+     *
+     * <p>Function anEffectRadiusAndOtherReadAsStrtolDoes coded on 261112, commented in full on
+     * 261112.
+     */
+    @Test
+    void anEffectRadiusAndOtherReadAsStrtolDoes() throws Exception {
+        Object[][] cases = {{"5:3", 5, 3}, {"-1:+2", -1, 2}, {"0x10:010", 16, 8}, {"5abc:3", 5, 3},
+                {"5:3abc", 5, 3}, {"5:3  ", 5, 3}, {"5", 5, 0}};
+        for (Object[] c : cases) {
+            ParseResult<MonsterSpellType> result = loadWith("effect:BOLT:ARROW:" + c[0] + "\n");
+            Object effect = effectsOf(result.items().get(0)).getFirst();
+            assertEquals(c[1], field(effect, "radius"), "effect:BOLT:ARROW:" + c[0] + " radius");
+            assertEquals(c[2], field(effect, "otherParameter"), "effect:BOLT:ARROW:" + c[0] + " other");
+        }
+    }
+
+    /**
+     * C refuses a radius that holds no digit. The extra {@code :9} of {@code 5:3:9} is the accepted
+     * deviation: C drops it, the lexer refuses it.
+     *
+     * <p>Function anEffectRadiusWithNoDigitOrAnExtraFieldIsRefused coded on 261112, commented in
+     * full on 261112.
+     */
+    @Test
+    void anEffectRadiusWithNoDigitOrAnExtraFieldIsRefused() {
+        for (String tail : new String[]{"ff:3", "5:3:9"}) {
+            assertThrows(ParseCancellationException.class,
+                    () -> loadWith("effect:BOLT:ARROW:" + tail + "\n"), "effect:BOLT:ARROW:" + tail);
+        }
+    }
+
+    /**
+     * Accepted deviation (docs/Accepted_Deviations.md, "An empty ':' field on an effect line"): C
+     * cuts the effect's fields with {@code strtok(sp, ":")}, which skips an empty token, so a
+     * trailing or doubled {@code :} just leaves an optional field absent. The grammar expects a
+     * name or a number after every {@code :} and refuses each of these.
+     *
+     * <p>Function anEmptyColonFieldOnAnEffectLineIsRefusedWhereCSkipsIt coded on 261112,
+     * commented in full on 261112.
+     */
+    @Test
+    void anEmptyColonFieldOnAnEffectLineIsRefusedWhereCSkipsIt() {
+        for (String effect : new String[]{"BOLT:ARROW:5:", "BOLT:ARROW:", "BOLT:", "BOLT:ARROW:5::3",
+                "BOLT:ARROW::3", "BOLT::ARROW:5"}) {
+            assertThrows(ParseCancellationException.class, () -> loadWith("effect:" + effect + "\n"),
+                    "effect:" + effect);
+        }
+    }
+
     // ---- Where the assembler differs from C (docs/Assembler_Issues.md) ----
 
     @Test

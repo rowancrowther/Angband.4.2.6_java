@@ -11,7 +11,7 @@ INFO
         ;
 
 ALLOC
-        :   'alloc:' -> pushMode(ALLOC_MODE)
+        :   'alloc:' -> mode(ALLOC_COMMONNESS)
         ;
 
 COMBAT
@@ -71,7 +71,7 @@ DESC
         ;
 
 INTEGER
-        :   '-'? ('0'..'9')+
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
         ;
 
 COLON
@@ -108,8 +108,8 @@ COMBAT_EOL
 
 mode ALLOC_MODE;
 
-ALLOC_INT
-        :   '-'? ('0'..'9')+
+ALLOC_UINT
+        :   ('-' | '+')? ('0'..'9')+
         ;
 
 ALLOC_COLON
@@ -121,7 +121,13 @@ ALLOC_TO
         ;
 
 ALLOC_EOL
-        :   NL -> skip, popMode
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+mode ALLOC_COMMONNESS;
+
+ALLOC_INT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ -> mode(ALLOC_MODE)
         ;
 
 mode VALUE_MODE;
@@ -139,8 +145,8 @@ VALUE_DICE
         ;
 
 VALUE_INTEGER
-        :   '-'? ('0'..'9')+
-        ;   
+        :   ('-' | '+')? ('0'..'9')+
+        ;
 
 VALUE_RBRACKET
         :   ']'

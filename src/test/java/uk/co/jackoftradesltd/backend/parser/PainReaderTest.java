@@ -20,6 +20,9 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.monsters.MonsterPain;
@@ -319,5 +322,54 @@ class PainReaderTest {
         ParseResult<MonsterPain> result = load("indented-comment.txt", "  # note\n" + entry(1, SEVEN));
 
         assertEquals(1, result.items().get(0).getPainIndex());
+    }
+
+    // ---- The type: serial as C's uint reading (strtoul, base 0) -----------
+
+    /**
+     * C registers {@code type:} as a {@code uint} and {@code parser_parse} reads it with
+     * {@code strtoul} in base 0: a leading {@code 0} is octal ({@code 010} is 8, {@code 08} stops
+     * at the 8 and is 0), {@code 0x} or {@code 0X} is hexadecimal, a leading {@code +} is allowed,
+     * a {@code 0x} with no hex digit after it reads the {@code 0}, and text after the digits is
+     * ignored. The lexer hands the serial over as written and the assembler does the reading.
+     *
+     * <p>Test aSerialIsReadAsStrtoulReadsIt coded on 261112, commented in full on 261112.
+     */
+    @ParameterizedTest(name = "type:[{0}] is {1}")
+    @CsvSource({
+            "0,0", "5,5", "010,8", "08,0", "0x10,16", "0X1f,31", "0x,0", "0xg,0",
+            "+5,5", "5abc,5", "'5 ',5"
+    })
+    void aSerialIsReadAsStrtoulReadsIt(String text, int expected) throws IOException {
+        ParseResult<MonsterPain> result =
+                load("serial.txt", "type:" + text + "\n" + "message:m\n".repeat(7));
+
+        assertEquals(expected, result.items().get(0).getPainIndex());
+    }
+
+    /**
+     * {@code parser_parse} refuses a {@code uint} token that starts with {@code -} (even {@code -0})
+     * or in which {@code strtoul} finds no digit ({@code ff} has none in base 0, as no {@code 0x}
+     * precedes it). The lexer lets these through as a serial and the assembler ends the load.
+     *
+     * <p>Test aSerialStrtoulRefusesEndsTheLoad coded on 261112, commented in full on 261112.
+     */
+    @ParameterizedTest(name = "type:[{0}] ends the load")
+    @ValueSource(strings = {"-0", "-5", "ff", "abc"})
+    void aSerialStrtoulRefusesEndsTheLoad(String text) {
+        assertThrows(DataFileParseException.class,
+                () -> load("bad-serial.txt", "type:" + text + "\n" + "message:m\n".repeat(7)));
+    }
+
+    /**
+     * {@code +-5}: the sign is followed by another sign, so there is no digit for either reader.
+     * C refuses it; here the lexer does, before the assembler is reached.
+     *
+     * <p>Test aDoubleSignedSerialIsRefusedByTheLexer coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aDoubleSignedSerialIsRefusedByTheLexer() {
+        assertThrows(ParseCancellationException.class,
+                () -> load("double-sign.txt", "type:+-5\n" + "message:m\n".repeat(7)));
     }
 }

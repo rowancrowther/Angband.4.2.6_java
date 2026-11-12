@@ -611,11 +611,13 @@ class ChestTrapReaderTest {
     }
 
     @Test
-    void aHexadecimalLevelIsRefusedHereWhereCReadsBaseZero() throws IOException {
-        // parser_getint is strtol in base zero, so C reads level:0x19 as 25.
-        assertThrows(ParseCancellationException.class, () -> parse("hex-level.txt",
-                FULL_FILE.replace("level:25", "level:0x19")));
+    void aHexadecimalLevelIsReadAsInC() throws IOException {
+        // parser_getint is strtol in base zero, so C reads level:0x19 as 25. The lexer takes the
+        // prefix since the effect block's number token was widened (261112).
+        ParseResult<ChestTrap> result = parse("hex-level.txt",
+                FULL_FILE.replace("level:25", "level:0x19"));
 
+        assertEquals(25, byCode(result.items(), ChestTrapCode.EXPLODE).getLevel());
     }
 
     @Test

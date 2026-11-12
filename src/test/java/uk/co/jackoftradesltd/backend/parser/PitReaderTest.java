@@ -22,6 +22,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
@@ -872,6 +875,93 @@ class PitReaderTest {
     }
 
     /**
+     * Pin for the accepted deviation "A blank between a directive's colon and its number is a lexer
+     * error, where C skips it" in {@code docs/Accepted_Deviations.md}. {@code parser_parse} cuts the
+     * field at the next ':' and reads it with {@code strtoul} or {@code strtol}, both of which skip
+     * leading white space, so {@code room: 3} is 3 in C. None of the four number rules in
+     * {@code PitLexer} has a rule for the blank, so the load stops. It goes red when a rule is given
+     * one, which is the prompt to take the entry out.
+     *
+     * <p>Function aBlankBeforeANumberIsAHardErrorWhereCSkipsIt coded on 261112, commented in full on
+     * 261112.
+     */
+    @Test
+    void aBlankBeforeANumberIsAHardErrorWhereCSkipsIt() {
+        for (String line : List.of("room: 3", "alloc: 1:25", "alloc:1: 25", "obj-rarity: 5", "innate-freq: 5")) {
+            assertThrows(ParseCancellationException.class, () -> load("blank-before.txt", "name:Blank\n" + line), line);
+        }
+    }
+
+    /**
+     * Pin for the accepted deviation "Text after a number, or an extra ':' field, is an error, where
+     * C ignores it", first shape: text on the number itself. {@code strtoul} and {@code strtol} stop
+     * at the first character they cannot use, so {@code 5xyz} is 5 in C. The three {@code uint}
+     * rules take the whole field up to a ':' or the line end, so they agree and the value loads.
+     * {@code PIT_INTEGER} has no tail, so the {@code xyz} is left over and the load stops.
+     *
+     * <p>Function aTailOnAUintLoadsAsCDoesButOneOnInnateFreqIsAHardError coded on 261112, commented
+     * in full on 261112.
+     */
+    @Test
+    void aTailOnAUintLoadsAsCDoesButOneOnInnateFreqIsAHardError() throws Exception {
+        ParseResult<PitProfile> result = load("uint-tail.txt",
+                "name:Tail\nroom:2xyz\nalloc:3x:4y\nobj-rarity:5z");
+
+        PitProfile pit = result.items().getFirst();
+        int rarity = field(pit, "rarity");
+        int ave = field(pit, "ave");
+        int objectRarity = field(pit, "objectRarity");
+        assertEquals(PitRoomType.PIT_TYPE_NEST, field(pit, "roomType"));
+        assertEquals(3, rarity);
+        assertEquals(4, ave);
+        assertEquals(5, objectRarity);
+        assertThrows(ParseCancellationException.class,
+                () -> load("freq-tail.txt", "name:Tail\ninnate-freq:5xyz"));
+    }
+
+    /**
+     * Pin for the second shape of the same deviation: a ':' after the last field. {@code parser_parse}
+     * drops anything left on the line once the last registered field is read, so {@code room:3:x}
+     * is 3 and {@code alloc:1:2:3} is 1 and 2 in C. Here the {@code UINT} tail stops at the ':', which
+     * has no rule in that mode (after {@code alloc:}, it is read as one more field), so the load
+     * stops.
+     *
+     * <p>Function anExtraColonFieldIsAHardErrorWhereCIgnoresIt coded on 261112, commented in full on
+     * 261112.
+     */
+    @Test
+    void anExtraColonFieldIsAHardErrorWhereCIgnoresIt() {
+        for (String line : List.of("room:3:x", "alloc:1:2:3", "obj-rarity:5:x", "innate-freq:5:x")) {
+            assertThrows(ParseCancellationException.class, () -> load("extra-colon.txt", "name:Colon\n" + line), line);
+        }
+    }
+
+    /**
+     * A blank or tab after the last digit is not part of the deviation: C reads the number and the
+     * blank is dropped, and so does the lexer, through the {@code UINT} tail or, for
+     * {@code innate-freq:}, the end-of-line rule. Pinned so a change that fixes the two entries above
+     * cannot start refusing the trailing blanks that shipped files do carry.
+     *
+     * <p>Function aTrailingBlankAfterANumberLoadsAsInC coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aTrailingBlankAfterANumberLoadsAsInC() throws Exception {
+        ParseResult<PitProfile> result = load("number-blank.txt",
+                "name:Blank\nroom:2 \nalloc:3 :4\t\nobj-rarity:5 \ninnate-freq:5 ");
+
+        PitProfile pit = result.items().getFirst();
+        int rarity = field(pit, "rarity");
+        int ave = field(pit, "ave");
+        int objectRarity = field(pit, "objectRarity");
+        int freqInnate = field(pit, "freqInnate");
+        assertEquals(PitRoomType.PIT_TYPE_NEST, field(pit, "roomType"));
+        assertEquals(3, rarity);
+        assertEquals(4, ave);
+        assertEquals(5, objectRarity);
+        assertEquals(20, freqInnate);
+    }
+
+    /**
      * {@code finish_parse_pit} copes with a chain of no records ({@code pit_max} becomes 1 and
      * {@code pit_info} holds the blank slot), so an empty file loads. The grammar needs one record.
      */
@@ -944,6 +1034,84 @@ class PitReaderTest {
         assertEquals(PitRoomType.PIT_TYPE_NEST, field(result.items().getFirst(), "roomType"));
         int ave = field(result.items().getFirst(), "ave");
         assertEquals(4, ave);
+    }
+
+    // ---- The uint fields as C's strtoul reads them (base 0) ----------------
+
+    /**
+     * Load one record holding the single directive line {@code line} and return its profile.
+     */
+    private PitProfile loadOne(String line) throws Exception {
+        return new PitReader().parseWithResults(tempFile("uint.txt", "name:x\n" + line + "\n"))
+                .items().getFirst();
+    }
+
+    /**
+     * {@code room:} is stored as the enum, so the reading shows through which of 1, 2 and 3 it
+     * gives: {@code 0x2} and {@code 02} are 2, {@code +3} and {@code 3} followed by a blank are 3,
+     * {@code 2abc} is 2, {@code 010} is 8 and {@code 08} is 0, both of which are no room type.
+     *
+     * <p>Test roomIsReadAsStrtoulReadsIt coded on 261112, commented in full on 261112.
+     */
+    @ParameterizedTest(name = "room:[{0}] is {1}")
+    @CsvSource({
+            "1,PIT_TYPE_PIT", "0x1,PIT_TYPE_PIT", "2,PIT_TYPE_NEST", "0x2,PIT_TYPE_NEST",
+            "02,PIT_TYPE_NEST", "2abc,PIT_TYPE_NEST", "3,PIT_TYPE_OTHER", "+3,PIT_TYPE_OTHER",
+            "'3 ',PIT_TYPE_OTHER", "010,PIT_TYPE_NONE", "08,PIT_TYPE_NONE", "0x,PIT_TYPE_NONE"
+    })
+    void roomIsReadAsStrtoulReadsIt(String text, PitRoomType expected) throws Exception {
+        assertEquals(expected, field(loadOne("room:" + text), "roomType"));
+    }
+
+    /**
+     * The numeric directives read like {@code type:} in {@code pain.txt}: base 0, a leading
+     * {@code +} allowed, text after the digits ignored. {@code alloc:} is checked in both halves
+     * (C reads the rarity first and the level second), and {@code obj-rarity:} on its own.
+     *
+     * <p>Test theNumbersAreReadAsStrtoulReadsThem coded on 261112, commented in full on 261112.
+     */
+    @ParameterizedTest(name = "[{0}] is {1}")
+    @CsvSource({
+            "0,0", "5,5", "010,8", "08,0", "0x10,16", "0X1f,31", "0x,0", "0xg,0",
+            "+5,5", "5abc,5", "'5 ',5"
+    })
+    void theNumbersAreReadAsStrtoulReadsThem(String text, int expected) throws Exception {
+        int rarity = field(loadOne("alloc:" + text + ":7"), "rarity");
+        int depth = field(loadOne("alloc:7:" + text), "ave");
+        int objRarity = field(loadOne("obj-rarity:" + text), "objectRarity");
+
+        assertEquals(expected, rarity, "alloc: rarity");
+        assertEquals(expected, depth, "alloc: level");
+        assertEquals(expected, objRarity, "obj-rarity:");
+    }
+
+    /**
+     * A leading {@code -} (even {@code -0}) or no digit for {@code strtoul} to read ({@code ff},
+     * {@code abc}) ends the load, in {@code room:}, both halves of {@code alloc:} and
+     * {@code obj-rarity:}.
+     *
+     * <p>Test aNumberStrtoulRefusesEndsTheLoad coded on 261112, commented in full on 261112.
+     */
+    @ParameterizedTest(name = "[{0}] ends the load")
+    @ValueSource(strings = {"-0", "-5", "ff", "abc"})
+    void aNumberStrtoulRefusesEndsTheLoad(String text) {
+        for (String line : List.of("room:" + text, "alloc:" + text + ":7", "alloc:7:" + text,
+                "obj-rarity:" + text)) {
+            assertThrows(DataFileParseException.class, () -> loadOne(line), line);
+        }
+    }
+
+    /**
+     * {@code +-5} has no digit after the first sign; the lexer refuses it before the assembler is
+     * reached.
+     *
+     * <p>Test aDoubleSignedNumberIsRefusedByTheLexer coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aDoubleSignedNumberIsRefusedByTheLexer() {
+        for (String line : List.of("room:+-5", "alloc:+-5:7", "alloc:7:+-5", "obj-rarity:+-5")) {
+            assertThrows(ParseCancellationException.class, () -> loadOne(line), line);
+        }
     }
 
 }

@@ -935,14 +935,20 @@ class CurseReaderTest {
     }
 
     @Test
-    void aHexWeightIsAHardErrorHereWhereCReadsItAsSixteen() throws IOException {
-        assertHardError("hex.txt", curse("hex", "type:cloak\nweight:0x10\ndesc:x\n"));
+    void aHexWeightIsReadAsSixteenAsInC() throws IOException {
+        // strtol base 0: 0x10 is 16. The lexer takes the prefix since the effect block's number
+        // token was widened (261112).
+        ParseResult<Curse> result = load("hex.txt", curse("hex", "type:cloak\nweight:0x10\ndesc:x\n"));
+
+        assertEquals(16, result.items().get(0).getItemObject().getWeight());
     }
 
     @Test
-    void aPlusSignOnACombatNumberIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+    void aPlusSignOnACombatNumberIsReadAsInC() throws IOException {
         // strtol accepts a leading '+'.
-        assertHardError("plus.txt", curse("plus", "type:cloak\ncombat:+1:0:0\ndesc:x\n"));
+        ParseResult<Curse> result = load("plus.txt", curse("plus", "type:cloak\ncombat:+1:0:0\ndesc:x\n"));
+
+        assertEquals(1, result.items().get(0).getItemObject().getToHit());
     }
 
     @Test
@@ -969,6 +975,72 @@ class CurseReaderTest {
         ParseResult<Curse> result = load("indent.txt", curse("odd", "type:cloak\n  desc:x\n"));
 
         assertEquals("x", result.items().get(0).getDescription());
+    }
+
+    // ---- values: numbers, C's find_value_arg ----------------------------------------
+
+    @Test
+    void aZeroValueLoadsAsZeroAsInC() throws IOException {
+        // strtol reads "0", "+0" and "-0" as 0, and the next character is ']'.
+        for (String zero : new String[]{"0", "+0", "-0"}) {
+            ParseResult<Curse> result = load("zero.txt", curse("zero", "type:cloak\nvalues:STR[" + zero + "]\ndesc:x\n"));
+
+            assertEquals(0, result.items().get(0).getItemObject().getModifiers().get(ObjectModifier.OM_STR), zero);
+        }
+    }
+
+    @Test
+    void aLeadingZeroValueIsDecimalAsInC() throws IOException {
+        // find_value_arg reads with strtol in base 10, not base 0, so "010" is 10 and "08" is 8,
+        // for an object modifier and for a resistance level alike. (weight: and combat: are base 0.)
+        ParseResult<Curse> result = load("leading-zero.txt",
+                curse("padded", "type:cloak\nvalues:STR[010] | DEX[-007] | RES_FIRE[010]\ndesc:x\n"));
+
+        Curse c = result.items().get(0);
+        assertEquals(10, c.getItemObject().getModifiers().get(ObjectModifier.OM_STR));
+        assertEquals(-7, c.getItemObject().getModifiers().get(ObjectModifier.OM_DEX));
+        assertEquals(10, c.getItemObject().getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel());
+    }
+
+    @Test
+    void aHexPrefixOnAValueIsAHardErrorAsInC() throws IOException {
+        // strtol in base 10 stops at the 'x', and *tc != ']' refuses the value.
+        assertHardError("hex-value.txt", curse("hexed", "type:cloak\nvalues:STR[0x10]\ndesc:x\n"));
+    }
+
+    @Test
+    void anEmptyValueBracketIsAHardErrorHereWhereCReadsZero() throws IOException {
+        // find_value_arg: strtol finds no digit, stops on ']' and the test is only *tc != ']', so
+        // "STR[]" is STR with 0. Accepted deviation, recorded in docs/Accepted_Deviations.md.
+        assertHardError("empty-bracket.txt", curse("empty", "type:cloak\nvalues:STR[]\ndesc:x\n"));
+    }
+
+    @Test
+    void aBlankBeforeAValueIsAHardErrorHereWhereCSkipsIt() throws IOException {
+        // strtol skips leading white space, so C reads "STR[ 5]" as 5. Accepted deviation, recorded
+        // in docs/Accepted_Deviations.md.
+        assertHardError("blank-value.txt", curse("blank", "type:cloak\nvalues:STR[ 5]\ndesc:x\n"));
+    }
+
+    @Test
+    void textAfterTheClosingBracketIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+        // find_value_arg stops at the first ']' and grab_index_and_int never looks past it, so
+        // "STR[5]x" and "STR[5]]" are STR with 5 in C. Accepted deviation, recorded in
+        // docs/Accepted_Deviations.md.
+        assertHardError("after-bracket-text.txt", curse("tail", "type:cloak\nvalues:STR[5]x\ndesc:x\n"));
+        assertHardError("after-bracket-bracket.txt", curse("tail", "type:cloak\nvalues:STR[5]]\ndesc:x\n"));
+    }
+
+    @Test
+    void aValueOutsideTheIntRangeIsClampedHereWhereCRefusesIt() throws IOException {
+        // find_value_arg refuses lv <= INT_MIN and lv >= INT_MAX, so C stops the load on both of
+        // these. Java clamps 2147483648 to Integer.MAX_VALUE and keeps -2147483648. Accepted
+        // deviation, recorded in docs/Accepted_Deviations.md.
+        ParseResult<Curse> high = load("high.txt", curse("high", "type:cloak\nvalues:STR[2147483648]\ndesc:x\n"));
+        ParseResult<Curse> low = load("low.txt", curse("low", "type:cloak\nvalues:STR[-2147483648]\ndesc:x\n"));
+
+        assertEquals(Integer.MAX_VALUE, high.items().get(0).getItemObject().getModifiers().get(ObjectModifier.OM_STR));
+        assertEquals(Integer.MIN_VALUE, low.items().get(0).getItemObject().getModifiers().get(ObjectModifier.OM_STR));
     }
 
     // ---- Where the assembler differs from C ------------------------------------

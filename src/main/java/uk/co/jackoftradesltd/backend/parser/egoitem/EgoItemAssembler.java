@@ -161,8 +161,8 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
                 String oFlagName = "OF_" + flag;
                 String kFlagName = "KF_" + flag;
                 
-                boolean oFlagFound = false;
-                boolean kFlagFound = false;
+                boolean oFlagFound;
+                boolean kFlagFound;
 
                 ObjectFlag oFlag = ObjectFlag.OF_NONE;
                 ObjectKindFlag kFlag = ObjectKindFlag.KF_NONE;

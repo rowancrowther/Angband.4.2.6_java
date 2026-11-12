@@ -42,7 +42,7 @@ public class ActivationsGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		NAME=1, AIM=2, LEVEL=3, POWER=4, MSG=5, DESC=6, EFFECT=7, EFFECT_MESSAGE=8, 
-		DICE=9, TIME=10, EFFECT_YX=11, EXPR=12, COLON=13, UCASE=14, INTEGER=15, 
+		DICE=9, TIME=10, EFFECT_YX=11, EXPR=12, COLON=13, UCASE=14, EFFECT_INTEGER=15, 
 		SIMPLE_DICE_STRING=16, COMPLEX_DICE_STRING=17, COMMENT=18, INDENT=19, 
 		EOL=20, NAME_STRING=21, DESC_STRING=22, FREE_TEXT=23, DICE_SIMPLE_VALUE=24, 
 		DICE_COMPLEX_VALUE=25, EXPR_CHAR=26, EXPR_COLON=27, EXPR_UCASE=28, EXPR_OP=29, 
@@ -71,10 +71,10 @@ public class ActivationsGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "NAME", "AIM", "LEVEL", "POWER", "MSG", "DESC", "EFFECT", "EFFECT_MESSAGE", 
-			"DICE", "TIME", "EFFECT_YX", "EXPR", "COLON", "UCASE", "INTEGER", "SIMPLE_DICE_STRING", 
-			"COMPLEX_DICE_STRING", "COMMENT", "INDENT", "EOL", "NAME_STRING", "DESC_STRING", 
-			"FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", "EXPR_CHAR", 
-			"EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
+			"DICE", "TIME", "EFFECT_YX", "EXPR", "COLON", "UCASE", "EFFECT_INTEGER", 
+			"SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", "COMMENT", "INDENT", "EOL", 
+			"NAME_STRING", "DESC_STRING", "FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", 
+			"EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -187,9 +187,9 @@ public class ActivationsGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class AimContext extends ParserRuleContext {
 		public String aimBool;
-		public Token INTEGER;
+		public Token EFFECT_INTEGER;
 		public TerminalNode AIM() { return getToken(ActivationsGrammar.AIM, 0); }
-		public TerminalNode INTEGER() { return getToken(ActivationsGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(ActivationsGrammar.EFFECT_INTEGER, 0); }
 		public AimContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -218,8 +218,8 @@ public class ActivationsGrammar extends Parser {
 			setState(36);
 			match(AIM);
 			setState(37);
-			((AimContext)_localctx).INTEGER = match(INTEGER);
-			 ((AimContext)_localctx).aimBool =  ((AimContext)_localctx).INTEGER.getText(); 
+			((AimContext)_localctx).EFFECT_INTEGER = match(EFFECT_INTEGER);
+			 ((AimContext)_localctx).aimBool =  ((AimContext)_localctx).EFFECT_INTEGER.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -236,9 +236,9 @@ public class ActivationsGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class LevelContext extends ParserRuleContext {
 		public String levelInt;
-		public Token INTEGER;
+		public Token EFFECT_INTEGER;
 		public TerminalNode LEVEL() { return getToken(ActivationsGrammar.LEVEL, 0); }
-		public TerminalNode INTEGER() { return getToken(ActivationsGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(ActivationsGrammar.EFFECT_INTEGER, 0); }
 		public LevelContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -267,8 +267,8 @@ public class ActivationsGrammar extends Parser {
 			setState(40);
 			match(LEVEL);
 			setState(41);
-			((LevelContext)_localctx).INTEGER = match(INTEGER);
-			 ((LevelContext)_localctx).levelInt =  ((LevelContext)_localctx).INTEGER.getText(); 
+			((LevelContext)_localctx).EFFECT_INTEGER = match(EFFECT_INTEGER);
+			 ((LevelContext)_localctx).levelInt =  ((LevelContext)_localctx).EFFECT_INTEGER.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -285,9 +285,9 @@ public class ActivationsGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class PowerContext extends ParserRuleContext {
 		public String powerInt;
-		public Token INTEGER;
+		public Token EFFECT_INTEGER;
 		public TerminalNode POWER() { return getToken(ActivationsGrammar.POWER, 0); }
-		public TerminalNode INTEGER() { return getToken(ActivationsGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(ActivationsGrammar.EFFECT_INTEGER, 0); }
 		public PowerContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -316,8 +316,8 @@ public class ActivationsGrammar extends Parser {
 			setState(44);
 			match(POWER);
 			setState(45);
-			((PowerContext)_localctx).INTEGER = match(INTEGER);
-			 ((PowerContext)_localctx).powerInt =  ((PowerContext)_localctx).INTEGER.getText(); 
+			((PowerContext)_localctx).EFFECT_INTEGER = match(EFFECT_INTEGER);
+			 ((PowerContext)_localctx).powerInt =  ((PowerContext)_localctx).EFFECT_INTEGER.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -776,9 +776,9 @@ public class ActivationsGrammar extends Parser {
 		public TerminalNode COLON(int i) {
 			return getToken(ActivationsGrammar.COLON, i);
 		}
-		public List<TerminalNode> INTEGER() { return getTokens(ActivationsGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(ActivationsGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(ActivationsGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(ActivationsGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -838,7 +838,7 @@ public class ActivationsGrammar extends Parser {
 					setState(105);
 					match(COLON);
 					setState(106);
-					((EffectContext)_localctx).rad = match(INTEGER);
+					((EffectContext)_localctx).rad = match(EFFECT_INTEGER);
 
 					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
 					            
@@ -850,7 +850,7 @@ public class ActivationsGrammar extends Parser {
 						setState(108);
 						match(COLON);
 						setState(109);
-						((EffectContext)_localctx).oth = match(INTEGER);
+						((EffectContext)_localctx).oth = match(EFFECT_INTEGER);
 
 						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
 						            
@@ -884,9 +884,9 @@ public class ActivationsGrammar extends Parser {
 		public Token xVal;
 		public TerminalNode EFFECT_YX() { return getToken(ActivationsGrammar.EFFECT_YX, 0); }
 		public TerminalNode COLON() { return getToken(ActivationsGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(ActivationsGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(ActivationsGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(ActivationsGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(ActivationsGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectYXContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -916,11 +916,11 @@ public class ActivationsGrammar extends Parser {
 			setState(117);
 			match(EFFECT_YX);
 			setState(118);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			((EffectYXContext)_localctx).yVal = match(EFFECT_INTEGER);
 			setState(119);
 			match(COLON);
 			setState(120);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
+			((EffectYXContext)_localctx).xVal = match(EFFECT_INTEGER);
 
 			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
 			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();

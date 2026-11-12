@@ -54,7 +54,7 @@ class ObjectUtilsArtifactMarkersTest {
      */
     private static Artifact artifact() {
         return new Artifact("Test Blade", "It gleams.", TValue.TV_SWORD, "long sword",
-                5, 6, 7, 8, "3d5", 120, 4500,
+                5, 6, 7, 8, 3, 5, 120, 4500,
                 new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 40, 11, 12, 13,

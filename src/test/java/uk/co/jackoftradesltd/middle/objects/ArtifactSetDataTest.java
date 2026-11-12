@@ -78,7 +78,7 @@ class ArtifactSetDataTest {
      */
     private static Artifact artifact(String name) {
         return new Artifact(name, "", TValue.TV_SWORD, "long sword",
-                0, 0, 0, 0, "1d1", 0, 0,
+                0, 0, 0, 0, 1, 1, 0, 0,
                 new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 0, 0, 0, 0, null, "", new Random(0, 1, 1, 1, false));

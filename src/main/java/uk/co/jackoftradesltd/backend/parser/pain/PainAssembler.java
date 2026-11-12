@@ -48,8 +48,11 @@ import java.util.List;
  * skipped. The ones C reports are a serial that is not a number (a leading {@code -}, which C
  * refuses for a {@code uint}, even on {@code -0}) and an eighth {@code message:} line
  * ({@code PARSE_ERROR_TOO_MANY_ENTRIES}). The serial is read as {@code strtoul} in base 0 reads it,
- * so {@code 010} is 8, {@code 08} and {@code 0089} are 0, as the digits stop at the first 8 or 9.
- * Fewer than seven messages is not an error in C, which leaves the missing slots {@code NULL}, and
+ * so {@code 010} is 8, {@code 08} and {@code 0089} are 0, as the digits stop at the first 8 or 9,
+ * {@code 0x10} is 16, a leading {@code +} is allowed, and anything after the digits is ignored
+ * ({@code 5abc} and {@code 5 } are 5). {@code PainLexer} passes the serial over as written, tail
+ * included, so this is where the reading happens. Text with no digit in it ({@code ff},
+ * {@code abc}, {@code +-5}) is refused, as {@code strtoul} finds nothing to read. Fewer than seven messages is not an error in C, which leaves the missing slots {@code NULL}, and
  * is not one here: the list is padded with {@code null} to seven, and a {@code type:} with no
  * messages at all gives seven. The serial is not checked for being unique or in order, as in C.
  *
@@ -61,7 +64,8 @@ import java.util.List;
  * base 0 and holds only real records, where C's {@code pain_messages} has a blank record in slot
  * 0. Nothing in this class builds that blank record.
  *
- * <p>Class PainAssembler coded before 260915, commented in full on 261028.
+ * <p>Class PainAssembler coded before 260915, commented in full on 261028, serial reading described
+ * on 261112 for the wider {@code UINT} token in {@code PainLexer}.
  *
  * @author Rowan Crowther
  */
@@ -79,7 +83,8 @@ public class PainAssembler implements Assembler<PainParseRecord, List<MonsterPai
      * serial number off the front of each message list. For each record, in the order C reads the
      * lines: a serial starting with {@code -} is refused ({@link ParseUtils#minusFound}, C's
      * {@code *tok == '-'} test in {@code parser_parse}), then the serial is read as an {@code int}
-     * ({@code parse_pain_type}'s {@code parser_getuint}), then a list of more than seven messages is
+     * ({@code parse_pain_type}'s {@code parser_getuint}) by {@link ParseUtils#parseIntString}, which
+     * takes the {@code 0x} and octal forms, a leading {@code +} and a trailing tail, then a list of more than seven messages is
      * refused ({@code parse_pain_message}'s {@code PARSE_ERROR_TOO_MANY_ENTRIES}), and a list of
      * fewer than seven is padded with {@code null} up to seven, the slots C leaves {@code NULL}.
      * Message text is passed on as written.
@@ -90,7 +95,7 @@ public class PainAssembler implements Assembler<PainParseRecord, List<MonsterPai
      * <p>Every failure is fatal and the rest of the file is not read.
      *
      * <p>Function assemble coded before 260915, commented in full on 261028, updated on 261105 for
-     * the removal of the soft-error path.
+     * the removal of the soft-error path, serial forms listed on 261112.
      *
      * @param records  the raw pain records from the grammar, each {@code [typeNum, msg1..msgN]}
      * @param filename the file being read, for the messages

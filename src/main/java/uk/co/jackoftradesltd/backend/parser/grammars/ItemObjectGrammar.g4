@@ -44,17 +44,17 @@ graphics
 
 level
         returns[String levelStr]
-        :   LEVEL INTEGER { $levelStr = $INTEGER.getText(); }
+        :   LEVEL EFFECT_INTEGER { $levelStr = $EFFECT_INTEGER.getText(); }
         ;
 
 weight
         returns[String weightStr]
-        :   WEIGHT INTEGER { $weightStr = $INTEGER.getText(); }
+        :   WEIGHT EFFECT_INTEGER { $weightStr = $EFFECT_INTEGER.getText(); }
         ;
 
 cost
         returns[String costStr]
-        :   COST INTEGER { $costStr = $INTEGER.getText(); }
+        :   COST EFFECT_INTEGER { $costStr = $EFFECT_INTEGER.getText(); }
         ;
 
 attack
@@ -98,7 +98,7 @@ pile
 
 power
         returns[String powerInt]
-        :   POWER INTEGER { $powerInt = $INTEGER.getText(); }
+        :   POWER EFFECT_INTEGER { $powerInt = $EFFECT_INTEGER.getText(); }
         ;
 
 msg

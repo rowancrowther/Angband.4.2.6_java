@@ -21,18 +21,19 @@ name
                           $line = $start.getLine(); }
         ;
 
-// "room:<digit>" - the room-type digit, kept as text.
+// "room:<n>" - the room-type number (1, 2 or 3), kept as text.
 room
         returns[String roomType]
-        :   ROOM PIT_INTEGER { $roomType = $PIT_INTEGER.getText(); }
+        :   ROOM UINT { $roomType = $UINT.getText(); }
         ;
 
 // "alloc:<rarity>:<level>" - both fields returned as text (ALLOC_COLON is the
-// lexer's mid-value separator, distinct from the keyword-ending ':').
+// lexer's mid-value separator, distinct from the keyword-ending ':'). The
+// level becomes the profile's average depth; C reads rarity first, then level.
 alloc
         returns[String rarity, String averageLevel]
-        :   ALLOC r=ALLOC_INTEGER
-            ALLOC_COLON l=ALLOC_INTEGER
+        :   ALLOC r=ALLOC_UINT
+            ALLOC_COLON l=ALLOC_UINT
             { $rarity = $r.getText();
               $averageLevel = $l.getText(); }
         ;
@@ -40,7 +41,7 @@ alloc
 // "obj-rarity:<n>".
 objRarity
         returns[String objectRarity]
-        :   OBJ_RARITY PIT_INTEGER { $objectRarity = $PIT_INTEGER.getText(); }
+        :   OBJ_RARITY OBJ_RARITY_UINT { $objectRarity = $OBJ_RARITY_UINT.getText(); }
         ;
 
 // "color:<code>" - the rest of the line: a colour-code character or a colour name,
@@ -113,8 +114,12 @@ monBan
 
 // One whole pit record: a name: line followed by its directives in any order.
 // @init seeds every field to an empty/neutral default so a directive the record
-// omits still has a well-formed value; the alternatives below overwrite scalars
-// and append to the lists (so repeated color:/mon-base:/spell-req: lines merge).
+// omits still has a well-formed value; the alternatives below overwrite the
+// scalars (room:, alloc:, obj-rarity:, innate-freq: - a repeated line keeps the
+// last, where C reads and validates both) and append to the lists (so repeated
+// color:, mon-base:, mon-ban:, flags-req:, flags-ban:, spell-req: and spell-ban:
+// lines all merge, in file order; PitAssembler reverses the colours, bases and
+// banned monsters to match C's head-pushed chains).
 // @after packs the accumulated values into the PitParseRecord in field order.
 pitRecord
         returns[PitParseRecord pit]

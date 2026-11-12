@@ -175,11 +175,17 @@ COLOUR  :   'color:' -> pushMode(FREE_TEXT)
 /*
  * @author Rowan Crowther
  *
- * A bare (optionally signed) integer
+ * The text of a uint field, read as C's strtoul with base 0 reads it: an optional
+ * '-' or '+', an optional '0x' prefix, one or more hex digits, and then anything up to
+ * a ':' or the end of the line. The token only cuts the field out; it does not check it.
+ * ProjectionAssembler refuses a leading '-' and reads the digits through
+ * ParseUtils.parseIntString, which stops at the first character the base cannot use, so
+ * 'abc' is refused (no digit), 'ab' likewise, and '1abc' is 1. A blank before the number
+ * and a ':' after it have no rule and stop the load; both are accepted deviations from C.
  * cf ProjectionGrammar.g4's 'numerator', 'divisor',
  * 'damageCap', 'obvious' and 'wake' rules
  */
-INTEGER :   '-'? ('0'..'9')+
+INTEGER :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
         ;
 
 /*

@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
+import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
@@ -139,15 +140,13 @@ public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, L
             } else {
                 wideGlyph = record.glyph().codePointAt(0);
             }
-            int type;
-            try {
-                type = Integer.parseInt(record.pain());
-            } catch (NumberFormatException e) {
+            if (ParseUtils.minusFound(record.pain())) {
                 String msg = "Monster base starting at line: " + line +" of file: " + filename + " has " +
-                        "an illegal pain value: " + record.pain();
+                        "an illegal negative pain value: " + record.pain();
                 logger.fatal(msg);
                 throw new DataFileParseException(msg);
             }
+            int type = ParseUtils.parseIntString("Monster base", record.pain(), line, filename, "pain");
             MonsterPain pain = MonsterRegistry.lookupMonsterPain(type);
             if (pain == null) {
                 String msg = "Monster base starting at line: " + line +" of file: " + filename + " has " +

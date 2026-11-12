@@ -256,7 +256,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                     String elemFlag = "ELEM_" + key.substring(4);
                     try {
                         ElementEnum element = ElementEnum.valueOf(elemFlag);
-                        int val = ParseUtils.parseIntString("Curse", value, line, filename, "integer");
+                        int val = ParseUtils.parseIntString("Curse", value, line, filename, "integer", ParseUtils.Radix.DECIMAL);
                         ElementInfo info = elInfo.computeIfAbsent(element, k -> new ElementInfo());
                         info.setResLevel(val);
                     } catch (IllegalArgumentException e) {
@@ -268,7 +268,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                 } else {
                     try {
                         ObjectModifier om = ObjectModifier.valueOf("OM_" + key);
-                        int val = ParseUtils.parseIntString("Curse", value, line, filename, "integer");
+                        int val = ParseUtils.parseIntString("Curse", value, line, filename, "integer", ParseUtils.Radix.DECIMAL);
                         modifiers.put(om, val);
                     } catch (IllegalArgumentException e) {
                         String msg = "Curse starting at line: " + line + " of file: " + filename + " has " +

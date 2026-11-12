@@ -39,9 +39,9 @@ options { tokenVocab = PainLexer; }
 // for each new entry (not validated by this grammar).
 type
         returns[String typeNum, int line]
-        :   TYPE INTEGER {
+        :   TYPE UINT {
                 $line = $start.getLine();
-                $typeNum = $INTEGER.getText();
+                $typeNum = $UINT.getText();
             }
         ;
 

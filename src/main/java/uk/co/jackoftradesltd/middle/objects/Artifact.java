@@ -39,7 +39,8 @@ import java.util.*;
  * {@code aup_info}, and the Java artifact owns its {@link ArtifactUpkeep} directly, so there is
  * no second array to index. {@code next} was the list link the parser threaded through the
  * records while loading; the registry holds the artifacts now. C's {@code dd} and {@code ds}
- * are held together as the single {@link #getDiceString() dice string}.
+ * are ported as they stand, two separate {@code int}s read through {@link #getDamageDice()} and
+ * {@link #getDamageSides()}.
  *
  * <p>When C builds an object it reads the shared registry entry through
  * {@code copy_artifact_data} in {@code obj-make.c}, and does not copy the artifact.
@@ -47,7 +48,8 @@ import java.util.*;
  * {@code design_artifact} uses to save a random-artifact design and roll it back.
  *
  * <p>Class Artifact coded before 260827, commented in full on 261008, copy noted as the port of
- * {@code copy_artifact} on 261023.
+ * {@code copy_artifact} on 261023, dice-string reference corrected to the two damage getters on
+ * 261112.
  *
  * @author Rowan Crowther
  */
@@ -106,16 +108,23 @@ public class Artifact {
      */
     private int ac;
 
-    // private int damageDice;
-    // private int damageSides;
     /**
-     * The damage dice as the single expression the data file gives, such as {@code 3d5}. C splits
-     * this into {@code artifact->dd} (dice) and {@code artifact->ds} (sides); the port keeps the
-     * unsplit text.
+     * Number of base damage dice — C's {@code artifact->dd}, the "base damage dice" that the
+     * {@code attack:} line's dice string supplies. Together with {@link #damageSides} it gives the
+     * artifact's base damage: {@code attack:3d5:0:0} gives 3 dice of 5 sides. C copies both onto
+     * the object when it builds one.
      *
-     * <p>Field diceString coded before 260827, commented in full on 261008.
+     * <p>Field damageDice coded before 261112, commented in full on 261112.
      */
-    private String diceString;
+    private int damageDice;
+
+    /**
+     * Sides on each base damage die — C's {@code artifact->ds}, the "base damage sides" that the
+     * {@code attack:} line's dice string supplies. Read with {@link #damageDice}.
+     *
+     * <p>Field damageSides coded before 261112, commented in full on 261112.
+     */
+    private int damageSides;
 
     /**
      * Weight in tenths of a pound — C's {@code artifact->weight}.
@@ -262,18 +271,20 @@ public class Artifact {
      * across.
      *
      * <p>Constructor Artifact coded before 260827, upkeep attached on 260902, commented in full on
-     * 261008.
+     * 261008, parameter list corrected to the damage dice and the difficulty level on 261112.
      *
      * @param name              display name
-     * @param text              flavour text shown on examination
+     * @param text              flavour text shown on examination, or {@code null} if the data file
+     *                          gave none
      * @param tValue            the object type this artifact is built on
      * @param sValue            the sub-type within that object type, as the data file spells it
      * @param toHit             to-hit bonus
      * @param toDam             to-damage bonus
      * @param toAC              to-armour bonus
      * @param ac                base armour class
-     * @param diceString        damage dice, as a dice expression
-     * @param weight            weight in tenth-pounds
+     * @param baseDice          number of base damage dice, C's {@code dd}
+     * @param baseSides         sides on each base damage die, C's {@code ds}
+     * @param weight            weight in tenths of a pound
      * @param cost              base cost in gold
      * @param flags             object flags; stored, not copied
      * @param modifiers         per-modifier values; stored, not copied
@@ -281,16 +292,18 @@ public class Artifact {
      * @param brands            brands carried; stored, not copied
      * @param slays             slays carried; stored, not copied
      * @param curses            curses carried, with their instance data; stored, not copied
-     * @param level             native depth
-     * @param allocProb         allocation probability within the depth band
-     * @param allocMin          shallowest depth this artifact may be generated at
-     * @param allocMax          deepest depth this artifact may be generated at
+     * @param level             difficulty level for activation, not a generation depth
+     * @param allocProb         chance, out of 100, that the artifact is generated once it is
+     *                          otherwise eligible
+     * @param allocMin          loose minimum depth: shallower is possible, after an out-of-depth
+     *                          roll
+     * @param allocMax          strict maximum depth the artifact may be generated at
      * @param activation        the activation this artifact grants, or {@code null}
-     * @param activationMessage message shown when the activation is used
+     * @param activationMessage message shown when the activation is used, or {@code null}
      * @param time              recharge time for the activation, as a dice expression
      */
     public Artifact(String name, String text, TValue tValue, String sValue,
-                    int toHit, int toDam, int toAC, int ac, String diceString,
+                    int toHit, int toDam, int toAC, int ac, int baseDice, int baseSides,
                     int weight, int cost, Flag<ObjectFlag> flags,
                     Map<ObjectModifier, Integer> modifiers,
                     Map<ElementEnum, ElementInfo> elInfo, Set<Brand> brands,
@@ -305,7 +318,8 @@ public class Artifact {
         this.toDam = toDam;
         this.toAC = toAC;
         this.ac = ac;
-        this.diceString = diceString;
+        this.damageDice = baseDice;
+        this.damageSides = baseSides;
         this.weight = weight;
         this.cost = cost;
         this.flags = flags;
@@ -414,15 +428,25 @@ public class Artifact {
     }
 
     /**
-     * Reads the damage dice as the single expression the data file gives; C holds it split as
-     * {@code artifact->dd} and {@code artifact->ds}.
+     * Reads the number of base damage dice, C's {@code artifact->dd}.
      *
-     * <p>Function getDiceString coded before 260827, commented in full on 261008.
+     * <p>Function getDamageDice coded before 261112, commented in full on 261112.
      *
-     * @return the unparsed damage dice string for the artifact's weapon
+     * @return the number of base damage dice
      */
-    public String getDiceString() {
-        return diceString;
+    public int getDamageDice() {
+        return damageDice;
+    }
+
+    /**
+     * Reads the sides on each base damage die, C's {@code artifact->ds}.
+     *
+     * <p>Function getDamageSides coded before 261112, commented in full on 261112.
+     *
+     * @return the number of sides on each base damage die
+     */
+    public int getDamageSides() {
+        return damageSides;
     }
 
     /**
@@ -670,7 +694,8 @@ public class Artifact {
         int newtoDam = toDam;
         int newtoAC = toAC;
         int newac = ac;
-        String newdiceString = diceString;
+        int newdd = this.damageDice;
+        int newds = this.damageSides;
         int newweight = weight;
         int newcost = cost;
         Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
@@ -714,13 +739,11 @@ public class Artifact {
         if (time != null)
             newTime = time.copy();
 
-        Artifact copyArtifact = new Artifact(newName, newText, newtValue, newsValue, newtoHit,
-                newtoDam, newtoAC, newac, newdiceString, newweight, newcost,
+        return new Artifact(newName, newText, newtValue, newsValue, newtoHit,
+                newtoDam, newtoAC, newac, newdd, newds, newweight, newcost,
                 oFlags, newModifiers, newElInfo, newBrands, newSlays,
                 newCurses, newLevel, newAllocProb, newAllocMin, newAllocMax,
                 newActivation, newActivationMessage, newTime);
-        
-        return copyArtifact;
     }
     
     /**

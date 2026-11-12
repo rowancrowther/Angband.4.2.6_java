@@ -444,25 +444,35 @@ class MonsterBaseReaderTest {
 
     }
 
+    /**
+     * C reads {@code pain:} with {@code strtoul(tok, &z, 0)}, base 0, so {@code 010} is octal 8 and picks
+     * the set with serial 8, not the one with serial 10.
+     *
+     * <p>Function aLeadingZeroPainIsReadAsOctalAsInC coded on 261112, commented in full on 261112
+     * (renamed and flipped from aLeadingZeroPainIsReadAsDecimalHereWhereCReadsOctal on 261112).
+     */
     @Test
-    void aLeadingZeroPainIsReadAsDecimalHereWhereCReadsOctal() throws Exception {
-        // "pain uint pain" is read with strtoul(tok, &z, 0): base 0, so "010" is octal 8 in C. The
-        // lexer's INTEGER is decimal, so the assembler reads 10 and picks the zombie set.
+    void aLeadingZeroPainIsReadAsOctalAsInC() throws Exception {
         String body = entry("orc", 'o', 1, "Orc").replace("pain:1", "pain:010");
         ParseResult<MonsterBase> result = load("octal.txt", body);
 
-        assertEquals(10, painIndexOf(result.items().get(0)));
+        assertEquals(8, painIndexOf(result.items().get(0)));
     }
 
+    /**
+     * C refuses a {@code uint} token that starts with {@code -} as {@code PARSE_ERROR_NOT_NUMBER}. The
+     * assembler refuses it first, by name, before any lookup of the set.
+     *
+     * <p>Function aNegativePainIsAFatalLoadErrorAsInC coded on 261112, commented in full on 261112
+     * (renamed and flipped from aNegativePainIsAFatalLoadErrorHereWhereCRejectsItAsNotANumber on 261112).
+     */
     @Test
-    void aNegativePainIsAFatalLoadErrorHereWhereCRejectsItAsNotANumber() {
-        // strtoul path in parser_parse: a "uint" token starting with '-' is PARSE_ERROR_NOT_NUMBER.
-        // INTEGER accepts the minus, so the assembler throws because no pain set has that serial.
+    void aNegativePainIsAFatalLoadErrorAsInC() {
         String body = entry("orc", 'o', 1, "Orc").replace("pain:1", "pain:-1");
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> load("neg-pain.txt", body));
 
-        assertTrue(e.getMessage().contains("illegal pain value: -1"), e::getMessage);
+        assertTrue(e.getMessage().contains("illegal negative pain value: -1"), e::getMessage);
     }
 
     @Test

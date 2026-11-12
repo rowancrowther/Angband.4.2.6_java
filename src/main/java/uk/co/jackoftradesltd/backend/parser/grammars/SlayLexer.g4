@@ -18,13 +18,14 @@
 // Lexer for lib/gamedata/slay.txt - the catalogue of slays that weapons and
 // other objects can carry (each identified by a code referenced from
 // artifact.txt, ego_item.txt, object.txt and player_timed.txt). Cf. the C
-// directive table in init_parse_slay() (src/obj-init.c:786-798) and
-// struct file_parser slay_parser (src/obj-init.c:851).
+// directive table in init_parse_slay() and struct file_parser slay_parser,
+// both in obj-init.c.
 //
 // A record is a set of "keyword:value" directives. This lexer only tokenizes;
-// all interpretation - resolving the race flag / monster base, and enforcing
-// that a slay names exactly one of race-flag: or base: - is deferred to
-// SlayAssembler, keeping the grammar decoupled from the domain API.
+// all interpretation - resolving the race flag / monster base, and refusing a
+// slay that names both race-flag: and base: (naming neither is allowed, as in
+// C) - is deferred to SlayAssembler, keeping the grammar decoupled from the
+// domain API.
 //
 // The free-text values (name, base, verbs) and the race-flag value are read in
 // dedicated sub-modes so their contents can never collide with the default-mode
@@ -90,8 +91,8 @@ RANGE_VERB
 // A literal integer for the numeric directives. Sign-capable by shared suite
 // convention, though slay values are always non-negative (C reads them as
 // uint); range is validated in the assembler.
-INTEGER
-        :   '-'? ('0'..'9')+
+UINT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
         ;
 
 // Value mode for race-flag: a single upper-case flag, then pop back so the

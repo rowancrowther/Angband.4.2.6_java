@@ -29,7 +29,7 @@ info
 
 alloc
         returns[String common, String lower, String upper]
-        :   ALLOC c=ALLOC_INT ALLOC_COLON l=ALLOC_INT ALLOC_TO u=ALLOC_INT {
+        :   ALLOC c=ALLOC_INT ALLOC_COLON l=ALLOC_UINT ALLOC_TO u=ALLOC_UINT {
                 $common = $c.getText();
                 $lower  = $l.getText();
                 $upper  = $u.getText();
@@ -90,10 +90,10 @@ flagsOff
 values
         returns[Map<String, String> valueMap]
         :   { $valueMap = new HashMap<>(); }
-            VALUES l1=VALUE_FLAG VALUE_LBRACKET v1=VALUE_DICE VALUE_RBRACKET {
+            VALUES l1=VALUE_FLAG VALUE_LBRACKET v1=(VALUE_DICE | VALUE_INTEGER) VALUE_RBRACKET {
                 $valueMap.put($l1.getText(), $v1.getText());
             }
-            (VALUE_OR l2=VALUE_FLAG VALUE_LBRACKET v2=VALUE_DICE VALUE_RBRACKET {
+            (VALUE_OR l2=VALUE_FLAG VALUE_LBRACKET v2=(VALUE_DICE | VALUE_INTEGER) VALUE_RBRACKET {
                 $valueMap.put($l2.getText(), $v2.getText());
             })*
         ;
@@ -101,10 +101,10 @@ values
 minValues
         returns[Map<String, String> valueMap]
         :   { $valueMap = new HashMap<>(); }
-            MIN_VALUES l1=VALUE_FLAG VALUE_LBRACKET v1=VALUE_DICE VALUE_RBRACKET {
+            MIN_VALUES l1=VALUE_FLAG VALUE_LBRACKET v1=(VALUE_DICE | VALUE_INTEGER) VALUE_RBRACKET {
                 $valueMap.put($l1.getText(), $v1.getText());
             }
-            (VALUE_OR l2=VALUE_FLAG VALUE_LBRACKET v2=VALUE_DICE VALUE_RBRACKET {
+            (VALUE_OR l2=VALUE_FLAG VALUE_LBRACKET v2=(VALUE_DICE | VALUE_INTEGER) VALUE_RBRACKET {
                 $valueMap.put($l2.getText(), $v2.getText());
             })*
         ;

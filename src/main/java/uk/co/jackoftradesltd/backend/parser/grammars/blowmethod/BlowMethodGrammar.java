@@ -40,8 +40,8 @@ public class BlowMethodGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		NAME=1, CUT=2, STUN=3, MISS=4, PHYS=5, MSG=6, ACT=7, DESC=8, INTEGER=9, 
-		COMMENT=10, INDENT=11, EOL=12, STRING=13, FREE_TEXT_EOL=14;
+		NAME=1, CUT=2, STUN=3, MISS=4, PHYS=5, MSG=6, ACT=7, DESC=8, UINT=9, COMMENT=10, 
+		INDENT=11, EOL=12, STRING=13, FREE_TEXT_EOL=14;
 	public static final int
 		RULE_name = 0, RULE_cut = 1, RULE_stun = 2, RULE_miss = 3, RULE_phys = 4, 
 		RULE_msg = 5, RULE_act = 6, RULE_desc = 7, RULE_blow = 8, RULE_file = 9;
@@ -62,7 +62,7 @@ public class BlowMethodGrammar extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "NAME", "CUT", "STUN", "MISS", "PHYS", "MSG", "ACT", "DESC", "INTEGER", 
+			null, "NAME", "CUT", "STUN", "MISS", "PHYS", "MSG", "ACT", "DESC", "UINT", 
 			"COMMENT", "INDENT", "EOL", "STRING", "FREE_TEXT_EOL"
 		};
 	}
@@ -170,9 +170,9 @@ public class BlowMethodGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class CutContext extends ParserRuleContext {
 		public String cutVal;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode CUT() { return getToken(BlowMethodGrammar.CUT, 0); }
-		public TerminalNode INTEGER() { return getToken(BlowMethodGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(BlowMethodGrammar.UINT, 0); }
 		public CutContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -201,8 +201,8 @@ public class BlowMethodGrammar extends Parser {
 			setState(24);
 			match(CUT);
 			setState(25);
-			((CutContext)_localctx).INTEGER = match(INTEGER);
-			 ((CutContext)_localctx).cutVal =  ((CutContext)_localctx).INTEGER.getText(); 
+			((CutContext)_localctx).UINT = match(UINT);
+			 ((CutContext)_localctx).cutVal =  ((CutContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -219,9 +219,9 @@ public class BlowMethodGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class StunContext extends ParserRuleContext {
 		public String stunVal;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode STUN() { return getToken(BlowMethodGrammar.STUN, 0); }
-		public TerminalNode INTEGER() { return getToken(BlowMethodGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(BlowMethodGrammar.UINT, 0); }
 		public StunContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -250,8 +250,8 @@ public class BlowMethodGrammar extends Parser {
 			setState(28);
 			match(STUN);
 			setState(29);
-			((StunContext)_localctx).INTEGER = match(INTEGER);
-			 ((StunContext)_localctx).stunVal =  ((StunContext)_localctx).INTEGER.getText(); 
+			((StunContext)_localctx).UINT = match(UINT);
+			 ((StunContext)_localctx).stunVal =  ((StunContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -268,9 +268,9 @@ public class BlowMethodGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class MissContext extends ParserRuleContext {
 		public String missVal;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode MISS() { return getToken(BlowMethodGrammar.MISS, 0); }
-		public TerminalNode INTEGER() { return getToken(BlowMethodGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(BlowMethodGrammar.UINT, 0); }
 		public MissContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -299,8 +299,8 @@ public class BlowMethodGrammar extends Parser {
 			setState(32);
 			match(MISS);
 			setState(33);
-			((MissContext)_localctx).INTEGER = match(INTEGER);
-			 ((MissContext)_localctx).missVal =  ((MissContext)_localctx).INTEGER.getText(); 
+			((MissContext)_localctx).UINT = match(UINT);
+			 ((MissContext)_localctx).missVal =  ((MissContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -317,9 +317,9 @@ public class BlowMethodGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class PhysContext extends ParserRuleContext {
 		public String physVal;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode PHYS() { return getToken(BlowMethodGrammar.PHYS, 0); }
-		public TerminalNode INTEGER() { return getToken(BlowMethodGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(BlowMethodGrammar.UINT, 0); }
 		public PhysContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -348,8 +348,8 @@ public class BlowMethodGrammar extends Parser {
 			setState(36);
 			match(PHYS);
 			setState(37);
-			((PhysContext)_localctx).INTEGER = match(INTEGER);
-			 ((PhysContext)_localctx).physVal =  ((PhysContext)_localctx).INTEGER.getText(); 
+			((PhysContext)_localctx).UINT = match(UINT);
+			 ((PhysContext)_localctx).physVal =  ((PhysContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {

@@ -30,7 +30,7 @@ name
 
 combat
         returns[String toh, String tod, String toa]
-        :   COMBAT h=INTEGER COLON d=INTEGER COLON a=INTEGER {
+        :   COMBAT h=EFFECT_INTEGER COLON d=EFFECT_INTEGER COLON a=EFFECT_INTEGER {
                 $toh = $h.getText();
                 $tod = $d.getText();
                 $toa = $a.getText();
@@ -39,42 +39,42 @@ combat
 
 skillDisarmP
         returns[String skillVal]
-        :   SKILL_D_P INTEGER { $skillVal = $INTEGER.getText(); }
+        :   SKILL_D_P EFFECT_INTEGER { $skillVal = $EFFECT_INTEGER.getText(); }
         ;
 
 skillDisarmM
         returns[String skillVal]
-        :   SKILL_D_M INTEGER { $skillVal = $INTEGER.getText(); }
+        :   SKILL_D_M EFFECT_INTEGER { $skillVal = $EFFECT_INTEGER.getText(); }
         ;
 
 skillSave
         returns[String skillVal]
-        :   SKILL_SAVE INTEGER { $skillVal = $INTEGER.getText(); }
+        :   SKILL_SAVE EFFECT_INTEGER { $skillVal = $EFFECT_INTEGER.getText(); }
         ;
 
 skillStealth
         returns[String skillVal]
-        :   SKILL_STEALTH INTEGER { $skillVal = $INTEGER.getText(); }
+        :   SKILL_STEALTH EFFECT_INTEGER { $skillVal = $EFFECT_INTEGER.getText(); }
         ;
 
 skillSearch
         returns[String skillVal]
-        :   SKILL_SEARCH INTEGER { $skillVal = $INTEGER.getText(); }
+        :   SKILL_SEARCH EFFECT_INTEGER { $skillVal = $EFFECT_INTEGER.getText(); }
         ;
 
 skillMelee
         returns[String skillVal]
-        :   SKILL_MELEE INTEGER { $skillVal = $INTEGER.getText(); }
+        :   SKILL_MELEE EFFECT_INTEGER { $skillVal = $EFFECT_INTEGER.getText(); }
         ;
 
 skillThrow
         returns[String skillVal]
-        :   SKILL_THROW INTEGER { $skillVal = $INTEGER.getText(); }
+        :   SKILL_THROW EFFECT_INTEGER { $skillVal = $EFFECT_INTEGER.getText(); }
         ;
 
 skillDig
         returns[String skillVal]
-        :   SKILL_DIG INTEGER { $skillVal = $INTEGER.getText(); }
+        :   SKILL_DIG EFFECT_INTEGER { $skillVal = $EFFECT_INTEGER.getText(); }
         ;
 
 objFlags
@@ -101,9 +101,9 @@ values
         returns[Map<String, String> valueMap]
         :   {
             $valueMap = new HashMap<>();
-        } VALUES vm1=VALUE_MOD LBRACKET vi1=VALUE_INT RBRACKET {
+        } VALUES vm1=VALUE_MOD vi1=VALUE_INT {
             $valueMap.put($vm1.getText(), $vi1.getText());
-        } (VALUE_OR vm2=VALUE_MOD LBRACKET vi2=VALUE_INT RBRACKET {
+        } (vm2=VALUE_MOD vi2=VALUE_INT {
             $valueMap.put($vm2.getText(), $vi2.getText());
         })*
         ;

@@ -95,8 +95,8 @@ effectXtra
         :   { $effectSubtype = ""; $radius = ""; $parameter = ""; }
             EFFECT_XTRA t=UCASE { $effectType = $t.getText(); }
             (COLON s=UCASE { $effectSubtype = $s.getText(); }
-            (COLON r=INTEGER { $radius = $r.getText(); }
-            (COLON p=INTEGER { $parameter = $p.getText(); })?)?)?
+            (COLON r=EFFECT_INTEGER { $radius = $r.getText(); }
+            (COLON p=EFFECT_INTEGER { $parameter = $p.getText(); })?)?)?
         ;
 
 diceXtra
@@ -118,7 +118,7 @@ exprXtra
 
 effectYxXtra
         returns[String y, String x]
-        :   EFFECT_YX_XTRA yVal=INTEGER COLON xVal=INTEGER
+        :   EFFECT_YX_XTRA yVal=EFFECT_INTEGER COLON xVal=EFFECT_INTEGER
             { $y = $yVal.getText(); $x = $xVal.getText(); }
         ;
 

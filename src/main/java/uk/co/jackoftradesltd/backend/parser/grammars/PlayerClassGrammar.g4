@@ -1,7 +1,7 @@
 // Parser for class.txt. Each rule captures one directive's fields as raw strings into a `returns`
 // attribute; the playerClass rule collects them (via @init/@after) into a PlayerClassParseRecord,
 // and the nested magicBlock/bookBlock/spellBlock rules build the caster sub-records. All resolution
-// (enum names, integers, cross-file references) is deferred to the assemblers — this grammar only
+// (enum names, EFFECT_INTEGERs, cross-file references) is deferred to the assemblers — this grammar only
 // captures text. Effect blocks are handled by the imported EffectBlock grammar.
 parser grammar PlayerClassGrammar;
 
@@ -34,7 +34,7 @@ name
 
 stats
         returns[String strs, String ints, String wiss, String dexs, String cons]
-        :   STATS s=INTEGER COLON i=INTEGER COLON w=INTEGER COLON d=INTEGER COLON c=INTEGER {
+        :   STATS s=EFFECT_INTEGER COLON i=EFFECT_INTEGER COLON w=EFFECT_INTEGER COLON d=EFFECT_INTEGER COLON c=EFFECT_INTEGER {
                 $strs = $s.getText();
                 $ints = $i.getText();
                 $wiss = $w.getText();
@@ -45,7 +45,7 @@ stats
 
 skillDisarmPhys
         returns[String skillVal, String skillInc]
-        :   SKILL_DISARM_PHYS v=INTEGER COLON i=INTEGER{
+        :   SKILL_DISARM_PHYS v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -53,7 +53,7 @@ skillDisarmPhys
 
 skillDisarmMagic
         returns[String skillVal, String skillInc]
-        :   SKILL_DISARM_MAGIC v=INTEGER COLON i=INTEGER{
+        :   SKILL_DISARM_MAGIC v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -61,7 +61,7 @@ skillDisarmMagic
 
 skillDevice
         returns[String skillVal, String skillInc]
-        :   SKILL_DEVICE v=INTEGER COLON i=INTEGER{
+        :   SKILL_DEVICE v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -69,7 +69,7 @@ skillDevice
 
 skillSave
         returns[String skillVal, String skillInc]
-        :   SKILL_SAVE v=INTEGER COLON i=INTEGER{
+        :   SKILL_SAVE v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -77,7 +77,7 @@ skillSave
 
 skillStealth
         returns[String skillVal, String skillInc]
-        :   SKILL_STEALTH v=INTEGER COLON i=INTEGER{
+        :   SKILL_STEALTH v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -85,7 +85,7 @@ skillStealth
 
 skillSearch
         returns[String skillVal, String skillInc]
-        :   SKILL_SEARCH v=INTEGER COLON i=INTEGER{
+        :   SKILL_SEARCH v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -93,7 +93,7 @@ skillSearch
 
 skillMelee
         returns[String skillVal, String skillInc]
-        :   SKILL_MELEE v=INTEGER COLON i=INTEGER{
+        :   SKILL_MELEE v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -101,7 +101,7 @@ skillMelee
 
 skillShoot
         returns[String skillVal, String skillInc]
-        :   SKILL_SHOOT v=INTEGER COLON i=INTEGER{
+        :   SKILL_SHOOT v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -109,7 +109,7 @@ skillShoot
 
 skillThrow
         returns[String skillVal, String skillInc]
-        :   SKILL_THROW v=INTEGER COLON i=INTEGER{
+        :   SKILL_THROW v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -117,7 +117,7 @@ skillThrow
 
 skillDig
         returns[String skillVal, String skillInc]
-        :   SKILL_DIG v=INTEGER COLON i=INTEGER{
+        :   SKILL_DIG v=EFFECT_INTEGER COLON i=EFFECT_INTEGER{
                 $skillVal = $v.getText();
                 $skillInc = $i.getText();
            }
@@ -125,22 +125,22 @@ skillDig
 
 hitdie
         returns[String increment]
-        :   HITDIE INTEGER { $increment = $INTEGER.getText(); }
+        :   HITDIE EFFECT_INTEGER { $increment = $EFFECT_INTEGER.getText(); }
         ;
 
 maxAttacks
         returns[String maxAtt]
-        :   MAX_ATTACKS INTEGER { $maxAtt = $INTEGER.getText(); }
+        :   MAX_ATTACKS EFFECT_INTEGER { $maxAtt = $EFFECT_INTEGER.getText(); }
         ;
 
 minWeight
         returns[String minWgt]
-        :   MIN_WEIGHT INTEGER { $minWgt = $INTEGER.getText(); }
+        :   MIN_WEIGHT EFFECT_INTEGER { $minWgt = $EFFECT_INTEGER.getText(); }
         ;
 
 strengthMultiplier
         returns[String strMult]
-        :   STRENGTH INTEGER { $strMult = $INTEGER.getText(); }
+        :   STRENGTH EFFECT_INTEGER { $strMult = $EFFECT_INTEGER.getText(); }
         ;
 
 title
@@ -183,12 +183,12 @@ playerFlags
 
 exp
         returns[String expStr]
-        :   EXP INTEGER { $expStr = $INTEGER.getText(); }
+        :   EXP EFFECT_INTEGER { $expStr = $EFFECT_INTEGER.getText(); }
         ;
 
 magic
         returns[String firstSpell, String spellWeight, String noOfBooks, int line]
-        :   MAGIC f=INTEGER COLON s=INTEGER COLON n=INTEGER {
+        :   MAGIC f=EFFECT_INTEGER COLON s=EFFECT_INTEGER COLON n=EFFECT_INTEGER {
                 $firstSpell  = $f.getText();
                 $spellWeight = $s.getText();
                 $noOfBooks   = $n.getText();

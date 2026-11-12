@@ -50,19 +50,19 @@ name
 // "multiplier:<n>" - standard-combat damage multiplier.
 multiplier
         returns[String mult]
-        :   MULTIPLIER INTEGER { $mult = $INTEGER.getText(); }
+        :   MULTIPLIER UINT { $mult = $UINT.getText(); }
         ;
 
 // "o-multiplier:<n>" - O-combat damage multiplier.
 oMultiplier
         returns[String oMult]
-        :   O_MULTIPLIER INTEGER { $oMult = $INTEGER.getText(); }
+        :   O_MULTIPLIER UINT { $oMult = $UINT.getText(); }
         ;
 
 // "power:<n>" - object-power weighting.
 power
         returns[String powerStr]
-        :   POWER INTEGER { $powerStr = $INTEGER.getText(); }
+        :   POWER UINT { $powerStr = $UINT.getText(); }
         ;
 
 // "verb:<text>" - verb shown on a susceptible hit.

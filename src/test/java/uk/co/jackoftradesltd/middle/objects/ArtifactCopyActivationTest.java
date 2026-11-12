@@ -65,7 +65,7 @@ class ArtifactCopyActivationTest {
         Set<Slay> slays = new HashSet<>();
         TreeMap<Curse, CurseData> curses = new TreeMap<>(Curse.CURSE_ORDER);
         return new Artifact("Test Blade", "It gleams.", TValue.TV_SWORD, "long sword",
-                5, 6, 7, 8, "3d5", 120, 4500, flags, modifiers, elInfo, brands, slays, curses,
+                5, 6, 7, 8, 3, 5, 120, 4500, flags, modifiers, elInfo, brands, slays, curses,
                 40, 11, 12, 13, activation, message, time);
     }
 

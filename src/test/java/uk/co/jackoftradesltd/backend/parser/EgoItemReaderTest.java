@@ -1189,17 +1189,63 @@ class EgoItemReaderTest {
     }
 
     /**
-     * {@code parser_parse} reads an {@code int} field with {@code strtol(tok, &z, 0)}: leading
-     * whitespace skipped, a plus sign allowed, base 0 so {@code 0x10} is 16. The lexer's integer is
-     * an optional minus and decimal digits.
+     * {@code parser_parse} reads an {@code int} field with {@code strtol(tok, &z, 0)}: a plus sign is
+     * allowed and the base is 0, so {@code +5} is 5, {@code 0x10} is 16 and {@code 010} is 8. The
+     * {@code info:} figures take all three, as does the {@code alloc:} commonness.
      */
     @Test
-    void integersWithLeadingSpaceAPlusSignOrAHexPrefixAreErrorsHereWhereCAcceptsThem() throws IOException {
+    void integersWithAPlusSignOrAHexOrOctalPrefixLoadAsInC() throws Exception {
+        EgoItem plus = loadOne("info-plus.txt", "info:+5:+6\nalloc:+7:1 to 2\n");
+        EgoItem hex = loadOne("info-hex.txt", "info:0x10:0X1f\nalloc:0x28:1 to 2\n");
+        EgoItem octal = loadOne("info-octal.txt", "info:010:-010\n");
+
+        assertEquals(5, (int) field(plus, "cost"));
+        assertEquals(6, (int) field(plus, "rating"));
+        assertEquals(7, (int) field(plus, "allocProb"));
+        assertEquals(16, (int) field(hex, "cost"));
+        assertEquals(31, (int) field(hex, "rating"));
+        assertEquals(40, (int) field(hex, "allocProb"));
+        assertEquals(8, (int) field(octal, "cost"));
+        assertEquals(-8, (int) field(octal, "rating"));
+    }
+
+    /**
+     * {@code strtol} skips leading whitespace, so C reads {@code info: 5: 6} as 5 and 6. The lexer
+     * has no rule for a blank before a number, so it is a hard error here, the accepted deviation
+     * "Numbers: leading blank, trailing text" in {@code docs/Accepted_Deviations.md}.
+     */
+    @Test
+    void aBlankBeforeANumberIsAHardErrorWhereCSkipsIt() throws IOException {
         assertHardError("info-space.txt", "info: 5: 6\n");
-        assertHardError("info-plus.txt", "info:+5:6\n");
-        assertHardError("info-hex.txt", "info:0x10:6\n");
-        assertHardError("minval-plus.txt", "type:sword\nmin-values:STEALTH[+2]\n");
-        assertHardError("res-plus.txt", "type:sword\nvalues:RES_FIRE[+1]\n");
+        assertHardError("alloc-space.txt", "alloc: 10:5 to 20\n");
+    }
+
+    /**
+     * {@code find_value_arg} reads the figure inside the brackets with {@code strtol(..., 10)}, so
+     * C loads {@code [+2]} as 2. {@code VALUE_INTEGER} in {@code EgoItemsLexer.g4} takes the
+     * plus sign, and both {@code values} and {@code minValues} in {@code EgoItemsGrammar.g4}
+     * accept it, so a resistance level and a minimum modifier load. A modifier in {@code values:}
+     * is the exception: C reads it with {@code dice_parse_string}, whose state table refuses a
+     * leading {@code +}, and so does the assembler. (Flipped from
+     * {@code aPlusSignInsideBracketsIsAHardErrorHereWhereCAcceptsIt}, which pinned all three as
+     * errors.)
+     */
+    @Test
+    void aPlusSignInsideBracketsLoadsAsInC() throws Exception {
+        EgoItem res = loadOne("res-plus.txt", "type:sword\nflags:IGNORE_FIRE | HATES_FIRE\nvalues:RES_FIRE[+1]\n");
+        EgoItem min = loadOne("minval-plus.txt", "type:sword\nmin-values:STEALTH[+2]\n");
+
+        Map<ElementEnum, ElementInfo> el = field(res, "elInfo");
+        assertEquals(1, el.get(ElementEnum.ELEM_FIRE).getResLevel());
+
+        Map<ObjectModifier, Integer> minMods = field(min, "minModifiers");
+        assertEquals(2, minMods.get(ObjectModifier.OM_STEALTH));
+    }
+
+    @Test
+    void aPlusSignOnAModifierValueIsRefusedAsInCsDiceParser() {
+        assertStopsTheLoad("val-plus.txt", "type:sword\nvalues:STEALTH[+2]\n",
+                "invalid object modifier dice value: +2");
     }
 
     @Test

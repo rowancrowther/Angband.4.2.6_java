@@ -40,7 +40,7 @@ public class MonsterBaseGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		NAME=1, GLYPH=2, PAIN=3, FLAGS=4, DESC=5, INTEGER=6, COMMENT=7, INDENT=8, 
+		NAME=1, GLYPH=2, PAIN=3, FLAGS=4, DESC=5, UINT=6, COMMENT=7, INDENT=8, 
 		EOL=9, SINGLE_CHAR=10, STRING=11, FLAG=12, FLAG_OR=13, FLAG_EOL=14;
 	public static final int
 		RULE_name = 0, RULE_glyph = 1, RULE_pain = 2, RULE_flags = 3, RULE_desc = 4, 
@@ -60,8 +60,8 @@ public class MonsterBaseGrammar extends Parser {
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "NAME", "GLYPH", "PAIN", "FLAGS", "DESC", "INTEGER", "COMMENT", 
-			"INDENT", "EOL", "SINGLE_CHAR", "STRING", "FLAG", "FLAG_OR", "FLAG_EOL"
+			null, "NAME", "GLYPH", "PAIN", "FLAGS", "DESC", "UINT", "COMMENT", "INDENT", 
+			"EOL", "SINGLE_CHAR", "STRING", "FLAG", "FLAG_OR", "FLAG_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -220,9 +220,9 @@ public class MonsterBaseGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class PainContext extends ParserRuleContext {
 		public String monPain;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode PAIN() { return getToken(MonsterBaseGrammar.PAIN, 0); }
-		public TerminalNode INTEGER() { return getToken(MonsterBaseGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(MonsterBaseGrammar.UINT, 0); }
 		public PainContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -251,9 +251,9 @@ public class MonsterBaseGrammar extends Parser {
 			setState(22);
 			match(PAIN);
 			setState(23);
-			((PainContext)_localctx).INTEGER = match(INTEGER);
+			((PainContext)_localctx).UINT = match(UINT);
 
-			            ((PainContext)_localctx).monPain =  ((PainContext)_localctx).INTEGER.getText();
+			            ((PainContext)_localctx).monPain =  ((PainContext)_localctx).UINT.getText();
 			        
 			}
 		}

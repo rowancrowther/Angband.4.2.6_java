@@ -39,9 +39,11 @@ public class EffectBlock extends Parser {
 		new PredictionContextCache();
 	public static final int
 		EFFECT=1, EFFECT_MESSAGE=2, DICE=3, TIME=4, EFFECT_YX=5, EXPR=6, COLON=7, 
-		UCASE=8, INTEGER=9, SIMPLE_DICE_STRING=10, COMPLEX_DICE_STRING=11, COMMENT=12, 
-		INDENT=13, EOL=14, FREE_TEXT=15, DICE_SIMPLE_VALUE=16, DICE_COMPLEX_VALUE=17, 
-		EXPR_CHAR=18, EXPR_COLON=19, EXPR_UCASE=20, EXPR_OP=21, EXPR_EOL=22;
+		EFFECT_INTEGER=8, SIMPLE_DICE_STRING=9, COMPLEX_DICE_STRING=10, COMMENT=11, 
+		INDENT=12, EOL=13, YX_INTEGER=14, YX_COLON=15, YX_EOL=16, TYPE=17, TYPE_MODE_COLON=18, 
+		TYPE_EOL=19, SUBTYPE=20, SUBTYPETYPE_MODE_COLON=21, SUBTYPE_EOL=22, R_P_EFFECT_INTEGER=23, 
+		R_P_COLON=24, R_P_EOL=25, FREE_TEXT=26, DICE_SIMPLE_VALUE=27, DICE_COMPLEX_VALUE=28, 
+		EXPR_CHAR=29, EXPR_COLON=30, EXPR_UCASE=31, EXPR_OP=32, EXPR_EOL=33;
 	public static final int
 		RULE_effect = 0, RULE_effectYX = 1, RULE_dice = 2, RULE_expr = 3, RULE_effectMsg = 4, 
 		RULE_time = 5, RULE_strayEffectLine = 6, RULE_effectBlock = 7;
@@ -63,9 +65,12 @@ public class EffectBlock extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME", "EFFECT_YX", "EXPR", 
-			"COLON", "UCASE", "INTEGER", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", 
-			"COMMENT", "INDENT", "EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", 
-			"EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
+			"COLON", "EFFECT_INTEGER", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", 
+			"COMMENT", "INDENT", "EOL", "YX_INTEGER", "YX_COLON", "YX_EOL", "TYPE", 
+			"TYPE_MODE_COLON", "TYPE_EOL", "SUBTYPE", "SUBTYPETYPE_MODE_COLON", "SUBTYPE_EOL", 
+			"R_P_EFFECT_INTEGER", "R_P_COLON", "R_P_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", 
+			"DICE_COMPLEX_VALUE", "EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", 
+			"EXPR_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -130,17 +135,11 @@ public class EffectBlock extends Parser {
 		public Token rad;
 		public Token oth;
 		public TerminalNode EFFECT() { return getToken(EffectBlock.EFFECT, 0); }
-		public List<TerminalNode> UCASE() { return getTokens(EffectBlock.UCASE); }
-		public TerminalNode UCASE(int i) {
-			return getToken(EffectBlock.UCASE, i);
-		}
-		public List<TerminalNode> COLON() { return getTokens(EffectBlock.COLON); }
-		public TerminalNode COLON(int i) {
-			return getToken(EffectBlock.COLON, i);
-		}
-		public List<TerminalNode> INTEGER() { return getTokens(EffectBlock.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(EffectBlock.INTEGER, i);
+		public TerminalNode TYPE() { return getToken(EffectBlock.TYPE, 0); }
+		public TerminalNode SUBTYPE() { return getToken(EffectBlock.SUBTYPE, 0); }
+		public List<TerminalNode> R_P_EFFECT_INTEGER() { return getTokens(EffectBlock.R_P_EFFECT_INTEGER); }
+		public TerminalNode R_P_EFFECT_INTEGER(int i) {
+			return getToken(EffectBlock.R_P_EFFECT_INTEGER, i);
 		}
 		public EffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -176,43 +175,37 @@ public class EffectBlock extends Parser {
 			setState(16);
 			match(EFFECT);
 			setState(17);
-			((EffectContext)_localctx).t = match(UCASE);
+			((EffectContext)_localctx).t = match(TYPE);
 
 			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
 			            
-			setState(32);
+			setState(29);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==COLON) {
+			if (_la==SUBTYPE) {
 				{
 				setState(19);
-				match(COLON);
-				setState(20);
-				((EffectContext)_localctx).st = match(UCASE);
+				((EffectContext)_localctx).st = match(SUBTYPE);
 
 				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
 				            
-				setState(30);
+				setState(27);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (_la==COLON) {
+				if (_la==R_P_EFFECT_INTEGER) {
 					{
-					setState(22);
-					match(COLON);
-					setState(23);
-					((EffectContext)_localctx).rad = match(INTEGER);
+					setState(21);
+					((EffectContext)_localctx).rad = match(R_P_EFFECT_INTEGER);
 
 					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
 					            
-					setState(28);
+					setState(25);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
-					if (_la==COLON) {
+					if (_la==R_P_EFFECT_INTEGER) {
 						{
-						setState(25);
-						match(COLON);
-						setState(26);
-						((EffectContext)_localctx).oth = match(INTEGER);
+						setState(23);
+						((EffectContext)_localctx).oth = match(R_P_EFFECT_INTEGER);
 
 						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
 						            
@@ -245,10 +238,9 @@ public class EffectBlock extends Parser {
 		public Token yVal;
 		public Token xVal;
 		public TerminalNode EFFECT_YX() { return getToken(EffectBlock.EFFECT_YX, 0); }
-		public TerminalNode COLON() { return getToken(EffectBlock.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(EffectBlock.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(EffectBlock.INTEGER, i);
+		public List<TerminalNode> YX_INTEGER() { return getTokens(EffectBlock.YX_INTEGER); }
+		public TerminalNode YX_INTEGER(int i) {
+			return getToken(EffectBlock.YX_INTEGER, i);
 		}
 		public EffectYXContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -275,14 +267,12 @@ public class EffectBlock extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(34);
+			setState(31);
 			match(EFFECT_YX);
-			setState(35);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
-			setState(36);
-			match(COLON);
-			setState(37);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
+			setState(32);
+			((EffectYXContext)_localctx).yVal = match(YX_INTEGER);
+			setState(33);
+			((EffectYXContext)_localctx).xVal = match(YX_INTEGER);
 
 			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
 			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
@@ -352,26 +342,26 @@ public class EffectBlock extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(40);
+			setState(36);
 			match(DICE);
-			setState(53);
+			setState(49);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case DICE_COMPLEX_VALUE:
 				{
 				{
-				setState(41);
+				setState(37);
 				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
 
 				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
 				            
-				setState(48);
+				setState(44);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 				while (_la==EXPR) {
 					{
 					{
-					setState(43);
+					setState(39);
 					((DiceContext)_localctx).expr = expr();
 
 					                if (charHolder.isEmpty()) {
@@ -386,7 +376,7 @@ public class EffectBlock extends Parser {
 					            
 					}
 					}
-					setState(50);
+					setState(46);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
 				}
@@ -395,7 +385,7 @@ public class EffectBlock extends Parser {
 				break;
 			case DICE_SIMPLE_VALUE:
 				{
-				setState(51);
+				setState(47);
 				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
 
 				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
@@ -465,17 +455,17 @@ public class EffectBlock extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(55);
+			setState(51);
 			match(EXPR);
-			setState(56);
+			setState(52);
 			((ExprContext)_localctx).ch = match(EXPR_CHAR);
-			setState(57);
+			setState(53);
 			match(EXPR_COLON);
-			setState(58);
+			setState(54);
 			((ExprContext)_localctx).base = match(EXPR_UCASE);
-			setState(59);
+			setState(55);
 			match(EXPR_COLON);
-			setState(60);
+			setState(56);
 			((ExprContext)_localctx).op = match(EXPR_OP);
 
 			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
@@ -526,9 +516,9 @@ public class EffectBlock extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(63);
+			setState(59);
 			match(EFFECT_MESSAGE);
-			setState(64);
+			setState(60);
 			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
 			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
 			}
@@ -575,9 +565,9 @@ public class EffectBlock extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(67);
+			setState(63);
 			match(TIME);
-			setState(68);
+			setState(64);
 			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
 			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
 			}
@@ -627,27 +617,27 @@ public class EffectBlock extends Parser {
 		StrayEffectLineContext _localctx = new StrayEffectLineContext(_ctx, getState());
 		enterRule(_localctx, 12, RULE_strayEffectLine);
 		try {
-			setState(74);
+			setState(70);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case EFFECT_YX:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(71);
+				setState(67);
 				effectYX();
 				}
 				break;
 			case DICE:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(72);
+				setState(68);
 				dice();
 				}
 				break;
 			case EXPR:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(73);
+				setState(69);
 				expr();
 				}
 				break;
@@ -724,7 +714,7 @@ public class EffectBlock extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(76);
+			setState(72);
 			((EffectBlockContext)_localctx).effect = effect();
 
 			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
@@ -733,19 +723,19 @@ public class EffectBlock extends Parser {
 			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
 			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
 			            
-			setState(94);
+			setState(90);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,6,_ctx) ) {
 			case 1:
 				{
 				{
-				setState(78);
+				setState(74);
 				((EffectBlockContext)_localctx).effectYX = effectYX();
 
 				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
 				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
 				            
-				setState(80);
+				setState(76);
 				((EffectBlockContext)_localctx).dice = dice();
 
 				                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
@@ -759,7 +749,7 @@ public class EffectBlock extends Parser {
 			case 2:
 				{
 				{
-				setState(83);
+				setState(79);
 				((EffectBlockContext)_localctx).dice = dice();
 
 				                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
@@ -767,7 +757,7 @@ public class EffectBlock extends Parser {
 				                baseString = ((EffectBlockContext)_localctx).dice.baseName;
 				                opString = ((EffectBlockContext)_localctx).dice.operation;
 				            
-				setState(85);
+				setState(81);
 				((EffectBlockContext)_localctx).effectYX = effectYX();
 
 				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
@@ -778,7 +768,7 @@ public class EffectBlock extends Parser {
 				break;
 			case 3:
 				{
-				setState(88);
+				setState(84);
 				((EffectBlockContext)_localctx).dice = dice();
 
 				                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
@@ -790,7 +780,7 @@ public class EffectBlock extends Parser {
 				break;
 			case 4:
 				{
-				setState(91);
+				setState(87);
 				((EffectBlockContext)_localctx).effectYX = effectYX();
 
 				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
@@ -819,65 +809,63 @@ public class EffectBlock extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0016a\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
-		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
-		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0001"+
-		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
-		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0003"+
-		"\u0000\u001d\b\u0000\u0003\u0000\u001f\b\u0000\u0003\u0000!\b\u0000\u0001"+
-		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
-		"\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0005"+
-		"\u0002/\b\u0002\n\u0002\f\u00022\t\u0002\u0001\u0002\u0001\u0002\u0003"+
-		"\u00026\b\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001"+
-		"\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001"+
-		"\u0004\u0001\u0004\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001"+
-		"\u0006\u0001\u0006\u0001\u0006\u0003\u0006K\b\u0006\u0001\u0007\u0001"+
+		"\u0004\u0001!]\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002\u0002"+
+		"\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002\u0005"+
+		"\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0001\u0000"+
+		"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000"+
+		"\u0001\u0000\u0001\u0000\u0003\u0000\u001a\b\u0000\u0003\u0000\u001c\b"+
+		"\u0000\u0003\u0000\u001e\b\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
+		"\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001"+
+		"\u0002\u0001\u0002\u0005\u0002+\b\u0002\n\u0002\f\u0002.\t\u0002\u0001"+
+		"\u0002\u0001\u0002\u0003\u00022\b\u0002\u0001\u0003\u0001\u0003\u0001"+
+		"\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001"+
+		"\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005\u0001"+
+		"\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0003\u0006G\b"+
+		"\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001"+
 		"\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001"+
 		"\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001"+
-		"\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0003\u0007_\b"+
-		"\u0007\u0001\u0007\u0000\u0000\b\u0000\u0002\u0004\u0006\b\n\f\u000e\u0000"+
-		"\u0000c\u0000\u0010\u0001\u0000\u0000\u0000\u0002\"\u0001\u0000\u0000"+
-		"\u0000\u0004(\u0001\u0000\u0000\u0000\u00067\u0001\u0000\u0000\u0000\b"+
-		"?\u0001\u0000\u0000\u0000\nC\u0001\u0000\u0000\u0000\fJ\u0001\u0000\u0000"+
-		"\u0000\u000eL\u0001\u0000\u0000\u0000\u0010\u0011\u0005\u0001\u0000\u0000"+
-		"\u0011\u0012\u0005\b\u0000\u0000\u0012 \u0006\u0000\uffff\uffff\u0000"+
-		"\u0013\u0014\u0005\u0007\u0000\u0000\u0014\u0015\u0005\b\u0000\u0000\u0015"+
-		"\u001e\u0006\u0000\uffff\uffff\u0000\u0016\u0017\u0005\u0007\u0000\u0000"+
-		"\u0017\u0018\u0005\t\u0000\u0000\u0018\u001c\u0006\u0000\uffff\uffff\u0000"+
-		"\u0019\u001a\u0005\u0007\u0000\u0000\u001a\u001b\u0005\t\u0000\u0000\u001b"+
-		"\u001d\u0006\u0000\uffff\uffff\u0000\u001c\u0019\u0001\u0000\u0000\u0000"+
-		"\u001c\u001d\u0001\u0000\u0000\u0000\u001d\u001f\u0001\u0000\u0000\u0000"+
-		"\u001e\u0016\u0001\u0000\u0000\u0000\u001e\u001f\u0001\u0000\u0000\u0000"+
-		"\u001f!\u0001\u0000\u0000\u0000 \u0013\u0001\u0000\u0000\u0000 !\u0001"+
-		"\u0000\u0000\u0000!\u0001\u0001\u0000\u0000\u0000\"#\u0005\u0005\u0000"+
-		"\u0000#$\u0005\t\u0000\u0000$%\u0005\u0007\u0000\u0000%&\u0005\t\u0000"+
-		"\u0000&\'\u0006\u0001\uffff\uffff\u0000\'\u0003\u0001\u0000\u0000\u0000"+
-		"(5\u0005\u0003\u0000\u0000)*\u0005\u0011\u0000\u0000*0\u0006\u0002\uffff"+
-		"\uffff\u0000+,\u0003\u0006\u0003\u0000,-\u0006\u0002\uffff\uffff\u0000"+
-		"-/\u0001\u0000\u0000\u0000.+\u0001\u0000\u0000\u0000/2\u0001\u0000\u0000"+
-		"\u00000.\u0001\u0000\u0000\u000001\u0001\u0000\u0000\u000016\u0001\u0000"+
-		"\u0000\u000020\u0001\u0000\u0000\u000034\u0005\u0010\u0000\u000046\u0006"+
-		"\u0002\uffff\uffff\u00005)\u0001\u0000\u0000\u000053\u0001\u0000\u0000"+
-		"\u00006\u0005\u0001\u0000\u0000\u000078\u0005\u0006\u0000\u000089\u0005"+
-		"\u0012\u0000\u00009:\u0005\u0013\u0000\u0000:;\u0005\u0014\u0000\u0000"+
-		";<\u0005\u0013\u0000\u0000<=\u0005\u0015\u0000\u0000=>\u0006\u0003\uffff"+
-		"\uffff\u0000>\u0007\u0001\u0000\u0000\u0000?@\u0005\u0002\u0000\u0000"+
-		"@A\u0005\u000f\u0000\u0000AB\u0006\u0004\uffff\uffff\u0000B\t\u0001\u0000"+
-		"\u0000\u0000CD\u0005\u0004\u0000\u0000DE\u0005\u0010\u0000\u0000EF\u0006"+
-		"\u0005\uffff\uffff\u0000F\u000b\u0001\u0000\u0000\u0000GK\u0003\u0002"+
-		"\u0001\u0000HK\u0003\u0004\u0002\u0000IK\u0003\u0006\u0003\u0000JG\u0001"+
-		"\u0000\u0000\u0000JH\u0001\u0000\u0000\u0000JI\u0001\u0000\u0000\u0000"+
-		"K\r\u0001\u0000\u0000\u0000LM\u0003\u0000\u0000\u0000M^\u0006\u0007\uffff"+
-		"\uffff\u0000NO\u0003\u0002\u0001\u0000OP\u0006\u0007\uffff\uffff\u0000"+
-		"PQ\u0003\u0004\u0002\u0000QR\u0006\u0007\uffff\uffff\u0000R_\u0001\u0000"+
-		"\u0000\u0000ST\u0003\u0004\u0002\u0000TU\u0006\u0007\uffff\uffff\u0000"+
-		"UV\u0003\u0002\u0001\u0000VW\u0006\u0007\uffff\uffff\u0000W_\u0001\u0000"+
-		"\u0000\u0000XY\u0003\u0004\u0002\u0000YZ\u0006\u0007\uffff\uffff\u0000"+
-		"Z_\u0001\u0000\u0000\u0000[\\\u0003\u0002\u0001\u0000\\]\u0006\u0007\uffff"+
-		"\uffff\u0000]_\u0001\u0000\u0000\u0000^N\u0001\u0000\u0000\u0000^S\u0001"+
-		"\u0000\u0000\u0000^X\u0001\u0000\u0000\u0000^[\u0001\u0000\u0000\u0000"+
-		"^_\u0001\u0000\u0000\u0000_\u000f\u0001\u0000\u0000\u0000\u0007\u001c"+
-		"\u001e 05J^";
+		"\u0007\u0003\u0007[\b\u0007\u0001\u0007\u0000\u0000\b\u0000\u0002\u0004"+
+		"\u0006\b\n\f\u000e\u0000\u0000_\u0000\u0010\u0001\u0000\u0000\u0000\u0002"+
+		"\u001f\u0001\u0000\u0000\u0000\u0004$\u0001\u0000\u0000\u0000\u00063\u0001"+
+		"\u0000\u0000\u0000\b;\u0001\u0000\u0000\u0000\n?\u0001\u0000\u0000\u0000"+
+		"\fF\u0001\u0000\u0000\u0000\u000eH\u0001\u0000\u0000\u0000\u0010\u0011"+
+		"\u0005\u0001\u0000\u0000\u0011\u0012\u0005\u0011\u0000\u0000\u0012\u001d"+
+		"\u0006\u0000\uffff\uffff\u0000\u0013\u0014\u0005\u0014\u0000\u0000\u0014"+
+		"\u001b\u0006\u0000\uffff\uffff\u0000\u0015\u0016\u0005\u0017\u0000\u0000"+
+		"\u0016\u0019\u0006\u0000\uffff\uffff\u0000\u0017\u0018\u0005\u0017\u0000"+
+		"\u0000\u0018\u001a\u0006\u0000\uffff\uffff\u0000\u0019\u0017\u0001\u0000"+
+		"\u0000\u0000\u0019\u001a\u0001\u0000\u0000\u0000\u001a\u001c\u0001\u0000"+
+		"\u0000\u0000\u001b\u0015\u0001\u0000\u0000\u0000\u001b\u001c\u0001\u0000"+
+		"\u0000\u0000\u001c\u001e\u0001\u0000\u0000\u0000\u001d\u0013\u0001\u0000"+
+		"\u0000\u0000\u001d\u001e\u0001\u0000\u0000\u0000\u001e\u0001\u0001\u0000"+
+		"\u0000\u0000\u001f \u0005\u0005\u0000\u0000 !\u0005\u000e\u0000\u0000"+
+		"!\"\u0005\u000e\u0000\u0000\"#\u0006\u0001\uffff\uffff\u0000#\u0003\u0001"+
+		"\u0000\u0000\u0000$1\u0005\u0003\u0000\u0000%&\u0005\u001c\u0000\u0000"+
+		"&,\u0006\u0002\uffff\uffff\u0000\'(\u0003\u0006\u0003\u0000()\u0006\u0002"+
+		"\uffff\uffff\u0000)+\u0001\u0000\u0000\u0000*\'\u0001\u0000\u0000\u0000"+
+		"+.\u0001\u0000\u0000\u0000,*\u0001\u0000\u0000\u0000,-\u0001\u0000\u0000"+
+		"\u0000-2\u0001\u0000\u0000\u0000.,\u0001\u0000\u0000\u0000/0\u0005\u001b"+
+		"\u0000\u000002\u0006\u0002\uffff\uffff\u00001%\u0001\u0000\u0000\u0000"+
+		"1/\u0001\u0000\u0000\u00002\u0005\u0001\u0000\u0000\u000034\u0005\u0006"+
+		"\u0000\u000045\u0005\u001d\u0000\u000056\u0005\u001e\u0000\u000067\u0005"+
+		"\u001f\u0000\u000078\u0005\u001e\u0000\u000089\u0005 \u0000\u00009:\u0006"+
+		"\u0003\uffff\uffff\u0000:\u0007\u0001\u0000\u0000\u0000;<\u0005\u0002"+
+		"\u0000\u0000<=\u0005\u001a\u0000\u0000=>\u0006\u0004\uffff\uffff\u0000"+
+		">\t\u0001\u0000\u0000\u0000?@\u0005\u0004\u0000\u0000@A\u0005\u001b\u0000"+
+		"\u0000AB\u0006\u0005\uffff\uffff\u0000B\u000b\u0001\u0000\u0000\u0000"+
+		"CG\u0003\u0002\u0001\u0000DG\u0003\u0004\u0002\u0000EG\u0003\u0006\u0003"+
+		"\u0000FC\u0001\u0000\u0000\u0000FD\u0001\u0000\u0000\u0000FE\u0001\u0000"+
+		"\u0000\u0000G\r\u0001\u0000\u0000\u0000HI\u0003\u0000\u0000\u0000IZ\u0006"+
+		"\u0007\uffff\uffff\u0000JK\u0003\u0002\u0001\u0000KL\u0006\u0007\uffff"+
+		"\uffff\u0000LM\u0003\u0004\u0002\u0000MN\u0006\u0007\uffff\uffff\u0000"+
+		"N[\u0001\u0000\u0000\u0000OP\u0003\u0004\u0002\u0000PQ\u0006\u0007\uffff"+
+		"\uffff\u0000QR\u0003\u0002\u0001\u0000RS\u0006\u0007\uffff\uffff\u0000"+
+		"S[\u0001\u0000\u0000\u0000TU\u0003\u0004\u0002\u0000UV\u0006\u0007\uffff"+
+		"\uffff\u0000V[\u0001\u0000\u0000\u0000WX\u0003\u0002\u0001\u0000XY\u0006"+
+		"\u0007\uffff\uffff\u0000Y[\u0001\u0000\u0000\u0000ZJ\u0001\u0000\u0000"+
+		"\u0000ZO\u0001\u0000\u0000\u0000ZT\u0001\u0000\u0000\u0000ZW\u0001\u0000"+
+		"\u0000\u0000Z[\u0001\u0000\u0000\u0000[\u000f\u0001\u0000\u0000\u0000"+
+		"\u0007\u0019\u001b\u001d,1FZ";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

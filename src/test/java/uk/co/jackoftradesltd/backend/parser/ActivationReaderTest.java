@@ -558,8 +558,14 @@ class ActivationReaderTest {
     }
 
     @Test
-    void aHexLevelIsAHardErrorHereWhereCReadsItAsSixteen() throws IOException {
-        assertHardError(record("level:0x10\n"));
+    void aHexLevelIsReadAsSixteenAsInC() throws Exception {
+        // strtol(tok, &z, 0): 0x10 is 16, and a sign goes in front of the prefix. The lexer takes
+        // the prefix since the effect block's number token was widened (261112).
+        assertEquals(16, level(loadOne(record("level:0x10\n"))));
+        assertEquals(31, level(loadOne(record("level:0X1f\n"))));
+        assertEquals(-16, level(loadOne(record("level:-0x10\n"))));
+        assertEquals(5, level(loadOne(record("level:+5\n"))));
+        assertEquals(5, level(loadOne(record("level:5abc\n"))));
     }
 
     @Test

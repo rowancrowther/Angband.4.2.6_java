@@ -160,7 +160,7 @@ class ItemObjectKnowledgeIgnoreTest {
      * @return the artifact
      */
     private static Artifact artifact() {
-        return new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0", 0, 0,
+        return new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, 0, 0, 0, 0,
                 new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(),
                 new TreeMap<>(Curse.CURSE_ORDER), 0, 0, 0, 0, null, null, null);
     }

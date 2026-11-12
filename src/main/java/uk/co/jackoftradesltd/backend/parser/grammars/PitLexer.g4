@@ -2,18 +2,23 @@
 // monsters may fill a themed room, how deep/rare it is, its theme colours).
 // Cf. the C original's pit parser in src/mon-init.c.
 //
-// Most directives are simple "keyword:value" lines, but four value shapes
-// need their own lexer mode so a value's characters are not mis-tokenized as
-// keywords or flags:
-//   * REST_OF_LINE - free text (names, monster-base names) taken verbatim to
-//                    end of line.
-//   * FLAG_MODE    - one or more '|'-separated upper-case flag/spell codes.
-//   * ALLOC_MODE   - the "rarity:level" pair, split on a ':' that must not be
-//                    confused with the ':' ending a keyword.
-//   * COLOUR_MODE  - the rest of the line after color: (a colour-code letter
-//                    or a colour name), taken verbatim and resolved by the
-//                    assembler, kept apart so the value is only read as a
-//                    colour right after color:.
+// Only room: keeps its value in the default mode (as a UINT). The other value
+// shapes need their own lexer mode so a value's characters are not
+// mis-tokenized as keywords, flags or each other's numbers:
+//   * REST_OF_LINE     - free text (names, monster-base names) taken verbatim
+//                        to end of line.
+//   * FLAG_MODE        - one or more '|'-separated upper-case flag/spell codes.
+//   * ALLOC_MODE       - the "rarity:level" pair, split on a ':' that must not
+//                        be confused with the ':' ending a keyword.
+//   * OBJ_RARITY_MODE  - the uint after obj-rarity:, read as OBJ_RARITY_UINT.
+//   * INNATE_FREQ_MODE - the signed int after innate-freq:, read as
+//                        PIT_INTEGER, so it is not captured by the uint rule.
+//   * COLOUR_MODE      - the rest of the line after color: (a colour-code
+//                        letter or a colour name), taken verbatim and resolved
+//                        by the assembler, kept apart so the value is only read
+//                        as a colour right after color:.
+// Each mode ends with its own *_EOL rule, which pops back to the default mode
+// and skips the newline, so no end-of-line token reaches the grammar.
 // Shared bits (FLAG_BODY, comment/EOL skipping) come from the imported
 // grammars Flags and CommentsAndEol.
 lexer grammar PitLexer;
@@ -25,7 +30,7 @@ NAME
         :   'name:' -> pushMode(REST_OF_LINE)
         ;
 
-// "room:<digit>" - pit/nest/other room type; the digit is a PIT_INTEGER.
+// "room:<n>" - pit/nest/other room type (1, 2 or 3); the number is a UINT.
 ROOM
         :   'room:'
         ;
@@ -35,9 +40,10 @@ ALLOC
         :   'alloc:' -> pushMode(ALLOC_MODE)
         ;
 
-// "obj-rarity:<n>" - per-square object rarity percentage.
+// "obj-rarity:<n>" - per-square object rarity percentage. The number is lexed in
+// OBJ_RARITY_MODE as an OBJ_RARITY_UINT.
 OBJ_RARITY
-        :   'obj-rarity:'
+        :   'obj-rarity:' -> pushMode(OBJ_RARITY_MODE)
         ;
 
 // "color:<code>" - a theme colour; American spelling, matching the data file.
@@ -60,9 +66,12 @@ FLAGS_BAN
         :   'flags-ban:' -> pushMode(FLAG_MODE)
         ;
 
-// "innate-freq:<n>" - required innate-attack frequency.
+// "innate-freq:<n>" - required innate-attack frequency, as a percentage. The
+// number is lexed in INNATE_FREQ_MODE as a PIT_INTEGER, not a UINT, because C
+// registers the field as a signed "int" ("innate-freq int freq"), so a leading
+// '-' is legal text here and the assembler's 1-to-100 range check refuses it.
 INNATE_FREQ
-        :   'innate-freq:'
+        :   'innate-freq:' -> pushMode(INNATE_FREQ_MODE)
         ;
 
 // "spell-req:<FLAG> | ..." / "spell-ban:..." - '|'-separated spell-flag codes,
@@ -75,14 +84,46 @@ SPELL_BAN
         :   'spell-ban:' -> pushMode(FLAG_MODE)
         ;
 
+// The value of "room:<n>" - C registers it as "room uint type", read by
+// parser_parse in parser.c with strtoul in base 0. (OBJ_RARITY_UINT below has
+// the same shape for obj-rarity:.) The token follows that reading:
+//  - an optional '-' or '+' sign. A '-' is kept so the assembler can refuse it,
+//    "-0" included, as C does for a uint.
+//  - an optional 0x or 0X prefix, then one or more digits. a-f are allowed with
+//    or without the prefix, so "ff" lexes here; the assembler refuses it
+//    because strtoul finds no digit in it.
+//  - any tail up to the colon or the end of the line, because strtoul stops at
+//    the first character it cannot use and ignores the rest ("5abc" is 5, and a
+//    trailing blank or tab is part of the tail). A decimal digit run is the
+//    same token, so 010 is read as octal by the assembler, not here.
+UINT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
+        ;
+
 // "mon-ban:<name>" - a specific forbidden monster; free-text name.
 MON_BAN
         :   'mon-ban:' -> pushMode(REST_OF_LINE)
         ;
 
-// A signed integer, used by the room:/obj-rarity:/innate-freq: values.
+mode INNATE_FREQ_MODE;
+
+// The value of "innate-freq:<n>" - C's "int" field, read by parser_parse in
+// parser.c with strtol in base 0 (no check for a '-', unlike the uint fields).
+// The token has the same shape as UINT without the tail:
+//  - an optional '-' or '+' sign.
+//  - an optional 0x or 0X prefix, then one or more digits. a-f are allowed with
+//    or without the prefix, so "ff" lexes here; the assembler refuses it
+//    because strtol finds no digit in it. A decimal digit run is the same token,
+//    so 010 is read as octal by the assembler, not here.
+//  - nothing after the digits. C ignores trailing text ("5xyz" is 5), but here
+//    the lexer reports a token recognition error for the 'x', which ends the
+//    load. (A tail made only of a-f, such as "5abc", is all digits to this rule.)
 PIT_INTEGER
-        :   '-'? ('0'..'9')+
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+
+        ;
+
+INNATE_FREQ_EOL 
+        :   NL -> popMode, skip
         ;
 
 // --- FLAG_MODE: the '|'-separated flag/spell lists ------------------------
@@ -124,12 +165,48 @@ ALLOC_COLON
         :   ':'
         ;
 
-ALLOC_INTEGER
-        :   '-'? ('0'..'9')+
+// A rarity or level in "alloc:<rarity>:<level>" - C registers both as uint
+// ("alloc uint rarity uint level"), read by parser_parse in parser.c with
+// strtoul in base 0. The token has the same shape as UINT, and its tail stops
+// at ':' so the first field ends where the ALLOC_COLON begins. The token follows
+// that reading:
+//  - an optional '-' or '+' sign. A '-' is kept so the assembler can refuse it,
+//    "-0" included, as C does for a uint.
+//  - an optional 0x or 0X prefix, then one or more digits. a-f are allowed with
+//    or without the prefix, so "ff" lexes here; the assembler refuses it
+//    because strtoul finds no digit in it.
+//  - any tail up to the colon or the end of the line, because strtoul stops at
+//    the first character it cannot use and ignores the rest ("5abc" is 5, and a
+//    trailing blank or tab is part of the tail). A decimal digit run is the
+//    same token, so 010 is read as octal by the assembler, not here.
+ALLOC_UINT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
         ;
 
 ALLOC_EOL
         :   NL -> popMode, skip
+        ;
+
+mode OBJ_RARITY_MODE;
+
+// The value of "obj-rarity:<n>" - C registers it as "obj-rarity uint obj_rarity",
+// read by parser_parse in parser.c with strtoul in base 0. The token has the
+// same shape as UINT and follows the same reading:
+//  - an optional '-' or '+' sign. A '-' is kept so the assembler can refuse it,
+//    "-0" included, as C does for a uint.
+//  - an optional 0x or 0X prefix, then one or more digits. a-f are allowed with
+//    or without the prefix, so "ff" lexes here; the assembler refuses it
+//    because strtoul finds no digit in it.
+//  - any tail up to the colon or the end of the line, because strtoul stops at
+//    the first character it cannot use and ignores the rest ("5abc" is 5, and a
+//    trailing blank or tab is part of the tail). A decimal digit run is the
+//    same token, so 010 is read as octal by the assembler, not here.
+OBJ_RARITY_UINT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
+        ;
+
+OBJ_RARITY_EOL
+        :   NEWLINE -> popMode, skip
         ;
 
 // --- COLOUR_MODE: a colour code or colour name ----------------------------

@@ -20,6 +20,9 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.combat.BlowMethod;
@@ -456,5 +459,71 @@ class BlowMethodReaderTest {
         ParseResult<BlowMethod> result = load("no-act.txt", noAct);
 
         assertTrue(result.items().get(0).getBlowMessage().isEmpty());
+    }
+
+    // ---- The flags as C's uint reading (strtoul, base 0) ------------------
+
+    /**
+     * Render a record whose one flag directive carries {@code text} exactly as written.
+     */
+    private static String withFlag(String directive, String text) {
+        return "name:POKE\n" + directive + ":" + text + "\n";
+    }
+
+    private static boolean flag(BlowMethod method, String directive) {
+        return switch (directive) {
+            case "cut" -> method.isCut();
+            case "stun" -> method.isStun();
+            case "miss" -> method.isMiss();
+            default -> method.isPhys();
+        };
+    }
+
+    /**
+     * C reads each flag with {@code strtoul} in base 0 and stores {@code val ? true : false}, so
+     * any non-zero reading is true: {@code 010} is 8, {@code 0x10} is 16, {@code 5abc} is 5. A
+     * reading of 0 is false: {@code 08} stops at the 8, and {@code 0x} or {@code 0xg} read the
+     * {@code 0}.
+     *
+     * <p>Test aFlagIsTrueWhenStrtoulReadsNonZero coded on 261112, commented in full on 261112.
+     */
+    @ParameterizedTest(name = "[{0}] is {1}")
+    @CsvSource({
+            "0,false", "00,false", "5,true", "010,true", "08,false", "0x10,true", "0X1f,true",
+            "0x,false", "0xg,false", "+5,true", "5abc,true", "'5 ',true"
+    })
+    void aFlagIsTrueWhenStrtoulReadsNonZero(String text, boolean expected) throws IOException {
+        for (String directive : List.of("cut", "stun", "miss", "phys")) {
+            BlowMethod method = load("flag.txt", withFlag(directive, text)).items().get(0);
+
+            assertEquals(expected, flag(method, directive), directive + ":" + text);
+        }
+    }
+
+    /**
+     * A leading {@code -} (even {@code -0}) or no digit for {@code strtoul} to read ({@code ff},
+     * {@code abc}) ends the load, for all four flags.
+     *
+     * <p>Test aFlagStrtoulRefusesEndsTheLoad coded on 261112, commented in full on 261112.
+     */
+    @ParameterizedTest(name = "[{0}] ends the load")
+    @ValueSource(strings = {"-0", "-5", "ff", "abc"})
+    void aFlagStrtoulRefusesEndsTheLoad(String text) {
+        for (String directive : List.of("cut", "stun", "miss", "phys")) {
+            assertThrows(DataFileParseException.class,
+                    () -> load("bad-flag.txt", withFlag(directive, text)), directive + ":" + text);
+        }
+    }
+
+    /**
+     * {@code +-5} has no digit after the first sign; the lexer refuses it before the assembler is
+     * reached.
+     *
+     * <p>Test aDoubleSignedFlagIsRefusedByTheLexer coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aDoubleSignedFlagIsRefusedByTheLexer() {
+        assertThrows(ParseCancellationException.class,
+                () -> load("double-sign.txt", withFlag("cut", "+-5")));
     }
 }

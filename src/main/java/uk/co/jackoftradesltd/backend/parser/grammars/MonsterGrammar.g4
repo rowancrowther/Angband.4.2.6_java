@@ -39,27 +39,27 @@ colour
 
 speed
         returns[String speedVal]
-        :   SPEED MON_INTEGER { $speedVal = $MON_INTEGER.getText(); }
+        :   SPEED INTEGER { $speedVal = $INTEGER.getText(); }
         ;
 
 hitPoints
         returns[String hitPointsVal]
-        :   HIT_POINTS MON_INTEGER { $hitPointsVal = $MON_INTEGER.getText(); }
+        :   HIT_POINTS INTEGER { $hitPointsVal = $INTEGER.getText(); }
         ;
 
 light
         returns[String lightVal]
-        :   LIGHT MON_INTEGER { $lightVal = $MON_INTEGER.getText(); }
+        :   LIGHT INTEGER { $lightVal = $INTEGER.getText(); }
         ;
 
 hearing
         returns[String hearingVal]
-        :   HEARING MON_INTEGER { $hearingVal = $MON_INTEGER.getText(); }
+        :   HEARING INTEGER { $hearingVal = $INTEGER.getText(); }
         ;
 
 smell
         returns[String smellVal]
-        :   SMELL MON_INTEGER { $smellVal = $MON_INTEGER.getText(); }
+        :   SMELL INTEGER { $smellVal = $INTEGER.getText(); }
         ;
 
 shape
@@ -75,27 +75,27 @@ colourCycle
 
 armourClass
         returns[String armourClassVal]
-        :   ARMOUR_CLASS MON_INTEGER { $armourClassVal = $MON_INTEGER.getText(); }
+        :   ARMOUR_CLASS INTEGER { $armourClassVal = $INTEGER.getText(); }
         ;
 
 sleepiness
         returns[String sleepinessVal]
-        :   SLEEPINESS MON_INTEGER { $sleepinessVal = $MON_INTEGER.getText(); }
+        :   SLEEPINESS INTEGER { $sleepinessVal = $INTEGER.getText(); }
         ;
 
 depthLevel
         returns[String depthVal]
-        :   DEPTH MON_INTEGER { $depthVal = $MON_INTEGER.getText(); }
+        :   DEPTH INTEGER { $depthVal = $INTEGER.getText(); }
         ;
 
 rarity
         returns[String rarityVal]
-        :   RARITY MON_INTEGER { $rarityVal = $MON_INTEGER.getText(); }
+        :   RARITY INTEGER { $rarityVal = $INTEGER.getText(); }
         ;
 
 experience
         returns[String experienceVal]
-        :   EXPERIENCE MON_INTEGER { $experienceVal = $MON_INTEGER.getText(); }
+        :   EXPERIENCE INTEGER { $experienceVal = $INTEGER.getText(); }
         ;
 
 blow
@@ -127,17 +127,17 @@ flagsOff
 
 innateFreq
         returns[String innateFreqVal]
-        :   INNATE_FREQ MON_INTEGER { $innateFreqVal = $MON_INTEGER.getText(); }
+        :   INNATE_FREQ INTEGER { $innateFreqVal = $INTEGER.getText(); }
         ;
 
 spellFreq
         returns[String spellFreqVal]
-        :   SPELL_FREQ MON_INTEGER { $spellFreqVal = $MON_INTEGER.getText(); }
+        :   SPELL_FREQ INTEGER { $spellFreqVal = $INTEGER.getText(); }
         ;
 
 spellPower
         returns[String spellPowerVal]
-        :   SPELL_POWER MON_INTEGER { $spellPowerVal = $MON_INTEGER.getText(); }
+        :   SPELL_POWER MON_UINT { $spellPowerVal = $MON_UINT.getText(); }
         ;
 
 spells
@@ -174,9 +174,9 @@ desc
 
 drop
         returns[String typeStr, String nameStr, String chanceVal, String min, String max]
-        :   DROP t=DROP_STRING DROP_COLON s=DROP_STRING DROP_COLON
-            c=DROP_INTEGER DROP_COLON n=DROP_INTEGER DROP_COLON
-            x=DROP_INTEGER {
+        :   DROP t=DROP_TYPE_STRING s=DROP_NAME_STRING 
+            c=DROP_UINT n=DROP_UINT 
+            x=DROP_UINT {
                 $typeStr   = $t.getText();
                 $nameStr   = $s.getText();
                 $chanceVal = $c.getText();
@@ -187,9 +187,8 @@ drop
 
 dropBase
         returns[String typeStr, String chanceVal, String min, String max]
-        :   DROP_BASE t=DROP_STRING DROP_COLON
-            c=DROP_INTEGER DROP_COLON n=DROP_INTEGER DROP_COLON
-            x=DROP_INTEGER {
+        :   DROP_BASE t=DROP_NAME_STRING 
+            c=DROP_UINT n=DROP_UINT x=DROP_UINT {
                 $typeStr   = $t.getText();
                 $chanceVal = $c.getText();
                 $min       = $n.getText();
@@ -212,7 +211,7 @@ friends
             $nameStr = "";
             $role = "";
         }
-        :   FRIENDS c=FRIEND_INTEGER FRIEND_COLON v=FRIEND_DICE FRIEND_COLON
+        :   FRIENDS c=FRIEND_UINT FRIEND_COLON v=FRIEND_DICE FRIEND_COLON
             n=FRIEND_NAME { $chance  = $c.getText();
                             $number  = $v.getText();
                             $nameStr = $n.getText(); }
@@ -227,7 +226,7 @@ friendsBase
             $nameStr = "";
             $role = "";
         }
-        :   FRIENDS_BASE c=FRIEND_INTEGER FRIEND_COLON v=FRIEND_DICE FRIEND_COLON
+        :   FRIENDS_BASE c=FRIEND_UINT FRIEND_COLON v=FRIEND_DICE FRIEND_COLON
             n=FRIEND_NAME { $chance  = $c.getText();
                             $number  = $v.getText();
                             $nameStr = $n.getText(); }

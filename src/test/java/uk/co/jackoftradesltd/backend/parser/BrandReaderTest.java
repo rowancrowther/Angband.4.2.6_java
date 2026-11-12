@@ -437,10 +437,38 @@ class BrandReaderTest {
     }
 
     @Test
-    void hexNumberIsAHardErrorHereWhereCReadsItAsSixteen() throws IOException {
-        // strtoul(tok, &z, 0): "0x10" is 16 in C.
-        assertThrows(ParseCancellationException.class, () -> load("hex.txt", brand("FIRE_3", "fire", "burn", "0x10", "25", "113", "IM_FIRE", "")));
+    void hexNumberIsSixteenAsStrtoulBaseZeroReadsIt() throws IOException {
+        // strtoul(tok, &z, 0): "0x10" is 16 in C. Each of the three uint directives reads it.
+        ParseResult<Brand> result = load("hex.txt", brand("FIRE_3", "fire", "burn", "0x10", "0x20", "0x71", "IM_FIRE", ""));
 
+        Brand brand = result.items().get(0);
+        assertEquals(16, brand.getMultiplier());
+        assertTrue(brand.toString().contains("oMultiplier=32"), brand::toString);
+        assertEquals(113, brand.getPower());
+    }
+
+    @Test
+    void anUpperCasePrefixAndUpperCaseDigitsAreHexToo() throws IOException {
+        // strtoul accepts "0X" as well as "0x", and hex digits in either case: "0X1f" is 31.
+        ParseResult<Brand> result = load("hex-upper.txt", brand("FIRE_3", "fire", "burn", "0X1f", "0x1F", "113", "IM_FIRE", ""));
+
+        Brand brand = result.items().get(0);
+        assertEquals(31, brand.getMultiplier());
+        assertTrue(brand.toString().contains("oMultiplier=31"), brand::toString);
+    }
+
+    @Test
+    void aPlusSignBeforeAHexNumberIsAccepted() throws IOException {
+        // strtoul takes an optional '+' ahead of the prefix: "+0x10" is 16. Only '-' is refused.
+        ParseResult<Brand> result = load("plus-hex.txt", brand("FIRE_3", "fire", "burn", "+0x10", "25", "113", "IM_FIRE", ""));
+
+        assertEquals(16, result.items().get(0).getMultiplier());
+    }
+
+    @Test
+    void aMinusSignBeforeAHexNumberEndsTheLoad() {
+        // The refusal is on the leading '-', whatever follows it, so "-0x10" goes the way "-2" does.
+        assertThrows(DataFileParseException.class, () -> load("neg-hex.txt", brand("FIRE_3", "fire", "burn", "-0x10", "25", "113", "IM_FIRE", "")));
     }
 
     @Test

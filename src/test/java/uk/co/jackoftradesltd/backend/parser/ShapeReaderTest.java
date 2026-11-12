@@ -556,10 +556,97 @@ class ShapeReaderTest {
 
     }
 
+    // ---- The number inside a values: bracket (find_value_arg in datafile.c: strtol, base 10) ----
+
     @Test
-    void aPlusSignOrBlankInAFigureIsAHardErrorWhereStrtolTakesThem() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("plus.txt", shape("a", "combat:+5:0:0\n")));
-        assertThrows(ParseCancellationException.class, () -> load("plus-skill.txt", shape("a", "skill-dig:+5\n")));
+    void aValuesFigureIsReadInBaseTenWithOrWithoutASign() throws IOException {
+        // strtol(..., 10): +3 is 3, and a leading 0 is NOT octal (010 is ten, 08 is eight).
+        PlayerShape s = load("dec.txt", shape("d", "values:STR[+3] | INT[010] | WIS[08] | DEX[-0] | RES_FIRE[+1]\n"))
+                .items().get(0);
+
+        assertEquals(Map.of(ObjectModifier.OM_STR, 3, ObjectModifier.OM_INT, 10,
+                ObjectModifier.OM_WIS, 8, ObjectModifier.OM_DEX, 0), s.getObjectValueModifiers());
+        assertEquals(1, s.getElementValueModifiers().get(ElementEnum.ELEM_FIRE).getResLevel());
+    }
+
+    @Test
+    void aHexValuesFigureIsAHardErrorAsInC() throws IOException {
+        // strtol base 10 stops at the 'x' in 0x10, and find_value_arg then finds no ']' there, so C refuses
+        // the token. The lexer takes decimal digits only: it used to lex 0x10 and the assembler read it as 0.
+        assertThrows(ParseCancellationException.class, () -> load("hex-l.txt", shape("a", "values:STR[0x10]\n")));
+        assertThrows(ParseCancellationException.class, () -> load("hex-u.txt", shape("a", "values:STR[0X10]\n")));
+        assertThrows(ParseCancellationException.class, () -> load("hex-r.txt", shape("a", "values:RES_FIRE[0x1]\n")));
+    }
+
+    @Test
+    void aLetterOnlyValuesFigureIsAHardErrorAsInC() throws IOException {
+        // No digit at all: strtol stops on the 'a', which is not ']'. It used to reach parseIntString.
+        assertThrows(ParseCancellationException.class, () -> load("abc.txt", shape("a", "values:STR[ab]\n")));
+        assertThrows(ParseCancellationException.class, () -> load("abc-u.txt", shape("a", "values:STR[FF]\n")));
+    }
+
+    @Test
+    void textAfterTheFigureInsideTheBracketIsAHardErrorAsInC() throws IOException {
+        // *tc != ']' in find_value_arg: "3x" and "3 " both leave strtol on a character that is not ']'.
+        assertThrows(ParseCancellationException.class, () -> load("3x.txt", shape("a", "values:STR[3x]\n")));
+        assertThrows(ParseCancellationException.class, () -> load("3sp.txt", shape("a", "values:STR[3 ]\n")));
+    }
+
+    @Test
+    void anUnclosedOrMissingBracketIsAHardErrorAsInC() throws IOException {
+        // No '[' (find_value_arg returns false) and no ']' (*tc is the end of the string).
+        assertThrows(ParseCancellationException.class, () -> load("no-open.txt", shape("a", "values:STR\n")));
+        assertThrows(ParseCancellationException.class, () -> load("no-close.txt", shape("a", "values:STR[3\n")));
+    }
+
+    @Test
+    void anEmptyValuesBracketIsAHardErrorHereWhereCReadsZero() throws IOException {
+        // strtol finds no digit and stops at once on the ']', which is all find_value_arg tests, so C
+        // loads STR[] as STR with 0. Java has no token for an empty bracket.
+        assertThrows(ParseCancellationException.class, () -> load("empty-br.txt", shape("a", "values:STR[]\n")));
+    }
+
+    @Test
+    void aBlankBeforeAValuesFigureIsAHardErrorHereWhereCSkipsIt() throws IOException {
+        // strtol skips leading white space, so STR[ 3] is STR with 3 in C.
+        assertThrows(ParseCancellationException.class, () -> load("br-blank.txt", shape("a", "values:STR[ 3]\n")));
+    }
+
+    @Test
+    void textAfterTheClosingBracketIsAHardErrorHereWhereCIgnoresIt() throws IOException {
+        // find_value_arg never looks past the first ']' after the figure, so STR[3]x and STR[3]] are STR
+        // with 3 in C. Neither VALUE_BREAK mode rule takes the extra text here.
+        assertThrows(ParseCancellationException.class, () -> load("after-x.txt", shape("a", "values:STR[3]x\n")));
+        assertThrows(ParseCancellationException.class, () -> load("after-br.txt", shape("a", "values:STR[3]]\n")));
+    }
+
+    @Test
+    void aValuesFigureAtOrBeyondTheIntRangeIsKeptOrClampedWhereCRefusesIt() throws IOException {
+        // find_value_arg refuses lv <= INT_MIN and lv >= INT_MAX, ending the C load. ParseUtils keeps
+        // -2147483648 and 2147483647 as they are and clamps anything larger.
+        PlayerShape s = load("range.txt", shape("r",
+                "values:STR[2147483647] | INT[-2147483648] | WIS[99999999999]\n")).items().get(0);
+
+        assertEquals(Integer.MAX_VALUE, s.getObjectValueModifiers().get(ObjectModifier.OM_STR));
+        assertEquals(Integer.MIN_VALUE, s.getObjectValueModifiers().get(ObjectModifier.OM_INT));
+        assertEquals(Integer.MAX_VALUE, s.getObjectValueModifiers().get(ObjectModifier.OM_WIS));
+    }
+
+    @Test
+    void aPlusSignInAFigureIsReadAsStrtolReadsIt() throws IOException {
+        // The effect block's number token takes '+' and the 0x prefix since 261112.
+        PlayerShape combat = load("plus.txt", shape("a", "combat:+5:0:0\n")).items().get(0);
+        PlayerShape skill = load("plus-skill.txt", shape("a", "skill-dig:+5\n")).items().get(0);
+        PlayerShape hex = load("hex-skill.txt", shape("a", "skill-dig:0x10\n")).items().get(0);
+
+        assertEquals(5, combat.getToHit());
+        assertEquals(5, skill.getSkills().get(PlayerSkill.SKILL_DIGGING));
+        assertEquals(16, hex.getSkills().get(PlayerSkill.SKILL_DIGGING));
+    }
+
+    @Test
+    void aBlankBeforeAFigureIsAHardErrorWhereStrtolSkipsIt() throws IOException {
+        // Accepted deviation (261112): a blank before a number is a lexer error, strtol skips it.
         assertThrows(ParseCancellationException.class, () -> load("blank-skill.txt", shape("a", "skill-dig: 5\n")));
         assertThrows(ParseCancellationException.class, () -> load("blank-combat.txt", shape("a", "combat: 1 : 2 : 3\n")));
     }

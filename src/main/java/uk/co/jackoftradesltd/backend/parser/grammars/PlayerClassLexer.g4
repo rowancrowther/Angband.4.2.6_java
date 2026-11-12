@@ -119,10 +119,6 @@ COLON
         :   ':'
         ;
 
-INTEGER
-        :   '-'? ('0'..'9')+
-        ;
-
 mode PROPERTIES_MODE;
 
 PROP_INT

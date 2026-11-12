@@ -14,7 +14,6 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from BrandGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.brand;
 
@@ -41,7 +40,7 @@ public class BrandGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		CODE=1, NAME=2, MULTIPLIER=3, O_MULTIPLIER=4, POWER=5, VERB=6, RESIST_FLAG=7, 
-		VULN_FLAG=8, INTEGER=9, COMMENT=10, INDENT=11, EOL=12, FLAG=13, STRING=14;
+		VULN_FLAG=8, UINT=9, COMMENT=10, INDENT=11, EOL=12, FLAG=13, STRING=14;
 	public static final int
 		RULE_code = 0, RULE_name = 1, RULE_multiplier = 2, RULE_oMultiplier = 3, 
 		RULE_power = 4, RULE_verb = 5, RULE_resistFlag = 6, RULE_vulnFlag = 7, 
@@ -64,7 +63,7 @@ public class BrandGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "CODE", "NAME", "MULTIPLIER", "O_MULTIPLIER", "POWER", "VERB", 
-			"RESIST_FLAG", "VULN_FLAG", "INTEGER", "COMMENT", "INDENT", "EOL", "FLAG", 
+			"RESIST_FLAG", "VULN_FLAG", "UINT", "COMMENT", "INDENT", "EOL", "FLAG", 
 			"STRING"
 		};
 	}
@@ -222,9 +221,9 @@ public class BrandGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class MultiplierContext extends ParserRuleContext {
 		public String mult;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode MULTIPLIER() { return getToken(BrandGrammar.MULTIPLIER, 0); }
-		public TerminalNode INTEGER() { return getToken(BrandGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(BrandGrammar.UINT, 0); }
 		public MultiplierContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -253,8 +252,8 @@ public class BrandGrammar extends Parser {
 			setState(28);
 			match(MULTIPLIER);
 			setState(29);
-			((MultiplierContext)_localctx).INTEGER = match(INTEGER);
-			 ((MultiplierContext)_localctx).mult =  ((MultiplierContext)_localctx).INTEGER.getText(); 
+			((MultiplierContext)_localctx).UINT = match(UINT);
+			 ((MultiplierContext)_localctx).mult =  ((MultiplierContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -271,9 +270,9 @@ public class BrandGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class OMultiplierContext extends ParserRuleContext {
 		public String oMult;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode O_MULTIPLIER() { return getToken(BrandGrammar.O_MULTIPLIER, 0); }
-		public TerminalNode INTEGER() { return getToken(BrandGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(BrandGrammar.UINT, 0); }
 		public OMultiplierContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -302,8 +301,8 @@ public class BrandGrammar extends Parser {
 			setState(32);
 			match(O_MULTIPLIER);
 			setState(33);
-			((OMultiplierContext)_localctx).INTEGER = match(INTEGER);
-			 ((OMultiplierContext)_localctx).oMult =  ((OMultiplierContext)_localctx).INTEGER.getText(); 
+			((OMultiplierContext)_localctx).UINT = match(UINT);
+			 ((OMultiplierContext)_localctx).oMult =  ((OMultiplierContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -320,9 +319,9 @@ public class BrandGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class PowerContext extends ParserRuleContext {
 		public String powerStr;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode POWER() { return getToken(BrandGrammar.POWER, 0); }
-		public TerminalNode INTEGER() { return getToken(BrandGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(BrandGrammar.UINT, 0); }
 		public PowerContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -351,8 +350,8 @@ public class BrandGrammar extends Parser {
 			setState(36);
 			match(POWER);
 			setState(37);
-			((PowerContext)_localctx).INTEGER = match(INTEGER);
-			 ((PowerContext)_localctx).powerStr =  ((PowerContext)_localctx).INTEGER.getText(); 
+			((PowerContext)_localctx).UINT = match(UINT);
+			 ((PowerContext)_localctx).powerStr =  ((PowerContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {

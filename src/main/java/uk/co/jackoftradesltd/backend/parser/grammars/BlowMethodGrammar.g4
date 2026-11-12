@@ -28,7 +28,8 @@ options { tokenVocab = BlowMethodLexer; }
 
 // name: opens a record. The line number is captured here (rather than anywhere else in
 // the block) so that an error raised later by the assembler can point at the line
-// the reader would recognize as the start of the offending method.
+// the reader would recognize as the start of the offending method. The name is
+// trimmed where the blow rule stores it, so blanks around the code do not reach the record.
 name
         returns[String nameStr, int line]
         :   NAME STRING { $nameStr = $STRING.getText(); $line = $start.getLine(); }
@@ -39,22 +40,22 @@ name
 // as C truthiness (`val ? true : false`), so ANY non-zero is true - see BlowMethodAssembler.
 cut
         returns[String cutVal]
-        :   CUT INTEGER { $cutVal = $INTEGER.getText(); }
+        :   CUT UINT { $cutVal = $UINT.getText(); }
         ;
 
 stun
         returns[String stunVal]
-        :   STUN INTEGER { $stunVal = $INTEGER.getText(); }
+        :   STUN UINT { $stunVal = $UINT.getText(); }
         ;
 
 miss
         returns[String missVal]
-        :   MISS INTEGER { $missVal = $INTEGER.getText(); }
+        :   MISS UINT { $missVal = $UINT.getText(); }
         ;
 
 phys
         returns[String physVal]
-        :   PHYS INTEGER { $physVal = $INTEGER.getText(); }
+        :   PHYS UINT { $physVal = $UINT.getText(); }
         ;
 
 // msg: names the message channel the blow is reported on, resolved against MessageType

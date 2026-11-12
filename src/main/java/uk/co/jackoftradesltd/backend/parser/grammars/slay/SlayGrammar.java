@@ -41,8 +41,8 @@ public class SlayGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		CODE=1, NAME=2, RACE_FLAG=3, BASE=4, MULTIPLIER=5, O_MULTIPLIER=6, POWER=7, 
-		MELEE_VERB=8, RANGE_VERB=9, INTEGER=10, COMMENT=11, INDENT=12, EOL=13, 
-		FLAG=14, STRING=15;
+		MELEE_VERB=8, RANGE_VERB=9, UINT=10, COMMENT=11, INDENT=12, EOL=13, FLAG=14, 
+		STRING=15;
 	public static final int
 		RULE_code = 0, RULE_name = 1, RULE_raceFlag = 2, RULE_base = 3, RULE_multiplier = 4, 
 		RULE_oMultiplier = 5, RULE_power = 6, RULE_meleeVerb = 7, RULE_rangeVerb = 8, 
@@ -65,8 +65,8 @@ public class SlayGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "CODE", "NAME", "RACE_FLAG", "BASE", "MULTIPLIER", "O_MULTIPLIER", 
-			"POWER", "MELEE_VERB", "RANGE_VERB", "INTEGER", "COMMENT", "INDENT", 
-			"EOL", "FLAG", "STRING"
+			"POWER", "MELEE_VERB", "RANGE_VERB", "UINT", "COMMENT", "INDENT", "EOL", 
+			"FLAG", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -323,9 +323,9 @@ public class SlayGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class MultiplierContext extends ParserRuleContext {
 		public String mult;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode MULTIPLIER() { return getToken(SlayGrammar.MULTIPLIER, 0); }
-		public TerminalNode INTEGER() { return getToken(SlayGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(SlayGrammar.UINT, 0); }
 		public MultiplierContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -354,8 +354,8 @@ public class SlayGrammar extends Parser {
 			setState(38);
 			match(MULTIPLIER);
 			setState(39);
-			((MultiplierContext)_localctx).INTEGER = match(INTEGER);
-			 ((MultiplierContext)_localctx).mult =  ((MultiplierContext)_localctx).INTEGER.getText(); 
+			((MultiplierContext)_localctx).UINT = match(UINT);
+			 ((MultiplierContext)_localctx).mult =  ((MultiplierContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -372,9 +372,9 @@ public class SlayGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class OMultiplierContext extends ParserRuleContext {
 		public String oMult;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode O_MULTIPLIER() { return getToken(SlayGrammar.O_MULTIPLIER, 0); }
-		public TerminalNode INTEGER() { return getToken(SlayGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(SlayGrammar.UINT, 0); }
 		public OMultiplierContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -403,8 +403,8 @@ public class SlayGrammar extends Parser {
 			setState(42);
 			match(O_MULTIPLIER);
 			setState(43);
-			((OMultiplierContext)_localctx).INTEGER = match(INTEGER);
-			 ((OMultiplierContext)_localctx).oMult =  ((OMultiplierContext)_localctx).INTEGER.getText(); 
+			((OMultiplierContext)_localctx).UINT = match(UINT);
+			 ((OMultiplierContext)_localctx).oMult =  ((OMultiplierContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -421,9 +421,9 @@ public class SlayGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class PowerContext extends ParserRuleContext {
 		public String powerInt;
-		public Token INTEGER;
+		public Token UINT;
 		public TerminalNode POWER() { return getToken(SlayGrammar.POWER, 0); }
-		public TerminalNode INTEGER() { return getToken(SlayGrammar.INTEGER, 0); }
+		public TerminalNode UINT() { return getToken(SlayGrammar.UINT, 0); }
 		public PowerContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -452,8 +452,8 @@ public class SlayGrammar extends Parser {
 			setState(46);
 			match(POWER);
 			setState(47);
-			((PowerContext)_localctx).INTEGER = match(INTEGER);
-			 ((PowerContext)_localctx).powerInt =  ((PowerContext)_localctx).INTEGER.getText(); 
+			((PowerContext)_localctx).UINT = match(UINT);
+			 ((PowerContext)_localctx).powerInt =  ((PowerContext)_localctx).UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {

@@ -464,9 +464,83 @@ class SlayReaderTest {
 
     @Test
     void headerOnlyFileIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        // The file rule needs at least one slay record after record-count:.
+        // The file rule needs at least one slay record.
         assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
 
+    }
+
+    // ---- What the lexer lets through, and what it refuses (SlayLexer.g4) ----
+    //
+    // UINT takes a hex-digit start and anything up to the end of the line or a ':', so the lexer
+    // only decides "this is a number token" and SlayAssembler decides what the text means. The
+    // free-text and flag values sit in their own modes, which refuse an empty value.
+
+    @Test
+    void textAfterANumberReachesTheAssemblerAndTheLeadingDigitsAreRead() throws IOException {
+        // C: parser_getuint runs strtoul, which stops at the first character it cannot use, and
+        // the text after it is dropped. "2x" is 2 and "200  " is 200. Same as here, because the
+        // lexer passes the whole tail on and ParseUtils.parseIntString reads the leading digits.
+        ParseResult<Slay> result = load("tail.txt",
+                raceFlagSlayWith("EVIL_2", "EVIL", "2x", "18", "200  "));
+
+        assertEquals(2, result.items().get(0).getMultiplier());
+        assertEquals(200, result.items().get(0).getPower());
+    }
+
+    @Test
+    void aNumberWithNoLeadingDigitsIsRefusedByTheAssemblerNotTheLexer() {
+        // C: strtoul reads nothing from "abc", so parser_getuint gives PARSE_ERROR_NOT_NUMBER. The
+        // lexer takes "abc" as a UINT (a-f are hex digits), so it is the assembler that refuses,
+        // with a DataFileParseException and not a ParseCancellationException.
+        assertThrows(DataFileParseException.class, () -> load("abc.txt",
+                raceFlagSlayWith("EVIL_2", "EVIL", "abc", "18", "200")));
+    }
+
+    @Test
+    void aBlankBeforeANumberIsALexerErrorWhereCSkipsIt() {
+        // Accepted deviation 261112 (docs/Accepted_Deviations.md, "Numbers in every data file"):
+        // strtoul skips leading white space in C, so "multiplier: 2" is 2 there. Here UINT cannot
+        // start with a blank, so the lexer fails.
+        assertThrows(ParseCancellationException.class, () -> load("blank-first.txt",
+                raceFlagSlayWith("EVIL_2", "EVIL", " 2", "18", "200")));
+    }
+
+    @Test
+    void anEmptyFreeTextValueIsALexerError() {
+        // C: "name:" leaves no text for the str field, so parse_file gives PARSE_ERROR_MISSING_FIELD.
+        // FREE_TEXT_MODE needs one character, so the lexer fails, and the load stops either way.
+        assertThrows(ParseCancellationException.class, () -> load("empty-name.txt",
+                "code:EVIL_2\nname:\nmultiplier:2\n"));
+    }
+
+    @Test
+    void aLowerCaseRaceFlagIsALexerErrorAndNotTheAssemblersMessage() {
+        // C: lookup_flag compares with streq against the upper-case macro argument, so "evil" is
+        // PARSE_ERROR_INVALID_FLAG. Both stop the load. Here FLAG_BODY must start with A-Z, so
+        // the lexer refuses it first (ParseCancellationException) and SlayAssembler never sees it.
+        assertThrows(ParseCancellationException.class, () -> load("lower-flag.txt",
+                slay("EVIL_2", "race-flag:evil", "2", "18", "200")));
+    }
+
+    @Test
+    void blanksAfterARaceFlagLoadHereWhereCRefusesThem() throws IOException {
+        // C: a sym field is cut at ':' and nothing strips the end of the line, so "EVIL  " goes
+        // to lookup_flag with its blanks and fails (PARSE_ERROR_INVALID_FLAG). Here the lexer
+        // takes FLAG "EVIL" and the blanks are skipped. Not in shipped data.
+        ParseResult<Slay> result = load("flag-blanks.txt",
+                slay("EVIL_2", "race-flag:EVIL   ", "2", "18", "200"));
+
+        assertTrue(result.items().get(0).toString().contains("raceFlag=RF_EVIL"));
+    }
+
+    @Test
+    void aBaseValueRunsPastAColonWhereCCutsItThere() {
+        // C: base is a sym, cut at ':', so "base:ancient dragon:junk" looks up "ancient dragon"
+        // and loads. Here BASE reads free text to the end of the line, so the lookup is for
+        // "ancient dragon:junk" and the load stops. Not in shipped data (no slay uses base:).
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("base-colon.txt",
+                slay("DRAGON_5", "base:" + KNOWN_BASE + ":junk", "5", "35", "110")));
+        assertTrue(e.getMessage().contains(KNOWN_BASE + ":junk"), e::getMessage);
     }
 
     /**

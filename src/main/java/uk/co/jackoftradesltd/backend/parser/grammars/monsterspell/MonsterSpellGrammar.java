@@ -44,10 +44,10 @@ public class MonsterSpellGrammar extends Parser {
 		NAME=1, MSGT=2, HIT=3, POWER_CUTOFF=4, LORE=5, LORE_COLOUR_BASE=6, LORE_COLOUR_RESIST=7, 
 		LORE_COLOUR_IMMUNE=8, MESSAGE_SAVE=9, MESSAGE_VIS=10, MESSAGE_INVIS=11, 
 		MESSAGE_MISS=12, COMMENT=13, INDENT=14, EOL=15, EFFECT=16, EFFECT_MESSAGE=17, 
-		DICE=18, TIME=19, EFFECT_YX=20, EXPR=21, COLON=22, UCASE=23, INTEGER=24, 
-		SIMPLE_DICE_STRING=25, COMPLEX_DICE_STRING=26, STRING=27, FREE_TEXT_EOL=28, 
-		FREE_TEXT=29, DICE_SIMPLE_VALUE=30, DICE_COMPLEX_VALUE=31, EXPR_CHAR=32, 
-		EXPR_COLON=33, EXPR_UCASE=34, EXPR_OP=35, EXPR_EOL=36;
+		DICE=18, TIME=19, EFFECT_YX=20, EXPR=21, COLON=22, UCASE=23, EFFECT_INTEGER=24, 
+		SIMPLE_DICE_STRING=25, COMPLEX_DICE_STRING=26, HIT_UINT=27, HIT_TEXT_EOL=28, 
+		STRING=29, FREE_TEXT_EOL=30, FREE_TEXT=31, DICE_SIMPLE_VALUE=32, DICE_COMPLEX_VALUE=33, 
+		EXPR_CHAR=34, EXPR_COLON=35, EXPR_UCASE=36, EXPR_OP=37, EXPR_EOL=38;
 	public static final int
 		RULE_name = 0, RULE_msgt = 1, RULE_hit = 2, RULE_powerCutoff = 3, RULE_lore = 4, 
 		RULE_loreColourBase = 5, RULE_loreColourResist = 6, RULE_loreColourImmune = 7, 
@@ -81,9 +81,10 @@ public class MonsterSpellGrammar extends Parser {
 			"LORE_COLOUR_RESIST", "LORE_COLOUR_IMMUNE", "MESSAGE_SAVE", "MESSAGE_VIS", 
 			"MESSAGE_INVIS", "MESSAGE_MISS", "COMMENT", "INDENT", "EOL", "EFFECT", 
 			"EFFECT_MESSAGE", "DICE", "TIME", "EFFECT_YX", "EXPR", "COLON", "UCASE", 
-			"INTEGER", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", "STRING", "FREE_TEXT_EOL", 
-			"FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", "EXPR_CHAR", 
-			"EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL"
+			"EFFECT_INTEGER", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", "HIT_UINT", 
+			"HIT_TEXT_EOL", "STRING", "FREE_TEXT_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", 
+			"DICE_COMPLEX_VALUE", "EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", 
+			"EXPR_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -246,9 +247,9 @@ public class MonsterSpellGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class HitContext extends ParserRuleContext {
 		public String hitVal;
-		public Token INTEGER;
+		public Token HIT_UINT;
 		public TerminalNode HIT() { return getToken(MonsterSpellGrammar.HIT, 0); }
-		public TerminalNode INTEGER() { return getToken(MonsterSpellGrammar.INTEGER, 0); }
+		public TerminalNode HIT_UINT() { return getToken(MonsterSpellGrammar.HIT_UINT, 0); }
 		public HitContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -277,8 +278,8 @@ public class MonsterSpellGrammar extends Parser {
 			setState(56);
 			match(HIT);
 			setState(57);
-			((HitContext)_localctx).INTEGER = match(INTEGER);
-			 ((HitContext)_localctx).hitVal =  ((HitContext)_localctx).INTEGER.getText(); 
+			((HitContext)_localctx).HIT_UINT = match(HIT_UINT);
+			 ((HitContext)_localctx).hitVal =  ((HitContext)_localctx).HIT_UINT.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -295,9 +296,9 @@ public class MonsterSpellGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class PowerCutoffContext extends ParserRuleContext {
 		public String cutoffVal;
-		public Token INTEGER;
+		public Token EFFECT_INTEGER;
 		public TerminalNode POWER_CUTOFF() { return getToken(MonsterSpellGrammar.POWER_CUTOFF, 0); }
-		public TerminalNode INTEGER() { return getToken(MonsterSpellGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(MonsterSpellGrammar.EFFECT_INTEGER, 0); }
 		public PowerCutoffContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -326,8 +327,8 @@ public class MonsterSpellGrammar extends Parser {
 			setState(60);
 			match(POWER_CUTOFF);
 			setState(61);
-			((PowerCutoffContext)_localctx).INTEGER = match(INTEGER);
-			 ((PowerCutoffContext)_localctx).cutoffVal =  ((PowerCutoffContext)_localctx).INTEGER.getText(); 
+			((PowerCutoffContext)_localctx).EFFECT_INTEGER = match(EFFECT_INTEGER);
+			 ((PowerCutoffContext)_localctx).cutoffVal =  ((PowerCutoffContext)_localctx).EFFECT_INTEGER.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1348,9 +1349,9 @@ public class MonsterSpellGrammar extends Parser {
 		public TerminalNode COLON(int i) {
 			return getToken(MonsterSpellGrammar.COLON, i);
 		}
-		public List<TerminalNode> INTEGER() { return getTokens(MonsterSpellGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(MonsterSpellGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(MonsterSpellGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(MonsterSpellGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1410,7 +1411,7 @@ public class MonsterSpellGrammar extends Parser {
 					setState(179);
 					match(COLON);
 					setState(180);
-					((EffectContext)_localctx).rad = match(INTEGER);
+					((EffectContext)_localctx).rad = match(EFFECT_INTEGER);
 
 					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
 					            
@@ -1422,7 +1423,7 @@ public class MonsterSpellGrammar extends Parser {
 						setState(182);
 						match(COLON);
 						setState(183);
-						((EffectContext)_localctx).oth = match(INTEGER);
+						((EffectContext)_localctx).oth = match(EFFECT_INTEGER);
 
 						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
 						            
@@ -1456,9 +1457,9 @@ public class MonsterSpellGrammar extends Parser {
 		public Token xVal;
 		public TerminalNode EFFECT_YX() { return getToken(MonsterSpellGrammar.EFFECT_YX, 0); }
 		public TerminalNode COLON() { return getToken(MonsterSpellGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(MonsterSpellGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(MonsterSpellGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(MonsterSpellGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(MonsterSpellGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectYXContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1488,11 +1489,11 @@ public class MonsterSpellGrammar extends Parser {
 			setState(191);
 			match(EFFECT_YX);
 			setState(192);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			((EffectYXContext)_localctx).yVal = match(EFFECT_INTEGER);
 			setState(193);
 			match(COLON);
 			setState(194);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
+			((EffectYXContext)_localctx).xVal = match(EFFECT_INTEGER);
 
 			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
 			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
@@ -2031,7 +2032,7 @@ public class MonsterSpellGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001$\u00fe\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001&\u00fe\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002"+
@@ -2083,24 +2084,24 @@ public class MonsterSpellGrammar extends Parser {
 		"$\u00c5\u0001\u0000\u0000\u0000&\u00d4\u0001\u0000\u0000\u0000(\u00dc"+
 		"\u0001\u0000\u0000\u0000*\u00e0\u0001\u0000\u0000\u0000,\u00e7\u0001\u0000"+
 		"\u0000\u0000.\u00e9\u0001\u0000\u0000\u000001\u0005\u0001\u0000\u0000"+
-		"12\u0005\u001b\u0000\u000023\u0006\u0000\uffff\uffff\u00003\u0001\u0001"+
-		"\u0000\u0000\u000045\u0005\u0002\u0000\u000056\u0005\u001b\u0000\u0000"+
+		"12\u0005\u001d\u0000\u000023\u0006\u0000\uffff\uffff\u00003\u0001\u0001"+
+		"\u0000\u0000\u000045\u0005\u0002\u0000\u000056\u0005\u001d\u0000\u0000"+
 		"67\u0006\u0001\uffff\uffff\u00007\u0003\u0001\u0000\u0000\u000089\u0005"+
-		"\u0003\u0000\u00009:\u0005\u0018\u0000\u0000:;\u0006\u0002\uffff\uffff"+
+		"\u0003\u0000\u00009:\u0005\u001b\u0000\u0000:;\u0006\u0002\uffff\uffff"+
 		"\u0000;\u0005\u0001\u0000\u0000\u0000<=\u0005\u0004\u0000\u0000=>\u0005"+
 		"\u0018\u0000\u0000>?\u0006\u0003\uffff\uffff\u0000?\u0007\u0001\u0000"+
-		"\u0000\u0000@A\u0005\u0005\u0000\u0000AB\u0005\u001b\u0000\u0000BC\u0006"+
+		"\u0000\u0000@A\u0005\u0005\u0000\u0000AB\u0005\u001d\u0000\u0000BC\u0006"+
 		"\u0004\uffff\uffff\u0000C\t\u0001\u0000\u0000\u0000DE\u0005\u0006\u0000"+
-		"\u0000EF\u0005\u001b\u0000\u0000FG\u0006\u0005\uffff\uffff\u0000G\u000b"+
-		"\u0001\u0000\u0000\u0000HI\u0005\u0007\u0000\u0000IJ\u0005\u001b\u0000"+
+		"\u0000EF\u0005\u001d\u0000\u0000FG\u0006\u0005\uffff\uffff\u0000G\u000b"+
+		"\u0001\u0000\u0000\u0000HI\u0005\u0007\u0000\u0000IJ\u0005\u001d\u0000"+
 		"\u0000JK\u0006\u0006\uffff\uffff\u0000K\r\u0001\u0000\u0000\u0000LM\u0005"+
-		"\b\u0000\u0000MN\u0005\u001b\u0000\u0000NO\u0006\u0007\uffff\uffff\u0000"+
-		"O\u000f\u0001\u0000\u0000\u0000PQ\u0005\t\u0000\u0000QR\u0005\u001b\u0000"+
+		"\b\u0000\u0000MN\u0005\u001d\u0000\u0000NO\u0006\u0007\uffff\uffff\u0000"+
+		"O\u000f\u0001\u0000\u0000\u0000PQ\u0005\t\u0000\u0000QR\u0005\u001d\u0000"+
 		"\u0000RS\u0006\b\uffff\uffff\u0000S\u0011\u0001\u0000\u0000\u0000TU\u0005"+
-		"\n\u0000\u0000UV\u0005\u001b\u0000\u0000VW\u0006\t\uffff\uffff\u0000W"+
-		"\u0013\u0001\u0000\u0000\u0000XY\u0005\u000b\u0000\u0000YZ\u0005\u001b"+
+		"\n\u0000\u0000UV\u0005\u001d\u0000\u0000VW\u0006\t\uffff\uffff\u0000W"+
+		"\u0013\u0001\u0000\u0000\u0000XY\u0005\u000b\u0000\u0000YZ\u0005\u001d"+
 		"\u0000\u0000Z[\u0006\n\uffff\uffff\u0000[\u0015\u0001\u0000\u0000\u0000"+
-		"\\]\u0005\f\u0000\u0000]^\u0005\u001b\u0000\u0000^_\u0006\u000b\uffff"+
+		"\\]\u0005\f\u0000\u0000]^\u0005\u001d\u0000\u0000^_\u0006\u000b\uffff"+
 		"\uffff\u0000_\u0017\u0001\u0000\u0000\u0000`y\u0006\f\uffff\uffff\u0000"+
 		"ab\u0003\b\u0004\u0000bc\u0006\f\uffff\uffff\u0000cz\u0001\u0000\u0000"+
 		"\u0000de\u0003\n\u0005\u0000ef\u0006\f\uffff\uffff\u0000fz\u0001\u0000"+
@@ -2158,39 +2159,39 @@ public class MonsterSpellGrammar extends Parser {
 		"\u0000\u0000\u00bf\u00c0\u0005\u0014\u0000\u0000\u00c0\u00c1\u0005\u0018"+
 		"\u0000\u0000\u00c1\u00c2\u0005\u0016\u0000\u0000\u00c2\u00c3\u0005\u0018"+
 		"\u0000\u0000\u00c3\u00c4\u0006\u0011\uffff\uffff\u0000\u00c4#\u0001\u0000"+
-		"\u0000\u0000\u00c5\u00d2\u0005\u0012\u0000\u0000\u00c6\u00c7\u0005\u001f"+
-		"\u0000\u0000\u00c7\u00cd\u0006\u0012\uffff\uffff\u0000\u00c8\u00c9\u0003"+
-		"&\u0013\u0000\u00c9\u00ca\u0006\u0012\uffff\uffff\u0000\u00ca\u00cc\u0001"+
-		"\u0000\u0000\u0000\u00cb\u00c8\u0001\u0000\u0000\u0000\u00cc\u00cf\u0001"+
-		"\u0000\u0000\u0000\u00cd\u00cb\u0001\u0000\u0000\u0000\u00cd\u00ce\u0001"+
-		"\u0000\u0000\u0000\u00ce\u00d3\u0001\u0000\u0000\u0000\u00cf\u00cd\u0001"+
-		"\u0000\u0000\u0000\u00d0\u00d1\u0005\u001e\u0000\u0000\u00d1\u00d3\u0006"+
-		"\u0012\uffff\uffff\u0000\u00d2\u00c6\u0001\u0000\u0000\u0000\u00d2\u00d0"+
-		"\u0001\u0000\u0000\u0000\u00d3%\u0001\u0000\u0000\u0000\u00d4\u00d5\u0005"+
-		"\u0015\u0000\u0000\u00d5\u00d6\u0005 \u0000\u0000\u00d6\u00d7\u0005!\u0000"+
-		"\u0000\u00d7\u00d8\u0005\"\u0000\u0000\u00d8\u00d9\u0005!\u0000\u0000"+
-		"\u00d9\u00da\u0005#\u0000\u0000\u00da\u00db\u0006\u0013\uffff\uffff\u0000"+
-		"\u00db\'\u0001\u0000\u0000\u0000\u00dc\u00dd\u0005\u0011\u0000\u0000\u00dd"+
-		"\u00de\u0005\u001d\u0000\u0000\u00de\u00df\u0006\u0014\uffff\uffff\u0000"+
-		"\u00df)\u0001\u0000\u0000\u0000\u00e0\u00e1\u0005\u0013\u0000\u0000\u00e1"+
-		"\u00e2\u0005\u001e\u0000\u0000\u00e2\u00e3\u0006\u0015\uffff\uffff\u0000"+
-		"\u00e3+\u0001\u0000\u0000\u0000\u00e4\u00e8\u0003\"\u0011\u0000\u00e5"+
-		"\u00e8\u0003$\u0012\u0000\u00e6\u00e8\u0003&\u0013\u0000\u00e7\u00e4\u0001"+
-		"\u0000\u0000\u0000\u00e7\u00e5\u0001\u0000\u0000\u0000\u00e7\u00e6\u0001"+
-		"\u0000\u0000\u0000\u00e8-\u0001\u0000\u0000\u0000\u00e9\u00ea\u0003 \u0010"+
-		"\u0000\u00ea\u00fb\u0006\u0017\uffff\uffff\u0000\u00eb\u00ec\u0003\"\u0011"+
-		"\u0000\u00ec\u00ed\u0006\u0017\uffff\uffff\u0000\u00ed\u00ee\u0003$\u0012"+
-		"\u0000\u00ee\u00ef\u0006\u0017\uffff\uffff\u0000\u00ef\u00fc\u0001\u0000"+
-		"\u0000\u0000\u00f0\u00f1\u0003$\u0012\u0000\u00f1\u00f2\u0006\u0017\uffff"+
-		"\uffff\u0000\u00f2\u00f3\u0003\"\u0011\u0000\u00f3\u00f4\u0006\u0017\uffff"+
-		"\uffff\u0000\u00f4\u00fc\u0001\u0000\u0000\u0000\u00f5\u00f6\u0003$\u0012"+
-		"\u0000\u00f6\u00f7\u0006\u0017\uffff\uffff\u0000\u00f7\u00fc\u0001\u0000"+
-		"\u0000\u0000\u00f8\u00f9\u0003\"\u0011\u0000\u00f9\u00fa\u0006\u0017\uffff"+
-		"\uffff\u0000\u00fa\u00fc\u0001\u0000\u0000\u0000\u00fb\u00eb\u0001\u0000"+
-		"\u0000\u0000\u00fb\u00f0\u0001\u0000\u0000\u0000\u00fb\u00f5\u0001\u0000"+
-		"\u0000\u0000\u00fb\u00f8\u0001\u0000\u0000\u0000\u00fb\u00fc\u0001\u0000"+
-		"\u0000\u0000\u00fc/\u0001\u0000\u0000\u0000\ry{\u0083\u009f\u00a1\u00a9"+
-		"\u00b9\u00bb\u00bd\u00cd\u00d2\u00e7\u00fb";
+		"\u0000\u0000\u00c5\u00d2\u0005\u0012\u0000\u0000\u00c6\u00c7\u0005!\u0000"+
+		"\u0000\u00c7\u00cd\u0006\u0012\uffff\uffff\u0000\u00c8\u00c9\u0003&\u0013"+
+		"\u0000\u00c9\u00ca\u0006\u0012\uffff\uffff\u0000\u00ca\u00cc\u0001\u0000"+
+		"\u0000\u0000\u00cb\u00c8\u0001\u0000\u0000\u0000\u00cc\u00cf\u0001\u0000"+
+		"\u0000\u0000\u00cd\u00cb\u0001\u0000\u0000\u0000\u00cd\u00ce\u0001\u0000"+
+		"\u0000\u0000\u00ce\u00d3\u0001\u0000\u0000\u0000\u00cf\u00cd\u0001\u0000"+
+		"\u0000\u0000\u00d0\u00d1\u0005 \u0000\u0000\u00d1\u00d3\u0006\u0012\uffff"+
+		"\uffff\u0000\u00d2\u00c6\u0001\u0000\u0000\u0000\u00d2\u00d0\u0001\u0000"+
+		"\u0000\u0000\u00d3%\u0001\u0000\u0000\u0000\u00d4\u00d5\u0005\u0015\u0000"+
+		"\u0000\u00d5\u00d6\u0005\"\u0000\u0000\u00d6\u00d7\u0005#\u0000\u0000"+
+		"\u00d7\u00d8\u0005$\u0000\u0000\u00d8\u00d9\u0005#\u0000\u0000\u00d9\u00da"+
+		"\u0005%\u0000\u0000\u00da\u00db\u0006\u0013\uffff\uffff\u0000\u00db\'"+
+		"\u0001\u0000\u0000\u0000\u00dc\u00dd\u0005\u0011\u0000\u0000\u00dd\u00de"+
+		"\u0005\u001f\u0000\u0000\u00de\u00df\u0006\u0014\uffff\uffff\u0000\u00df"+
+		")\u0001\u0000\u0000\u0000\u00e0\u00e1\u0005\u0013\u0000\u0000\u00e1\u00e2"+
+		"\u0005 \u0000\u0000\u00e2\u00e3\u0006\u0015\uffff\uffff\u0000\u00e3+\u0001"+
+		"\u0000\u0000\u0000\u00e4\u00e8\u0003\"\u0011\u0000\u00e5\u00e8\u0003$"+
+		"\u0012\u0000\u00e6\u00e8\u0003&\u0013\u0000\u00e7\u00e4\u0001\u0000\u0000"+
+		"\u0000\u00e7\u00e5\u0001\u0000\u0000\u0000\u00e7\u00e6\u0001\u0000\u0000"+
+		"\u0000\u00e8-\u0001\u0000\u0000\u0000\u00e9\u00ea\u0003 \u0010\u0000\u00ea"+
+		"\u00fb\u0006\u0017\uffff\uffff\u0000\u00eb\u00ec\u0003\"\u0011\u0000\u00ec"+
+		"\u00ed\u0006\u0017\uffff\uffff\u0000\u00ed\u00ee\u0003$\u0012\u0000\u00ee"+
+		"\u00ef\u0006\u0017\uffff\uffff\u0000\u00ef\u00fc\u0001\u0000\u0000\u0000"+
+		"\u00f0\u00f1\u0003$\u0012\u0000\u00f1\u00f2\u0006\u0017\uffff\uffff\u0000"+
+		"\u00f2\u00f3\u0003\"\u0011\u0000\u00f3\u00f4\u0006\u0017\uffff\uffff\u0000"+
+		"\u00f4\u00fc\u0001\u0000\u0000\u0000\u00f5\u00f6\u0003$\u0012\u0000\u00f6"+
+		"\u00f7\u0006\u0017\uffff\uffff\u0000\u00f7\u00fc\u0001\u0000\u0000\u0000"+
+		"\u00f8\u00f9\u0003\"\u0011\u0000\u00f9\u00fa\u0006\u0017\uffff\uffff\u0000"+
+		"\u00fa\u00fc\u0001\u0000\u0000\u0000\u00fb\u00eb\u0001\u0000\u0000\u0000"+
+		"\u00fb\u00f0\u0001\u0000\u0000\u0000\u00fb\u00f5\u0001\u0000\u0000\u0000"+
+		"\u00fb\u00f8\u0001\u0000\u0000\u0000\u00fb\u00fc\u0001\u0000\u0000\u0000"+
+		"\u00fc/\u0001\u0000\u0000\u0000\ry{\u0083\u009f\u00a1\u00a9\u00b9\u00bb"+
+		"\u00bd\u00cd\u00d2\u00e7\u00fb";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

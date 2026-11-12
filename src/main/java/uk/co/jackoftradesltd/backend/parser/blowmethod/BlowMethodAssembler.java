@@ -82,7 +82,7 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      *       stored as {@code val ? true : false}. So any non-zero value is true, and
      *       {@code cut:00} is false, as octal 0. A leading {@code -} ends the load, as
      *       {@code parser_parse} refuses one with {@code PARSE_ERROR_NOT_NUMBER}; the
-     *       grammar's {@code INTEGER} token lets one through, so
+     *       grammar's {@code UINT} token lets one through, so
      *       {@link ParseUtils#minusFound(String)} makes the check here, on the raw text, which
      *       is why {@code -0} is refused although its value is 0. A figure outside the range of
      *       an {@code int} ends the load too, where C wraps it into its 32-bit
@@ -131,7 +131,8 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      *
      * <p>Function assemble coded before 260915, commented in full on 261107, rewritten for
      * the load-ending errors, base 0 flags and C's message lookup on 261023, absent flags,
-     * the leading {@code -} check, out-of-range refusal and the {@code act:} reversal on 261107, error order noted 261107.
+     * the leading {@code -} check, out-of-range refusal and the {@code act:} reversal on 261107, error order noted 261107,
+     * token name corrected from {@code INTEGER} to {@code UINT} on 261112.
      *
      * @param records  the raw parse records, in file order
      * @param filename the name of the data file, used in the error messages

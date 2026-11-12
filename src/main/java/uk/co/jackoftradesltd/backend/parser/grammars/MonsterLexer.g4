@@ -23,39 +23,39 @@ COLOUR
         ;
 
 SPEED
-        :   'speed:'
+        :   'speed:' -> pushMode(INTEGER_MODE)
         ;
 
 HIT_POINTS
-        :   'hit-points:'
+        :   'hit-points:' -> pushMode(INTEGER_MODE)
         ;
 
 LIGHT
-        :   'light:'
+        :   'light:' -> pushMode(INTEGER_MODE)
         ;
 
 HEARING
-        :   'hearing:'
+        :   'hearing:' -> pushMode(INTEGER_MODE)
         ;
 
 ARMOUR_CLASS
-        :   'armor-class:'
+        :   'armor-class:' -> pushMode(INTEGER_MODE)
         ;
 
 SLEEPINESS
-        :   'sleepiness:'
+        :   'sleepiness:' -> pushMode(INTEGER_MODE)
         ;
 
 DEPTH
-        :   'depth:'
+        :   'depth:' -> pushMode(INTEGER_MODE)
         ;
 
 RARITY
-        :   'rarity:'
+        :   'rarity:' -> pushMode(INTEGER_MODE)
         ;
 
 EXPERIENCE
-        :   'experience:'
+        :   'experience:' -> pushMode(INTEGER_MODE)
         ;
 
 BLOW
@@ -71,11 +71,11 @@ FLAGS_OFF
         ;
 
 INNATE_FREQ
-        :   'innate-freq:'
+        :   'innate-freq:' -> pushMode(INTEGER_MODE)
         ;
 
 SPELL_FREQ
-        :   'spell-freq:'
+        :   'spell-freq:' -> pushMode(INTEGER_MODE)
         ;
 
 SPELL_POWER
@@ -103,11 +103,11 @@ DESC
         ;
 
 DROP
-        :   'drop:' -> pushMode(DROP_MODE)
+        :   'drop:' -> mode(DROP_TYPE_STRING_MODE)
         ;
 
 DROP_BASE
-        :   'drop-base:' -> pushMode(DROP_MODE)
+        :   'drop-base:' -> mode(DROP_NAME_STRING_MODE)
         ;
 
 MIMIC
@@ -115,15 +115,15 @@ MIMIC
         ;
 
 FRIENDS
-        :   'friends:' -> pushMode(FRIENDS_MODE)
+        :   'friends:' -> mode(FRIEND_CHANCE)
         ;
 
 FRIENDS_BASE
-        :   'friends-base:' -> pushMode(FRIENDS_MODE)
+        :   'friends-base:' -> mode(FRIEND_CHANCE)
         ;
 
 SMELL
-        :   'smell:'
+        :   'smell:' -> pushMode(INTEGER_MODE)
         ;
 
 SHAPE
@@ -134,8 +134,8 @@ COLOUR_CYCLE
         :   'color-cycle:' -> pushMode(DELIMITED)
         ;
 
-MON_INTEGER
-        :   '-'? ('0'..'9')+
+MON_UINT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
         ;
 
 mode REST_OF_LINE;
@@ -146,6 +146,12 @@ STRING
 
 ROL_EOL
         :   NL -> skip, popMode
+        ;
+
+mode INTEGER_MODE;
+
+INTEGER
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ -> popMode
         ;
 
 mode BLOW_MODE;
@@ -196,10 +202,6 @@ DELIMITED_EOL
 
 mode FRIENDS_MODE;
 
-FRIEND_INTEGER
-        :   '-'? ('0'..'9')+
-        ;
-
 FRIEND_DICE
         :   SIMPLE_DICE_STRING_BODY
         ;
@@ -213,25 +215,47 @@ FRIEND_NAME
         ;
 
 FRIEND_EOL
-        :   NL -> skip, popMode
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+mode FRIEND_CHANCE;
+
+FRIEND_UINT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')* -> mode(FRIENDS_MODE)
         ;
 
 mode DROP_MODE;
 
 DROP_COLON
-        :   ':'
+        :   ':' -> skip
         ;
 
-DROP_INTEGER
-        :   '-'? ('0'..'9')+
-        ;
-
-DROP_STRING
-        :   ~('\r' | '\n' | ':')+
+DROP_UINT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
         ;
 
 DROP_EOL
-        :   NL -> popMode, skip
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+mode DROP_TYPE_STRING_MODE;
+
+DROP_TYPE_STRING
+        :   ~('\r' | '\n' | ':')+
+        ;
+
+DROP_COLON_STR
+        :   ':' -> skip, mode(DROP_NAME_STRING_MODE)
+        ;
+
+mode DROP_NAME_STRING_MODE;
+
+DROP_NAME_STRING
+        :   ~('\r' | '\n' | ':')+
+        ;
+
+DROP_COLON_NAME_STR
+        :   ':' -> skip, mode(DROP_MODE)
         ;
 
 mode COLOUR_MODE;

@@ -43,9 +43,10 @@ public class ChestTrapGrammar extends Parser {
 	public static final int
 		NAME=1, CODE=2, LEVEL=3, DESTROY=4, MAGIC=5, MSG=6, MSG_DEATH=7, COMMENT=8, 
 		INDENT=9, EOL=10, EFFECT=11, EFFECT_MESSAGE=12, DICE=13, TIME=14, EFFECT_YX=15, 
-		EXPR=16, COLON=17, UCASE=18, INTEGER=19, SIMPLE_DICE_STRING=20, COMPLEX_DICE_STRING=21, 
-		STRING=22, ROL_EOL=23, FREE_TEXT=24, DICE_SIMPLE_VALUE=25, DICE_COMPLEX_VALUE=26, 
-		EXPR_CHAR=27, EXPR_COLON=28, EXPR_UCASE=29, EXPR_OP=30, EXPR_EOL=31;
+		EXPR=16, COLON=17, UCASE=18, EFFECT_INTEGER=19, SIMPLE_DICE_STRING=20, 
+		COMPLEX_DICE_STRING=21, STRING=22, ROL_EOL=23, FREE_TEXT=24, DICE_SIMPLE_VALUE=25, 
+		DICE_COMPLEX_VALUE=26, EXPR_CHAR=27, EXPR_COLON=28, EXPR_UCASE=29, EXPR_OP=30, 
+		EXPR_EOL=31;
 	public static final int
 		RULE_name = 0, RULE_code = 1, RULE_level = 2, RULE_destroy = 3, RULE_magic = 4, 
 		RULE_msg = 5, RULE_msgDeath = 6, RULE_chestTrap = 7, RULE_file = 8, RULE_effect = 9, 
@@ -72,7 +73,7 @@ public class ChestTrapGrammar extends Parser {
 		return new String[] {
 			null, "NAME", "CODE", "LEVEL", "DESTROY", "MAGIC", "MSG", "MSG_DEATH", 
 			"COMMENT", "INDENT", "EOL", "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME", 
-			"EFFECT_YX", "EXPR", "COLON", "UCASE", "INTEGER", "SIMPLE_DICE_STRING", 
+			"EFFECT_YX", "EXPR", "COLON", "UCASE", "EFFECT_INTEGER", "SIMPLE_DICE_STRING", 
 			"COMPLEX_DICE_STRING", "STRING", "ROL_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", 
 			"DICE_COMPLEX_VALUE", "EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", 
 			"EXPR_EOL"
@@ -243,7 +244,7 @@ public class ChestTrapGrammar extends Parser {
 		public String levelStr;
 		public Token l;
 		public TerminalNode LEVEL() { return getToken(ChestTrapGrammar.LEVEL, 0); }
-		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(ChestTrapGrammar.EFFECT_INTEGER, 0); }
 		public LevelContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -272,7 +273,7 @@ public class ChestTrapGrammar extends Parser {
 			setState(42);
 			match(LEVEL);
 			setState(43);
-			((LevelContext)_localctx).l = match(INTEGER);
+			((LevelContext)_localctx).l = match(EFFECT_INTEGER);
 			 ((LevelContext)_localctx).levelStr =  ((LevelContext)_localctx).l.getText(); 
 			}
 		}
@@ -292,7 +293,7 @@ public class ChestTrapGrammar extends Parser {
 		public String destroyStr;
 		public Token d;
 		public TerminalNode DESTROY() { return getToken(ChestTrapGrammar.DESTROY, 0); }
-		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(ChestTrapGrammar.EFFECT_INTEGER, 0); }
 		public DestroyContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -321,7 +322,7 @@ public class ChestTrapGrammar extends Parser {
 			setState(46);
 			match(DESTROY);
 			setState(47);
-			((DestroyContext)_localctx).d = match(INTEGER);
+			((DestroyContext)_localctx).d = match(EFFECT_INTEGER);
 			 ((DestroyContext)_localctx).destroyStr =  ((DestroyContext)_localctx).d.getText(); 
 			}
 		}
@@ -341,7 +342,7 @@ public class ChestTrapGrammar extends Parser {
 		public String magicStr;
 		public Token m;
 		public TerminalNode MAGIC() { return getToken(ChestTrapGrammar.MAGIC, 0); }
-		public TerminalNode INTEGER() { return getToken(ChestTrapGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(ChestTrapGrammar.EFFECT_INTEGER, 0); }
 		public MagicContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -370,7 +371,7 @@ public class ChestTrapGrammar extends Parser {
 			setState(50);
 			match(MAGIC);
 			setState(51);
-			((MagicContext)_localctx).m = match(INTEGER);
+			((MagicContext)_localctx).m = match(EFFECT_INTEGER);
 			 ((MagicContext)_localctx).magicStr =  ((MagicContext)_localctx).m.getText(); 
 			}
 		}
@@ -826,9 +827,9 @@ public class ChestTrapGrammar extends Parser {
 		public TerminalNode COLON(int i) {
 			return getToken(ChestTrapGrammar.COLON, i);
 		}
-		public List<TerminalNode> INTEGER() { return getTokens(ChestTrapGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(ChestTrapGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(ChestTrapGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(ChestTrapGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -888,7 +889,7 @@ public class ChestTrapGrammar extends Parser {
 					setState(114);
 					match(COLON);
 					setState(115);
-					((EffectContext)_localctx).rad = match(INTEGER);
+					((EffectContext)_localctx).rad = match(EFFECT_INTEGER);
 
 					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
 					            
@@ -900,7 +901,7 @@ public class ChestTrapGrammar extends Parser {
 						setState(117);
 						match(COLON);
 						setState(118);
-						((EffectContext)_localctx).oth = match(INTEGER);
+						((EffectContext)_localctx).oth = match(EFFECT_INTEGER);
 
 						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
 						            
@@ -934,9 +935,9 @@ public class ChestTrapGrammar extends Parser {
 		public Token xVal;
 		public TerminalNode EFFECT_YX() { return getToken(ChestTrapGrammar.EFFECT_YX, 0); }
 		public TerminalNode COLON() { return getToken(ChestTrapGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(ChestTrapGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(ChestTrapGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(ChestTrapGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(ChestTrapGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectYXContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -966,11 +967,11 @@ public class ChestTrapGrammar extends Parser {
 			setState(126);
 			match(EFFECT_YX);
 			setState(127);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			((EffectYXContext)_localctx).yVal = match(EFFECT_INTEGER);
 			setState(128);
 			match(COLON);
 			setState(129);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
+			((EffectYXContext)_localctx).xVal = match(EFFECT_INTEGER);
 
 			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
 			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();

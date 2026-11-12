@@ -48,8 +48,8 @@ public class PlayerClassGrammar extends Parser {
 		SKILL_THROW=11, SKILL_DIG=12, HITDIE=13, EXP=14, MAX_ATTACKS=15, MIN_WEIGHT=16, 
 		STRENGTH=17, TITLE=18, EQUIP=19, OBJ_FLAGS=20, PLAYER_FLAGS=21, MAGIC=22, 
 		BOOK=23, BOOK_GRAPHICS=24, BOOK_PROPERTIES=25, SPELL=26, DESC=27, COLON=28, 
-		INTEGER=29, COMMENT=30, INDENT=31, EOL=32, EFFECT=33, EFFECT_MESSAGE=34, 
-		DICE=35, TIME=36, EFFECT_YX=37, EXPR=38, UCASE=39, SIMPLE_DICE_STRING=40, 
+		COMMENT=29, INDENT=30, EOL=31, EFFECT=32, EFFECT_MESSAGE=33, DICE=34, 
+		TIME=35, EFFECT_YX=36, EXPR=37, UCASE=38, EFFECT_INTEGER=39, SIMPLE_DICE_STRING=40, 
 		COMPLEX_DICE_STRING=41, GRAPHICS=42, COLOUR_ONLY=43, GLYPH_ONLY=44, PROP_INT=45, 
 		PROP_COLON=46, PROP_TO=47, PROP_EOL=48, DELIM_INTEGER=49, STRING_BETWEEN_COLONS=50, 
 		DELIM_COLON=51, END_SKIP=52, FLAG=53, FLAG_OR=54, FLAG_EOL=55, STRING=56, 
@@ -89,9 +89,9 @@ public class PlayerClassGrammar extends Parser {
 			"'hitdie:'", "'exp:'", "'max-attacks:'", "'min-weight:'", "'strength-multiplier:'", 
 			"'title:'", "'equip:'", "'obj-flags:'", "'player-flags:'", "'magic:'", 
 			"'book:'", "'book-graphics:'", "'book-properties:'", "'spell:'", "'desc:'", 
-			null, null, null, null, null, "'effect:'", "'effect-msg:'", "'dice:'", 
-			"'time:'", "'effect-yx:'", "'expr:'", null, null, null, "'graphics:'", 
-			"'color:'", "'glyph:'"
+			null, null, null, null, "'effect:'", "'effect-msg:'", "'dice:'", "'time:'", 
+			"'effect-yx:'", "'expr:'", null, null, null, null, "'graphics:'", "'color:'", 
+			"'glyph:'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -101,9 +101,9 @@ public class PlayerClassGrammar extends Parser {
 			"SKILL_SAVE", "SKILL_STEALTH", "SKILL_SEARCH", "SKILL_MELEE", "SKILL_SHOOT", 
 			"SKILL_THROW", "SKILL_DIG", "HITDIE", "EXP", "MAX_ATTACKS", "MIN_WEIGHT", 
 			"STRENGTH", "TITLE", "EQUIP", "OBJ_FLAGS", "PLAYER_FLAGS", "MAGIC", "BOOK", 
-			"BOOK_GRAPHICS", "BOOK_PROPERTIES", "SPELL", "DESC", "COLON", "INTEGER", 
-			"COMMENT", "INDENT", "EOL", "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME", 
-			"EFFECT_YX", "EXPR", "UCASE", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", 
+			"BOOK_GRAPHICS", "BOOK_PROPERTIES", "SPELL", "DESC", "COLON", "COMMENT", 
+			"INDENT", "EOL", "EFFECT", "EFFECT_MESSAGE", "DICE", "TIME", "EFFECT_YX", 
+			"EXPR", "UCASE", "EFFECT_INTEGER", "SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", 
 			"GRAPHICS", "COLOUR_ONLY", "GLYPH_ONLY", "PROP_INT", "PROP_COLON", "PROP_TO", 
 			"PROP_EOL", "DELIM_INTEGER", "STRING_BETWEEN_COLONS", "DELIM_COLON", 
 			"END_SKIP", "FLAG", "FLAG_OR", "FLAG_EOL", "STRING", "FREE_TEXT_EOL", 
@@ -237,9 +237,9 @@ public class PlayerClassGrammar extends Parser {
 		public TerminalNode COLON(int i) {
 			return getToken(PlayerClassGrammar.COLON, i);
 		}
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public StatsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -269,23 +269,23 @@ public class PlayerClassGrammar extends Parser {
 			setState(84);
 			match(STATS);
 			setState(85);
-			((StatsContext)_localctx).s = match(INTEGER);
+			((StatsContext)_localctx).s = match(EFFECT_INTEGER);
 			setState(86);
 			match(COLON);
 			setState(87);
-			((StatsContext)_localctx).i = match(INTEGER);
+			((StatsContext)_localctx).i = match(EFFECT_INTEGER);
 			setState(88);
 			match(COLON);
 			setState(89);
-			((StatsContext)_localctx).w = match(INTEGER);
+			((StatsContext)_localctx).w = match(EFFECT_INTEGER);
 			setState(90);
 			match(COLON);
 			setState(91);
-			((StatsContext)_localctx).d = match(INTEGER);
+			((StatsContext)_localctx).d = match(EFFECT_INTEGER);
 			setState(92);
 			match(COLON);
 			setState(93);
-			((StatsContext)_localctx).c = match(INTEGER);
+			((StatsContext)_localctx).c = match(EFFECT_INTEGER);
 
 			                ((StatsContext)_localctx).strs =  ((StatsContext)_localctx).s.getText();
 			                ((StatsContext)_localctx).ints =  ((StatsContext)_localctx).i.getText();
@@ -314,9 +314,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_DISARM_PHYS() { return getToken(PlayerClassGrammar.SKILL_DISARM_PHYS, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillDisarmPhysContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -346,11 +346,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(96);
 			match(SKILL_DISARM_PHYS);
 			setState(97);
-			((SkillDisarmPhysContext)_localctx).v = match(INTEGER);
+			((SkillDisarmPhysContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(98);
 			match(COLON);
 			setState(99);
-			((SkillDisarmPhysContext)_localctx).i = match(INTEGER);
+			((SkillDisarmPhysContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillDisarmPhysContext)_localctx).skillVal =  ((SkillDisarmPhysContext)_localctx).v.getText();
 			                ((SkillDisarmPhysContext)_localctx).skillInc =  ((SkillDisarmPhysContext)_localctx).i.getText();
@@ -376,9 +376,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_DISARM_MAGIC() { return getToken(PlayerClassGrammar.SKILL_DISARM_MAGIC, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillDisarmMagicContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -408,11 +408,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(102);
 			match(SKILL_DISARM_MAGIC);
 			setState(103);
-			((SkillDisarmMagicContext)_localctx).v = match(INTEGER);
+			((SkillDisarmMagicContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(104);
 			match(COLON);
 			setState(105);
-			((SkillDisarmMagicContext)_localctx).i = match(INTEGER);
+			((SkillDisarmMagicContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillDisarmMagicContext)_localctx).skillVal =  ((SkillDisarmMagicContext)_localctx).v.getText();
 			                ((SkillDisarmMagicContext)_localctx).skillInc =  ((SkillDisarmMagicContext)_localctx).i.getText();
@@ -438,9 +438,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_DEVICE() { return getToken(PlayerClassGrammar.SKILL_DEVICE, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillDeviceContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -470,11 +470,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(108);
 			match(SKILL_DEVICE);
 			setState(109);
-			((SkillDeviceContext)_localctx).v = match(INTEGER);
+			((SkillDeviceContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(110);
 			match(COLON);
 			setState(111);
-			((SkillDeviceContext)_localctx).i = match(INTEGER);
+			((SkillDeviceContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillDeviceContext)_localctx).skillVal =  ((SkillDeviceContext)_localctx).v.getText();
 			                ((SkillDeviceContext)_localctx).skillInc =  ((SkillDeviceContext)_localctx).i.getText();
@@ -500,9 +500,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_SAVE() { return getToken(PlayerClassGrammar.SKILL_SAVE, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillSaveContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -532,11 +532,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(114);
 			match(SKILL_SAVE);
 			setState(115);
-			((SkillSaveContext)_localctx).v = match(INTEGER);
+			((SkillSaveContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(116);
 			match(COLON);
 			setState(117);
-			((SkillSaveContext)_localctx).i = match(INTEGER);
+			((SkillSaveContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillSaveContext)_localctx).skillVal =  ((SkillSaveContext)_localctx).v.getText();
 			                ((SkillSaveContext)_localctx).skillInc =  ((SkillSaveContext)_localctx).i.getText();
@@ -562,9 +562,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_STEALTH() { return getToken(PlayerClassGrammar.SKILL_STEALTH, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillStealthContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -594,11 +594,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(120);
 			match(SKILL_STEALTH);
 			setState(121);
-			((SkillStealthContext)_localctx).v = match(INTEGER);
+			((SkillStealthContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(122);
 			match(COLON);
 			setState(123);
-			((SkillStealthContext)_localctx).i = match(INTEGER);
+			((SkillStealthContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillStealthContext)_localctx).skillVal =  ((SkillStealthContext)_localctx).v.getText();
 			                ((SkillStealthContext)_localctx).skillInc =  ((SkillStealthContext)_localctx).i.getText();
@@ -624,9 +624,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_SEARCH() { return getToken(PlayerClassGrammar.SKILL_SEARCH, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillSearchContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -656,11 +656,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(126);
 			match(SKILL_SEARCH);
 			setState(127);
-			((SkillSearchContext)_localctx).v = match(INTEGER);
+			((SkillSearchContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(128);
 			match(COLON);
 			setState(129);
-			((SkillSearchContext)_localctx).i = match(INTEGER);
+			((SkillSearchContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillSearchContext)_localctx).skillVal =  ((SkillSearchContext)_localctx).v.getText();
 			                ((SkillSearchContext)_localctx).skillInc =  ((SkillSearchContext)_localctx).i.getText();
@@ -686,9 +686,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_MELEE() { return getToken(PlayerClassGrammar.SKILL_MELEE, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillMeleeContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -718,11 +718,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(132);
 			match(SKILL_MELEE);
 			setState(133);
-			((SkillMeleeContext)_localctx).v = match(INTEGER);
+			((SkillMeleeContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(134);
 			match(COLON);
 			setState(135);
-			((SkillMeleeContext)_localctx).i = match(INTEGER);
+			((SkillMeleeContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillMeleeContext)_localctx).skillVal =  ((SkillMeleeContext)_localctx).v.getText();
 			                ((SkillMeleeContext)_localctx).skillInc =  ((SkillMeleeContext)_localctx).i.getText();
@@ -748,9 +748,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_SHOOT() { return getToken(PlayerClassGrammar.SKILL_SHOOT, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillShootContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -780,11 +780,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(138);
 			match(SKILL_SHOOT);
 			setState(139);
-			((SkillShootContext)_localctx).v = match(INTEGER);
+			((SkillShootContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(140);
 			match(COLON);
 			setState(141);
-			((SkillShootContext)_localctx).i = match(INTEGER);
+			((SkillShootContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillShootContext)_localctx).skillVal =  ((SkillShootContext)_localctx).v.getText();
 			                ((SkillShootContext)_localctx).skillInc =  ((SkillShootContext)_localctx).i.getText();
@@ -810,9 +810,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_THROW() { return getToken(PlayerClassGrammar.SKILL_THROW, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillThrowContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -842,11 +842,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(144);
 			match(SKILL_THROW);
 			setState(145);
-			((SkillThrowContext)_localctx).v = match(INTEGER);
+			((SkillThrowContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(146);
 			match(COLON);
 			setState(147);
-			((SkillThrowContext)_localctx).i = match(INTEGER);
+			((SkillThrowContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillThrowContext)_localctx).skillVal =  ((SkillThrowContext)_localctx).v.getText();
 			                ((SkillThrowContext)_localctx).skillInc =  ((SkillThrowContext)_localctx).i.getText();
@@ -872,9 +872,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token i;
 		public TerminalNode SKILL_DIG() { return getToken(PlayerClassGrammar.SKILL_DIG, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public SkillDigContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -904,11 +904,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(150);
 			match(SKILL_DIG);
 			setState(151);
-			((SkillDigContext)_localctx).v = match(INTEGER);
+			((SkillDigContext)_localctx).v = match(EFFECT_INTEGER);
 			setState(152);
 			match(COLON);
 			setState(153);
-			((SkillDigContext)_localctx).i = match(INTEGER);
+			((SkillDigContext)_localctx).i = match(EFFECT_INTEGER);
 
 			                ((SkillDigContext)_localctx).skillVal =  ((SkillDigContext)_localctx).v.getText();
 			                ((SkillDigContext)_localctx).skillInc =  ((SkillDigContext)_localctx).i.getText();
@@ -929,9 +929,9 @@ public class PlayerClassGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class HitdieContext extends ParserRuleContext {
 		public String increment;
-		public Token INTEGER;
+		public Token EFFECT_INTEGER;
 		public TerminalNode HITDIE() { return getToken(PlayerClassGrammar.HITDIE, 0); }
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(PlayerClassGrammar.EFFECT_INTEGER, 0); }
 		public HitdieContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -960,8 +960,8 @@ public class PlayerClassGrammar extends Parser {
 			setState(156);
 			match(HITDIE);
 			setState(157);
-			((HitdieContext)_localctx).INTEGER = match(INTEGER);
-			 ((HitdieContext)_localctx).increment =  ((HitdieContext)_localctx).INTEGER.getText(); 
+			((HitdieContext)_localctx).EFFECT_INTEGER = match(EFFECT_INTEGER);
+			 ((HitdieContext)_localctx).increment =  ((HitdieContext)_localctx).EFFECT_INTEGER.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -978,9 +978,9 @@ public class PlayerClassGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class MaxAttacksContext extends ParserRuleContext {
 		public String maxAtt;
-		public Token INTEGER;
+		public Token EFFECT_INTEGER;
 		public TerminalNode MAX_ATTACKS() { return getToken(PlayerClassGrammar.MAX_ATTACKS, 0); }
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(PlayerClassGrammar.EFFECT_INTEGER, 0); }
 		public MaxAttacksContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1009,8 +1009,8 @@ public class PlayerClassGrammar extends Parser {
 			setState(160);
 			match(MAX_ATTACKS);
 			setState(161);
-			((MaxAttacksContext)_localctx).INTEGER = match(INTEGER);
-			 ((MaxAttacksContext)_localctx).maxAtt =  ((MaxAttacksContext)_localctx).INTEGER.getText(); 
+			((MaxAttacksContext)_localctx).EFFECT_INTEGER = match(EFFECT_INTEGER);
+			 ((MaxAttacksContext)_localctx).maxAtt =  ((MaxAttacksContext)_localctx).EFFECT_INTEGER.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1027,9 +1027,9 @@ public class PlayerClassGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class MinWeightContext extends ParserRuleContext {
 		public String minWgt;
-		public Token INTEGER;
+		public Token EFFECT_INTEGER;
 		public TerminalNode MIN_WEIGHT() { return getToken(PlayerClassGrammar.MIN_WEIGHT, 0); }
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(PlayerClassGrammar.EFFECT_INTEGER, 0); }
 		public MinWeightContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1058,8 +1058,8 @@ public class PlayerClassGrammar extends Parser {
 			setState(164);
 			match(MIN_WEIGHT);
 			setState(165);
-			((MinWeightContext)_localctx).INTEGER = match(INTEGER);
-			 ((MinWeightContext)_localctx).minWgt =  ((MinWeightContext)_localctx).INTEGER.getText(); 
+			((MinWeightContext)_localctx).EFFECT_INTEGER = match(EFFECT_INTEGER);
+			 ((MinWeightContext)_localctx).minWgt =  ((MinWeightContext)_localctx).EFFECT_INTEGER.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1076,9 +1076,9 @@ public class PlayerClassGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class StrengthMultiplierContext extends ParserRuleContext {
 		public String strMult;
-		public Token INTEGER;
+		public Token EFFECT_INTEGER;
 		public TerminalNode STRENGTH() { return getToken(PlayerClassGrammar.STRENGTH, 0); }
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(PlayerClassGrammar.EFFECT_INTEGER, 0); }
 		public StrengthMultiplierContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1107,8 +1107,8 @@ public class PlayerClassGrammar extends Parser {
 			setState(168);
 			match(STRENGTH);
 			setState(169);
-			((StrengthMultiplierContext)_localctx).INTEGER = match(INTEGER);
-			 ((StrengthMultiplierContext)_localctx).strMult =  ((StrengthMultiplierContext)_localctx).INTEGER.getText(); 
+			((StrengthMultiplierContext)_localctx).EFFECT_INTEGER = match(EFFECT_INTEGER);
+			 ((StrengthMultiplierContext)_localctx).strMult =  ((StrengthMultiplierContext)_localctx).EFFECT_INTEGER.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1426,9 +1426,9 @@ public class PlayerClassGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class ExpContext extends ParserRuleContext {
 		public String expStr;
-		public Token INTEGER;
+		public Token EFFECT_INTEGER;
 		public TerminalNode EXP() { return getToken(PlayerClassGrammar.EXP, 0); }
-		public TerminalNode INTEGER() { return getToken(PlayerClassGrammar.INTEGER, 0); }
+		public TerminalNode EFFECT_INTEGER() { return getToken(PlayerClassGrammar.EFFECT_INTEGER, 0); }
 		public ExpContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1457,8 +1457,8 @@ public class PlayerClassGrammar extends Parser {
 			setState(210);
 			match(EXP);
 			setState(211);
-			((ExpContext)_localctx).INTEGER = match(INTEGER);
-			 ((ExpContext)_localctx).expStr =  ((ExpContext)_localctx).INTEGER.getText(); 
+			((ExpContext)_localctx).EFFECT_INTEGER = match(EFFECT_INTEGER);
+			 ((ExpContext)_localctx).expStr =  ((ExpContext)_localctx).EFFECT_INTEGER.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1486,9 +1486,9 @@ public class PlayerClassGrammar extends Parser {
 		public TerminalNode COLON(int i) {
 			return getToken(PlayerClassGrammar.COLON, i);
 		}
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public MagicContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1518,15 +1518,15 @@ public class PlayerClassGrammar extends Parser {
 			setState(214);
 			match(MAGIC);
 			setState(215);
-			((MagicContext)_localctx).f = match(INTEGER);
+			((MagicContext)_localctx).f = match(EFFECT_INTEGER);
 			setState(216);
 			match(COLON);
 			setState(217);
-			((MagicContext)_localctx).s = match(INTEGER);
+			((MagicContext)_localctx).s = match(EFFECT_INTEGER);
 			setState(218);
 			match(COLON);
 			setState(219);
-			((MagicContext)_localctx).n = match(INTEGER);
+			((MagicContext)_localctx).n = match(EFFECT_INTEGER);
 
 			                ((MagicContext)_localctx).firstSpell =  ((MagicContext)_localctx).f.getText();
 			                ((MagicContext)_localctx).spellWeight =  ((MagicContext)_localctx).s.getText();
@@ -2246,7 +2246,7 @@ public class PlayerClassGrammar extends Parser {
 			setState(321);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 472580620288L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 236357419008L) != 0)) {
 				{
 				setState(319);
 				_errHandler.sync(this);
@@ -2852,9 +2852,9 @@ public class PlayerClassGrammar extends Parser {
 		public TerminalNode COLON(int i) {
 			return getToken(PlayerClassGrammar.COLON, i);
 		}
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -2914,7 +2914,7 @@ public class PlayerClassGrammar extends Parser {
 					setState(409);
 					match(COLON);
 					setState(410);
-					((EffectContext)_localctx).rad = match(INTEGER);
+					((EffectContext)_localctx).rad = match(EFFECT_INTEGER);
 
 					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
 					            
@@ -2926,7 +2926,7 @@ public class PlayerClassGrammar extends Parser {
 						setState(412);
 						match(COLON);
 						setState(413);
-						((EffectContext)_localctx).oth = match(INTEGER);
+						((EffectContext)_localctx).oth = match(EFFECT_INTEGER);
 
 						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
 						            
@@ -2960,9 +2960,9 @@ public class PlayerClassGrammar extends Parser {
 		public Token xVal;
 		public TerminalNode EFFECT_YX() { return getToken(PlayerClassGrammar.EFFECT_YX, 0); }
 		public TerminalNode COLON() { return getToken(PlayerClassGrammar.COLON, 0); }
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerClassGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerClassGrammar.INTEGER, i);
+		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(PlayerClassGrammar.EFFECT_INTEGER); }
+		public TerminalNode EFFECT_INTEGER(int i) {
+			return getToken(PlayerClassGrammar.EFFECT_INTEGER, i);
 		}
 		public EffectYXContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -2992,11 +2992,11 @@ public class PlayerClassGrammar extends Parser {
 			setState(421);
 			match(EFFECT_YX);
 			setState(422);
-			((EffectYXContext)_localctx).yVal = match(INTEGER);
+			((EffectYXContext)_localctx).yVal = match(EFFECT_INTEGER);
 			setState(423);
 			match(COLON);
 			setState(424);
-			((EffectYXContext)_localctx).xVal = match(INTEGER);
+			((EffectYXContext)_localctx).xVal = match(EFFECT_INTEGER);
 
 			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
 			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
@@ -3629,70 +3629,68 @@ public class PlayerClassGrammar extends Parser {
 		"\u01c2\u0001\u0000\u0000\u0000J\u01c6\u0001\u0000\u0000\u0000L\u01cd\u0001"+
 		"\u0000\u0000\u0000N\u01cf\u0001\u0000\u0000\u0000PQ\u0005\u0001\u0000"+
 		"\u0000QR\u00058\u0000\u0000RS\u0006\u0000\uffff\uffff\u0000S\u0001\u0001"+
-		"\u0000\u0000\u0000TU\u0005\u0002\u0000\u0000UV\u0005\u001d\u0000\u0000"+
-		"VW\u0005\u001c\u0000\u0000WX\u0005\u001d\u0000\u0000XY\u0005\u001c\u0000"+
-		"\u0000YZ\u0005\u001d\u0000\u0000Z[\u0005\u001c\u0000\u0000[\\\u0005\u001d"+
-		"\u0000\u0000\\]\u0005\u001c\u0000\u0000]^\u0005\u001d\u0000\u0000^_\u0006"+
-		"\u0001\uffff\uffff\u0000_\u0003\u0001\u0000\u0000\u0000`a\u0005\u0003"+
-		"\u0000\u0000ab\u0005\u001d\u0000\u0000bc\u0005\u001c\u0000\u0000cd\u0005"+
-		"\u001d\u0000\u0000de\u0006\u0002\uffff\uffff\u0000e\u0005\u0001\u0000"+
-		"\u0000\u0000fg\u0005\u0004\u0000\u0000gh\u0005\u001d\u0000\u0000hi\u0005"+
-		"\u001c\u0000\u0000ij\u0005\u001d\u0000\u0000jk\u0006\u0003\uffff\uffff"+
-		"\u0000k\u0007\u0001\u0000\u0000\u0000lm\u0005\u0005\u0000\u0000mn\u0005"+
-		"\u001d\u0000\u0000no\u0005\u001c\u0000\u0000op\u0005\u001d\u0000\u0000"+
-		"pq\u0006\u0004\uffff\uffff\u0000q\t\u0001\u0000\u0000\u0000rs\u0005\u0006"+
-		"\u0000\u0000st\u0005\u001d\u0000\u0000tu\u0005\u001c\u0000\u0000uv\u0005"+
-		"\u001d\u0000\u0000vw\u0006\u0005\uffff\uffff\u0000w\u000b\u0001\u0000"+
-		"\u0000\u0000xy\u0005\u0007\u0000\u0000yz\u0005\u001d\u0000\u0000z{\u0005"+
-		"\u001c\u0000\u0000{|\u0005\u001d\u0000\u0000|}\u0006\u0006\uffff\uffff"+
-		"\u0000}\r\u0001\u0000\u0000\u0000~\u007f\u0005\b\u0000\u0000\u007f\u0080"+
-		"\u0005\u001d\u0000\u0000\u0080\u0081\u0005\u001c\u0000\u0000\u0081\u0082"+
-		"\u0005\u001d\u0000\u0000\u0082\u0083\u0006\u0007\uffff\uffff\u0000\u0083"+
-		"\u000f\u0001\u0000\u0000\u0000\u0084\u0085\u0005\t\u0000\u0000\u0085\u0086"+
-		"\u0005\u001d\u0000\u0000\u0086\u0087\u0005\u001c\u0000\u0000\u0087\u0088"+
-		"\u0005\u001d\u0000\u0000\u0088\u0089\u0006\b\uffff\uffff\u0000\u0089\u0011"+
-		"\u0001\u0000\u0000\u0000\u008a\u008b\u0005\n\u0000\u0000\u008b\u008c\u0005"+
-		"\u001d\u0000\u0000\u008c\u008d\u0005\u001c\u0000\u0000\u008d\u008e\u0005"+
-		"\u001d\u0000\u0000\u008e\u008f\u0006\t\uffff\uffff\u0000\u008f\u0013\u0001"+
-		"\u0000\u0000\u0000\u0090\u0091\u0005\u000b\u0000\u0000\u0091\u0092\u0005"+
-		"\u001d\u0000\u0000\u0092\u0093\u0005\u001c\u0000\u0000\u0093\u0094\u0005"+
-		"\u001d\u0000\u0000\u0094\u0095\u0006\n\uffff\uffff\u0000\u0095\u0015\u0001"+
-		"\u0000\u0000\u0000\u0096\u0097\u0005\f\u0000\u0000\u0097\u0098\u0005\u001d"+
-		"\u0000\u0000\u0098\u0099\u0005\u001c\u0000\u0000\u0099\u009a\u0005\u001d"+
-		"\u0000\u0000\u009a\u009b\u0006\u000b\uffff\uffff\u0000\u009b\u0017\u0001"+
-		"\u0000\u0000\u0000\u009c\u009d\u0005\r\u0000\u0000\u009d\u009e\u0005\u001d"+
-		"\u0000\u0000\u009e\u009f\u0006\f\uffff\uffff\u0000\u009f\u0019\u0001\u0000"+
-		"\u0000\u0000\u00a0\u00a1\u0005\u000f\u0000\u0000\u00a1\u00a2\u0005\u001d"+
-		"\u0000\u0000\u00a2\u00a3\u0006\r\uffff\uffff\u0000\u00a3\u001b\u0001\u0000"+
-		"\u0000\u0000\u00a4\u00a5\u0005\u0010\u0000\u0000\u00a5\u00a6\u0005\u001d"+
-		"\u0000\u0000\u00a6\u00a7\u0006\u000e\uffff\uffff\u0000\u00a7\u001d\u0001"+
-		"\u0000\u0000\u0000\u00a8\u00a9\u0005\u0011\u0000\u0000\u00a9\u00aa\u0005"+
-		"\u001d\u0000\u0000\u00aa\u00ab\u0006\u000f\uffff\uffff\u0000\u00ab\u001f"+
-		"\u0001\u0000\u0000\u0000\u00ac\u00ad\u0005\u0012\u0000\u0000\u00ad\u00ae"+
-		"\u00058\u0000\u0000\u00ae\u00af\u0006\u0010\uffff\uffff\u0000\u00af!\u0001"+
-		"\u0000\u0000\u0000\u00b0\u00b1\u0005\u0013\u0000\u0000\u00b1\u00b2\u0005"+
-		"2\u0000\u0000\u00b2\u00b3\u00053\u0000\u0000\u00b3\u00b4\u00052\u0000"+
-		"\u0000\u00b4\u00b5\u00053\u0000\u0000\u00b5\u00b6\u00051\u0000\u0000\u00b6"+
-		"\u00b7\u00053\u0000\u0000\u00b7\u00b8\u00051\u0000\u0000\u00b8\u00b9\u0005"+
-		"3\u0000\u0000\u00b9\u00ba\u00052\u0000\u0000\u00ba\u00bb\u0006\u0011\uffff"+
-		"\uffff\u0000\u00bb#\u0001\u0000\u0000\u0000\u00bc\u00bd\u0005\u0014\u0000"+
-		"\u0000\u00bd\u00be\u00055\u0000\u0000\u00be\u00c4\u0006\u0012\uffff\uffff"+
-		"\u0000\u00bf\u00c0\u00056\u0000\u0000\u00c0\u00c1\u00055\u0000\u0000\u00c1"+
-		"\u00c3\u0006\u0012\uffff\uffff\u0000\u00c2\u00bf\u0001\u0000\u0000\u0000"+
-		"\u00c3\u00c6\u0001\u0000\u0000\u0000\u00c4\u00c2\u0001\u0000\u0000\u0000"+
-		"\u00c4\u00c5\u0001\u0000\u0000\u0000\u00c5%\u0001\u0000\u0000\u0000\u00c6"+
-		"\u00c4\u0001\u0000\u0000\u0000\u00c7\u00c8\u0005\u0015\u0000\u0000\u00c8"+
-		"\u00c9\u00055\u0000\u0000\u00c9\u00cf\u0006\u0013\uffff\uffff\u0000\u00ca"+
-		"\u00cb\u00056\u0000\u0000\u00cb\u00cc\u00055\u0000\u0000\u00cc\u00ce\u0006"+
-		"\u0013\uffff\uffff\u0000\u00cd\u00ca\u0001\u0000\u0000\u0000\u00ce\u00d1"+
-		"\u0001\u0000\u0000\u0000\u00cf\u00cd\u0001\u0000\u0000\u0000\u00cf\u00d0"+
-		"\u0001\u0000\u0000\u0000\u00d0\'\u0001\u0000\u0000\u0000\u00d1\u00cf\u0001"+
-		"\u0000\u0000\u0000\u00d2\u00d3\u0005\u000e\u0000\u0000\u00d3\u00d4\u0005"+
-		"\u001d\u0000\u0000\u00d4\u00d5\u0006\u0014\uffff\uffff\u0000\u00d5)\u0001"+
-		"\u0000\u0000\u0000\u00d6\u00d7\u0005\u0016\u0000\u0000\u00d7\u00d8\u0005"+
-		"\u001d\u0000\u0000\u00d8\u00d9\u0005\u001c\u0000\u0000\u00d9\u00da\u0005"+
-		"\u001d\u0000\u0000\u00da\u00db\u0005\u001c\u0000\u0000\u00db\u00dc\u0005"+
-		"\u001d\u0000\u0000\u00dc\u00dd\u0006\u0015\uffff\uffff\u0000\u00dd+\u0001"+
+		"\u0000\u0000\u0000TU\u0005\u0002\u0000\u0000UV\u0005\'\u0000\u0000VW\u0005"+
+		"\u001c\u0000\u0000WX\u0005\'\u0000\u0000XY\u0005\u001c\u0000\u0000YZ\u0005"+
+		"\'\u0000\u0000Z[\u0005\u001c\u0000\u0000[\\\u0005\'\u0000\u0000\\]\u0005"+
+		"\u001c\u0000\u0000]^\u0005\'\u0000\u0000^_\u0006\u0001\uffff\uffff\u0000"+
+		"_\u0003\u0001\u0000\u0000\u0000`a\u0005\u0003\u0000\u0000ab\u0005\'\u0000"+
+		"\u0000bc\u0005\u001c\u0000\u0000cd\u0005\'\u0000\u0000de\u0006\u0002\uffff"+
+		"\uffff\u0000e\u0005\u0001\u0000\u0000\u0000fg\u0005\u0004\u0000\u0000"+
+		"gh\u0005\'\u0000\u0000hi\u0005\u001c\u0000\u0000ij\u0005\'\u0000\u0000"+
+		"jk\u0006\u0003\uffff\uffff\u0000k\u0007\u0001\u0000\u0000\u0000lm\u0005"+
+		"\u0005\u0000\u0000mn\u0005\'\u0000\u0000no\u0005\u001c\u0000\u0000op\u0005"+
+		"\'\u0000\u0000pq\u0006\u0004\uffff\uffff\u0000q\t\u0001\u0000\u0000\u0000"+
+		"rs\u0005\u0006\u0000\u0000st\u0005\'\u0000\u0000tu\u0005\u001c\u0000\u0000"+
+		"uv\u0005\'\u0000\u0000vw\u0006\u0005\uffff\uffff\u0000w\u000b\u0001\u0000"+
+		"\u0000\u0000xy\u0005\u0007\u0000\u0000yz\u0005\'\u0000\u0000z{\u0005\u001c"+
+		"\u0000\u0000{|\u0005\'\u0000\u0000|}\u0006\u0006\uffff\uffff\u0000}\r"+
+		"\u0001\u0000\u0000\u0000~\u007f\u0005\b\u0000\u0000\u007f\u0080\u0005"+
+		"\'\u0000\u0000\u0080\u0081\u0005\u001c\u0000\u0000\u0081\u0082\u0005\'"+
+		"\u0000\u0000\u0082\u0083\u0006\u0007\uffff\uffff\u0000\u0083\u000f\u0001"+
+		"\u0000\u0000\u0000\u0084\u0085\u0005\t\u0000\u0000\u0085\u0086\u0005\'"+
+		"\u0000\u0000\u0086\u0087\u0005\u001c\u0000\u0000\u0087\u0088\u0005\'\u0000"+
+		"\u0000\u0088\u0089\u0006\b\uffff\uffff\u0000\u0089\u0011\u0001\u0000\u0000"+
+		"\u0000\u008a\u008b\u0005\n\u0000\u0000\u008b\u008c\u0005\'\u0000\u0000"+
+		"\u008c\u008d\u0005\u001c\u0000\u0000\u008d\u008e\u0005\'\u0000\u0000\u008e"+
+		"\u008f\u0006\t\uffff\uffff\u0000\u008f\u0013\u0001\u0000\u0000\u0000\u0090"+
+		"\u0091\u0005\u000b\u0000\u0000\u0091\u0092\u0005\'\u0000\u0000\u0092\u0093"+
+		"\u0005\u001c\u0000\u0000\u0093\u0094\u0005\'\u0000\u0000\u0094\u0095\u0006"+
+		"\n\uffff\uffff\u0000\u0095\u0015\u0001\u0000\u0000\u0000\u0096\u0097\u0005"+
+		"\f\u0000\u0000\u0097\u0098\u0005\'\u0000\u0000\u0098\u0099\u0005\u001c"+
+		"\u0000\u0000\u0099\u009a\u0005\'\u0000\u0000\u009a\u009b\u0006\u000b\uffff"+
+		"\uffff\u0000\u009b\u0017\u0001\u0000\u0000\u0000\u009c\u009d\u0005\r\u0000"+
+		"\u0000\u009d\u009e\u0005\'\u0000\u0000\u009e\u009f\u0006\f\uffff\uffff"+
+		"\u0000\u009f\u0019\u0001\u0000\u0000\u0000\u00a0\u00a1\u0005\u000f\u0000"+
+		"\u0000\u00a1\u00a2\u0005\'\u0000\u0000\u00a2\u00a3\u0006\r\uffff\uffff"+
+		"\u0000\u00a3\u001b\u0001\u0000\u0000\u0000\u00a4\u00a5\u0005\u0010\u0000"+
+		"\u0000\u00a5\u00a6\u0005\'\u0000\u0000\u00a6\u00a7\u0006\u000e\uffff\uffff"+
+		"\u0000\u00a7\u001d\u0001\u0000\u0000\u0000\u00a8\u00a9\u0005\u0011\u0000"+
+		"\u0000\u00a9\u00aa\u0005\'\u0000\u0000\u00aa\u00ab\u0006\u000f\uffff\uffff"+
+		"\u0000\u00ab\u001f\u0001\u0000\u0000\u0000\u00ac\u00ad\u0005\u0012\u0000"+
+		"\u0000\u00ad\u00ae\u00058\u0000\u0000\u00ae\u00af\u0006\u0010\uffff\uffff"+
+		"\u0000\u00af!\u0001\u0000\u0000\u0000\u00b0\u00b1\u0005\u0013\u0000\u0000"+
+		"\u00b1\u00b2\u00052\u0000\u0000\u00b2\u00b3\u00053\u0000\u0000\u00b3\u00b4"+
+		"\u00052\u0000\u0000\u00b4\u00b5\u00053\u0000\u0000\u00b5\u00b6\u00051"+
+		"\u0000\u0000\u00b6\u00b7\u00053\u0000\u0000\u00b7\u00b8\u00051\u0000\u0000"+
+		"\u00b8\u00b9\u00053\u0000\u0000\u00b9\u00ba\u00052\u0000\u0000\u00ba\u00bb"+
+		"\u0006\u0011\uffff\uffff\u0000\u00bb#\u0001\u0000\u0000\u0000\u00bc\u00bd"+
+		"\u0005\u0014\u0000\u0000\u00bd\u00be\u00055\u0000\u0000\u00be\u00c4\u0006"+
+		"\u0012\uffff\uffff\u0000\u00bf\u00c0\u00056\u0000\u0000\u00c0\u00c1\u0005"+
+		"5\u0000\u0000\u00c1\u00c3\u0006\u0012\uffff\uffff\u0000\u00c2\u00bf\u0001"+
+		"\u0000\u0000\u0000\u00c3\u00c6\u0001\u0000\u0000\u0000\u00c4\u00c2\u0001"+
+		"\u0000\u0000\u0000\u00c4\u00c5\u0001\u0000\u0000\u0000\u00c5%\u0001\u0000"+
+		"\u0000\u0000\u00c6\u00c4\u0001\u0000\u0000\u0000\u00c7\u00c8\u0005\u0015"+
+		"\u0000\u0000\u00c8\u00c9\u00055\u0000\u0000\u00c9\u00cf\u0006\u0013\uffff"+
+		"\uffff\u0000\u00ca\u00cb\u00056\u0000\u0000\u00cb\u00cc\u00055\u0000\u0000"+
+		"\u00cc\u00ce\u0006\u0013\uffff\uffff\u0000\u00cd\u00ca\u0001\u0000\u0000"+
+		"\u0000\u00ce\u00d1\u0001\u0000\u0000\u0000\u00cf\u00cd\u0001\u0000\u0000"+
+		"\u0000\u00cf\u00d0\u0001\u0000\u0000\u0000\u00d0\'\u0001\u0000\u0000\u0000"+
+		"\u00d1\u00cf\u0001\u0000\u0000\u0000\u00d2\u00d3\u0005\u000e\u0000\u0000"+
+		"\u00d3\u00d4\u0005\'\u0000\u0000\u00d4\u00d5\u0006\u0014\uffff\uffff\u0000"+
+		"\u00d5)\u0001\u0000\u0000\u0000\u00d6\u00d7\u0005\u0016\u0000\u0000\u00d7"+
+		"\u00d8\u0005\'\u0000\u0000\u00d8\u00d9\u0005\u001c\u0000\u0000\u00d9\u00da"+
+		"\u0005\'\u0000\u0000\u00da\u00db\u0005\u001c\u0000\u0000\u00db\u00dc\u0005"+
+		"\'\u0000\u0000\u00dc\u00dd\u0006\u0015\uffff\uffff\u0000\u00dd+\u0001"+
 		"\u0000\u0000\u0000\u00de\u00df\u0003*\u0015\u0000\u00df\u00e3\u0006\u0016"+
 		"\uffff\uffff\u0000\u00e0\u00e1\u00034\u001a\u0000\u00e1\u00e2\u0006\u0016"+
 		"\uffff\uffff\u0000\u00e2\u00e4\u0001\u0000\u0000\u0000\u00e3\u00e0\u0001"+
@@ -3798,51 +3796,51 @@ public class PlayerClassGrammar extends Parser {
 		"\u0000\u0000\u0000\u018e\u018f\u0001\u0000\u0000\u0000\u018f\u018d\u0001"+
 		"\u0000\u0000\u0000\u018f\u0190\u0001\u0000\u0000\u0000\u0190\u0191\u0001"+
 		"\u0000\u0000\u0000\u0191\u0192\u0005\u0000\u0000\u0001\u0192?\u0001\u0000"+
-		"\u0000\u0000\u0193\u0194\u0005!\u0000\u0000\u0194\u0195\u0005\'\u0000"+
-		"\u0000\u0195\u01a3\u0006 \uffff\uffff\u0000\u0196\u0197\u0005\u001c\u0000"+
-		"\u0000\u0197\u0198\u0005\'\u0000\u0000\u0198\u01a1\u0006 \uffff\uffff"+
-		"\u0000\u0199\u019a\u0005\u001c\u0000\u0000\u019a\u019b\u0005\u001d\u0000"+
-		"\u0000\u019b\u019f\u0006 \uffff\uffff\u0000\u019c\u019d\u0005\u001c\u0000"+
-		"\u0000\u019d\u019e\u0005\u001d\u0000\u0000\u019e\u01a0\u0006 \uffff\uffff"+
-		"\u0000\u019f\u019c\u0001\u0000\u0000\u0000\u019f\u01a0\u0001\u0000\u0000"+
-		"\u0000\u01a0\u01a2\u0001\u0000\u0000\u0000\u01a1\u0199\u0001\u0000\u0000"+
-		"\u0000\u01a1\u01a2\u0001\u0000\u0000\u0000\u01a2\u01a4\u0001\u0000\u0000"+
-		"\u0000\u01a3\u0196\u0001\u0000\u0000\u0000\u01a3\u01a4\u0001\u0000\u0000"+
-		"\u0000\u01a4A\u0001\u0000\u0000\u0000\u01a5\u01a6\u0005%\u0000\u0000\u01a6"+
-		"\u01a7\u0005\u001d\u0000\u0000\u01a7\u01a8\u0005\u001c\u0000\u0000\u01a8"+
-		"\u01a9\u0005\u001d\u0000\u0000\u01a9\u01aa\u0006!\uffff\uffff\u0000\u01aa"+
-		"C\u0001\u0000\u0000\u0000\u01ab\u01b8\u0005#\u0000\u0000\u01ac\u01ad\u0005"+
-		"<\u0000\u0000\u01ad\u01b3\u0006\"\uffff\uffff\u0000\u01ae\u01af\u0003"+
-		"F#\u0000\u01af\u01b0\u0006\"\uffff\uffff\u0000\u01b0\u01b2\u0001\u0000"+
-		"\u0000\u0000\u01b1\u01ae\u0001\u0000\u0000\u0000\u01b2\u01b5\u0001\u0000"+
-		"\u0000\u0000\u01b3\u01b1\u0001\u0000\u0000\u0000\u01b3\u01b4\u0001\u0000"+
-		"\u0000\u0000\u01b4\u01b9\u0001\u0000\u0000\u0000\u01b5\u01b3\u0001\u0000"+
-		"\u0000\u0000\u01b6\u01b7\u0005;\u0000\u0000\u01b7\u01b9\u0006\"\uffff"+
-		"\uffff\u0000\u01b8\u01ac\u0001\u0000\u0000\u0000\u01b8\u01b6\u0001\u0000"+
-		"\u0000\u0000\u01b9E\u0001\u0000\u0000\u0000\u01ba\u01bb\u0005&\u0000\u0000"+
-		"\u01bb\u01bc\u0005=\u0000\u0000\u01bc\u01bd\u0005>\u0000\u0000\u01bd\u01be"+
-		"\u0005?\u0000\u0000\u01be\u01bf\u0005>\u0000\u0000\u01bf\u01c0\u0005@"+
-		"\u0000\u0000\u01c0\u01c1\u0006#\uffff\uffff\u0000\u01c1G\u0001\u0000\u0000"+
-		"\u0000\u01c2\u01c3\u0005\"\u0000\u0000\u01c3\u01c4\u0005:\u0000\u0000"+
-		"\u01c4\u01c5\u0006$\uffff\uffff\u0000\u01c5I\u0001\u0000\u0000\u0000\u01c6"+
-		"\u01c7\u0005$\u0000\u0000\u01c7\u01c8\u0005;\u0000\u0000\u01c8\u01c9\u0006"+
-		"%\uffff\uffff\u0000\u01c9K\u0001\u0000\u0000\u0000\u01ca\u01ce\u0003B"+
-		"!\u0000\u01cb\u01ce\u0003D\"\u0000\u01cc\u01ce\u0003F#\u0000\u01cd\u01ca"+
-		"\u0001\u0000\u0000\u0000\u01cd\u01cb\u0001\u0000\u0000\u0000\u01cd\u01cc"+
-		"\u0001\u0000\u0000\u0000\u01ceM\u0001\u0000\u0000\u0000\u01cf\u01d0\u0003"+
-		"@ \u0000\u01d0\u01e1\u0006\'\uffff\uffff\u0000\u01d1\u01d2\u0003B!\u0000"+
-		"\u01d2\u01d3\u0006\'\uffff\uffff\u0000\u01d3\u01d4\u0003D\"\u0000\u01d4"+
-		"\u01d5\u0006\'\uffff\uffff\u0000\u01d5\u01e2\u0001\u0000\u0000\u0000\u01d6"+
-		"\u01d7\u0003D\"\u0000\u01d7\u01d8\u0006\'\uffff\uffff\u0000\u01d8\u01d9"+
-		"\u0003B!\u0000\u01d9\u01da\u0006\'\uffff\uffff\u0000\u01da\u01e2\u0001"+
-		"\u0000\u0000\u0000\u01db\u01dc\u0003D\"\u0000\u01dc\u01dd\u0006\'\uffff"+
-		"\uffff\u0000\u01dd\u01e2\u0001\u0000\u0000\u0000\u01de\u01df\u0003B!\u0000"+
-		"\u01df\u01e0\u0006\'\uffff\uffff\u0000\u01e0\u01e2\u0001\u0000\u0000\u0000"+
-		"\u01e1\u01d1\u0001\u0000\u0000\u0000\u01e1\u01d6\u0001\u0000\u0000\u0000"+
-		"\u01e1\u01db\u0001\u0000\u0000\u0000\u01e1\u01de\u0001\u0000\u0000\u0000"+
-		"\u01e1\u01e2\u0001\u0000\u0000\u0000\u01e2O\u0001\u0000\u0000\u0000\u0013"+
-		"\u00c4\u00cf\u00e5\u0108\u010d\u0112\u0119\u013f\u0141\u0185\u0187\u018f"+
-		"\u019f\u01a1\u01a3\u01b3\u01b8\u01cd\u01e1";
+		"\u0000\u0000\u0193\u0194\u0005 \u0000\u0000\u0194\u0195\u0005&\u0000\u0000"+
+		"\u0195\u01a3\u0006 \uffff\uffff\u0000\u0196\u0197\u0005\u001c\u0000\u0000"+
+		"\u0197\u0198\u0005&\u0000\u0000\u0198\u01a1\u0006 \uffff\uffff\u0000\u0199"+
+		"\u019a\u0005\u001c\u0000\u0000\u019a\u019b\u0005\'\u0000\u0000\u019b\u019f"+
+		"\u0006 \uffff\uffff\u0000\u019c\u019d\u0005\u001c\u0000\u0000\u019d\u019e"+
+		"\u0005\'\u0000\u0000\u019e\u01a0\u0006 \uffff\uffff\u0000\u019f\u019c"+
+		"\u0001\u0000\u0000\u0000\u019f\u01a0\u0001\u0000\u0000\u0000\u01a0\u01a2"+
+		"\u0001\u0000\u0000\u0000\u01a1\u0199\u0001\u0000\u0000\u0000\u01a1\u01a2"+
+		"\u0001\u0000\u0000\u0000\u01a2\u01a4\u0001\u0000\u0000\u0000\u01a3\u0196"+
+		"\u0001\u0000\u0000\u0000\u01a3\u01a4\u0001\u0000\u0000\u0000\u01a4A\u0001"+
+		"\u0000\u0000\u0000\u01a5\u01a6\u0005$\u0000\u0000\u01a6\u01a7\u0005\'"+
+		"\u0000\u0000\u01a7\u01a8\u0005\u001c\u0000\u0000\u01a8\u01a9\u0005\'\u0000"+
+		"\u0000\u01a9\u01aa\u0006!\uffff\uffff\u0000\u01aaC\u0001\u0000\u0000\u0000"+
+		"\u01ab\u01b8\u0005\"\u0000\u0000\u01ac\u01ad\u0005<\u0000\u0000\u01ad"+
+		"\u01b3\u0006\"\uffff\uffff\u0000\u01ae\u01af\u0003F#\u0000\u01af\u01b0"+
+		"\u0006\"\uffff\uffff\u0000\u01b0\u01b2\u0001\u0000\u0000\u0000\u01b1\u01ae"+
+		"\u0001\u0000\u0000\u0000\u01b2\u01b5\u0001\u0000\u0000\u0000\u01b3\u01b1"+
+		"\u0001\u0000\u0000\u0000\u01b3\u01b4\u0001\u0000\u0000\u0000\u01b4\u01b9"+
+		"\u0001\u0000\u0000\u0000\u01b5\u01b3\u0001\u0000\u0000\u0000\u01b6\u01b7"+
+		"\u0005;\u0000\u0000\u01b7\u01b9\u0006\"\uffff\uffff\u0000\u01b8\u01ac"+
+		"\u0001\u0000\u0000\u0000\u01b8\u01b6\u0001\u0000\u0000\u0000\u01b9E\u0001"+
+		"\u0000\u0000\u0000\u01ba\u01bb\u0005%\u0000\u0000\u01bb\u01bc\u0005=\u0000"+
+		"\u0000\u01bc\u01bd\u0005>\u0000\u0000\u01bd\u01be\u0005?\u0000\u0000\u01be"+
+		"\u01bf\u0005>\u0000\u0000\u01bf\u01c0\u0005@\u0000\u0000\u01c0\u01c1\u0006"+
+		"#\uffff\uffff\u0000\u01c1G\u0001\u0000\u0000\u0000\u01c2\u01c3\u0005!"+
+		"\u0000\u0000\u01c3\u01c4\u0005:\u0000\u0000\u01c4\u01c5\u0006$\uffff\uffff"+
+		"\u0000\u01c5I\u0001\u0000\u0000\u0000\u01c6\u01c7\u0005#\u0000\u0000\u01c7"+
+		"\u01c8\u0005;\u0000\u0000\u01c8\u01c9\u0006%\uffff\uffff\u0000\u01c9K"+
+		"\u0001\u0000\u0000\u0000\u01ca\u01ce\u0003B!\u0000\u01cb\u01ce\u0003D"+
+		"\"\u0000\u01cc\u01ce\u0003F#\u0000\u01cd\u01ca\u0001\u0000\u0000\u0000"+
+		"\u01cd\u01cb\u0001\u0000\u0000\u0000\u01cd\u01cc\u0001\u0000\u0000\u0000"+
+		"\u01ceM\u0001\u0000\u0000\u0000\u01cf\u01d0\u0003@ \u0000\u01d0\u01e1"+
+		"\u0006\'\uffff\uffff\u0000\u01d1\u01d2\u0003B!\u0000\u01d2\u01d3\u0006"+
+		"\'\uffff\uffff\u0000\u01d3\u01d4\u0003D\"\u0000\u01d4\u01d5\u0006\'\uffff"+
+		"\uffff\u0000\u01d5\u01e2\u0001\u0000\u0000\u0000\u01d6\u01d7\u0003D\""+
+		"\u0000\u01d7\u01d8\u0006\'\uffff\uffff\u0000\u01d8\u01d9\u0003B!\u0000"+
+		"\u01d9\u01da\u0006\'\uffff\uffff\u0000\u01da\u01e2\u0001\u0000\u0000\u0000"+
+		"\u01db\u01dc\u0003D\"\u0000\u01dc\u01dd\u0006\'\uffff\uffff\u0000\u01dd"+
+		"\u01e2\u0001\u0000\u0000\u0000\u01de\u01df\u0003B!\u0000\u01df\u01e0\u0006"+
+		"\'\uffff\uffff\u0000\u01e0\u01e2\u0001\u0000\u0000\u0000\u01e1\u01d1\u0001"+
+		"\u0000\u0000\u0000\u01e1\u01d6\u0001\u0000\u0000\u0000\u01e1\u01db\u0001"+
+		"\u0000\u0000\u0000\u01e1\u01de\u0001\u0000\u0000\u0000\u01e1\u01e2\u0001"+
+		"\u0000\u0000\u0000\u01e2O\u0001\u0000\u0000\u0000\u0013\u00c4\u00cf\u00e5"+
+		"\u0108\u010d\u0112\u0119\u013f\u0141\u0185\u0187\u018f\u019f\u01a1\u01a3"+
+		"\u01b3\u01b8\u01cd\u01e1";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

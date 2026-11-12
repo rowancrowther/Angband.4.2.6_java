@@ -252,7 +252,8 @@ class ArtifactReaderTest {
         assertEquals(40, (int) field(phial, "allocProb"));     // alloc:40:5 to 100
         assertEquals(5, (int) field(phial, "allocMin"));
         assertEquals(100, (int) field(phial, "allocMax"));
-        assertEquals("1d1", field(phial, "diceString"));       // attack:1d1:0:0
+        assertEquals(1, (int) field(phial, "damageDice"));     // attack:1d1:0:0
+        assertEquals(1, (int) field(phial, "damageSides"));
         assertEquals(0, (int) field(phial, "toHit"));
         assertEquals(0, (int) field(phial, "toDam"));
         assertEquals(0, (int) field(phial, "ac"));             // armor:0:0
@@ -558,6 +559,15 @@ class ArtifactReaderTest {
         return r == null ? "" : r.getBase() + "+" + r.getDice() + "d" + r.getSides();
     }
 
+    /**
+     * The artifact's damage dice as {@code NdS}, from C's {@code dd} and {@code ds}.
+     *
+     * <p>Function damage coded on 261112, commented in full on 261112.
+     */
+    private static String damage(Artifact a) {
+        return a.getDamageDice() + "d" + a.getDamageSides();
+    }
+
     @Test
     void aMissingFileIsAnIOExceptionWhereCQuits() {
         // parse_file_quit_not_found calls quit() on a file that cannot be opened; here it surfaces
@@ -644,7 +654,8 @@ class ArtifactReaderTest {
             assertEquals(Integer.parseInt(c[6]), a.getAllocProb(), who + "alloc chance");
             assertEquals(Integer.parseInt(c[7]), a.getAllocMin(), who + "alloc min");
             assertEquals(Integer.parseInt(c[8]), a.getAllocMax(), who + "alloc max");
-            assertEquals(c[9], a.getDiceString(), who + "attack dice");
+            // No attack: line leaves dd and ds at 0, as in C.
+            assertEquals(c[9].isEmpty() ? "0d0" : c[9], damage(a), who + "attack dice");
             assertEquals(Integer.parseInt(c[10]), a.getToHit(), who + "to-hit");
             assertEquals(Integer.parseInt(c[11]), a.getToDam(), who + "to-dam");
             assertEquals(Integer.parseInt(c[12]), a.getAc(), who + "AC");
@@ -747,7 +758,7 @@ class ArtifactReaderTest {
         assertEquals(12, a.getWeight());
         assertEquals(99, a.getCost());
         assertEquals("5/10/20", a.getAllocProb() + "/" + a.getAllocMin() + "/" + a.getAllocMax());
-        assertEquals("2d4", a.getDiceString());
+        assertEquals("2d4", damage(a));
         assertEquals(3, a.getToHit());
         assertEquals(4, a.getToDam());
         assertEquals(1, a.getAc());
@@ -773,7 +784,7 @@ class ArtifactReaderTest {
         assertEquals(2, a.getWeight());
         assertEquals(4, a.getCost());
         assertEquals("3/4/5", a.getAllocProb() + "/" + a.getAllocMin() + "/" + a.getAllocMax());
-        assertEquals("2d2", a.getDiceString());
+        assertEquals("2d2", damage(a));
         assertEquals(2, a.getToHit());
         assertEquals(2, a.getToDam());
         assertEquals(2, a.getAc());
@@ -866,7 +877,7 @@ class ArtifactReaderTest {
 
         assertEquals(5, a.getLevel());
         assertEquals(1, a.getAc());
-        assertEquals("1d1", a.getDiceString());
+        assertEquals("1d1", damage(a));
         assertEquals("5+1d5", dice(a.getTime()));
         assertEquals("NO_FUEL", flagNames(a));
         assertEquals("STR=1", valueList(a));
@@ -877,6 +888,209 @@ class ArtifactReaderTest {
         Artifact a = loadClean("values-negative.txt", "values:STEALTH[-2] | RES_FIRE[-1]\n");
 
         assertEquals("RES_FIRE=-1,STEALTH=-2", valueList(a));
+    }
+
+    // ---- time: and attack: -----------------------------------------------
+
+    /**
+     * {@code time:} is a {@code rand}, so {@code parse_random} in {@code parser.c} reads it. A bare
+     * figure with no {@code d} and no {@code +} is the base alone, so dice, sides and the m-bonus
+     * stay 0.
+     *
+     * <p>Method aBareTimeFigureIsABaseWithNoDiceAsInC coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aBareTimeFigureIsABaseWithNoDiceAsInC() throws IOException {
+        assertEquals("5+0d0", dice(loadClean("time-5.txt", "time:5\n").getTime()));
+        assertEquals("40+0d0", dice(loadClean("time-40.txt", "time:40\n").getTime()));
+        assertEquals("-5+0d0", dice(loadClean("time-neg5.txt", "time:-5\n").getTime()));
+    }
+
+    /**
+     * {@code parse_random} reads digits with {@code strtoul} in base 10, so {@code 010} is ten, not
+     * the eight a base-0 read would give.
+     *
+     * <p>Method aLeadingZeroInTimeIsDecimalAsInC coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aLeadingZeroInTimeIsDecimalAsInC() throws IOException {
+        assertEquals("10+0d0", dice(loadClean("time-010.txt", "time:010\n").getTime()));
+    }
+
+    /**
+     * Each shape {@code parse_random} accepts, with its base, dice, sides and m-bonus. A {@code d}
+     * with no number before it means one die, and a negated value has its base pushed down by
+     * {@code m_bonus + dice * (sides + 1)} so the random part stays positive: {@code -5+d5} is a
+     * base of {@code -5 - 1 * (5 + 1) = -11}.
+     *
+     * <p>Method everyTimeShapeParseRandomAcceptsLoadsAsInC coded on 261112, commented in full on
+     * 261112.
+     */
+    @Test
+    void everyTimeShapeParseRandomAcceptsLoadsAsInC() throws IOException {
+        assertEquals("0+1d5/0", timeParts("time-d5.txt", "d5"));
+        assertEquals("0+1d1/0", timeParts("time-1d1.txt", "1d1"));
+        assertEquals("5+1d5/0", timeParts("time-5pd5.txt", "5+d5"));
+        assertEquals("0+2d3/4", timeParts("time-2d3m4.txt", "2d3M4"));
+        assertEquals("5+1d5/2", timeParts("time-5pd5m2.txt", "5+d5M2"));
+        assertEquals("-11+1d5/0", timeParts("time-neg5pd5.txt", "-5+d5"));
+    }
+
+    /**
+     * {@code time:} with a trailing blank loads, because {@code parse_random} accepts spaces after
+     * the last figure.
+     *
+     * <p>Method aTrailingBlankAfterTimeLoadsAsInC coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aTrailingBlankAfterTimeLoadsAsInC() throws IOException {
+        assertEquals("5+1d5", dice(loadClean("time-blank-dice.txt", "time:5+d5 \n").getTime()));
+        assertEquals("40+0d0", dice(loadClean("time-blank-bare.txt", "time:40 \n").getTime()));
+    }
+
+    /**
+     * {@code time:0x10} and {@code time:5M3} are refused by {@code parse_random}: its {@code strtoul}
+     * is base 10, so it stops at the {@code x}, and a base followed by {@code M} is not a shape it
+     * knows. An empty {@code time:} has no figure at all. The lexer or the grammar refuses each.
+     *
+     * <p>Method timeFiguresParseRandomRefusesAreHardErrorsAsInC coded on 261112, commented in full
+     * on 261112.
+     */
+    @Test
+    void timeFiguresParseRandomRefusesAreHardErrorsAsInC() {
+        assertHardError("time-hex.txt", "name:X\n" + BASE + "time:0x10\n");
+        assertHardError("time-base-m.txt", "name:X\n" + BASE + "time:5M3\n");
+        assertHardError("time-empty.txt", "name:X\n" + BASE + "time:\n");
+        assertHardError("time-upper-d.txt", "name:X\n" + BASE + "time:1D5\n");
+    }
+
+    /**
+     * {@code attack:} splits into the dice, then {@code to-h} and {@code to-d}, each of which C
+     * reads as an {@code int}.
+     *
+     * <p>Method attackLoadsItsDiceToHitAndToDamAsInC coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void attackLoadsItsDiceToHitAndToDamAsInC() throws IOException {
+        Artifact a = loadClean("attack-basic.txt", "attack:2d4:3:4\n");
+
+        assertEquals("2d4", damage(a));
+        assertEquals(3, a.getToHit());
+        assertEquals(4, a.getToDam());
+
+        Artifact zero = loadClean("attack-zero.txt", "attack:0d0:10:14\n");
+
+        assertEquals("0d0", damage(zero));
+        assertEquals(10, zero.getToHit());
+        assertEquals(14, zero.getToDam());
+    }
+
+    /**
+     * {@code to-h} and {@code to-d} are {@code int}, read by {@code strtol} in base 0: a sign is
+     * allowed, so is a {@code 0x} prefix, and a leading zero is octal. A negative figure is kept,
+     * unlike a {@code uint}.
+     *
+     * <p>Method attackBonusesTakeASignHexAndOctalAsInC coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void attackBonusesTakeASignHexAndOctalAsInC() throws IOException {
+        Artifact signed = loadClean("attack-signed.txt", "attack:1d1:+3:-4\n");
+
+        assertEquals(3, signed.getToHit());
+        assertEquals(-4, signed.getToDam());
+
+        Artifact radix = loadClean("attack-radix.txt", "attack:1d1:0x5:010\n");
+
+        assertEquals(5, radix.getToHit());
+        assertEquals(8, radix.getToDam());
+    }
+
+    /**
+     * The attack bonuses stop at the first {@code :}, and a blank after the last one is dropped by
+     * {@code strtol}, so it loads.
+     *
+     * <p>Method aTrailingBlankAfterAttackLoadsAsInC coded on 261112, commented in full on 261112.
+     */
+    @Test
+    void aTrailingBlankAfterAttackLoadsAsInC() throws IOException {
+        Artifact a = loadClean("attack-blank.txt", "attack:1d1:2:3 \n");
+
+        assertEquals("1d1", damage(a));
+        assertEquals(2, a.getToHit());
+        assertEquals(3, a.getToDam());
+    }
+
+    /**
+     * {@code parse_artifact_attack} keeps only {@code hd.dice} and {@code hd.sides}, so the base, the
+     * m-bonus and any minus sign of the dice figure are dropped: {@code attack:5:1:2} leaves
+     * {@code dd} and {@code ds} at 0, and {@code attack:-1d5:1:2} leaves 1 and 5. The assembler
+     * keeps the same two figures.
+     *
+     * <p>Method aBaseFigureInAttackIsDroppedAsInC coded on 261112, commented in full on 261112
+     * (replaces aBaseFigureInAttackIsKeptHereWhereCDropsIt, which pinned the dice text before the
+     * assembler split it).
+     */
+    @Test
+    void aBaseFigureInAttackIsDroppedAsInC() throws IOException {
+        assertEquals("0d0", damage(loadClean("attack-base.txt", "attack:5:1:2\n")));
+        assertEquals("1d5", damage(loadClean("attack-base-dice.txt", "attack:5+d5:1:2\n")));
+        assertEquals("2d3", damage(loadClean("attack-m-bonus.txt", "attack:2d3M4:1:2\n")));
+        assertEquals("1d5", damage(loadClean("attack-negated.txt", "attack:-1d5:1:2\n")));
+        assertEquals("1d5", damage(loadClean("attack-d5.txt", "attack:d5:1:2\n")));
+    }
+
+    /**
+     * Each shape {@code parse_random} or {@code strtol} refuses stops the load: no dice, a missing
+     * bonus, an upper-case {@code D}, an empty bonus, and a bonus that is not a number. A fourth
+     * field is dropped by C but refused here; that is the accepted extra-colon-field difference.
+     *
+     * <p>Method attackShapesCRefusesAreHardErrorsAsInC coded on 261112, commented in full on
+     * 261112.
+     */
+    @Test
+    void attackShapesCRefusesAreHardErrorsAsInC() {
+        assertHardError("attack-empty.txt", "name:X\n" + BASE + "attack:\n");
+        assertHardError("attack-one-bonus.txt", "name:X\n" + BASE + "attack:1d1:0\n");
+        assertHardError("attack-upper-d.txt", "name:X\n" + BASE + "attack:1D5:0:0\n");
+        assertHardError("attack-empty-bonus.txt", "name:X\n" + BASE + "attack:1d1::2\n");
+        assertHardError("attack-no-dice.txt", "name:X\n" + BASE + "attack::1:2\n");
+    }
+
+    /**
+     * {@code ab} is all hex letters, so the lexer takes it as an integer, but {@code strtol} finds no
+     * digit in it and C refuses it. The assembler stops the load and names the field.
+     *
+     * <p>Method attackBonusesThatAreNotNumbersStopTheLoadAndNameTheField coded on 261112, commented
+     * in full on 261112.
+     */
+    @Test
+    void attackBonusesThatAreNotNumbersStopTheLoadAndNameTheField() {
+        assertStops("attack-ab-hit.txt", "name:X\n" + BASE + "attack:1d1:ab:0\n", "To hit value: ab");
+        assertStops("attack-ab-dam.txt", "name:X\n" + BASE + "attack:1d1:0:ab\n", "To damage value: ab");
+    }
+
+    /**
+     * C drops anything after the last registered field of a line, so {@code attack:1d1:0:0:7} loads
+     * there. The lexer hands the extra {@code :7} to the grammar here and the load stops. This is
+     * the accepted extra-colon-field difference.
+     *
+     * <p>Method aFourthAttackFieldIsAHardErrorHereWhereCDropsIt coded on 261112, commented in full on
+     * 261112.
+     */
+    @Test
+    void aFourthAttackFieldIsAHardErrorHereWhereCDropsIt() {
+        assertHardError("attack-four-fields.txt", "name:X\n" + BASE + "attack:1d1:0:0:7\n");
+    }
+
+    /**
+     * Loads {@code time:<figure>} on one artifact and shows its base, dice and sides as
+     * {@code base+NdS}, then the m-bonus after a slash.
+     *
+     * <p>Function timeParts coded on 261112, commented in full on 261112.
+     */
+    private String timeParts(String fileName, String figure) throws IOException {
+        Random r = loadClean(fileName, "time:" + figure + "\n").getTime();
+        return dice(r) + "/" + r.getMBonus();
     }
 
     // ---- Errors that are errors in C too ---------------------------------
@@ -988,16 +1202,34 @@ class ArtifactReaderTest {
     }
 
     /**
-     * {@code parser_parse} reads an {@code int} with {@code strtol(tok, &z, 0)}: blanks are skipped,
-     * {@code +5} is 5, {@code 0x10} is 16 and {@code 010} is 8. The lexer's integers are decimal digits
-     * with an optional minus, so the first three are lexer errors.
+     * {@code parser_parse} reads an {@code int} with {@code strtol(tok, &z, 0)}, which skips blanks
+     * before the number. The lexer does not, so a blank after {@code level:} is a lexer error here.
+     * This is the accepted leading-blank difference in {@code docs/Accepted_Deviations.md}.
+     *
+     * <p>Method aBlankBeforeAnIntegerIsALexerErrorHereWhereCAcceptsIt coded on 261112, commented in
+     * full on 261112 (replaces the blank case of
+     * integersWithLeadingSpaceAPlusSignOrAHexPrefixAreLexerErrorsHereWhereCAcceptsThem).
      */
     @Test
-    void integersWithLeadingSpaceAPlusSignOrAHexPrefixAreLexerErrorsHereWhereCAcceptsThem() throws IOException {
+    void aBlankBeforeAnIntegerIsALexerErrorHereWhereCAcceptsIt() {
         assertHardError("level-space.txt", "name:X\n" + BASE + "level: 5\n");
-        assertHardError("level-plus.txt", "name:X\n" + BASE + "level:+5\n");
-        assertHardError("level-hex.txt", "name:X\n" + BASE + "level:0x10\n");
-        assertHardError("value-plus.txt", "name:X\n" + BASE + "values:STR[+2]\n");
+    }
+
+    /**
+     * {@code strtol(tok, &z, 0)} accepts a leading {@code +} and a {@code 0x} prefix, so
+     * {@code level:+5} is 5 and {@code level:0x10} is 16. The lexer's integer rules take both now,
+     * as does the {@code [n]} figure of {@code values:} for the sign, so {@code values:STR[+2]} is 2.
+     *
+     * <p>Method aPlusSignOrAHexPrefixLoadsAsInC coded on 261112, commented in full on 261112
+     * (replaces the plus and hex cases of
+     * integersWithLeadingSpaceAPlusSignOrAHexPrefixAreLexerErrorsHereWhereCAcceptsThem, which
+     * pinned them as lexer errors before the integer rules took a sign and a prefix).
+     */
+    @Test
+    void aPlusSignOrAHexPrefixLoadsAsInC() throws IOException {
+        assertEquals(5, loadClean("level-plus.txt", "level:+5\n").getLevel());
+        assertEquals(16, loadClean("level-hex.txt", "level:0x10\n").getLevel());
+        assertEquals("STR=2", valueList(loadClean("value-plus.txt", "values:STR[+2]\n")));
     }
 
     /**

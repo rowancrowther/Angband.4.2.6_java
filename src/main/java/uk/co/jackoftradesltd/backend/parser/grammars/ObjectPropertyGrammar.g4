@@ -102,10 +102,10 @@ bindui
             $tag = "";
             $uiVal = null;
         }
-        :   BINDUI b=LCASE { $binding = $b.getText(); }
-            (LTHAN t=UCASE GTHAN { $tag = $t.getText(); })?
-             COLON a=INTEGER {$aux = $a.getText(); }
-            (COLON u=INTEGER {$uiVal = $u.getText(); })?
+        :   BINDUI b=BINDUI_LCASE { $binding = $b.getText(); }
+            (t=BINDUI_UCASE { $tag = $t.getText(); })?
+             a=BINDUI_INTEGER {$aux = $a.getText(); }
+            (u=BINDUI_INTEGER {$uiVal = $u.getText(); })?
         ;
 
 desc

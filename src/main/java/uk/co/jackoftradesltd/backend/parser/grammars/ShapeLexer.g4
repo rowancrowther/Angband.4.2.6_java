@@ -51,7 +51,7 @@ PLAYER_FLAGS
         ;
 
 VALUES
-        :   'values:' -> pushMode(VALUE_MODE)
+        :   'values:' -> mode(VALUE_INTRO)
         ;
 
 BLOW
@@ -72,30 +72,34 @@ FLAG_EOL
         :   NL+ -> skip, popMode
         ;
 
-mode VALUE_MODE;
+mode VALUE_INTRO;
 
 VALUE_MOD
-        :   ('A'..'Z' | '_')+
+        :   FLAG_BODY -> mode(VALUE_INT_MODE)
         ;
 
-LBRACKET
-        :   '['
-        ;
+mode VALUE_INT_MODE;
 
-RBRACKET
-        :   ']'
+VALUE_L_BRACKET
+        :   '[' -> skip
         ;
 
 VALUE_INT
-        :   '-'? ('0'..'9')+
+        :   ('-' | '+')? ('0'..'9')+
         ;
 
+VALUE_R_BRACKET
+        :   ']' -> skip, mode(VALUE_BREAK)
+        ;
+
+mode VALUE_BREAK;
+
 VALUE_OR
-        :   ' '? '|' ' '?
+        :   ' '? '|' ' '? -> skip, mode(VALUE_INTRO)
         ;
 
 VALUE_EOL
-        :   NL+ -> skip, popMode
+        :   NL+ -> skip, mode(DEFAULT_MODE)
         ;
 
 mode SHAPE_FREE_TEXT_MODE;

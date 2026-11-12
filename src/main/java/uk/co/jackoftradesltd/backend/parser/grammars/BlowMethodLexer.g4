@@ -49,12 +49,20 @@ DESC
         :   'desc:' -> pushMode(FREE_TEXT_MODE)
         ;
 
-// Value of cut:/stun:/miss:/phys:. C reads these with parser_getuint, which rejects a
-// leading '-'; the '-'? here is more permissive than the original. The shipped data never
-// has one (every value is 0 or 1), and BlowMethodAssembler refuses it, so a negative ends
-// the load there as it does in C.
-INTEGER
-        :   '-'? ('0'..'9')+
+// The value of "cut:<n>", "stun:<n>", "miss:<n>" and "phys:<n>" - C registers each
+// as a "uint" field ("cut uint cut" and so on), read by parser_parse in
+// parser.c with strtoul in base 0. The token follows that reading:
+//  - an optional '-' or '+' sign. A '-' is kept so the assembler can refuse it,
+//    "-0" included, as C does for a uint.
+//  - an optional 0x or 0X prefix, then one or more digits. a-f are allowed with
+//    or without the prefix, so "ff" lexes here; the assembler refuses it
+//    because strtoul finds no digit in it.
+//  - any tail up to the colon or the end of the line, because strtoul stops at
+//    the first character it cannot use and ignores the rest ("5abc" is 5, and a
+//    trailing blank or tab is part of the tail). A decimal digit run is the
+//    same token, so 010 is read as octal by the assembler, not here.
+UINT
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
         ;
 
 // Free-form value text, entered from name:/msg:/act:/desc: and left at end-of-line.

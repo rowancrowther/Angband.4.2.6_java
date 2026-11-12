@@ -56,7 +56,7 @@ class ArtifactAccessorsTest {
      */
     private static Artifact artifact() {
         return new Artifact("Test Blade", "It gleams.", TValue.TV_SWORD, "long sword",
-                5, 6, 7, 8, "3d5", 120, 4500,
+                5, 6, 7, 8, 3, 5, 120, 4500,
                 new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 new HashSet<>(), new HashSet<>(), new TreeMap<>(Curse.CURSE_ORDER),
                 40, 11, 12, 13,
@@ -137,13 +137,13 @@ class ArtifactAccessorsTest {
         }
 
         /**
-         * The damage dice are stored as their unparsed text alongside the parsed form, because the
-         * description code prints what the data file said.
+         * The damage dice are held split, as C's {@code dd} and {@code ds}.
          */
         @Test
-        @DisplayName("the dice string comes back")
-        void diceString() {
-            assertEquals("3d5", artifact().getDiceString());
+        @DisplayName("the damage dice and sides come back")
+        void damageDiceAndSides() {
+            assertEquals(3, artifact().getDamageDice());
+            assertEquals(5, artifact().getDamageSides());
         }
     }
 
@@ -259,7 +259,8 @@ class ArtifactAccessorsTest {
             assertEquals(12, duplicate.getAllocMin());
             assertEquals(13, duplicate.getAllocMax());
             assertEquals(4500, duplicate.getCost());
-            assertEquals("3d5", duplicate.getDiceString());
+            assertEquals(3, duplicate.getDamageDice());
+            assertEquals(5, duplicate.getDamageSides());
         }
     }
 }

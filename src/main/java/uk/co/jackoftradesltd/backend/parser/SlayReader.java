@@ -68,16 +68,19 @@ import java.util.List;
  * <p>
  * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
  * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
- * unknown race flag or monster base, both or neither of them, a number too large for an int) is
- * thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is
- * caught here.
+ * unknown race flag or monster base, {@code NONE} as a race flag, a race flag and a base together,
+ * a number that starts with {@code -}, or a number with no digits) is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. A record with neither a
+ * race flag nor a base is not refused, and a number above {@code Integer.MAX_VALUE} is clamped, not
+ * refused. Neither exception is caught here.
  * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>C takes the directives in any order, leaves any of them out, and lets a repeated one
- *       overwrite. The grammar takes them in any order and a repeat keeps the last value, but a
- *       directive left out is read as empty text, which the assembler rejects for the three numbers
- *       where C leaves them 0; see {@code docs/Assembler_Issues.md}.</li>
+ *   <li>Two forms only a hand-edited file reaches are read differently at the lexer. Blanks after a
+ *       {@code race-flag:} value are skipped, where C passes them to {@code lookup_flag} and
+ *       refuses the flag. A {@code base:} value runs to the end of the line, where C cuts it at
+ *       the first colon. Both are accepted deviations; see "Slay" in
+ *       {@code docs/Accepted_Deviations.md}.</li>
  *   <li>C rejects a second {@code race-flag:} or {@code base:} in one record; here the last one
  *       wins; see {@code docs/grammar_issues.md}.</li>
  *   <li>The list is base 0 and holds only real records: no blank slot 0. This is the accepted
@@ -88,7 +91,8 @@ import java.util.List;
  * </ul>
  *
  * <p>Class SlayReader coded before 260915, commented in full on 261017, updated on 261105 for the
- * removal of the soft-error path.
+ * removal of the soft-error path, and on 261112 for the differences-from-C list and the list of
+ * what stops the load.
  *
  * @author Rowan Crowther
  */
@@ -165,13 +169,14 @@ public class SlayReader implements Reader<Slay> {
      * in {@code obj-init.c}: it wires {@code SlayLexer}, {@code SlayGrammar}, {@link #extract} and
      * {@link SlayAssembler} into {@link GrammarDriver#run}. As C stops at the first error, so does
      * this: a syntax error throws a {@code ParseCancellationException}, and an unresolved race flag
-     * or monster base, or a record naming both or neither, throws a
+     * or monster base, a record naming both, or a number the assembler refuses throws a
      * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
-     * returned. An unreadable file is an {@link IOException}, the analogue of
+     * returned. A record naming neither a race flag nor a base loads, as in C. An unreadable file is an {@link IOException}, the analogue of
      * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
      * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915,
-     * commented in full again on 261017, updated on 261105 for the removal of the soft-error path.
+     * commented in full again on 261017, updated on 261105 for the removal of the soft-error path,
+     * and on 261112 for the list of what stops the load.
      *
      * @param filename the slay data file to read
      * @return every slay in the file, in C's order

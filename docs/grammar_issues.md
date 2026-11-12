@@ -1339,7 +1339,7 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
 
 ## `ProjectionLexer.g4` and `DiceStrings.g4`: `denominator:` accepts a lower-case `m` and rejects a leading blank
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-12: accepted deviation, recorded in `docs/Accepted_Deviations.md` under "Projection".]
 
 - `parse_random` in `parser.c` reads the value with `strtoul`, which skips leading blanks, and treats only an upper-case `M` as
   the modifier. `5+1d4m2` falls to the trailing-text test and is refused.

@@ -664,6 +664,28 @@ recorded here as the summary states them; fill in the detail when you next touch
   refusal. Then the all-digit branch checks the value against `Integer.MAX_VALUE` before it is stored.
 - **Accepted:** 2026-10-29, during the `ProjectionAssembler` port pass. Choice made over refusing the value, as C does.
 
+### A `denominator:` with a lower-case `m` loads, and one with a leading blank is a lexer error, where C does the opposite
+
+- **Java:** `DICE_M` in `imports/DiceStrings.g4`, and `DICE_MODE` in `ProjectionLexer.g4`, which has no rule for a blank.
+  **C:** `parse_random` (`parser.c`), called by `parser_parse` for a `rand` field.
+- **Differs:** two opposite directions.
+  - **Lower-case `m`: Java is more lenient.** `parse_random` treats only an upper-case `M` as the bonus marker. A
+    lower-case `m` reaches `strtoul`, converts nothing, fails the trailing-text test and gives `PARSE_ERROR_NOT_RANDOM`.
+    `DICE_M` is `'M' | 'm'`, so `denominator:5+1d4m2` lexes, and it loads with the values 5, 1, 4 and 2. `DiceStrings.g4` is shared, so every lexer that imports it takes a lower-case `m` too.
+  - **Leading blank: Java is stricter.** `parse_random` reads the number with `strtoul`, which skips leading blanks, so
+    `denominator: 3` is 3. `DICE_MODE` has no rule for a blank, so the same line is a hard error and the file loads as
+    nothing.
+- **Why:** the lower-case `m` is also correct for `dice:` and `time:` lines, which `z-dice.c` reads with `m` as a
+  second marker (it carries a note that `m` ought to be the only one). `DiceStrings.g4` serves both C parsers, so
+  narrowing `DICE_M` would break the second to tidy the first. A leading blank needs a hand-edited file.
+- **Reach:** none from shipped data, whose denominators are `3` and `8+1d4`. It takes a modded file that writes `m` or a
+  blank after the colon.
+- **Revisit:** if `DICE_M` is ever split into an upper-case-only form for the `rand` fields, or `DICE_MODE` is given a
+  leading-blank rule. Then the pin below goes red, which is the prompt to take this entry out.
+- **Pinned by:** `aLeadingBlankInADenominatorIsAHardErrorAndALowerCaseMIsAcceptedWhereCTakesTheOpposite` in
+  `ProjectionReaderTest`. The agreeing forms are pinned by `denominatorFormsGiveTheValuesOfCsParseRandom`.
+- **Accepted:** 2026-11-12, Stage 6 item 3 of `docs/Issue_Approach_Order.md`.
+
 ## Slay
 
 ### A `base:` line in `slay.txt` is resolved, where C refuses every one

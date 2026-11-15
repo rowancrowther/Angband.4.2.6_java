@@ -57,7 +57,8 @@ import java.util.List;
  * is the first one refused. The same limit is applied here, and it too ends the load.
  *
  * <p>Class BrandAssembler coded before 260915, commented in full on 261023, updated on 261105 for
- * the removal of the soft-error path and on 261108 for the 254-brand limit.
+ * the removal of the soft-error path, on 261108 for the 254-brand limit and on 261113 for the
+ * repeatable directives arriving as lists.
  *
  * @author Rowan Crowther
  */
@@ -103,11 +104,22 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
      * {@link Integer#MAX_VALUE} where C wraps it, the accepted deviation recorded in
      * {@link ParseUtils}.
      *
+     * <p><strong>The five repeatable directives arrive as lists.</strong> {@code multiplier},
+     * {@code o-multiplier}, {@code power}, {@code resist-flag} and {@code vuln-flag} each reach this
+     * method as the {@link List} of every line the record wrote, in file order, and as an empty list
+     * when it wrote none. C's {@code init_parse_brand} registers each directive as its own handler,
+     * which runs once per line, so every entry is checked here as C checks its line: a bad number or
+     * flag ends the load even when a good line follows it. Only the last line is kept, as each of
+     * C's handlers overwrites the field, and an empty list leaves the 0 (or {@link MonsterRaceFlag#RF_NONE})
+     * that {@code mem_zalloc} gave the record. {@code name} and {@code verb} are not lists: the
+     * grammar keeps their last line itself and hands over {@code null} when there is none.
+     *
      * <p>A 255th record ends the load, as C's {@code finish_parse_brand} refuses it: the record's
      * own checks run first, and the count is tested last, just before the brand is added.
      *
      * <p>Function assemble coded before 260915, commented in full on 261013, rewritten for the
-     * load-ending errors on 261023, updated on 261108 for the 254-brand limit.
+     * load-ending errors on 261023, updated on 261108 for the 254-brand limit and on 261113 so the
+     * five repeatable directives arrive as lists, each line checked and only the last kept.
      *
      * @param records  the raw {@link BrandParseRecord}s, in file order
      * @param filename the name of the data file, used in the error messages
@@ -126,69 +138,80 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
             String code = record.code();
             String name = record.name();
             String verb = record.verb();
-            // resist-flag is present on every brand, so resolve it unconditionally.
-            String rawRFlag = record.resistFlag();
-            MonsterRaceFlag rFlag;
-            if (!record.resistFlag().equalsIgnoreCase("none")) {
-                try {
-                    rFlag = MonsterRaceFlag.valueOf("RF_" + rawRFlag);
-                } catch (IllegalArgumentException e) {
-                    String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
-                            "an invalid resist flag value: " + record.resistFlag();
-                    logger.fatal(message, e);
-                    throw new DataFileParseException(message);
-                }
-            } else {
-                String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
-                        "an invalid resist flag value: " + record.resistFlag();
-                logger.fatal(message);
-                throw new DataFileParseException(message);                
-            }
-            // vuln-flag is optional; absent leaves the RF_NONE sentinel, present must resolve.
-            String rawVFlag = record.vulnFlag();
-            
-            MonsterRaceFlag vFlag = MonsterRaceFlag.RF_NONE;
-            if (!rawVFlag.isEmpty()) {
-                if (!rawVFlag.equalsIgnoreCase("NONE")) {
-                    try {
-                        vFlag = MonsterRaceFlag.valueOf("RF_" + rawVFlag);
-                    } catch (IllegalArgumentException e) {
+            MonsterRaceFlag rFlag = MonsterRaceFlag.RF_NONE;
+            if (!record.resistFlag().isEmpty()) {
+                for (String rawRFlag : record.resistFlag()) {
+                    if (!rawRFlag.equalsIgnoreCase("none")) {
+                        try {
+                            rFlag = MonsterRaceFlag.valueOf("RF_" + rawRFlag);
+                        } catch (IllegalArgumentException e) {
+                            String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
+                                    "an invalid resist flag value: " + rawRFlag;
+                            logger.fatal(message, e);
+                            throw new DataFileParseException(message);
+                        }
+                    } else {
                         String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
-                                "an invalid vulnerable flag value: " + record.vulnFlag();
-                        logger.fatal(message, e);
+                                "an invalid resist flag value: " + rawRFlag;
+                        logger.fatal(message);
                         throw new DataFileParseException(message);
                     }
-                } else {
-                    String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
-                            "an invalid vulnerable flag value: " + record.vulnFlag();
-                    logger.fatal(message);
-                    throw new DataFileParseException(message);
+                }
+            }
+            // vuln-flag is optional; absent leaves the RF_NONE sentinel, present must resolve.
+            MonsterRaceFlag vFlag = MonsterRaceFlag.RF_NONE;
+            for (String rawVFlag : record.vulnFlag()) {
+                if (!rawVFlag.isEmpty()) {
+                    if (!rawVFlag.equalsIgnoreCase("NONE")) {
+                        try {
+                            vFlag = MonsterRaceFlag.valueOf("RF_" + rawVFlag);
+                        } catch (IllegalArgumentException e) {
+                            String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
+                                    "an invalid vulnerable flag value: " + rawVFlag;
+                            logger.fatal(message, e);
+                            throw new DataFileParseException(message);
+                        }
+                    } else {
+                        String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
+                                "an invalid vulnerable flag value: " + rawVFlag;
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                 }
             }
             // multiplier / o-multiplier / power are C uints: a too-large value is clamped, and a
             // leading '-' (even on -0) ends the load, as strtoul's caller in parser.c refuses it.
-            int mult = ParseUtils.parseIntString("Brand", record.multiplier(), line, filename, "multiplier");
-            if (ParseUtils.minusFound(record.multiplier())) {
-                String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
-                        "an invalid multiplier value: " + record.multiplier();
-                logger.fatal(message);
-                throw new DataFileParseException(message);
+            int mult = 0;
+            for (String multiplier : record.multiplier()) {
+                mult = ParseUtils.parseIntString("Brand", multiplier, line, filename, "multiplier");
+                if (ParseUtils.minusFound(multiplier)) {
+                    String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
+                            "an invalid multiplier value: " + multiplier;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
             }
-            int oMult = ParseUtils.parseIntString("Brand", record.oMultiplier(), line, filename, "o-multiplier");
-            if (ParseUtils.minusFound(record.oMultiplier())) {
-                String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
-                        "an invalid o-multiplier value: " + record.oMultiplier();
-                logger.fatal(message);
-                throw new DataFileParseException(message);
+            int oMult = 0;
+            for (String oMultiplier : record.oMultiplier()) {
+                oMult = ParseUtils.parseIntString("Brand", oMultiplier, line, filename, "o-multiplier");
+                if (ParseUtils.minusFound(oMultiplier)) {
+                    String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
+                            "an invalid o-multiplier value: " + oMultiplier;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
             }
-            int power = ParseUtils.parseIntString("Brand", record.power(), line, filename, "power");
-            if (ParseUtils.minusFound(record.power())) {
-                String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
-                        "an invalid power value: " + record.power();
-                logger.fatal(message);
-                throw new DataFileParseException(message);
+            int power = 0;
+            for (String powerString : record.power()) {
+                power = ParseUtils.parseIntString("Brand", powerString, line, filename, "power");
+                if (ParseUtils.minusFound(powerString)) {
+                    String message = "Brand starting at line: " + line + " of file: " + filename + " has " +
+                            "an invalid power value: " + powerString;
+                    logger.fatal(message);
+                    throw new DataFileParseException(message);
+                }
             }
-
+            
             if (brands.size() < 254)
                 brands.addFirst(new Brand(code, name, verb, rFlag, vFlag, mult, oMult, power));
             else {

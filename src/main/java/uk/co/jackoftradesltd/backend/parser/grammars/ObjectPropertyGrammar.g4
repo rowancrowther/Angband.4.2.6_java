@@ -8,12 +8,25 @@
 // (name/type/subtype/id-type/code/power/mult/type-mult/adjective/neg-adjective/msg/
 // desc/bindui -> parse_object_property_*), and struct obj_property lives in
 // src/obj-properties.h. This grammar does EXTRACTION ONLY: every action stashes raw
-// text into an ObjectPropertyParseRecord; all resolution to enums/ints and the UI
-// lookup happen in ObjectPropertyAssembler.
+// text into an ObjectPropertyParseRecord; all resolution to enums/ints, and the building
+// of the bindui binding, happen in ObjectPropertyAssembler (the UI entry itself is
+// matched later, by GameConstants).
 //
 // Verified against the real data (79 records): type: precedes code: in every record
 // (C requires it, since code resolves against a table chosen by type); subtype: and
 // id-type: appear only on flags; msg:/desc:/bindui: appear at most once per record.
+//
+// Record shape: name: first, then any directive in any order, any number of times, or
+// none at all. type: is optional, as in C, where a record with no type: keeps
+// OBJ_PROPERTY_NONE. A file may hold no records. A repeated directive replaces the
+// earlier one, as in C, except msg:/desc: (see the NOTE) and bindui: (C binds every line).
+//
+// ORDER IS NOT KEPT. The record holds the final value of each field and nothing about
+// the order the lines arrived in. C's PARSE_ERROR_MISSING_OBJ_PROP_TYPE (code: or bindui:
+// read while the type is still 0) is therefore caught, by the assembler, only when the
+// record has no type at all. A code: or bindui: ahead of a later type: loads here, and a
+// type: after a code: changes the table the code is looked up in; C resolves the code
+// at the line. See ObjectPropertyAssembler.
 //
 // NOTE: msg:/desc: are accumulated below via StringBuilder.append, whereas C REPLACES
 // (string_free + string_make). Harmless as long as neither repeats within a record
@@ -113,9 +126,11 @@ desc
         :   DESC STRING { $line = $STRING.getText(); }
         ;
 
-// One record: name and type first (in that order), then any mix of the remaining
-// directives. Locals accumulate each field; @after packs them into the raw record.
-// msg/desc use StringBuilders (append, not replace - see the file-level NOTE).
+// One record: name first, then any mix of the other directives, type included, in any
+// order and any number of times. Locals accumulate each field; @after packs them into the
+// raw record. An absent field stays "" (null for the optional bindui value), so a record
+// with no type: reaches the assembler with an empty type. msg/desc use StringBuilders
+// (append, not replace - see the file-level NOTE).
 objectProperty
         returns[ObjectPropertyParseRecord property]
         @init {
@@ -149,8 +164,8 @@ objectProperty
                     descInit, line);
         }
         :   name { line = $name.lineNo; nameInit = $name.nameString; }
-            type { typeInit = $type.typeStr; }
-        (   subtype { subTypeInit = $subtype.subTypeStr; }
+        (   type { typeInit = $type.typeStr; }
+        |   subtype { subTypeInit = $subtype.subTypeStr; }
         |   idType { idTypeInit = $idType.idTypeStr; }
         |   codeVal { codeInit = $codeVal.codeStr; }
         |   power { powerInit = $power.powerVal; }
@@ -163,14 +178,14 @@ objectProperty
                      tagInit = $bindui.tag;
                      valueInit = $bindui.uiVal;
                      auxInit = $bindui.aux; }
-        |   desc { descSB.append($desc.line); })+
+        |   desc { descSB.append($desc.line); })*
         ;
 
-// Whole file: one or more records.
+// Whole file: zero or more records, as in C, which loads nothing from an empty file.
 file
         returns[List<ObjectPropertyParseRecord> properties]
         @init {
             $properties = new ArrayList<>();
         }
-        :   (objectProperty {$properties.add($objectProperty.property); })+ EOF
+        :   (objectProperty {$properties.add($objectProperty.property); })* EOF
         ;

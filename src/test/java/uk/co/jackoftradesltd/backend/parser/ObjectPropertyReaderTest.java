@@ -351,7 +351,7 @@ class ObjectPropertyReaderTest {
     void anUnresolvableCodeEndsTheLoad() throws IOException {
         assertStopsTheLoad(
                 "name:bogus\ntype:flag\nsubtype:bad\nid-type:on wield\ncode:NOT_A_REAL_FLAG\npower:0\n",
-                1, "an illegal code value: NOT_A_REAL_FLAG");
+                5, "an unknown Object Property flag value: NOT_A_REAL_FLAG");
     }
 
     // ---- the reader's own contract, against values worked out from the upstream file --------------
@@ -494,7 +494,8 @@ class ObjectPropertyReaderTest {
     /**
      * A bad field ends the load, as every parse error does in C ({@code print_error} in
      * {@code datafile.c}): the assembler throws a {@link DataFileParseException} whose message names
-     * the record's {@code name:} line and the file, and nothing is returned.
+     * the line of the directive at fault (the assembler applies directives in file order, so a
+     * record has no line of its own) and the file, and nothing is returned.
      */
     private void assertStopsTheLoad(String content, int line, String tail) throws IOException {
         String path = tempFile("case.txt", content);
@@ -551,10 +552,10 @@ class ObjectPropertyReaderTest {
         assertEquals(244, items.stream().mapToInt(ObjectProperty::getMultiplier).sum());
         assertEquals(236, items.stream().flatMap(p -> ((Map<?, ?>) field(p, "typeMults")).values().stream())
                 .mapToInt(v -> (Integer) v).sum());
-        assertEquals(21, items.stream().filter(p -> !p.getNoticeMessage().isEmpty()).count());
-        assertEquals(22, items.stream().filter(p -> !((String) field(p, "description")).isEmpty()).count());
-        assertEquals(5, items.stream().filter(p -> !((String) field(p, "adjective")).isEmpty()).count());
-        assertEquals(5, items.stream().filter(p -> !((String) field(p, "negAdjective")).isEmpty()).count());
+        assertEquals(21, items.stream().filter(p -> p.getNoticeMessage() != null).count());
+        assertEquals(22, items.stream().filter(p -> field(p, "description") != null).count());
+        assertEquals(5, items.stream().filter(p -> field(p, "adjective") != null).count());
+        assertEquals(5, items.stream().filter(p -> field(p, "negAdjective") != null).count());
         assertEquals(66, items.stream().mapToInt(p -> p.getBoundEntries().size()).sum());
         assertEquals(List.of(1, 2, 3), items.stream().flatMap(p -> p.getBoundEntries().stream())
                 .map(ObjectProperty.UIBinding::value).filter(v -> v != null).toList());
@@ -621,7 +622,7 @@ class ObjectPropertyReaderTest {
                 name:third
                 type:flag
                 code:PROT_FEAR
-                """, 4, "an illegal subtype value: no such subtype");
+                """, 6, "an unknown subtype value: no such subtype");
     }
 
     /**
@@ -765,17 +766,56 @@ class ObjectPropertyReaderTest {
                 code:DEX
                 type-mult:not a tval:2
                 type-mult:gloves:3
-                """, 1, "an illegal tValue value: not a tval");
+                """, 4, "an unknown TValue value: not a tval");
     }
 
     /**
-     * {@code code:} before {@code type:} is {@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE} in C, fatal, and
-     * a syntax error here: the record shape puts {@code type:} straight after {@code name:}.
+     * {@code code:} before {@code type:} is {@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE} in C, fatal:
+     * {@code parse_object_property_code} reads {@code prop->type} when it meets the line and finds 0.
+     * {@code ObjectProperty2Assembler} applies the directives in file order and refuses the line the
+     * same way, naming the {@code code:} line. A {@code type:} further down the record does not
+     * rescue it.
+     *
+     * <p>Function aCodeBeforeTheTypeEndsTheLoadAsInC coded on 261115. It replaces
+     * aCodeBeforeTheTypeLoadsHereWhereCRefusesIt.
      */
     @Test
-    void codeBeforeTypeIsAHardError() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("name:x\ncode:STR\ntype:stat\n"));
+    void aCodeBeforeTheTypeEndsTheLoadAsInC() throws IOException {
+        assertStopsTheLoad("name:x\ncode:STR\ntype:stat\n", 2,
+                "a code directive, with no type directive loaded yet");
+    }
 
+    /**
+     * {@code bindui:} before {@code type:} is {@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE} in C, fatal:
+     * {@code parse_object_property_bindui} reads {@code prop->type} when it meets the line and finds 0.
+     * The assembler refuses it at the {@code bindui:} line, whatever follows. Its message says "a code
+     * directive" for a {@code bindui:} too; the directive's own name is not in it.
+     *
+     * <p>Function aBinduiBeforeTheTypeEndsTheLoadAsInC coded on 261115. It replaces
+     * aBinduiBeforeTheTypeLoadsHereWhereCRefusesIt.
+     */
+    @Test
+    void aBinduiBeforeTheTypeEndsTheLoadAsInC() throws IOException {
+        assertStopsTheLoad("name:x\nbindui:foo:0\ntype:flag\ncode:FREE_ACT\n", 2,
+                "a code directive, with no type directive loaded yet");
+    }
+
+    /**
+     * C resolves the {@code code:} when it reads the line, and a later {@code type:} only overwrites
+     * {@code prop->type}. So {@code type:stat}, {@code code:STR}, {@code type:flag} loads in C as a flag
+     * whose index is 0: STR is entry 0 of {@code obj_mods}, and entry 0 of {@code obj_flags} is
+     * {@code NONE}. The assembler carries the index across the {@code type:} line and does the same,
+     * giving {@code OF_NONE}.
+     *
+     * <p>Function aSecondTypeAfterTheCodeKeepsTheFirstIndexAsInC coded on 261115. It replaces
+     * aSecondTypeAfterTheCodeEndsTheLoadHereWhereCKeepsTheFirstIndex.
+     */
+    @Test
+    void aSecondTypeAfterTheCodeKeepsTheFirstIndexAsInC() throws IOException {
+        ObjectProperty prop = load("name:x\ntype:stat\ncode:STR\ntype:flag\n").items().get(0);
+
+        assertEquals(ObjPropertyType.OBJ_PROPERTY_FLAG, prop.getType());
+        assertEquals(ObjectFlag.OF_NONE, prop.getPayload().getFlag(ObjPropertyType.OBJ_PROPERTY_FLAG));
     }
 
     /**
@@ -784,7 +824,7 @@ class ObjectPropertyReaderTest {
      */
     @Test
     void anUnknownTypeEndsTheLoad() throws IOException {
-        assertStopsTheLoad("name:x\ntype:resist\ncode:ACID\n", 1, "an illegal type value: resist");
+        assertStopsTheLoad("name:x\ntype:resist\ncode:ACID\n", 2, "an unknown type: resist");
     }
 
     /**
@@ -807,19 +847,22 @@ class ObjectPropertyReaderTest {
                 result.items().stream().map(ObjectProperty::getName).toList());
         assertEquals(ObjectModifier.OM_LIGHT, result.items().get(0).getPayload().getModifier(ObjPropertyType.OBJ_PROPERTY_MOD));
         assertEquals(ElementEnum.ELEM_LIGHT, result.items().get(1).getPayload().getElement(ObjPropertyType.OBJ_PROPERTY_RESIST));
-        assertStopsTheLoad("name:light flag\ntype:flag\ncode:LIGHT\n", 1,
-                "an illegal code value: LIGHT");
+        assertStopsTheLoad("name:light flag\ntype:flag\ncode:LIGHT\n", 3,
+                "an unknown Object Property flag value: LIGHT");
     }
 
     // ---- places the grammar or assembler differs from C (see docs/grammar_issues.md and Assembler_Issues.md) ----
 
     /**
      * C's {@code parse_object_property_msg} and {@code parse_object_property_desc} free the old
-     * string and make a new one, so a second line replaces the first. {@code ObjectPropertyGrammar}
-     * appends to a {@code StringBuilder}, so two lines run together.
+     * string and make a new one, so a second line replaces the first. The assembler does the same,
+     * so the last line is the one kept.
+     *
+     * <p>Function aSecondMsgOrDescLineReplacesTheFirstAsInC coded on 261115. It replaces
+     * aSecondMsgOrDescLineIsAppendedHereWhereCReplacesIt.
      */
     @Test
-    void aSecondMsgOrDescLineIsAppendedHereWhereCReplacesIt() throws IOException {
+    void aSecondMsgOrDescLineReplacesTheFirstAsInC() throws IOException {
         ObjectProperty prop = load("""
                 name:twice
                 type:flag
@@ -830,18 +873,20 @@ class ObjectPropertyReaderTest {
                 desc:D
                 """).items().get(0);
 
-        assertEquals("AB", prop.getNoticeMessage(), "C gives B");
-        assertEquals("CD", field(prop, "description"), "C gives D");
+        assertEquals("B", prop.getNoticeMessage());
+        assertEquals("D", field(prop, "description"));
     }
 
     /**
      * The header of {@code object_property.txt} says {@code bindui} "can appear multiple times to bind
      * a property to more than one user interface element", and C binds each line as it reads it. The
-     * grammar keeps one set of locals per record, so the last line wins and the earlier ones are lost
-     * before the assembler sees them.
+     * parse record keeps every {@code bindui:} line, and the assembler binds each, in file order.
+     *
+     * <p>Function aSecondBinduiLineBindsAsWellAsInC coded on 261115. It replaces
+     * aSecondBinduiLineReplacesTheFirstHereWhereCBindsBoth.
      */
     @Test
-    void aSecondBinduiLineReplacesTheFirstHereWhereCBindsBoth() throws IOException {
+    void aSecondBinduiLineBindsAsWellAsInC() throws IOException {
         ObjectProperty prop = load("""
                 name:strength
                 type:stat
@@ -850,41 +895,55 @@ class ObjectPropertyReaderTest {
                 bindui:second_entry:1
                 """).items().get(0);
 
-        assertEquals(1, prop.getBoundEntries().size(), "C binds both");
-        assertEquals("second_entry", prop.getBoundEntries().get(0).entry());
-        assertTrue(prop.getBoundEntries().get(0).aux());
+        assertEquals(2, prop.getBoundEntries().size());
+        assertEquals("first_entry", prop.getBoundEntries().get(0).entry());
+        assertFalse(prop.getBoundEntries().get(0).aux());
+        assertEquals("second_entry", prop.getBoundEntries().get(1).entry());
+        assertTrue(prop.getBoundEntries().get(1).aux());
     }
 
     /**
-     * C accepts a record with no {@code type:} (it stays {@code OBJ_PROPERTY_NONE}), and a
-     * {@code type:} after other directives. The record shape here is {@code name:} then {@code type:}
-     * then the rest, so both are syntax errors.
+     * C accepts a record with no {@code type:}: {@code parse_object_property_name} zero-fills the
+     * property, so the type stays {@code OBJ_PROPERTY_NONE} and {@code index} stays 0. Here that is a
+     * NONE property whose payload is NONE with {@code ELEM_NONE}. C also accepts a {@code type:} after
+     * other directives, provided none of them is a {@code code:} or {@code bindui:}, which read the
+     * type at once.
      */
     @Test
-    void aMissingOrLateTypeIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+    void aMissingOrLateTypeLoadsAsInC() throws IOException {
+        ObjectProperty bare = load("name:x\npower:1\n").items().get(0);
 
-        assertThrows(ParseCancellationException.class, () -> load("name:x\npower:1\n"));
-        assertThrows(ParseCancellationException.class, () -> load("name:x\npower:1\ntype:flag\ncode:FREE_ACT\n"));
+        assertEquals(ObjPropertyType.OBJ_PROPERTY_NONE, bare.getType());
+        assertEquals(ObjPropertyType.OBJ_PROPERTY_NONE, bare.getPayload().getType());
+        assertSame(ElementEnum.ELEM_NONE, bare.getPayload().getElement(ObjPropertyType.OBJ_PROPERTY_RESIST));
+        assertEquals(1, bare.getPower());
+
+        ObjectProperty late = load("name:x\npower:1\ntype:flag\ncode:FREE_ACT\n").items().get(0);
+
+        assertEquals(ObjPropertyType.OBJ_PROPERTY_FLAG, late.getType());
+        assertEquals("FREE_ACT", codeOf(late));
+        assertEquals(1, late.getPower());
     }
 
     /**
-     * A second {@code type:} overwrites the first in C. In the grammar {@code type:} is not among the
-     * repeatable directives, so it is a syntax error.
+     * A second {@code type:} overwrites the first in C, which stores the word and nothing else. The
+     * {@code code:} here comes after both, so it resolves against {@code obj_mods} in C and in Java.
      */
     @Test
-    void aSecondTypeLineIsAHardErrorHereWhereCOverwrites() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ntype:mod\ncode:STR\n"));
+    void aSecondTypeLineOverwritesTheFirstAsInC() throws IOException {
+        ObjectProperty prop = load("name:x\ntype:stat\ntype:mod\ncode:STR\n").items().get(0);
 
+        assertEquals(ObjPropertyType.OBJ_PROPERTY_MOD, prop.getType());
+        assertEquals("STR", codeOf(prop));
     }
 
     /**
-     * A file with the header and no records loads nothing in C ({@code property_max} becomes 1). The
-     * grammar's {@code file} rule needs at least one record.
+     * A file with no records loads nothing in C ({@code property_max} becomes 1, slot 0 only). The
+     * list here is empty.
      */
     @Test
-    void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load(""));
-
+    void anEmptyFileLoadsNothingAsInC() throws IOException {
+        assertTrue(load("").items().isEmpty());
     }
 
     /**
@@ -911,7 +970,7 @@ class ObjectPropertyReaderTest {
                 {"mod", "NONE"}, {"mod", "MAX"}, {"stat", "NONE"}, {"stat", "MAX"},
                 {"resistance", "NONE"}, {"resistance", "MAX"}};
         for (String[] c : cases) {
-            assertStopsTheLoad("name:x\ntype:" + c[0] + "\ncode:" + c[1] + "\n", 1,
+            assertStopsTheLoad("name:x\ntype:" + c[0] + "\ncode:" + c[1] + "\n", 3,
                     "an illegal sentinel");
         }
         assertEquals(ObjectFlag.OF_NONE, load("name:x\ntype:flag\ncode:NONE\n").items().get(0)
@@ -921,15 +980,20 @@ class ObjectPropertyReaderTest {
     }
 
     /**
-     * C reads {@code adjective:} and {@code neg-adjective:} as {@code str}, the whole rest of the line.
-     * The lexer takes one lower-case word, so a space or a capital is a lexer error and the file loads as
-     * nothing.
+     * C reads {@code adjective:} and {@code neg-adjective:} as {@code str}, the whole rest of the line,
+     * and the port now does the same: a space or a capital loads, and the text is kept as written.
+     *
+     * <p>Function anAdjectiveWithASpaceOrACapitalLoadsAsInC coded on 261115. It replaces
+     * anAdjectiveWithASpaceOrACapitalIsAHardErrorHereWhereCTakesAnyString.
      */
     @Test
-    void anAdjectiveWithASpaceOrACapitalIsAHardErrorHereWhereCTakesAnyString() throws IOException {
-
-        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\nadjective:very strong\n"));
-        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\nadjective:Strong\n"));
+    void anAdjectiveWithASpaceOrACapitalLoadsAsInC() throws IOException {
+        assertEquals("very strong", field(load("name:x\ntype:stat\ncode:STR\nadjective:very strong\n")
+                .items().get(0), "adjective"));
+        assertEquals("Strong", field(load("name:x\ntype:stat\ncode:STR\nadjective:Strong\n")
+                .items().get(0), "adjective"));
+        assertEquals("Very Weak", field(load("name:x\ntype:stat\ncode:STR\nneg-adjective:Very Weak\n")
+                .items().get(0), "negAdjective"));
     }
 
     /**
@@ -949,13 +1013,17 @@ class ObjectPropertyReaderTest {
 
     /**
      * {@code tval_find_idx} also accepts a number below {@code TV_MAX}, so {@code type-mult:3:2} is
-     * valid in C. In the {@code DELIMITER} mode a bare number lexes as {@code DELIM_INTEGER}, and the
-     * grammar wants a symbol there, so it is a syntax error.
+     * valid in C, and names tval 3, {@code arrow} in {@code list-tvals.h}. The port loads it the same
+     * way.
+     *
+     * <p>Function aNumericTvalInTypeMultLoadsAsInC coded on 261115. It replaces
+     * aNumericTvalInTypeMultIsAHardErrorHereWhereCAcceptsIt.
      */
     @Test
-    void aNumericTvalInTypeMultIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:stat\ncode:STR\ntype-mult:3:2\n"));
+    void aNumericTvalInTypeMultLoadsAsInC() throws IOException {
+        ObjectProperty prop = load("name:x\ntype:stat\ncode:STR\ntype-mult:3:2\n").items().get(0);
 
+        assertEquals(2, prop.getTypeMult(TValue.TV_ARROW));
     }
 
     /**
@@ -1000,13 +1068,131 @@ class ObjectPropertyReaderTest {
     }
 
     /**
+     * C reads {@code type:} and {@code code:} as {@code str}, which keeps the rest of the line, blanks
+     * included, so {@code "flag "} and {@code "FREE_ACT "} match no table entry and C refuses the line.
+     * The lexer's {@code LCASE_MODE} and {@code UCASE_MODE} end only on a bare line end, so a blank or
+     * tab after the value is a lexer error and the file is refused, whatever follows the line.
+     *
+     * <p>Function aTrailingBlankAfterTypeOrCodeIsRefusedAsInC coded on 261115, commented in full on 261115.
+     */
+    @Test
+    void aTrailingBlankAfterTypeOrCodeIsRefusedAsInC() {
+        for (String pad : new String[]{" ", "  ", "\t", " \t "}) {
+            String where = "pad [" + pad.replace("\t", "\\t") + "]";
+            assertThrows(ParseCancellationException.class,
+                    () -> load("name:x\ntype:flag" + pad + "\ncode:FREE_ACT\n"), "type: " + where);
+            assertThrows(ParseCancellationException.class,
+                    () -> load("name:x\ntype:flag\ncode:FREE_ACT" + pad + "\npower:1\n"), "code: " + where);
+        }
+    }
+
+    /**
+     * The same refusal when the blank is on the very last line and the file has no final newline. C
+     * reads such a last line, and refuses the blank in it.
+     *
+     * <p>Function aTrailingBlankAfterTypeOrCodeOnTheLastLineIsRefusedAsInC coded on 261115, commented
+     * in full on 261115.
+     */
+    @Test
+    void aTrailingBlankAfterTypeOrCodeOnTheLastLineIsRefusedAsInC() {
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:flag "));
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:flag\ncode:FREE_ACT "));
+        assertThrows(ParseCancellationException.class, () -> load("name:x\ntype:flag\ncode:FREE_ACT\t\n"));
+    }
+
+    /**
+     * The clean lines still load, including a {@code type:} or {@code code:} on the last line with no
+     * final newline, and with a comment line straight after: the new modes must pop back to the
+     * default mode on the line end.
+     *
+     * <p>Function aTypeOrCodeWithNoBlankStillLoads coded on 261115, commented in full on 261115.
+     */
+    @Test
+    void aTypeOrCodeWithNoBlankStillLoads() throws IOException {
+        assertEquals("FREE_ACT", codeOf(load("name:x\ntype:flag\ncode:FREE_ACT").items().get(0)));
+        assertEquals("FREE_ACT", codeOf(load("name:x\ntype:flag\ncode:FREE_ACT\n").items().get(0)));
+        assertEquals("FREE_ACT", codeOf(load("name:x\ntype:flag\n# a comment\ncode:FREE_ACT\n# another\n")
+                .items().get(0)));
+        assertEquals("DIG_1", codeOf(load("name:x\ntype:flag\ncode:DIG_1\n").items().get(0)));
+    }
+
+    /**
+     * C reads the figure of {@code power:}, {@code mult:}, {@code type-mult:} and the aux figure and
+     * value of {@code bindui:} with {@code strtol}, which ignores whatever follows the digits, so a
+     * blank or tab after the figure loads. The end-of-line rules for those lines are {@code NL}, which
+     * takes the blanks, and the file's last line may have no final newline.
+     *
+     * <p>Function aTrailingBlankAfterAFigureIsIgnoredAsInC coded on 261115, commented in full on 261115.
+     */
+    @Test
+    void aTrailingBlankAfterAFigureIsIgnoredAsInC() throws IOException {
+        for (String pad : new String[]{" ", "  ", "\t", " \t "}) {
+            for (String after : new String[]{"\n", "\nmsg:next\n", ""}) {
+                String where = "pad [" + pad.replace("\t", "\\t") + "] then [" + after.replace("\n", "\\n") + "]";
+                String head = "name:x\ntype:stat\ncode:STR\n";
+
+                assertEquals(3, load(head + "power:3" + pad + after).items().get(0).getPower(), "power " + where);
+                assertEquals(3, load(head + "mult:3" + pad + after).items().get(0).getMultiplier(), "mult " + where);
+                assertEquals(3, load(head + "type-mult:gloves:3" + pad + after).items().get(0)
+                        .getTypeMult(TValue.TV_GLOVES), "type-mult " + where);
+
+                ObjectProperty aux = load(head + "bindui:entry:1" + pad + after).items().get(0);
+                assertTrue(aux.getBoundEntries().get(0).aux(), "bindui aux " + where);
+                assertNull(aux.getBoundEntries().get(0).value(), "bindui aux " + where);
+
+                ObjectProperty tagged = load(head + "bindui:entry<TAG>:0" + pad + after).items().get(0);
+                assertEquals("entry<TAG>", tagged.getBoundEntries().get(0).entry(), "bindui tag " + where);
+                assertFalse(tagged.getBoundEntries().get(0).aux(), "bindui tag " + where);
+
+                ObjectProperty valued = load(head + "bindui:entry:1:7" + pad + after).items().get(0);
+                assertEquals(7, valued.getBoundEntries().get(0).value(), "bindui value " + where);
+            }
+        }
+    }
+
+    /**
+     * C's {@code str} fields keep a trailing blank, and so does {@code STRING}: the blank is part of
+     * the value of {@code name:}, {@code msg:}, {@code desc:}, {@code adjective:} and
+     * {@code neg-adjective:}, and no end-of-line rule takes it.
+     *
+     * <p>Function aTrailingBlankInATextValueIsKeptAsInC coded on 261115, commented in full on 261115.
+     */
+    @Test
+    void aTrailingBlankInATextValueIsKeptAsInC() throws IOException {
+        ObjectProperty prop = load("name:x \ntype:stat\ncode:STR\nmsg:hello \ndesc:text\t\nadjective:fast  \n"
+                + "neg-adjective:slow ").items().get(0);
+
+        assertEquals("x ", prop.getName());
+        assertEquals("hello ", prop.getNoticeMessage());
+        assertEquals("text\t", field(prop, "description"));
+        assertEquals("fast  ", field(prop, "adjective"));
+        assertEquals("slow ", field(prop, "negAdjective"));
+    }
+
+    /**
+     * {@code subtype:} and {@code id-type:} are {@code str} in C too, so a trailing blank makes the
+     * word match no entry and C refuses it. Here {@code STRING} keeps the blank, the lexer lets it
+     * through, and the assembler refuses it, naming the line.
+     *
+     * <p>Function aTrailingBlankAfterSubtypeOrIdTypeEndsTheLoad coded on 261115, commented in full on
+     * 261115.
+     */
+    @Test
+    void aTrailingBlankAfterSubtypeOrIdTypeEndsTheLoad() throws IOException {
+        assertStopsTheLoad("name:x\ntype:flag\nsubtype:sustain \ncode:FREE_ACT\n", 3,
+                "an unknown subtype value: sustain ");
+        assertStopsTheLoad("name:x\ntype:flag\nid-type:timed \ncode:FREE_ACT\n", 3,
+                "an unknown id-type value: timed ");
+    }
+
+    /**
      * A figure with no digit ({@code ff}, hex letters without {@code 0x}) is {@code NOT_NUMBER} in C
      * and ends the load here. It lexes as {@code INTEGER} (the rule accepts a-f) and the assembler
      * refuses it.
      */
     @Test
     void hexLettersWithoutAPrefixEndTheLoad() throws IOException {
-        assertStopsTheLoad("name:x\ntype:stat\ncode:STR\npower:ff\n", 1, "power");
+        assertStopsTheLoad("name:x\ntype:stat\ncode:STR\npower:ff\n", 4, "an invalid power value: ff");
     }
 
     /**

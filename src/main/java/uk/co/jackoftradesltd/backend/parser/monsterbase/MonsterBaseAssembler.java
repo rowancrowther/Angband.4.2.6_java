@@ -69,18 +69,29 @@ public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, L
     private static final Logger logger = LogManager.getLogger(MonsterBaseAssembler.class);
 
     /**
-     * Resolve every parsed {@code monster_base.txt} record into a {@link MonsterBase}:
+     * Resolve every parsed {@code monster_base.txt} record into a {@link MonsterBase}. None of C's
+     * {@code parse_mon_base_*} handlers is required after the name, so a directive the record left
+     * out arrives from the grammar as {@code ""} ({@code null} for the text, an empty list for the
+     * flags) and takes the zeroed
+     * default that {@code mem_zalloc} gives C's record:
      * <ul>
      *   <li><b>Flags.</b> Each code gets {@code RF_} put in front and is looked up in
      *       {@link MonsterRaceFlag}, the match being case-sensitive as C's {@code grab_flag} is.
      *       {@code NONE} resolves, as it is a row of {@code list-mon-race-flags.h}; a code with no
      *       row is fatal, as C's {@code PARSE_ERROR_INVALID_FLAG} is. A record with no
-     *       {@code flags:} line gets an empty set, and several lines accumulate into one.</li>
-     *   <li><b>Glyph.</b> Must be exactly one code point, else fatal (C rejects a longer value with
-     *       {@code PARSE_ERROR_FIELD_TOO_LONG}). C keeps it in a {@code wchar_t}; here a code point
-     *       up to {@code 0xFFFF} goes in the narrow {@code char} half and a supplementary one goes
-     *       in the wide {@code int} half, with the narrow half left at {@code '\0'}.</li>
-     *   <li><b>Pain.</b> The serial is parsed as a decimal integer and looked up through
+     *       {@code flags:} line, or only empty ones, gets an empty set, and several lines
+     *       accumulate into one.</li>
+     *   <li><b>Glyph.</b> A record with no {@code glyph:} line gets glyph 0 in both halves, as C's
+     *       zeroed {@code d_char} is. Otherwise it must be exactly one code point, else fatal (C
+     *       rejects a longer value with {@code PARSE_ERROR_FIELD_TOO_LONG}). C keeps it in a
+     *       {@code wchar_t}; here a code point up to {@code 0xFFFF} goes in the narrow
+     *       {@code char} half and a supplementary one goes in the wide {@code int} half, with the
+     *       narrow half left at {@code '\0'}.</li>
+     *   <li><b>Pain.</b> A record with no {@code pain:} line gets a {@code null} pain set, as C's
+     *       NULL pointer is, and no lookup is made. Otherwise the serial is read as C reads a
+     *       {@code uint} with {@code strtoul} in base 0, through {@link ParseUtils}: a {@code 0x}
+     *       prefix is hex, a leading {@code 0} is octal and the first unusable character ends the
+     *       number. A leading minus is fatal, as C refuses it. The serial is then looked up through
      *       {@link MonsterRegistry#lookupMonsterPain}, so {@code pain.txt} must be loaded first. C
      *       accepts any serial below {@code z_info->mp_max} and points at
      *       {@code pain_messages[idx]}; here a serial that is not a number, or that no loaded set
@@ -88,20 +99,24 @@ public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, L
      *       the {@link MonsterRegistry} class block, so serial 0 is fatal unless a record carries
      *       it.</li>
      *   <li><b>Text.</b> The {@code desc:} text is stored as both the in-game name and the
-     *       description, as {@link MonsterBase} records.</li>
+     *       description, as {@link MonsterBase} records. A record with no {@code desc:} line gets
+     *       {@code null} for both, as C's NULL {@code text} is, and the grammar has already passed
+     *       it as {@code null}.</li>
      * </ul>
      * The first bad field throws, naming the record's starting line, the file and the value; no
      * record is skipped and no partial list is returned. The result is built by adding each base at
      * the front, so it ends up in the reverse of file order, which is the order of C's
      * {@code rb_info} chain.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261027.
+     * <p>Function assemble coded before 260915, commented in full on 261027, updated on 261113 for
+     * the absent glyph, pain and desc (Stage 7a) and the base 0 reading of the pain serial.
      *
      * @param records  the raw monster-base records from the grammar, in file order
      * @param filename the data file being read, named in each exception
      * @return the assembled monster bases, in the reverse of file order
-     * @throws DataFileParseException if a race flag is unknown, a glyph is not exactly one code
-     *                                point, or a pain serial is not a number or has no loaded set
+     * @throws DataFileParseException if a race flag is unknown, a glyph is present and not exactly
+     *                                one code point, or a pain serial is present and is negative,
+     *                                is not a number or has no loaded set
      */
     @Override
     public List<MonsterBase> assemble(@NotNull List<MonsterBaseParseRecord> records,
@@ -111,7 +126,9 @@ public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, L
         for (MonsterBaseParseRecord record : records) {
             int line = record.line();
             String name = record.codeName();
-            String inGameName = record.inGameName();
+            String inGameName = null;
+            if (record.inGameName() != null && !record.inGameName().isEmpty())
+                inGameName = record.inGameName();
             Flag<MonsterRaceFlag> flags = new Flag<>(MonsterRaceFlag.class);
             for (String raceFlag : record.flags()) {
                 MonsterRaceFlag flag;
@@ -125,20 +142,23 @@ public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, L
                     throw new DataFileParseException(msg);
                 }
             }
-            int codePointCount = record.glyph().codePointCount(0, record.glyph().length());
-            if (codePointCount != 1) {
-                String msg = "Monster base starting at line: " + line +" of file: " + filename + " has " +
-                        "an illegal glyph value: " + record.glyph();
-                logger.fatal(msg);
-                throw new DataFileParseException(msg);
-            }
-            
+            int codePointCount = 0;
             char glyph = '\0';
             int wideGlyph = 0;
-            if (!Character.isSupplementaryCodePoint(record.glyph().codePointAt(0))) {
-                glyph = record.glyph().charAt(0);
-            } else {
-                wideGlyph = record.glyph().codePointAt(0);
+            if (!record.glyph().isEmpty()) {
+                codePointCount = record.glyph().codePointCount(0, record.glyph().length());
+                if (codePointCount != 1) {
+                    String msg = "Monster base starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal glyph value: " + record.glyph();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
+            
+                if (!Character.isSupplementaryCodePoint(record.glyph().codePointAt(0))) {
+                    glyph = record.glyph().charAt(0);
+                } else {
+                    wideGlyph = record.glyph().codePointAt(0);
+                }
             }
             if (ParseUtils.minusFound(record.pain())) {
                 String msg = "Monster base starting at line: " + line +" of file: " + filename + " has " +
@@ -146,15 +166,21 @@ public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, L
                 logger.fatal(msg);
                 throw new DataFileParseException(msg);
             }
-            int type = ParseUtils.parseIntString("Monster base", record.pain(), line, filename, "pain");
-            MonsterPain pain = MonsterRegistry.lookupMonsterPain(type);
-            if (pain == null) {
-                String msg = "Monster base starting at line: " + line +" of file: " + filename + " has " +
-                        "an illegal pain value: " + record.pain();
-                logger.fatal(msg);
-                throw new DataFileParseException(msg);
+            int type;
+            MonsterPain pain = null;
+            if (!record.pain().isEmpty()) {
+                type = ParseUtils.parseIntString("Monster base", record.pain(), line, filename, "pain");
+                pain = MonsterRegistry.lookupMonsterPain(type);
+                if (pain == null) {
+                    String msg = "Monster base starting at line: " + line + " of file: " + filename + " has " +
+                            "an illegal pain value: " + record.pain();
+                    logger.fatal(msg);
+                    throw new DataFileParseException(msg);
+                }
             }
-            String desc = record.description();
+            String desc = null;
+            if (record.description() != null && !record.description().isEmpty())
+                desc = record.description();
             
             results.addFirst(new MonsterBase(name, inGameName, flags, glyph, wideGlyph, pain, desc));
         }

@@ -19,7 +19,9 @@
 // and the C cross-reference). Extraction-only: every rule returns raw strings
 // that SummonAssembler resolves into domain summons (the message type, the
 // monster bases, the race flag, and the fallback reference to a sibling summon).
-// Cf. init_parse_summon() (src/mon-summon.c:146).
+// Cf. init_parse_summon() in mon-summon.c, which registers the seven directives
+// as independent handlers: after name:, the others come in any order, may repeat
+// and may be left out. The file itself may hold no records at all.
 //
 // @author Rowan Crowther
 
@@ -48,15 +50,16 @@ msgt
         :   MSGT FLAG { $msgtStr = $FLAG.getText(); }
         ;
 
-// "uniques:<0|1>" - whether uniques may be summoned.
+// "uniques:<number>" - whether uniques may be summoned. The text is kept raw;
+// the assembler reads any non-zero number as true. A record may carry several.
 uniques
         returns[String uniquesStr]
         :   UNIQUES INTEGER { $uniquesStr = $INTEGER.getText(); }
         ;
 
-// "base:<name>" [repeated] - the allowed monster bases. One or more base: lines
-// accumulate into the list here; the caller wraps this rule in (base)? so a
-// summon with no base restriction is also legal.
+// "base:<name>" [repeated] - the allowed monster bases. A run of adjacent base:
+// lines accumulates into one list here; the summon rule adds each run to the
+// record's list, so base: lines split by other directives are all kept too.
 base
         returns[List<String> baseStr]
         @init {
@@ -77,7 +80,8 @@ fallback
         :   FALLBACK STRING { $fallbackStr = $STRING.getText(); }
         ;
 
-// "desc:<text>" - the summon type's description.
+// "desc:<text>" - the summon type's description. A second desc: in the same
+// record replaces the first, as in C.
 desc
         returns[String description]
         @init {
@@ -89,18 +93,22 @@ desc
         :   ( DESC STRING { sb.append($STRING.getText()); })
         ;
 
-// One summon record: a fixed sequence of name/msgt/uniques, then the optional
-// base(s)/race-flag/fallback block, then desc. base, race-flag and fallback are
-// all optional and independent; base comes before race-flag (the only record
-// with both, WRAITH, lists them in that order).
+// One summon record: name: first, then any number of the other six directives in
+// any order, each optional. Absent values arrive as "" (fallback and desc) or as
+// an empty list (the other four) and the assembler turns them into C's defaults,
+// so a record of a name alone is legal. fallback and desc keep the last one
+// written, as C's handlers overwrite their field. msgt, uniques, base and
+// race-flag are kept line by line, in file order: C refuses a bad msgt, base or
+// race-flag line when it reads it, so the assembler must see every one, and it
+// takes the last msgt and race-flag as the value.
 summon
         returns[SummonParseRecord record]
         @init {
             String nameInit = "";
-            String msgTypeInit = "";
-            String uniquesInit = "";
+            List<String> msgTypeInit = new ArrayList<>();
+            List<String> uniquesInit = new ArrayList<>();
             List<String> basesInit = new ArrayList<>();
-            String raceFlagInit = "";
+            List<String> raceFlagInit = new ArrayList<>();
             String fallbackInit = "";
             String descInit = "";
             int line = 0;
@@ -112,19 +120,20 @@ summon
         }
         :   name { line = $name.lineNo;
                    nameInit = $name.nameStr; }
-            msgt { msgTypeInit = $msgt.msgtStr; }
-            uniques { uniquesInit = $uniques.uniquesStr; }
-            (base { basesInit = $base.baseStr; } )?
-            (raceFlag { raceFlagInit = $raceFlag.flagStr; })?
-            (fallback { fallbackInit = $fallback.fallbackStr; })?
-            desc { descInit = $desc.description; }
+        (   msgt { msgTypeInit.add($msgt.msgtStr); }
+        |   uniques { uniquesInit.add($uniques.uniquesStr); }
+        |   base { basesInit.addAll($base.baseStr); }
+        |   raceFlag { raceFlagInit.add($raceFlag.flagStr); }
+        |   fallback { fallbackInit = $fallback.fallbackStr; }
+        |   desc { descInit = $desc.description; })*
         ;
 
-// Top-level rule: one or more summon records.
+// Top-level rule: any number of summon records, including none, as C accepts an
+// empty file.
 file
         returns[List<SummonParseRecord> summons]
         @init {
             $summons = new ArrayList<>();
         }
-        :   (summon { $summons.add($summon.record); })+ EOF
+        :   (summon { $summons.add($summon.record); })* EOF
         ;

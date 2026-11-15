@@ -107,7 +107,12 @@ class SummonAssemblerTest {
 
     private static SummonParseRecord record(String name, String msgt, String uniques,
                                             List<String> bases, String raceFlag, String fallback) {
-        return new SummonParseRecord(name, msgt, uniques, bases, raceFlag, fallback, "a monster", 7);
+        // "" means no uniques: line at all, as the grammar now hands over an empty list.
+        List<String> uniquesLines = uniques.isEmpty() ? List.of() : List.of(uniques);
+        // Likewise "" means no msgt: or race-flag: line at all.
+        List<String> msgtLines = msgt.isEmpty() ? List.of() : List.of(msgt);
+        List<String> raceFlagLines = raceFlag.isEmpty() ? List.of() : List.of(raceFlag);
+        return new SummonParseRecord(name, msgtLines, uniquesLines, bases, raceFlagLines, fallback, "a monster", 7);
     }
 
     /** A record with no base, race flag or fallback. */
@@ -423,7 +428,7 @@ class SummonAssemblerTest {
     @Test
     void theDescriptionIsCarriedThroughUnchanged() {
         // parse_summon_desc copies the text with string_make.
-        SummonParseRecord withDesc = new SummonParseRecord("A", "SUM_MONSTER", "0", List.of(), "", "",
+        SummonParseRecord withDesc = new SummonParseRecord("A", List.of("SUM_MONSTER"), List.of("0"), List.of(), List.of(), "",
                 "an undead  thing, or two", 7);
 
         assertEquals("an undead  thing, or two", one(withDesc).getDescription());
@@ -437,7 +442,7 @@ class SummonAssemblerTest {
 
     @Test
     void theLineInTheMessageIsTheRecordsOwn() {
-        SummonParseRecord bad = new SummonParseRecord("A", "NOTREAL", "0", List.of(), "", "", "d", 42);
+        SummonParseRecord bad = new SummonParseRecord("A", List.of("NOTREAL"), List.of("0"), List.of(), List.of(), "", "d", 42);
 
         DataFileParseException e = refused(bad);
         assertTrue(e.getMessage().contains("Summon starting at line: 42 of file: " + FILE), e.getMessage());

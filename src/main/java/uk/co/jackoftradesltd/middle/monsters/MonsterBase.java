@@ -71,11 +71,12 @@ public class MonsterBase {
     /**
      * The base's displayed name, taken from the {@code desc:} line (for example
      * {@code Ancient Dragon/Wyrm}). Ports C's {@code monster_base->text}, which the C comment calls
-     * the in-game name; {@link #description} holds the same text. Empty, not {@code null}, on a base
-     * built by the code-name-only constructor, where C's zero-filled struct would hold
-     * {@code NULL}.
+     * the in-game name; {@link #description} holds the same text. {@code null} on a base read from a
+     * record with no {@code desc:} line, as C's {@code NULL} text is. Empty, not {@code null}, on a
+     * base built by the code-name-only constructor.
      *
-     * <p>Field inGameName coded before 261010, commented in full on 261010.
+     * <p>Field inGameName coded before 261010, commented in full on 261010, updated on 261113 for
+     * the null text.
      */
     private String inGameName;
     /**
@@ -111,10 +112,12 @@ public class MonsterBase {
     /**
      * The base's text from the {@code desc:} line, shown by the {@code /} command in C's UI.
      * Ports C's {@code monster_base->text}, the same member as {@link #inGameName}, so the two are
-     * equal for any base read from the data file. Empty, not {@code null}, on a base built by the
-     * code-name-only constructor. It has no accessor yet.
+     * equal for any base read from the data file. {@code null} on a base read from a record with no
+     * {@code desc:} line, as C's {@code NULL} text is. Empty, not {@code null}, on a base built by
+     * the code-name-only constructor. It has no accessor yet.
      *
-     * <p>Field description coded before 261010, commented in full on 261010.
+     * <p>Field description coded before 261010, commented in full on 261010, updated on 261113 for
+     * the null text.
      */
     private String description;
 
@@ -162,17 +165,19 @@ public class MonsterBase {
      * a supplementary one in the second with {@code '\0'} in the first. Nothing here rejects a pair
      * that breaks that rule, or a {@code wideMonsterChar} outside {@code 0..0x10FFFF}.
      *
-     * <p>Constructor MonsterBase coded before 261010, commented in full on 261026.
+     * <p>Constructor MonsterBase coded before 261010, commented in full on 261026, updated on
+     * 261113 for the null text.
      *
      * @param codeName           the base's code name
-     * @param inGameName         the displayed name, from the {@code desc:} line
+     * @param inGameName         the displayed name, from the {@code desc:} line; {@code null} when
+     *                           the record has none
      * @param flags              the race flags every monster of this base inherits
      * @param defaultMonsterChar the default display glyph when it is up to {@code 0xFFFF}, else
      *                           {@code '\0'}
      * @param wideMonsterChar    the default display glyph when it is above {@code 0xFFFF}, else
      *                           {@code 0}
      * @param pain               the pain-message set
-     * @param description        the {@code desc:} text
+     * @param description        the {@code desc:} text; {@code null} when the record has none
      */
     public MonsterBase(String codeName,
                        String inGameName,

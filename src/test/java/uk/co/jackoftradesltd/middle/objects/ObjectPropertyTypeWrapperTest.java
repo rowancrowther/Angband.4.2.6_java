@@ -17,28 +17,15 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagID;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 
-import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ObjectPropertyTypeWrapper}, the typed stand-in for C's {@code obj_property->index}.
@@ -50,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * index half of those clauses compares by payload and never by type, and that the family each
  * constructor and getter accepts matches the table the C parser indexes into.
  *
- * <p>Class ObjectPropertyTypeWrapperTest commented in full on 261005.
+ * <p>Class ObjectPropertyTypeWrapperTest commented in full on 261115.
  *
  * @author Rowan Crowther
  */
@@ -124,15 +111,78 @@ class ObjectPropertyTypeWrapperTest {
         }
 
         /**
-         * The modifier constructor takes only stat and mod. A flag type, an element type and the two
-         * sentinels are all refused, where C would have looked the code up in the wrong table.
+         * The modifier constructor takes stat and mod, and a NONE type only with a {@code null} modifier (see
+         * {@link #noneTypeWithNullPayloadBuildsTheNoneWrapper}). A flag type, an element type and the MAX
+         * sentinel are refused, where C would have looked the code up in the wrong table and found nothing.
          */
         @Test
         void modifierConstructorRefusesEveryOtherType() {
             for (ObjPropertyType type : List.of(FLAG, IGNORE, RESIST, VULN, IMM,
-                    ObjPropertyType.OBJ_PROPERTY_NONE, ObjPropertyType.OBJ_PROPERTY_MAX)) {
-                assertThrows(InvalidParameterException.class,
+                    ObjPropertyType.OBJ_PROPERTY_MAX)) {
+                assertThrows(IllegalArgumentException.class,
                         () -> new ObjectPropertyTypeWrapper(type, ObjectModifier.OM_STR), type.name());
+            }
+        }
+
+        /**
+         * {@code OBJ_PROPERTY_NONE} is the type of a record with no {@code type:} line, whose {@code index}
+         * C leaves at 0. All three constructors build the same NONE wrapper when the payload is
+         * {@code null}: {@code ELEM_NONE} in the element slot and {@code null} in the modifier and flag
+         * slots. A {@code null} type is treated as NONE. {@code new ObjectProperty()} relies on this,
+         * passing a {@code null} modifier.
+         */
+        @Test
+        void noneTypeWithNullPayloadBuildsTheNoneWrapper() {
+            for (ObjPropertyType type : new ObjPropertyType[]{ObjPropertyType.OBJ_PROPERTY_NONE, null}) {
+                List<ObjectPropertyTypeWrapper> wrappers = List.of(
+                        new ObjectPropertyTypeWrapper(type, (ObjectModifier) null),
+                        new ObjectPropertyTypeWrapper(type, (ObjectFlag) null),
+                        new ObjectPropertyTypeWrapper(type, (ElementEnum) null));
+
+                for (ObjectPropertyTypeWrapper wrapper : wrappers) {
+                    assertEquals(ObjPropertyType.OBJ_PROPERTY_NONE, wrapper.getType());
+                    assertSame(ElementEnum.ELEM_NONE, wrapper.getElement(RESIST));
+                    assertNull(wrapper.getModifier(MOD));
+                    assertNull(wrapper.getFlag(FLAG));
+                }
+            }
+        }
+
+        /**
+         * C refuses a {@code code:} line while the record's type is still 0
+         * ({@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE}), so a NONE or {@code null} type with any payload is
+         * refused rather than dropped. {@code ELEM_NONE} and {@code OF_NONE} count as payloads.
+         */
+        @Test
+        void noneTypeWithAnyPayloadIsRefused() {
+            for (ObjPropertyType type : new ObjPropertyType[]{ObjPropertyType.OBJ_PROPERTY_NONE, null}) {
+                assertThrows(IllegalArgumentException.class,
+                        () -> new ObjectPropertyTypeWrapper(type, ObjectModifier.OM_STR));
+                assertThrows(IllegalArgumentException.class,
+                        () -> new ObjectPropertyTypeWrapper(type, ObjectFlag.OF_SUST_STR));
+                assertThrows(IllegalArgumentException.class,
+                        () -> new ObjectPropertyTypeWrapper(type, ObjectFlag.OF_NONE));
+                assertThrows(IllegalArgumentException.class,
+                        () -> new ObjectPropertyTypeWrapper(type, ElementEnum.ELEM_FIRE));
+                assertThrows(IllegalArgumentException.class,
+                        () -> new ObjectPropertyTypeWrapper(type, ElementEnum.ELEM_NONE));
+            }
+        }
+
+        /**
+         * A real type needs its payload: C finds nothing to index when there is no {@code code:} text, so
+         * a {@code null} payload under any real type, the MAX sentinel included, is refused.
+         */
+        @Test
+        void realTypeWithNullPayloadIsRefused() {
+            for (ObjPropertyType type : List.of(STAT, MOD, FLAG, IGNORE, RESIST, VULN, IMM,
+                    ObjPropertyType.OBJ_PROPERTY_MAX)) {
+                assertThrows(IllegalArgumentException.class,
+                        () -> new ObjectPropertyTypeWrapper(type, (ObjectModifier) null), type.name());
+                assertThrows(IllegalArgumentException.class,
+                        () -> new ObjectPropertyTypeWrapper(type, (ObjectFlag) null), type.name());
+                assertThrows(IllegalArgumentException.class,
+                        () -> new ObjectPropertyTypeWrapper(type, (ElementEnum) null), type.name());
             }
         }
 
@@ -143,21 +193,36 @@ class ObjectPropertyTypeWrapperTest {
         void flagConstructorRefusesEveryOtherType() {
             for (ObjPropertyType type : List.of(STAT, MOD, IGNORE, RESIST, VULN, IMM,
                     ObjPropertyType.OBJ_PROPERTY_NONE, ObjPropertyType.OBJ_PROPERTY_MAX)) {
-                assertThrows(InvalidParameterException.class,
+                assertThrows(IllegalArgumentException.class,
                         () -> new ObjectPropertyTypeWrapper(type, ObjectFlag.OF_SUST_STR), type.name());
             }
         }
 
         /**
-         * The element constructor takes only the four element relations.
+         * The element constructor takes the four element relations, and a NONE type only with a
+         * {@code null} element. A stat, a mod, a flag and the MAX sentinel are refused.
          */
         @Test
         void elementConstructorRefusesEveryOtherType() {
-            for (ObjPropertyType type : List.of(STAT, MOD, FLAG,
-                    ObjPropertyType.OBJ_PROPERTY_NONE, ObjPropertyType.OBJ_PROPERTY_MAX)) {
-                assertThrows(InvalidParameterException.class,
+            for (ObjPropertyType type : List.of(STAT, MOD, FLAG, ObjPropertyType.OBJ_PROPERTY_MAX)) {
+                assertThrows(IllegalArgumentException.class,
                         () -> new ObjectPropertyTypeWrapper(type, ElementEnum.ELEM_FIRE), type.name());
             }
+        }
+
+        /**
+         * The NONE wrapper equals only another NONE wrapper: its {@code ELEM_NONE} element slot differs
+         * from every real payload, which the assembler never gives {@code ELEM_NONE}.
+         */
+        @Test
+        void noneWrapperEqualsOnlyAnotherNoneWrapper() {
+            ObjectPropertyTypeWrapper none = new ObjectPropertyTypeWrapper(
+                    ObjPropertyType.OBJ_PROPERTY_NONE, (ElementEnum) null);
+
+            assertEquals(none, new ObjectPropertyTypeWrapper(null, (ObjectModifier) null));
+            assertNotEquals(none, new ObjectPropertyTypeWrapper(STAT, ObjectModifier.OM_STR));
+            assertNotEquals(none, new ObjectPropertyTypeWrapper(FLAG, ObjectFlag.OF_NONE));
+            assertNotEquals(none, new ObjectPropertyTypeWrapper(RESIST, ElementEnum.ELEM_ACID));
         }
     }
 
@@ -206,14 +271,27 @@ class ObjectPropertyTypeWrapperTest {
             ObjectPropertyTypeWrapper flag = new ObjectPropertyTypeWrapper(FLAG, ObjectFlag.OF_SUST_STR);
             ObjectPropertyTypeWrapper element = new ObjectPropertyTypeWrapper(IMM, ElementEnum.ELEM_FIRE);
 
-            assertThrows(InvalidParameterException.class, () -> stat.getModifier(FLAG));
-            assertThrows(InvalidParameterException.class, () -> stat.getModifier(IGNORE));
-            assertThrows(InvalidParameterException.class, () -> flag.getFlag(MOD));
-            assertThrows(InvalidParameterException.class, () -> flag.getFlag(ObjPropertyType.OBJ_PROPERTY_NONE));
-            assertThrows(InvalidParameterException.class, () -> element.getElement(MOD));
-            assertThrows(InvalidParameterException.class, () -> element.getElement(FLAG));
-            assertThrows(InvalidParameterException.class,
+            assertThrows(IllegalArgumentException.class, () -> stat.getModifier(FLAG));
+            assertThrows(IllegalArgumentException.class, () -> stat.getModifier(IGNORE));
+            assertThrows(IllegalArgumentException.class, () -> flag.getFlag(MOD));
+            assertThrows(IllegalArgumentException.class, () -> flag.getFlag(ObjPropertyType.OBJ_PROPERTY_NONE));
+            assertThrows(IllegalArgumentException.class, () -> element.getElement(MOD));
+            assertThrows(IllegalArgumentException.class, () -> element.getElement(FLAG));
+            assertThrows(IllegalArgumentException.class,
                     () -> element.getElement(ObjPropertyType.OBJ_PROPERTY_MAX));
+        }
+
+        /**
+         * A {@code null} type request is refused with {@link IllegalArgumentException}, not a
+         * {@link NullPointerException}.
+         */
+        @Test
+        void gettersRefuseANullTypeRequest() {
+            ObjectPropertyTypeWrapper wrapper = new ObjectPropertyTypeWrapper(STAT, ObjectModifier.OM_STR);
+
+            assertThrows(IllegalArgumentException.class, () -> wrapper.getModifier(null));
+            assertThrows(IllegalArgumentException.class, () -> wrapper.getElement(null));
+            assertThrows(IllegalArgumentException.class, () -> wrapper.getFlag(null));
         }
 
         /**

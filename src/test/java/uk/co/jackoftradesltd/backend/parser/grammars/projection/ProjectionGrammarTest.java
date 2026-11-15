@@ -36,7 +36,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * record's source line number. All values are verbatim strings; enum resolution and defaulting are
  * the reader's job.
  *
- * <p>Class ProjectionGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed.
+ * <p>Class ProjectionGrammarTest coded before 261104, updated on 261104 once the {@code record-count:} header was removed,
+ * and on 261113 once the record became {@code code:} followed by any directives in any order.
  *
  * @author Rowan Crowther
  */
@@ -111,12 +112,72 @@ class ProjectionGrammarTest {
         assertEquals("8", ctx.projections.get(1).getLast());
     }
 
+    /**
+     * Only {@code code:} is mandatory, so a record of {@code code:} and {@code type:} parses and the
+     * twelve directives it leaves out are {@code null}.
+     *
+     * <p>Function aRecordOfOnlyCodeAndTypeParsesAndTheRestStayNull coded on 261113, commented in
+     * full on 261113. It replaces recordMissingAMandatoryFieldIsAParseError, which expected the old
+     * fixed sequence to refuse the record.
+     */
     @Test
-    void recordMissingAMandatoryFieldIsAParseError() {
-        // No desc/blind-desc/obvious/color after type: the mandatory sequence can't complete.
+    void aRecordOfOnlyCodeAndTypeParsesAndTheRestStayNull() {
         Errors errors = new Errors();
-        parser("code:ACID\ntype:element\n", errors).file();
+        ProjectionGrammar.FileContext ctx = parser("code:ACID\ntype:element\n", errors).file();
 
-        assertFalse(errors.messages.isEmpty(), "a record missing a mandatory field must not parse");
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals(
+                Arrays.asList("ACID", null, "element", null, null, null, null, null, null, null, null,
+                        null, null, null, null, "1"),
+                ctx.projections.get(0));
+    }
+
+    /**
+     * The directives after {@code code:} come in any order, and a repeated one replaces the earlier,
+     * so the last wins.
+     *
+     * <p>Function directivesComeInAnyOrderAndTheLastRepeatWins coded on 261113, commented in full
+     * on 261113.
+     */
+    @Test
+    void directivesComeInAnyOrderAndTheLastRepeatWins() {
+        Errors errors = new Errors();
+        ProjectionGrammar.FileContext ctx = parser(
+                "code:ACID\ncolor:Blue\ndesc:one\ntype:element\ndesc:two\n", errors).file();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals(
+                Arrays.asList("ACID", null, "element", "two", null, null, null, null, null, null, null,
+                        null, null, null, "Blue", "1"),
+                ctx.projections.get(0));
+    }
+
+    /**
+     * A directive with no {@code code:} before it is a syntax error: a record starts at
+     * {@code code:}.
+     *
+     * <p>Function aDirectiveAheadOfCodeIsAParseError coded on 261113, commented in full on 261113.
+     */
+    @Test
+    void aDirectiveAheadOfCodeIsAParseError() {
+        Errors errors = new Errors();
+        parser("name:x\ncode:ACID\ntype:element\n", errors).file();
+
+        assertFalse(errors.messages.isEmpty(), "a directive ahead of code: must not parse");
+    }
+
+    /**
+     * An empty file parses to no records; the reader's assembler, not the grammar, stops the load on
+     * the element count.
+     *
+     * <p>Function anEmptyFileParsesToNoRecords coded on 261113, commented in full on 261113.
+     */
+    @Test
+    void anEmptyFileParsesToNoRecords() {
+        Errors errors = new Errors();
+        ProjectionGrammar.FileContext ctx = parser("", errors).file();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertTrue(ctx.projections.isEmpty());
     }
 }

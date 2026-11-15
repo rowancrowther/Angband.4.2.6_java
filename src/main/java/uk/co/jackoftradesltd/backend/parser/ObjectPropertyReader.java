@@ -20,10 +20,10 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.grammars.objectproperty.ObjectPropertyGrammar;
-import uk.co.jackoftradesltd.backend.parser.grammars.objectproperty.ObjectPropertyLexer;
-import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyAssembler;
-import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.objectproperty2.ObjectProperty2Grammar;
+import uk.co.jackoftradesltd.backend.parser.grammars.objectproperty2.ObjectProperty2Lexer;
+import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectProperty2Assembler;
+import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectProperty2ParseRecord;
 import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
 import uk.co.jackoftradesltd.channel.parser.ParseErrors;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
@@ -48,7 +48,7 @@ import java.util.List;
  *   <li>{@code init_parse_object_property} and the {@code parse_object_property_*} handlers
  *       ({@code name}, {@code type}, {@code subtype}, {@code id-type}, {@code code}, {@code power},
  *       {@code mult}, {@code type-mult}, {@code adjective}, {@code neg-adjective}, {@code msg},
- *       {@code desc} and {@code bindui}) become the grammar plus {@link ObjectPropertyAssembler}:
+ *       {@code desc} and {@code bindui}) become the grammar plus {@link ObjectProperty2Assembler}:
  *       the grammar collects each record's raw text, and the assembler resolves the {@code type:},
  *       {@code subtype:} and {@code id-type:} words to enums, resolves {@code code:} against the
  *       table the {@code type:} selects (modifiers, flags or elements), parses the integers and
@@ -83,31 +83,42 @@ import java.util.List;
  * <p>
  * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
  * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
- * unknown type, subtype, id-type or code, a {@code type-mult:} naming no tval, a malformed
- * integer) is thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}.
- * Neither is caught here.
+ * unknown type, subtype, id-type or code, a {@code code:} or {@code bindui:} on a record with no
+ * type, a {@code type-mult:} naming no tval, a malformed integer) is thrown as a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
  * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>C takes the directives after {@code name:} in any order, accepts a record with no
- *       {@code type:} or with {@code type:} after other directives, and accepts a file with no
- *       records. The grammar needs {@code name:} then {@code type:} then at least one more
- *       directive in any order, and at least one record. A second {@code msg:} or {@code desc:}
- *       appends where C replaces it, a second {@code bindui:} replaces the first where C binds both,
- *       and {@code adjective:} takes one lower-case word where C takes any string; see
- *       {@code docs/grammar_issues.md}.</li>
+ *   <li>Like C, the grammar takes the directives after {@code name:} in any order and any number of
+ *       times, accepts a record with no {@code type:} (it becomes an {@code OBJ_PROPERTY_NONE}
+ *       property) and accepts a file with no records. The parse record keeps every directive line
+ *       in file order, and {@link ObjectProperty2Assembler} applies them one at a time as C's
+ *       handlers do: a repeated {@code msg:}, {@code desc:}, {@code adjective:} or
+ *       {@code neg-adjective:} replaces the earlier text, every {@code bindui:} binds, and
+ *       {@code adjective:} takes any string. A {@code code:} or {@code bindui:} ahead of the
+ *       {@code type:} is refused, as C refuses it, and a {@code type:} after a {@code code:} reads
+ *       the same index through the new type's table.</li>
+ *   <li>A record with no {@code msg:}, {@code desc:}, {@code adjective:} or {@code neg-adjective:}
+ *       line has {@code null} there, where C has {@code NULL}.</li>
+ *   <li>The index a {@code code:} line stores is the Java enum ordinal less one for the modifier and
+ *       element tables, which carry a {@code _NONE} placeholder C's tables lack, so a {@code type:}
+ *       line that follows a {@code code:} line can read one place apart from C when it crosses
+ *       between the flag table and either of the others, and one whose carried index is past the end
+ *       of the new table is refused where C loads it. See {@link ObjectProperty2Assembler}.</li>
  *   <li>The list is base 0 and holds only real records: no blank slot 0. This is the accepted
  *       deviation recorded in the registry's class block, so {@code property_max} is the plain
  *       record count, one lower than C's. A record's {@code type_mult} slots are not all filled
  *       with 1: only the tvals the file names are stored, and {@code ObjectProperty.getTypeMult}
  *       answers 1 for the rest.</li>
  *   <li>The file is opened at exactly the path given. C's {@code parse_file} would look for a
- *       customised copy in the user directory first.</li>
+ *       customized copy in the user directory first.</li>
  * </ul>
  *
- * <p>Class ObjectPropertyReader coded before 260915, commented in full on 261017, updated on 261105
+ * <p>Class ObjectPropertyReader coded before 260915, commented in full on 261113 (updated on 261105
  * for the removal of the soft-error path, and for the {@code code:} sentinel and aux handling now
- * matching C.
+ * matching C; type-less records, repeated directives and the order differences added 261113; the
+ * differences list rewritten 261115 for the switch to {@link ObjectProperty2Assembler}, which now
+ * matches C on repeated and out-of-order directives).
  *
  * @author Rowan Crowther
  */
@@ -145,7 +156,7 @@ public class ObjectPropertyReader implements Reader<ObjectProperty> {
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: run the parser's {@code file} entry
      * rule, fail closed on any hard lexer/parser error, and hand back the raw
-     * {@link ObjectPropertyParseRecord}s, still holding unresolved text.
+     * {@link ObjectProperty2ParseRecord}s, still holding unresolved text.
      * <p>
      * Ordering matters: {@link ParseErrors#throwIfAny()} must fire <em>after</em> the parse but
      * <em>before</em> the records are used, so a malformed file aborts with a
@@ -153,25 +164,28 @@ public class ObjectPropertyReader implements Reader<ObjectProperty> {
      * cases where C returns a parser error too: a directive before any {@code name:} line (C's
      * {@code PARSE_ERROR_MISSING_RECORD_HEADER}), an unknown directive
      * ({@code PARSE_ERROR_UNDEFINED_DIRECTIVE}) and a numeric directive with no number
-     * ({@code PARSE_ERROR_NOT_NUMBER}), and {@code code:} before {@code type:}
-     * ({@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE}), which is a syntax error here because the record
-     * shape puts {@code type:} straight after {@code name:}.
+     * ({@code PARSE_ERROR_NOT_NUMBER}). {@code code:} or {@code bindui:} before {@code type:}
+     * ({@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE}) is not among them: the grammar takes the
+     * directives in any order, so that case is left to {@link ObjectProperty2Assembler}, which
+     * applies the directives in file order and refuses the line when no {@code type:} line has come
+     * before it.
      * <p>
      * The records stay in file order, and that is the order the assembler keeps. The list returned is
-     * the one the grammar built, not a copy.
+     * the one the grammar built, not a copy, and it holds no {@code null} entries.
      *
-     * <p>Function extract coded before 260915, commented in full on 261017, updated on 261105 for
-     * the removal of the soft-error path and the {@code record-count:} header.
+     * <p>Function extract coded before 260915, commented in full on 261113 (updated on 261105 for
+     * the removal of the soft-error path and the {@code record-count:} header; order handling
+     * corrected 261113 and again 261115).
      *
      * @param parser       the generated object-property parser, positioned at the start of the file
      * @param errorCatcher the live hard-error collector installed by the driver
-     * @return the parsed {@link ObjectPropertyParseRecord}s in file order
+     * @return the parsed {@link ObjectProperty2ParseRecord}s in file order
      */
-    private static List<ObjectPropertyParseRecord> extract(
-            @NotNull ObjectPropertyGrammar parser,
+    private static List<ObjectProperty2ParseRecord> extract(
+            @NotNull ObjectProperty2Grammar parser,
             @NotNull ParseErrors errorCatcher) {
-        ObjectPropertyGrammar.FileContext output = parser.file();
-        List<ObjectPropertyParseRecord> result = output.properties;
+        ObjectProperty2Grammar.FileContext output = parser.file();
+        List<ObjectProperty2ParseRecord> result = output.properties;
         errorCatcher.throwIfAny();
 
         return result;
@@ -184,25 +198,28 @@ public class ObjectPropertyReader implements Reader<ObjectProperty> {
      * This is the Java counterpart of {@code run_parse_object_property} and the
      * {@code parse_object_property_*} handlers in {@code obj-init.c}: it wires
      * {@code ObjectPropertyLexer}, {@code ObjectPropertyGrammar}, {@link #extract} and
-     * {@link ObjectPropertyAssembler} into {@link GrammarDriver#run}. As C stops at the first error,
+     * {@link ObjectProperty2Assembler} into {@link GrammarDriver#run}. As C stops at the first error,
      * so does this: a syntax error throws a {@code ParseCancellationException}, and an unresolved
-     * type, subtype, id-type or code, a malformed integer or a {@code type-mult:} naming no tval
-     * throws a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result
+     * type, subtype, id-type or code, a {@code code:} or {@code bindui:} on a record with no type, a
+     * malformed integer or a {@code type-mult:} naming no tval throws a
+     * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result
      * is returned. An unreadable file is an {@link IOException}, the analogue of
-     * {@code parse_file_quit_not_found}'s {@code quit()}.
+     * {@code parse_file_quit_not_found}'s {@code quit()}. A file with no records is not an error:
+     * it gives an empty list, as C loads nothing.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
-     * 261105 for the removal of the soft-error path.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261113 (updated on
+     * 261105 for the removal of the soft-error path; type-less records and the empty file added
+     * 261113).
      *
      * @param filename the object-property data file to read
-     * @return every object property in the file, in file order
+     * @return every object property in the file, in file order; empty for a file with no records
      * @throws IOException if the file cannot be read
      */
     public @NotNull ParseResult<ObjectProperty> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
-                ObjectPropertyLexer::new,
-                ObjectPropertyGrammar::new,
+                ObjectProperty2Lexer::new,
+                ObjectProperty2Grammar::new,
                 ObjectPropertyReader::extract,
-                new ObjectPropertyAssembler(), logger);
+                new ObjectProperty2Assembler(), logger);
     }
 }

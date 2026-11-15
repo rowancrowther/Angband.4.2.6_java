@@ -526,26 +526,47 @@ public class BrandGrammar extends Parser {
 		public CodeContext code() {
 			return getRuleContext(CodeContext.class,0);
 		}
-		public NameContext name() {
-			return getRuleContext(NameContext.class,0);
+		public List<NameContext> name() {
+			return getRuleContexts(NameContext.class);
 		}
-		public VerbContext verb() {
-			return getRuleContext(VerbContext.class,0);
+		public NameContext name(int i) {
+			return getRuleContext(NameContext.class,i);
 		}
-		public MultiplierContext multiplier() {
-			return getRuleContext(MultiplierContext.class,0);
+		public List<VerbContext> verb() {
+			return getRuleContexts(VerbContext.class);
 		}
-		public OMultiplierContext oMultiplier() {
-			return getRuleContext(OMultiplierContext.class,0);
+		public VerbContext verb(int i) {
+			return getRuleContext(VerbContext.class,i);
 		}
-		public PowerContext power() {
-			return getRuleContext(PowerContext.class,0);
+		public List<MultiplierContext> multiplier() {
+			return getRuleContexts(MultiplierContext.class);
 		}
-		public ResistFlagContext resistFlag() {
-			return getRuleContext(ResistFlagContext.class,0);
+		public MultiplierContext multiplier(int i) {
+			return getRuleContext(MultiplierContext.class,i);
 		}
-		public VulnFlagContext vulnFlag() {
-			return getRuleContext(VulnFlagContext.class,0);
+		public List<OMultiplierContext> oMultiplier() {
+			return getRuleContexts(OMultiplierContext.class);
+		}
+		public OMultiplierContext oMultiplier(int i) {
+			return getRuleContext(OMultiplierContext.class,i);
+		}
+		public List<PowerContext> power() {
+			return getRuleContexts(PowerContext.class);
+		}
+		public PowerContext power(int i) {
+			return getRuleContext(PowerContext.class,i);
+		}
+		public List<ResistFlagContext> resistFlag() {
+			return getRuleContexts(ResistFlagContext.class);
+		}
+		public ResistFlagContext resistFlag(int i) {
+			return getRuleContext(ResistFlagContext.class,i);
+		}
+		public List<VulnFlagContext> vulnFlag() {
+			return getRuleContexts(VulnFlagContext.class);
+		}
+		public VulnFlagContext vulnFlag(int i) {
+			return getRuleContext(VulnFlagContext.class,i);
 		}
 		public BrandContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -572,13 +593,13 @@ public class BrandGrammar extends Parser {
 
 		            int lineInit = 0;
 		            String codeInit = "";
-		            String nameInit = "";
-		            String multiplierInit = "";
-		            String oMultiplierInit = "";
-		            String powerInit = "";
-		            String verbInit = "";
-		            String resistFlagInit = "";
-		            String vulnFlagInit = "";
+		            String nameInit = null;
+		            List<String> multiplierInit = new ArrayList<>();
+		            List<String> oMultiplierInit = new ArrayList<>();
+		            List<String> powerInit = new ArrayList<>();
+		            String verbInit = null;
+		            List<String> resistFlagInit = new ArrayList<>();
+		            List<String> vulnFlagInit = new ArrayList<>();
 		        
 		int _la;
 		try {
@@ -588,35 +609,71 @@ public class BrandGrammar extends Parser {
 			((BrandContext)_localctx).code = code();
 			 lineInit = ((BrandContext)_localctx).code.lineNo;
 			                   codeInit = ((BrandContext)_localctx).code.codeStr; 
-			setState(54);
-			((BrandContext)_localctx).name = name();
-			 nameInit = ((BrandContext)_localctx).name.nameStr; 
-			setState(56);
-			((BrandContext)_localctx).verb = verb();
-			 verbInit = ((BrandContext)_localctx).verb.verbStr; 
-			setState(58);
-			((BrandContext)_localctx).multiplier = multiplier();
-			 multiplierInit = ((BrandContext)_localctx).multiplier.mult; 
-			setState(60);
-			((BrandContext)_localctx).oMultiplier = oMultiplier();
-			 oMultiplierInit = ((BrandContext)_localctx).oMultiplier.oMult; 
-			setState(62);
-			((BrandContext)_localctx).power = power();
-			 powerInit = ((BrandContext)_localctx).power.powerStr; 
-			setState(64);
-			((BrandContext)_localctx).resistFlag = resistFlag();
-			 resistFlagInit = ((BrandContext)_localctx).resistFlag.rFlag; 
-			setState(69);
+			setState(77);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==VULN_FLAG) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 508L) != 0)) {
 				{
-				setState(66);
-				((BrandContext)_localctx).vulnFlag = vulnFlag();
-				 vulnFlagInit = ((BrandContext)_localctx).vulnFlag.vFlag; 
+				setState(75);
+				_errHandler.sync(this);
+				switch (_input.LA(1)) {
+				case NAME:
+					{
+					setState(54);
+					((BrandContext)_localctx).name = name();
+					 nameInit = ((BrandContext)_localctx).name.nameStr; 
+					}
+					break;
+				case VERB:
+					{
+					setState(57);
+					((BrandContext)_localctx).verb = verb();
+					 verbInit = ((BrandContext)_localctx).verb.verbStr; 
+					}
+					break;
+				case MULTIPLIER:
+					{
+					setState(60);
+					((BrandContext)_localctx).multiplier = multiplier();
+					 multiplierInit.add(((BrandContext)_localctx).multiplier.mult); 
+					}
+					break;
+				case O_MULTIPLIER:
+					{
+					setState(63);
+					((BrandContext)_localctx).oMultiplier = oMultiplier();
+					 oMultiplierInit.add(((BrandContext)_localctx).oMultiplier.oMult); 
+					}
+					break;
+				case POWER:
+					{
+					setState(66);
+					((BrandContext)_localctx).power = power();
+					 powerInit.add(((BrandContext)_localctx).power.powerStr); 
+					}
+					break;
+				case RESIST_FLAG:
+					{
+					setState(69);
+					((BrandContext)_localctx).resistFlag = resistFlag();
+					 resistFlagInit.add(((BrandContext)_localctx).resistFlag.rFlag); 
+					}
+					break;
+				case VULN_FLAG:
+					{
+					setState(72);
+					((BrandContext)_localctx).vulnFlag = vulnFlag();
+					 vulnFlagInit.add(((BrandContext)_localctx).vulnFlag.vFlag); 
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 				}
+				}
+				setState(79);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
 			}
-
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -676,22 +733,22 @@ public class BrandGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(74); 
+			setState(85);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==CODE) {
 				{
 				{
-				setState(71);
+				setState(80);
 				((FileContext)_localctx).brand = brand();
 				 _localctx.records.add(((FileContext)_localctx).brand.record); 
 				}
 				}
-				setState(76); 
+				setState(87);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==CODE );
-			setState(78);
+			}
+			setState(88);
 			match(EOF);
 			}
 		}
@@ -707,7 +764,7 @@ public class BrandGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000eQ\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000e[\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000"+
@@ -717,39 +774,46 @@ public class BrandGrammar extends Parser {
 		"\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006"+
 		"\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\b\u0001\b\u0001"+
 		"\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001"+
-		"\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0003\bF\b\b\u0001\t\u0001"+
-		"\t\u0001\t\u0004\tK\b\t\u000b\t\f\tL\u0001\t\u0001\t\u0001\t\u0000\u0000"+
-		"\n\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0000\u0000H\u0000"+
-		"\u0014\u0001\u0000\u0000\u0000\u0002\u0018\u0001\u0000\u0000\u0000\u0004"+
-		"\u001c\u0001\u0000\u0000\u0000\u0006 \u0001\u0000\u0000\u0000\b$\u0001"+
-		"\u0000\u0000\u0000\n(\u0001\u0000\u0000\u0000\f,\u0001\u0000\u0000\u0000"+
-		"\u000e0\u0001\u0000\u0000\u0000\u00104\u0001\u0000\u0000\u0000\u0012J"+
-		"\u0001\u0000\u0000\u0000\u0014\u0015\u0005\u0001\u0000\u0000\u0015\u0016"+
-		"\u0005\u000e\u0000\u0000\u0016\u0017\u0006\u0000\uffff\uffff\u0000\u0017"+
-		"\u0001\u0001\u0000\u0000\u0000\u0018\u0019\u0005\u0002\u0000\u0000\u0019"+
-		"\u001a\u0005\u000e\u0000\u0000\u001a\u001b\u0006\u0001\uffff\uffff\u0000"+
-		"\u001b\u0003\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0003\u0000\u0000"+
-		"\u001d\u001e\u0005\t\u0000\u0000\u001e\u001f\u0006\u0002\uffff\uffff\u0000"+
-		"\u001f\u0005\u0001\u0000\u0000\u0000 !\u0005\u0004\u0000\u0000!\"\u0005"+
-		"\t\u0000\u0000\"#\u0006\u0003\uffff\uffff\u0000#\u0007\u0001\u0000\u0000"+
-		"\u0000$%\u0005\u0005\u0000\u0000%&\u0005\t\u0000\u0000&\'\u0006\u0004"+
-		"\uffff\uffff\u0000\'\t\u0001\u0000\u0000\u0000()\u0005\u0006\u0000\u0000"+
-		")*\u0005\u000e\u0000\u0000*+\u0006\u0005\uffff\uffff\u0000+\u000b\u0001"+
-		"\u0000\u0000\u0000,-\u0005\u0007\u0000\u0000-.\u0005\r\u0000\u0000./\u0006"+
-		"\u0006\uffff\uffff\u0000/\r\u0001\u0000\u0000\u000001\u0005\b\u0000\u0000"+
-		"12\u0005\r\u0000\u000023\u0006\u0007\uffff\uffff\u00003\u000f\u0001\u0000"+
-		"\u0000\u000045\u0003\u0000\u0000\u000056\u0006\b\uffff\uffff\u000067\u0003"+
-		"\u0002\u0001\u000078\u0006\b\uffff\uffff\u000089\u0003\n\u0005\u00009"+
-		":\u0006\b\uffff\uffff\u0000:;\u0003\u0004\u0002\u0000;<\u0006\b\uffff"+
-		"\uffff\u0000<=\u0003\u0006\u0003\u0000=>\u0006\b\uffff\uffff\u0000>?\u0003"+
-		"\b\u0004\u0000?@\u0006\b\uffff\uffff\u0000@A\u0003\f\u0006\u0000AE\u0006"+
-		"\b\uffff\uffff\u0000BC\u0003\u000e\u0007\u0000CD\u0006\b\uffff\uffff\u0000"+
-		"DF\u0001\u0000\u0000\u0000EB\u0001\u0000\u0000\u0000EF\u0001\u0000\u0000"+
-		"\u0000F\u0011\u0001\u0000\u0000\u0000GH\u0003\u0010\b\u0000HI\u0006\t"+
-		"\uffff\uffff\u0000IK\u0001\u0000\u0000\u0000JG\u0001\u0000\u0000\u0000"+
-		"KL\u0001\u0000\u0000\u0000LJ\u0001\u0000\u0000\u0000LM\u0001\u0000\u0000"+
-		"\u0000MN\u0001\u0000\u0000\u0000NO\u0005\u0000\u0000\u0001O\u0013\u0001"+
-		"\u0000\u0000\u0000\u0002EL";
+		"\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001"+
+		"\b\u0001\b\u0001\b\u0005\bL\b\b\n\b\f\bO\t\b\u0001\t\u0001\t\u0001\t\u0005"+
+		"\tT\b\t\n\t\f\tW\t\t\u0001\t\u0001\t\u0001\t\u0000\u0000\n\u0000\u0002"+
+		"\u0004\u0006\b\n\f\u000e\u0010\u0012\u0000\u0000X\u0000\u0014\u0001\u0000"+
+		"\u0000\u0000\u0002\u0018\u0001\u0000\u0000\u0000\u0004\u001c\u0001\u0000"+
+		"\u0000\u0000\u0006 \u0001\u0000\u0000\u0000\b$\u0001\u0000\u0000\u0000"+
+		"\n(\u0001\u0000\u0000\u0000\f,\u0001\u0000\u0000\u0000\u000e0\u0001\u0000"+
+		"\u0000\u0000\u00104\u0001\u0000\u0000\u0000\u0012U\u0001\u0000\u0000\u0000"+
+		"\u0014\u0015\u0005\u0001\u0000\u0000\u0015\u0016\u0005\u000e\u0000\u0000"+
+		"\u0016\u0017\u0006\u0000\uffff\uffff\u0000\u0017\u0001\u0001\u0000\u0000"+
+		"\u0000\u0018\u0019\u0005\u0002\u0000\u0000\u0019\u001a\u0005\u000e\u0000"+
+		"\u0000\u001a\u001b\u0006\u0001\uffff\uffff\u0000\u001b\u0003\u0001\u0000"+
+		"\u0000\u0000\u001c\u001d\u0005\u0003\u0000\u0000\u001d\u001e\u0005\t\u0000"+
+		"\u0000\u001e\u001f\u0006\u0002\uffff\uffff\u0000\u001f\u0005\u0001\u0000"+
+		"\u0000\u0000 !\u0005\u0004\u0000\u0000!\"\u0005\t\u0000\u0000\"#\u0006"+
+		"\u0003\uffff\uffff\u0000#\u0007\u0001\u0000\u0000\u0000$%\u0005\u0005"+
+		"\u0000\u0000%&\u0005\t\u0000\u0000&\'\u0006\u0004\uffff\uffff\u0000\'"+
+		"\t\u0001\u0000\u0000\u0000()\u0005\u0006\u0000\u0000)*\u0005\u000e\u0000"+
+		"\u0000*+\u0006\u0005\uffff\uffff\u0000+\u000b\u0001\u0000\u0000\u0000"+
+		",-\u0005\u0007\u0000\u0000-.\u0005\r\u0000\u0000./\u0006\u0006\uffff\uffff"+
+		"\u0000/\r\u0001\u0000\u0000\u000001\u0005\b\u0000\u000012\u0005\r\u0000"+
+		"\u000023\u0006\u0007\uffff\uffff\u00003\u000f\u0001\u0000\u0000\u0000"+
+		"45\u0003\u0000\u0000\u00005M\u0006\b\uffff\uffff\u000067\u0003\u0002\u0001"+
+		"\u000078\u0006\b\uffff\uffff\u00008L\u0001\u0000\u0000\u00009:\u0003\n"+
+		"\u0005\u0000:;\u0006\b\uffff\uffff\u0000;L\u0001\u0000\u0000\u0000<=\u0003"+
+		"\u0004\u0002\u0000=>\u0006\b\uffff\uffff\u0000>L\u0001\u0000\u0000\u0000"+
+		"?@\u0003\u0006\u0003\u0000@A\u0006\b\uffff\uffff\u0000AL\u0001\u0000\u0000"+
+		"\u0000BC\u0003\b\u0004\u0000CD\u0006\b\uffff\uffff\u0000DL\u0001\u0000"+
+		"\u0000\u0000EF\u0003\f\u0006\u0000FG\u0006\b\uffff\uffff\u0000GL\u0001"+
+		"\u0000\u0000\u0000HI\u0003\u000e\u0007\u0000IJ\u0006\b\uffff\uffff\u0000"+
+		"JL\u0001\u0000\u0000\u0000K6\u0001\u0000\u0000\u0000K9\u0001\u0000\u0000"+
+		"\u0000K<\u0001\u0000\u0000\u0000K?\u0001\u0000\u0000\u0000KB\u0001\u0000"+
+		"\u0000\u0000KE\u0001\u0000\u0000\u0000KH\u0001\u0000\u0000\u0000LO\u0001"+
+		"\u0000\u0000\u0000MK\u0001\u0000\u0000\u0000MN\u0001\u0000\u0000\u0000"+
+		"N\u0011\u0001\u0000\u0000\u0000OM\u0001\u0000\u0000\u0000PQ\u0003\u0010"+
+		"\b\u0000QR\u0006\t\uffff\uffff\u0000RT\u0001\u0000\u0000\u0000SP\u0001"+
+		"\u0000\u0000\u0000TW\u0001\u0000\u0000\u0000US\u0001\u0000\u0000\u0000"+
+		"UV\u0001\u0000\u0000\u0000VX\u0001\u0000\u0000\u0000WU\u0001\u0000\u0000"+
+		"\u0000XY\u0005\u0000\u0000\u0001Y\u0013\u0001\u0000\u0000\u0000\u0003"+
+		"KMU";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

@@ -19,9 +19,7 @@ package uk.co.jackoftradesltd.middle.objects.enums;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Pins {@link ObjectFlagType} against {@code enum object_flag_type} in {@code obj-properties.h}
@@ -51,15 +49,15 @@ class ObjectFlagTypeTest {
 
     @Test
     void everyCToken_resolvesToItsConstant() {
-        assertSame(ObjectFlagType.OFT_SUST, ObjectFlagType.getFlagTypeFromSubtype("sustain"));
-        assertSame(ObjectFlagType.OFT_PROT, ObjectFlagType.getFlagTypeFromSubtype("protection"));
-        assertSame(ObjectFlagType.OFT_MISC, ObjectFlagType.getFlagTypeFromSubtype("misc ability"));
-        assertSame(ObjectFlagType.OFT_LIGHT, ObjectFlagType.getFlagTypeFromSubtype("light"));
-        assertSame(ObjectFlagType.OFT_MELEE, ObjectFlagType.getFlagTypeFromSubtype("melee"));
-        assertSame(ObjectFlagType.OFT_BAD, ObjectFlagType.getFlagTypeFromSubtype("bad"));
-        assertSame(ObjectFlagType.OFT_DIG, ObjectFlagType.getFlagTypeFromSubtype("dig"));
-        assertSame(ObjectFlagType.OFT_THROW, ObjectFlagType.getFlagTypeFromSubtype("throw"));
-        assertSame(ObjectFlagType.OFT_CURSE_ONLY, ObjectFlagType.getFlagTypeFromSubtype("curse-only"));
+        assertSame(ObjectFlagType.OFT_SUST, ObjectFlagType.lookupFromSubtype("sustain"));
+        assertSame(ObjectFlagType.OFT_PROT, ObjectFlagType.lookupFromSubtype("protection"));
+        assertSame(ObjectFlagType.OFT_MISC, ObjectFlagType.lookupFromSubtype("misc ability"));
+        assertSame(ObjectFlagType.OFT_LIGHT, ObjectFlagType.lookupFromSubtype("light"));
+        assertSame(ObjectFlagType.OFT_MELEE, ObjectFlagType.lookupFromSubtype("melee"));
+        assertSame(ObjectFlagType.OFT_BAD, ObjectFlagType.lookupFromSubtype("bad"));
+        assertSame(ObjectFlagType.OFT_DIG, ObjectFlagType.lookupFromSubtype("dig"));
+        assertSame(ObjectFlagType.OFT_THROW, ObjectFlagType.lookupFromSubtype("throw"));
+        assertSame(ObjectFlagType.OFT_CURSE_ONLY, ObjectFlagType.lookupFromSubtype("curse-only"));
     }
 
     @Test
@@ -68,7 +66,7 @@ class ObjectFlagTypeTest {
             if (type == ObjectFlagType.OFT_NONE || type == ObjectFlagType.OFT_MAX) {
                 assertEquals("", type.getSubtypeText());
             } else {
-                assertSame(type, ObjectFlagType.getFlagTypeFromSubtype(type.getSubtypeText()));
+                assertSame(type, ObjectFlagType.lookupFromSubtype(type.getSubtypeText()));
             }
         }
     }
@@ -76,19 +74,19 @@ class ObjectFlagTypeTest {
     /** A property with no {@code subtype:} line keeps C's zero default, OFT_NONE, never OFT_MAX. */
     @Test
     void emptyToken_resolvesToNoneNotMax() {
-        assertSame(ObjectFlagType.OFT_NONE, ObjectFlagType.getFlagTypeFromSubtype(""));
+        assertSame(ObjectFlagType.OFT_NONE, ObjectFlagType.lookupFromSubtype(""));
     }
 
     /** C's chain is {@code streq}: exact, case-sensitive, no trimming. These all hit the error branch. */
     @Test
     void unrecognizedTokens_returnNull() {
-        assertNull(ObjectFlagType.getFlagTypeFromSubtype("Sustain"));
-        assertNull(ObjectFlagType.getFlagTypeFromSubtype("SUSTAIN"));
-        assertNull(ObjectFlagType.getFlagTypeFromSubtype(" light"));
-        assertNull(ObjectFlagType.getFlagTypeFromSubtype("light "));
-        assertNull(ObjectFlagType.getFlagTypeFromSubtype("misc"));
-        assertNull(ObjectFlagType.getFlagTypeFromSubtype("curse_only"));
-        assertNull(ObjectFlagType.getFlagTypeFromSubtype("OFT_SUST"));
-        assertNull(ObjectFlagType.getFlagTypeFromSubtype("none"));
+        assertNull(ObjectFlagType.lookupFromSubtype("Sustain"));
+        assertNull(ObjectFlagType.lookupFromSubtype("SUSTAIN"));
+        assertNull(ObjectFlagType.lookupFromSubtype(" light"));
+        assertNull(ObjectFlagType.lookupFromSubtype("light "));
+        assertNull(ObjectFlagType.lookupFromSubtype("misc"));
+        assertNull(ObjectFlagType.lookupFromSubtype("curse_only"));
+        assertNull(ObjectFlagType.lookupFromSubtype("OFT_SUST"));
+        assertNull(ObjectFlagType.lookupFromSubtype("none"));
     }
 }

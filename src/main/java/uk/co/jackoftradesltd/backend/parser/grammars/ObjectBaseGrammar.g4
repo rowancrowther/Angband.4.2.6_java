@@ -17,9 +17,9 @@
 
 // Parser for lib/gamedata/object_base.txt, paired with ObjectBaseLexer. Each
 // directive rule strips its keyword and returns the raw String payload; the
-// `object_base` rule accumulates one base's directives (name/graphics header,
-// then optional break/max-stack and any number of flags: lines) into an
-// ObjectBaseParseRecord, and `file` captures the
+// `object_base` rule accumulates one base's directives (a name: line, then
+// graphics:, break:, max-stack: and flags: lines in any order, each optional
+// and repeatable) into an ObjectBaseParseRecord, and `file` captures the
 // two file-wide default: values, and folds them into any base that omitted its
 // own break/max-stack. No interpretation happens here: tval/colour/flag/integer
 // resolution is deferred to ObjectBaseAssembler, so the rules deal only in raw
@@ -114,9 +114,12 @@ flags
             })* FLAG_EOL
         ;
 
-// One full base record: name/graphics header, then optional break/max-stack
-// (an absent one arrives as an empty string, later filled from the file-wide
-// defaults in `file`) and zero or more flags: lines, whose values accumulate.
+// One full base record: a name: line, then any number of graphics:, break:,
+// max-stack: and flags: lines in any order, as in C. A repeated graphics:,
+// break: or max-stack: replaces the earlier one; flags: values accumulate. An
+// absent break or max-stack arrives as an empty string, later filled from the
+// file-wide defaults in `file`; an absent colour arrives empty too, and
+// ObjectBaseAssembler reads it as COLOUR_DARK.
 object_base
         returns[ObjectBaseParseRecord objectBase]
         @init {
@@ -137,23 +140,26 @@ object_base
                 name = $name.nameStr;
                 tVal = $name.tValue;
             }
-            graphics {
+        (   graphics {
                 colour = $graphics.colour;
             }
-            (break_chance {
+        |   break_chance {
                 breakChance = $break_chance.breakChance;
-            })?
-            (max_stack {
+            }
+        |   max_stack {
                 maxStack = $max_stack.maxStack;
-            })?
-            (flags {
+            }
+        |   flags {
                 flags.addAll($flags.flagsList);
             })*
         ;
 
-// Top-level rule: the file-wide default: lines, then
-// one or more base records - folding the defaults into any base that left
-// break/max-stack empty before collecting it.
+// Top-level rule: the file-wide default: lines, then zero or more base records
+// (a file with none is legal, as in C) - folding the defaults into any base that
+// left break/max-stack empty before collecting it. C takes a default: line
+// anywhere and applies it to the records after it; here they are taken only
+// before the first name:. Accepted deviation, parked for a later version: see
+// "Object base" in docs/Accepted_Deviations.md.
 file
         returns[List<ObjectBaseParseRecord> objectBaseList]
         @init {
@@ -184,5 +190,5 @@ file
 
                 // add it to the list
                 $objectBaseList.add(newBase);
-            })+ EOF
+            })* EOF
         ;

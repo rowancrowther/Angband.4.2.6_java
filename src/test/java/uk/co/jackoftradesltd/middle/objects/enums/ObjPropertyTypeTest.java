@@ -19,9 +19,7 @@ package uk.co.jackoftradesltd.middle.objects.enums;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Pins {@link ObjPropertyType} against {@code enum obj_property_type} in {@code obj-properties.h}
@@ -33,7 +31,11 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  * {@code object_property.txt}. C has no branch for any other word, so every other input,
  * including the placeholder tokens of NONE and MAX, must come back {@code null}.
  *
- * <p>Class ObjPropertyTypeTest coded on 261009, commented in full on 261009.
+ * <p>The {@code lookup} tests have no C counterpart to derive from: they pin the Java-only name
+ * match against the constant names in {@code enum obj_property_type}.
+ *
+ * <p>Class ObjPropertyTypeTest coded on 261009, {@code lookup} tests added on 261115,
+ * commented in full on 261115.
  */
 class ObjPropertyTypeTest {
 
@@ -111,5 +113,83 @@ class ObjPropertyTypeTest {
     @Test
     void nullToken_returnsNull() {
         assertNull(ObjPropertyType.fromValue(null));
+    }
+
+    /**
+     * {@code lookup} is Java-only (C has no name-to-enum path besides the {@code type:} chain), so
+     * its expected values are the constant names in {@code enum obj_property_type}
+     * ({@code obj-properties.h}), given in full.
+     */
+    @Test
+    void lookup_fullCNames_resolveToTheirConstants() {
+        assertSame(ObjPropertyType.OBJ_PROPERTY_NONE, ObjPropertyType.lookup("OBJ_PROPERTY_NONE"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_STAT, ObjPropertyType.lookup("OBJ_PROPERTY_STAT"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_MOD, ObjPropertyType.lookup("OBJ_PROPERTY_MOD"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_FLAG, ObjPropertyType.lookup("OBJ_PROPERTY_FLAG"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_IGNORE, ObjPropertyType.lookup("OBJ_PROPERTY_IGNORE"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_RESIST, ObjPropertyType.lookup("OBJ_PROPERTY_RESIST"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_VULN, ObjPropertyType.lookup("OBJ_PROPERTY_VULN"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_IMM, ObjPropertyType.lookup("OBJ_PROPERTY_IMM"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_MAX, ObjPropertyType.lookup("OBJ_PROPERTY_MAX"));
+    }
+
+    /** The {@code OBJ_PROPERTY_} prefix is optional, so each short name finds the same constant. */
+    @Test
+    void lookup_namesWithoutPrefix_resolveToTheirConstants() {
+        assertSame(ObjPropertyType.OBJ_PROPERTY_NONE, ObjPropertyType.lookup("NONE"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_STAT, ObjPropertyType.lookup("STAT"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_MOD, ObjPropertyType.lookup("MOD"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_FLAG, ObjPropertyType.lookup("FLAG"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_IGNORE, ObjPropertyType.lookup("IGNORE"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_RESIST, ObjPropertyType.lookup("RESIST"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_VULN, ObjPropertyType.lookup("VULN"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_IMM, ObjPropertyType.lookup("IMM"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_MAX, ObjPropertyType.lookup("MAX"));
+    }
+
+    /**
+     * Unlike {@code fromValue}, which refuses the placeholders because no C {@code streq} branch
+     * names them, {@code lookup} is a name match and finds NONE and MAX.
+     */
+    @Test
+    void lookup_resolvesPlaceholders_whereFromValueRefuses() {
+        assertSame(ObjPropertyType.OBJ_PROPERTY_NONE, ObjPropertyType.lookup("NONE"));
+        assertSame(ObjPropertyType.OBJ_PROPERTY_MAX, ObjPropertyType.lookup("MAX"));
+        assertNull(ObjPropertyType.fromValue(""));
+        assertNull(ObjPropertyType.fromValue("max"));
+    }
+
+    /**
+     * The data-file tokens are not names: C's {@code type:} words ({@code "stat"}, {@code "resistance"}
+     * and so on) must not resolve through {@code lookup}, and names are case-sensitive.
+     */
+    @Test
+    void lookup_tokensAndWrongCase_returnNull() {
+        assertNull(ObjPropertyType.lookup("stat"));
+        assertNull(ObjPropertyType.lookup("resistance"));
+        assertNull(ObjPropertyType.lookup("vulnerability"));
+        assertNull(ObjPropertyType.lookup("immunity"));
+        assertNull(ObjPropertyType.lookup("Stat"));
+        assertNull(ObjPropertyType.lookup("obj_property_stat"));
+        assertNull(ObjPropertyType.lookup("OBJ_PROPERTY_stat"));
+    }
+
+    /** Anything that is not a constant's name, including near misses, misses quietly. */
+    @Test
+    void lookup_unknownNames_returnNull() {
+        assertNull(ObjPropertyType.lookup(""));
+        assertNull(ObjPropertyType.lookup(" "));
+        assertNull(ObjPropertyType.lookup("OBJ_PROPERTY_"));
+        assertNull(ObjPropertyType.lookup("OBJ_PROPERTY_RESISTANCE"));
+        assertNull(ObjPropertyType.lookup("OBJ_PROPERTY_OBJ_PROPERTY_STAT"));
+        assertNull(ObjPropertyType.lookup("STAT "));
+        assertNull(ObjPropertyType.lookup(" STAT"));
+        assertNull(ObjPropertyType.lookup("OBJ_PROPERTY_COUNT"));
+    }
+
+    /** A {@code null} name returns {@code null}, matching {@code fromValue(null)}, rather than throwing. */
+    @Test
+    void lookup_nullName_returnsNull() {
+        assertNull(ObjPropertyType.lookup(null));
     }
 }

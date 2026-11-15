@@ -1,6 +1,6 @@
 // Lexer for lib/gamedata/object_property.txt (see ObjectPropertyGrammar for the
 // full file description). Directive keywords are matched in the default mode;
-// three sub-modes handle the free-form and colon-delimited value shapes:
+// six other modes handle the free-form, numeric and colon-delimited value shapes:
 //
 //   FREE_TEXT_MODE - the value is arbitrary text to end-of-line (STRING). Entered
 //     by name:/subtype:/id-type:/msg:/desc:, whose values contain spaces and
@@ -9,6 +9,15 @@
 //   DELIMITER - the colon-separated "sym : int" of type-mult:, where the symbol
 //     may itself contain a space ("dragon armor") so must be a distinct token type
 //     from the value integer.
+//   INTEGER_MODE - the value of power:/mult: is one INTEGER (optional sign, optional 0x
+//     prefix, then digits or hex letters), after which the lexer pops back to the default
+//     mode. Whether the text is a number C's strtol would read is decided later, by
+//     ParseUtils in the assembler.
+//   BINDUI_INTRO_MODE, BINDUI_TAG_MODE and BINDUI_INTEGER_MODE - the three stages of
+//     bindui:<name>[<TAG>]:<aux>[:<uival>]. The lower-case entry name comes first, then an
+//     optional upper-case tag between '<' and '>', then one or two colon-separated integers;
+//     the newline returns to the default mode. The separators are skipped, so the parser
+//     sees only the name, the tag and the integers.
 //
 // FLAG_BODY (an upper-case name allowing digits, e.g. DIG_1/LIGHT_2) comes from the
 // shared Flags import and backs UCASE; CommentsAndEol supplies comment/EOL skipping.
@@ -85,7 +94,7 @@ UCASE
 
 mode BINDUI_INTRO_MODE;
 
-// Lower-case token for single-word values (type:, adjective:, neg-adjective:).
+// The UI entry's base name after bindui: (lower case, digits and underscores).
 BINDUI_LCASE
         :   ('a'..'z' | '0'..'9' | '_')+
         ;

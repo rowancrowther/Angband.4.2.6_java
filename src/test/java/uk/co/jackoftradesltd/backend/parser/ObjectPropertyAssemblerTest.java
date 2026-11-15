@@ -185,10 +185,15 @@ class ObjectPropertyAssemblerTest {
         assertStopsTheLoad(ofType(type, "STR"), "an illegal type value: " + type);
     }
 
-    /** The grammar never gives an empty type, but a record built by hand can; there is nothing to resolve. */
+    /**
+     * A {@code code:} on a record with no {@code type:} ends the load. C's
+     * {@code parse_object_property_code} returns {@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE} when
+     * {@code prop->type} is 0, so there is no table to resolve the code against. An empty type with no
+     * code is a different case: it loads as {@code OBJ_PROPERTY_NONE}.
+     */
     @Test
-    void anEmptyTypeEndsTheLoad() {
-        assertStopsTheLoad(ofType("", "STR"), "no type value");
+    void aCodeOnATypelessRecordEndsTheLoad() {
+        assertStopsTheLoad(ofType("", "STR"), "an illegal property type value");
     }
 
     // ---- subtype and id-type ----------------------------------------------------------------

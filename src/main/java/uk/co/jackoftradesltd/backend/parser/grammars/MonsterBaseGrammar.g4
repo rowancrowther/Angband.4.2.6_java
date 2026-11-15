@@ -66,12 +66,10 @@ flags
         @init {
             $raceFlags = new ArrayList<>();
         }
-        :   FLAGS flag1=FLAG {
-                $raceFlags.add($flag1.getText());
-            }
-            (FLAG_OR flag2=FLAG {
-                $raceFlags.add($flag2.getText());
-            })* FLAG_EOL
+        :   FLAGS (FLAG_OR+
+        |   flag1=FLAG { $raceFlags.add($flag1.getText()); }
+            (FLAG_OR (flag2=FLAG { $raceFlags.add($flag2.getText()); })?)*        
+            )? (FLAG_EOL | EOF)
         ;
 
 // "desc:<text>" - lore description shown by the '/' recall command.
@@ -86,8 +84,13 @@ desc
         :   (DESC STRING { sb.append($STRING.getText()); })+
         ;
 
-// One full template record: a fixed sequence of name/glyph/pain, zero-or-
-// more flags: lines, then desc.
+// One template record: name: first, then any number of the other four directives
+// in any order, each optional. Absent values arrive as "" (glyph and pain), as null
+// (desc) or as an empty list (flags) and the assembler turns them into C's defaults,
+// so a record of a name alone is legal. glyph and pain keep the last one written, as
+// C's handlers overwrite their field. flags lines accumulate into one list and
+// desc lines are joined end to end, wherever they sit in the record, as C ORs each
+// flags: line into the base and string_append joins each desc: line.
 monsterBase
         returns[MonsterBaseParseRecord base]
         @init {
@@ -95,28 +98,31 @@ monsterBase
             String glyphInit = "";
             String monPainInit = "";
             List<String> flagsInit = new ArrayList<>();
-            String descInit = "";
             int lineNo = 0;
+            StringBuilder descInit = new StringBuilder(); 
         }
         @after{
-            $base = new MonsterBaseParseRecord(nameInit, descInit, flagsInit,
-                                    glyphInit, monPainInit, descInit, lineNo);
+            String descFinal = descInit.toString();
+            if (descFinal.isEmpty())
+                descFinal = null;
+            $base = new MonsterBaseParseRecord(nameInit, descFinal, flagsInit,
+                                    glyphInit, monPainInit, descFinal,
+                                    lineNo);
         }
         :   name { nameInit = $name.nameStr;
                    lineNo = $name.lineNo; }
-            glyph { glyphInit = $glyph.glyphChar; }
-            pain { monPainInit = $pain.monPain; }
-            (flags {
-                flagsInit.addAll($flags.raceFlags);
-            })*
-            desc { descInit = $desc.description; }
+        (   glyph { glyphInit = $glyph.glyphChar; }
+        |   pain { monPainInit = $pain.monPain; }
+        |   flags { flagsInit.addAll($flags.raceFlags); }
+        |   desc { descInit.append($desc.description); } )*
         ;
 
-// Top-level rule: the whole file is one or more template records.
+// Top-level rule: any number of template records, including none, as C accepts an
+// empty file.
 file
         returns[List<MonsterBaseParseRecord> bases]
         @init {
             $bases = new ArrayList<>();
         }
-        :   (monsterBase { $bases.add($monsterBase.base); })+ EOF
+        :   (monsterBase { $bases.add($monsterBase.base); })* EOF
         ;

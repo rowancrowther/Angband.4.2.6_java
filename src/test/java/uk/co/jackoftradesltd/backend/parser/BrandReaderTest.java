@@ -20,8 +20,11 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.objects.Brand;
 
 import java.io.IOException;
@@ -46,13 +49,16 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>The reader's own contract is pinned against values worked out from the upstream
  * {@code brand.txt} and {@code obj-init.c}: every field of all ten records, C's last-first list
- * order, directive order and repeats, free-text values and the missing-file {@link IOException}. A
- * final group pins the places the grammar and assembler differ from C, each named for the C
- * behaviour it departs from, so that a grammar or assembler fix shows up here as a test to flip.
+ * order, directive order, absence and repeats, free-text values and the missing-file
+ * {@link IOException}. A final group pins the places the grammar and assembler differ from C, each
+ * named for the C behaviour it departs from, so that a grammar or assembler fix shows up here as a
+ * test to flip.
  *
  * <p>Class BrandReaderTest coded before 261017, extended and commented in full on 261017, updated
  * on 261023 once the assembler's errors ended the load and it read octal and refused {@code NONE}
- * and a leading {@code -} as C does.
+ * and a leading {@code -} as C does, and updated on 261113 once the grammar took the directives in
+ * any order, left out or repeated, and an empty file, so the six pins that said otherwise now
+ * agree with C.
  *
  * @author Rowan Crowther
  */
@@ -364,56 +370,155 @@ class BrandReaderTest {
         return text.substring(from, text.indexOf(',', from));
     }
 
-    // ---- Where the grammar differs from C: each is a test to flip when the grammar is fixed ----
+    // ---- Directive order, absence and repeats: C runs each directive on its own line ----
+    //
+    // init_parse_brand registers the eight directives separately, so after code: they come in any
+    // order, any of them may be left out (the zero-filled field stays), and a repeat overwrites.
+    // A number or flag is checked on every line it appears on, so an earlier bad one ends the load
+    // even when a later one is good.
 
     @Test
-    void directivesOutOfOrderAreAHardErrorHereWhereCTakesAnyOrder() throws IOException {
-        // C registers each directive on its own and runs them in file order; verb: before name: is fine.
-        String body = "code:FIRE_3\nverb:burn\nname:fire\nmultiplier:3\no-multiplier:25\n"
-                + "power:113\nresist-flag:IM_FIRE\n";
-        assertThrows(ParseCancellationException.class, () -> load("order-swap.txt", body));
+    void directivesInAnyOrderLoadAsInC() throws IOException {
+        // verb: before name:, resist-flag: ahead of the numbers, vuln-flag: ahead of resist-flag:.
+        String body = "code:FIRE_3\nverb:burn\nvuln-flag:HURT_FIRE\nresist-flag:IM_FIRE\n"
+                + "power:113\nname:fire\no-multiplier:25\nmultiplier:3\n";
+        ParseResult<Brand> result = load("order-swap.txt", body);
 
+        assertEquals(List.of(printed("FIRE_3", "fire", "burn", "IM_FIRE", "HURT_FIRE", 3, 25, 113)),
+                printedAll(result.items()));
     }
 
     @Test
-    void missingPowerIsAHardErrorHereWhereCLeavesItZero() throws IOException {
+    void aLeftOutPowerIsZeroAsInC() throws IOException {
         String body = "code:FIRE_3\nname:fire\nverb:burn\nmultiplier:3\no-multiplier:25\n"
                 + "resist-flag:IM_FIRE\n";
-        assertThrows(ParseCancellationException.class, () -> load("no-power.txt", body));
+        ParseResult<Brand> result = load("no-power.txt", body);
 
+        assertEquals(List.of(printed("FIRE_3", "fire", "burn", "IM_FIRE", "NONE", 3, 25, 0)),
+                printedAll(result.items()));
     }
 
     @Test
-    void missingResistFlagIsAHardErrorHereWhereCLeavesFlagZero() throws IOException {
+    void aLeftOutResistFlagIsRfNoneAsInC() throws IOException {
         String body = "code:FIRE_3\nname:fire\nverb:burn\nmultiplier:3\no-multiplier:25\npower:113\n";
-        assertThrows(ParseCancellationException.class, () -> load("no-resist.txt", body));
+        ParseResult<Brand> result = load("no-resist.txt", body);
 
+        assertEquals(List.of(printed("FIRE_3", "fire", "burn", "NONE", "NONE", 3, 25, 113)),
+                printedAll(result.items()));
     }
 
     @Test
-    void oneBadRecordSyntaxCostsTheWholeFileHereWhereCStopsAtThatRecord() throws IOException {
-        // The first record is complete and valid, yet nothing is returned because the second is
-        // missing its power: line.
-        String bad = "code:COLD_3\nname:cold\nverb:freeze\nmultiplier:3\no-multiplier:25\n"
+    void leftOutMultipliersAreZeroAsInC() throws IOException {
+        String body = "code:FIRE_3\nname:fire\nverb:burn\npower:113\nresist-flag:IM_FIRE\n";
+        ParseResult<Brand> result = load("no-mults.txt", body);
+
+        assertEquals(List.of(printed("FIRE_3", "fire", "burn", "IM_FIRE", "NONE", 0, 0, 113)),
+                printedAll(result.items()));
+    }
+
+    @Test
+    void aCodeAloneLoadsWithEveryOtherFieldZeroedAsInC() throws IOException {
+        // parse_brand_code mem_zallocs the record: name and verb stay NULL, the numbers 0, the flags NONE.
+        ParseResult<Brand> result = load("code-only.txt", "code:FIRE_3\n");
+
+        assertEquals(1, result.items().size());
+        assertEquals(new Brand("FIRE_3", null, null, MonsterRaceFlag.RF_NONE, MonsterRaceFlag.RF_NONE, 0, 0, 0),
+                result.items().get(0));
+    }
+
+    @Test
+    void aCodeAloneBetweenTwoFullRecordsDoesNotSwallowEitherNeighbour() throws IOException {
+        ParseResult<Brand> result = load("code-between.txt", validBrand("ACID_3") + "code:ELEC_3\n" + validBrand("FIRE_3"));
+
+        assertEquals(List.of("FIRE_3", "ELEC_3", "ACID_3"), result.items().stream().map(Brand::getCode).toList());
+        assertNull(result.items().get(1).getName());
+        assertEquals(113, result.items().get(0).getPower());
+    }
+
+    @Test
+    void oneRecordMissingADirectiveDoesNotCostTheFile() throws IOException {
+        // The second record has no power: line. C zero-fills it and carries on with every record.
+        String missingPower = "code:COLD_3\nname:cold\nverb:freeze\nmultiplier:3\no-multiplier:25\n"
                 + "resist-flag:IM_COLD\n";
-        assertThrows(ParseCancellationException.class, () -> load("one-bad.txt", validBrand("FIRE_3") + bad));
+        ParseResult<Brand> result = load("one-short.txt", validBrand("FIRE_3") + missingPower);
 
+        assertEquals(List.of(printed("COLD_3", "cold", "freeze", "IM_COLD", "NONE", 3, 25, 0),
+                printed("FIRE_3", "fire", "burn", "IM_FIRE", "HURT_FIRE", 3, 25, 113)),
+                printedAll(result.items()));
     }
 
     @Test
-    void repeatedNameIsAHardErrorHereWhereCOverwrites() throws IOException {
-        // parse_brand_name frees the old name and stores the new one, so C keeps the last.
-        String body = "code:FIRE_3\nname:fire\nname:flame\nverb:burn\nmultiplier:3\n"
-                + "o-multiplier:25\npower:113\nresist-flag:IM_FIRE\n";
-        assertThrows(ParseCancellationException.class, () -> load("two-names.txt", body));
+    void aRepeatedDirectiveKeepsTheLastValueAsCOverwrites() throws IOException {
+        // parse_brand_name and parse_brand_verb free the old string and store the new one; the other
+        // six assign over the old value. Every value here is good, so the last one is what is kept.
+        String body = "code:FIRE_3\nname:fire\nname:flame\nverb:burn\nverb:scorch\n"
+                + "multiplier:3\nmultiplier:5\no-multiplier:25\no-multiplier:30\n"
+                + "power:113\npower:120\nresist-flag:IM_FIRE\nresist-flag:IM_COLD\n"
+                + "vuln-flag:HURT_FIRE\nvuln-flag:HURT_COLD\n";
+        ParseResult<Brand> result = load("repeats.txt", body);
 
+        assertEquals(List.of(printed("FIRE_3", "flame", "scorch", "IM_COLD", "HURT_COLD", 5, 30, 120)),
+                printedAll(result.items()));
+    }
+
+    /**
+     * A good record with {@code line} added to it, ahead of the record's own directives
+     * ({@code first}) or after them. The record's own {@code multiplier:3}, {@code o-multiplier:25},
+     * {@code power:113}, {@code resist-flag:IM_FIRE} and {@code vuln-flag:HURT_FIRE} stay good, so
+     * the added line is the only bad one.
+     */
+    private static String withAnExtraLine(String line, boolean first) {
+        String record = validBrand("FIRE_3");
+        if (first) {
+            return record.replaceFirst("code:FIRE_3\n", "code:FIRE_3\n" + line + "\n");
+        }
+        return record + line + "\n";
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "multiplier,    -2",
+            "multiplier,    -0",
+            "o-multiplier,  -2",
+            "power,         -1",
+            "resist-flag,   NOTAFLAG",
+            "resist-flag,   NONE",
+            "vuln-flag,     NOTAFLAG",
+            "vuln-flag,     NONE"
+    })
+    void aBadRepeatedLineEndsTheLoadWhereverItSits(String directive, String bad) {
+        // C checks the line when it reads it: parser_parse refuses a '-' uint, lookup_flag misses.
+        String line = directive + ":" + bad;
+
+        assertThrows(DataFileParseException.class, () -> load("bad-first.txt", withAnExtraLine(line, true)));
+        assertThrows(DataFileParseException.class, () -> load("bad-last.txt", withAnExtraLine(line, false)));
     }
 
     @Test
-    void headerOnlyFileIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        // C: an empty chain, brand_max ends at 1. Here the file rule needs at least one record.
-        assertThrows(ParseCancellationException.class, () -> load("header-only.txt", ""));
+    void theErrorNamesTheOneBadRepeatedFlagNotTheList() {
+        DataFileParseException resist = assertThrows(DataFileParseException.class,
+                () -> load("bad-resist-repeat.txt", withAnExtraLine("resist-flag:NOTAFLAG", true)));
+        DataFileParseException vuln = assertThrows(DataFileParseException.class,
+                () -> load("bad-vuln-repeat.txt", withAnExtraLine("vuln-flag:NOTAVULN", false)));
 
+        assertTrue(resist.getMessage().contains("invalid resist flag value: NOTAFLAG"), resist::getMessage);
+        assertFalse(resist.getMessage().contains("["), resist::getMessage);
+        assertTrue(vuln.getMessage().contains("invalid vulnerable flag value: NOTAVULN"), vuln::getMessage);
+        assertFalse(vuln.getMessage().contains("["), vuln::getMessage);
+    }
+
+    @Test
+    void aFileWithNoRecordsLoadsNoBrandsAsInC() throws IOException {
+        // C: an empty chain, brand_max ends at 1. Neither an empty file nor one of only comments and
+        // blank lines is an error.
+        assertTrue(load("empty.txt", "").items().isEmpty());
+        assertTrue(load("comments-only.txt", "# nothing here\n\n# or here\n").items().isEmpty());
+    }
+
+    @Test
+    void aDirectiveBeforeAnyCodeIsStillAHardError() {
+        // C: PARSE_ERROR_MISSING_RECORD_HEADER. The grammar refuses it as a syntax error instead.
+        assertThrows(ParseCancellationException.class, () -> load("no-header.txt", "power:113\n" + validBrand("FIRE_3")));
     }
 
     @Test

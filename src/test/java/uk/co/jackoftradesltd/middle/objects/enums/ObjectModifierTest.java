@@ -20,8 +20,7 @@ package uk.co.jackoftradesltd.middle.objects.enums;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link ObjectModifier}, the port of C's {@code OBJ_MOD_*} enum, which
@@ -114,5 +113,71 @@ class ObjectModifierTest {
         for (String name : C_ORDER) {
             assertEquals(name, ObjectModifier.valueOf(name).name());
         }
+    }
+
+    /**
+     * C's {@code obj_mods} table holds the bare names {@code "STR"} to {@code "MOVES"}, and
+     * {@code code_index_in_array} finds each at its {@code OBJ_MOD_*} index. The bare name must
+     * find the same constant here, one ordinal above that index.
+     */
+    @Test
+    void lookupFindsEveryBareNameAtCsIndexPlusOne() {
+        for (int cIndex = 0; cIndex < C_ORDER.length; cIndex++) {
+            String bare = C_ORDER[cIndex].substring("OM_".length());
+            ObjectModifier found = ObjectModifier.lookup(bare);
+            assertEquals(C_ORDER[cIndex], found.name(), "bare name " + bare);
+            assertEquals(cIndex + 1, found.ordinal(), "bare name " + bare);
+        }
+    }
+
+    /**
+     * Accepted deviation: the {@code OM_} prefix is optional. C finds nothing for
+     * {@code "OM_STR"}; here it finds the same constant as {@code "STR"}.
+     */
+    @Test
+    void lookupAcceptsTheOptionalPrefix() {
+        for (String name : C_ORDER) {
+            assertSame(ObjectModifier.valueOf(name), ObjectModifier.lookup(name), name);
+        }
+    }
+
+    /**
+     * Accepted deviation: the sentinels can be found. C's table has no {@code NONE} or
+     * {@code MAX}, so both find nothing there.
+     */
+    @Test
+    void lookupFindsTheSentinels() {
+        assertSame(ObjectModifier.OM_NONE, ObjectModifier.lookup("NONE"));
+        assertSame(ObjectModifier.OM_NONE, ObjectModifier.lookup("OM_NONE"));
+        assertSame(ObjectModifier.OM_MAX, ObjectModifier.lookup("MAX"));
+        assertSame(ObjectModifier.OM_MAX, ObjectModifier.lookup("OM_MAX"));
+    }
+
+    /**
+     * C's {@code streq} is case-sensitive, so a name in the wrong case finds nothing; so does a
+     * name that is not in the table, an empty name, a doubled prefix and a name with stray blanks.
+     */
+    @Test
+    void lookupRefusesWhatCRefuses() {
+        assertNull(ObjectModifier.lookup("str"));
+        assertNull(ObjectModifier.lookup("Str"));
+        assertNull(ObjectModifier.lookup("om_str"));
+        assertNull(ObjectModifier.lookup("OM_str"));
+        assertNull(ObjectModifier.lookup("FOO"));
+        assertNull(ObjectModifier.lookup(""));
+        assertNull(ObjectModifier.lookup("OM_"));
+        assertNull(ObjectModifier.lookup("OM_OM_STR"));
+        assertNull(ObjectModifier.lookup(" STR"));
+        assertNull(ObjectModifier.lookup("STR "));
+        assertNull(ObjectModifier.lookup("STEALTH_"));
+    }
+
+    /**
+     * C has no {@code null} case, since the parser always hands over a string; the port answers
+     * {@code null} rather than throwing.
+     */
+    @Test
+    void lookupOfNullIsNull() {
+        assertNull(ObjectModifier.lookup(null));
     }
 }

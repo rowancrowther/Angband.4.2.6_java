@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.middle.objects.enums;
 
+import java.util.Arrays;
+
 /**
  * The numeric modifiers an object can grant: the five stat bonuses, then stealth, searching
  * skill, infravision, tunnelling, speed, extra blows, shooting speed, shooting power, light
@@ -40,7 +42,11 @@ package uk.co.jackoftradesltd.middle.objects.enums;
  * <p>What each modifier adds to which piece of player state lives in the callers, not here; the
  * properties of each modifier are defined in {@code lib/gamedata/object_property.txt}.
  *
- * <p>Class ObjectModifier coded before 261007, commented in full on 261007.
+ * <p>Name lookup is {@link #lookup(String)}, the counterpart of C's {@code code_index_in_array}
+ * over the {@code obj_mods} name table. It departs from C in two accepted ways, both recorded
+ * on that method.
+ *
+ * <p>Class ObjectModifier coded before 261007, commented in full on 261115.
  *
  * @author Rowan Crowther
  */
@@ -88,5 +94,46 @@ public enum ObjectModifier {
     /** Extra moves, {@code OBJ_MOD_MOVES}; the last real modifier. */
     OM_MOVES,
     /** Count sentinel standing in for C's {@code OBJ_MOD_MAX}; never a real modifier. */
-    OM_MAX
+    OM_MAX;
+
+    /**
+     * Finds the modifier a data-file name refers to, or {@code null} when there is none.
+     *
+     * <p>C does this with {@code code_index_in_array(obj_mods, code)} ({@code datafile.c}), an exact,
+     * case-sensitive {@code streq} against the sixteen names built from {@code list-stats.h} and
+     * {@code list-object-modifiers.h} ({@code "STR"} to {@code "MOVES"}), answering -1 for anything
+     * else. {@code parse_object_property_code} ({@code obj-init.c}) is the caller that matters here,
+     * and the {@code grab_int_value}, {@code grab_rand_value} and {@code grab_index_and_int} helpers
+     * use the same table for {@code values:} lists. This method matches C for the bare names and
+     * for any name in the wrong case, which finds nothing. A {@code null} argument has no C
+     * counterpart and returns {@code null}.
+     *
+     * <p>Two accepted deviations, so do not report either as a mismatch:
+     * <ul>
+     *   <li>The sentinels can be found. C's table has no {@code NONE} or {@code MAX}, so those
+     *   names find nothing there; here {@code "NONE"}, {@code "MAX"}, {@code "OM_NONE"} and
+     *   {@code "OM_MAX"} return {@link #OM_NONE} and {@link #OM_MAX}. A caller that must refuse
+     *   them tests for the sentinels itself, as {@code ObjectProperty2Assembler} does.</li>
+     *   <li>The {@code OM_} prefix is optional. {@code "STR"} and {@code "OM_STR"} both return
+     *   {@link #OM_STR}, where C finds nothing for {@code "OM_STR"}.</li>
+     * </ul>
+     *
+     * <p>Method lookup coded before 261115, commented in full on 261115.
+     *
+     * @param first the name from the data file, with or without the {@code OM_} prefix; may be
+     *              {@code null}
+     * @return the matching constant (sentinels included), or {@code null} when none matches
+     */
+    public static ObjectModifier lookup(String first) {
+        if (first == null) return null;
+        
+        String search;
+        if (!first.startsWith("OM_"))
+            search = "OM_" + first;
+        else
+            search = first;
+        
+        return Arrays.stream(ObjectModifier.values()).filter(o -> o.name().equals(search))
+                .findFirst().orElse(null);
+    }
 }

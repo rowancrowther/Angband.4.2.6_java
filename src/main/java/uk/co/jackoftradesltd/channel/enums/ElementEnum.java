@@ -36,9 +36,10 @@ import java.util.Arrays;
  * the original alongside this.
  *
  * <p>The same placeholders are visible to {@link #lookup(String)}, which finds an element by its
- * name without the {@code ELEM_} prefix. C's name list holds only the real elements, so
- * {@link #ELEM_NONE} and {@link #ELEM_MAX} are answers that lookup can give and C's search cannot;
- * a caller that parses data files must refuse them itself.
+ * name with or without the {@code ELEM_} prefix: C's bare name ({@code "FIRE"}) and the whole
+ * constant name ({@code "ELEM_FIRE"}) find the same constant. C's name list holds only the real
+ * elements, so {@link #ELEM_NONE} and {@link #ELEM_MAX} are answers that lookup can give and C's
+ * search cannot; a caller that parses data files must refuse them itself.
  *
  * <p>Each constant is built with three flags, in the order {@code isBase}, {@code isHigh},
  * {@code hasResistRune}. The four base elements (acid to cold) are base and resistable; poison to
@@ -46,7 +47,7 @@ import java.util.Arrays;
  * two placeholders. The flags stand in for the ordinal ranges C delimits in {@code src/object.h}
  * with {@code ELEM_BASE_MIN}/{@code ELEM_BASE_MAX} and {@code ELEM_HIGH_MIN}/{@code ELEM_HIGH_MAX}.
  *
- * <p>Enum ElementEnum coded before 260817, commented in full on 261107.
+ * <p>Enum ElementEnum coded before 260817, commented in full on 261115.
  *
  * @author Rowan Crowther
  */
@@ -228,33 +229,53 @@ public enum ElementEnum {
     }
 
     /**
-     * Finds the element whose constant name is exactly {@code flag}, {@code ELEM_} prefix included:
-     * {@code "ELEM_FIRE"} gives {@link #ELEM_FIRE} and {@code "ELEM_HOLY_ORB"} gives
-     * {@link #ELEM_HOLY_ORB}. Stands in for the {@code streq} search of {@code element_names} in
-     * {@code obj-init.c}, function {@code grab_element_flag()}, so the comparison is exact and
-     * case-sensitive: {@code "ELEM_fire"} finds nothing.
+     * Finds the element named by {@code flag}, with or without the {@code ELEM_} prefix. The
+     * steps are:
+     * <ol>
+     *   <li>if {@code flag} does not start with {@code ELEM_}, that prefix is put on the front;</li>
+     *   <li>the constant whose name is exactly the result is searched for and returned;</li>
+     *   <li>if there is no such constant, {@code null} is returned.</li>
+     * </ol>
+     * So {@code "FIRE"} and {@code "ELEM_FIRE"} both give {@link #ELEM_FIRE}, and
+     * {@code "HOLY_ORB"} and {@code "ELEM_HOLY_ORB"} both give {@link #ELEM_HOLY_ORB}.
      *
-     * <p>C's names have no prefix, so a caller that has cut the element text from a data-file word
-     * puts {@code ELEM_} back on the front before the call, as {@code ParseUtils.grabElementFlag} and
-     * {@code ItemObjectAssembler} do. The bare C name finds nothing here: {@code "FIRE"} gives
-     * {@code null}.
+     * <p>Stands in for the {@code streq} search of {@code element_names} in {@code obj-init.c},
+     * function {@code grab_element_flag()}. C's names have no prefix, so the bare form is the one
+     * C finds; accepting the whole constant name as well is a deliberate widening, because the
+     * callers ({@code ParseUtils.grabElementFlag}, {@code ItemObjectAssembler}) hold the prefixed
+     * name. The comparison is the same {@code streq} one after the prefix is settled: exact and
+     * case-sensitive, so {@code "ELEM_fire"}, {@code "fire"} and {@code "elem_fire"} all find
+     * nothing. The prefix test is case-sensitive too, so {@code "elem_fire"} is treated as a bare
+     * name and searched for as {@code "ELEM_elem_fire"}.
      *
      * <p>Unlike C's name list, the search can return the placeholders {@link #ELEM_NONE} and
-     * {@link #ELEM_MAX}, because the constants exist here; {@code lookup("ELEM_NONE")} gives
-     * {@link #ELEM_NONE}. The caller must refuse them, as {@code ParseUtils.grabElementFlag} does.
+     * {@link #ELEM_MAX}, because the constants exist here; {@code lookup("NONE")} and
+     * {@code lookup("ELEM_NONE")} both give {@link #ELEM_NONE}. The caller must refuse them, as
+     * {@code ParseUtils.grabElementFlag} does.
      *
-     * <p>The text is taken as given, so the same inputs that find nothing in C find nothing here:
-     * the empty string, a lower-case or mixed-case name, and a name with leading or trailing space.
-     * A {@code null} argument also gives {@code null}; C never reaches the search with a null name.
-     * Each name is unique, so the order of the constants does not affect the answer.
+     * <p>No trimming, suffixes or partial names are accepted, so the same inputs that find nothing
+     * in C find nothing here: the empty string, a lower-case or mixed-case name, and a name with
+     * leading or trailing space. A doubled prefix ({@code "ELEM_ELEM_FIRE"}) finds nothing, since
+     * it already starts with {@code ELEM_} and is searched for as given. A {@code null} argument
+     * also gives {@code null}; C never reaches the search with a null name. Each name is unique, so
+     * the order of the constants does not affect the answer.
      *
-     * <p>Method lookup coded before 261105, commented in full on 261105, rewritten for the whole
-     * constant name on 261105.
+     * <p>Method lookup coded before 261105, commented in full on 261115, rewritten for the optional
+     * prefix on 261115.
      *
-     * @param flag the constant name of the element, {@code ELEM_} prefix included
+     * @param flag the element name, with or without the {@code ELEM_} prefix
      * @return the matching constant, or {@code null} if there is none
      */
     public static ElementEnum lookup(String flag) {
-        return Arrays.stream(ElementEnum.values()).filter(e -> e.name().equals(flag)).findFirst().orElse(null);
+        if (flag == null) return null;
+        
+        String search;
+        if (!flag.startsWith("ELEM_"))
+            search = "ELEM_" + flag;
+        else
+            search = flag;
+        
+        return Arrays.stream(ElementEnum.values()).filter(e -> e.name().equals(search))
+                .findFirst().orElse(null);
     }
 }

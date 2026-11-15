@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -59,7 +61,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code docs/Assembler_Issues.md}; a fix there will turn the matching test red on purpose.
  *
  * <p>Test class ProjectionReaderTest coded before 261001, expanded and commented in full on 261018;
- * the tests that reach the assembler's stop-the-load path rewritten on 261021.
+ * the tests that reach the assembler's stop-the-load path rewritten on 261021; the order, repeat,
+ * left-out directive and empty file tests flipped to C's result, and the untyped-record tests
+ * added, on 261113.
  *
  * @author Rowan Crowther
  */
@@ -330,34 +334,206 @@ class ProjectionReaderTest {
         assertTrue((boolean) field(result.items().getFirst(), "willWake"));
     }
 
-    // ---- Where the grammar differs from C (docs/grammar_issues.md) -----------------------------
+    // ---- Where the grammar and assembler now agree with C on order and absent directives ------
 
-    @Test
-    void aRepeatedOrMisplacedDirectiveIsAHardErrorWhereCTakesAnyOrder() throws IOException {
-        // C replaces a repeated string and takes the directives in any order.
-        assertHardError("dup-desc.txt", shipped().replaceFirst("(?m)^(desc:.*)$", "$1\n$1x"));
-        assertHardError("late-name.txt", shipped().replaceFirst("(?m)^(type:element)\n", "$1\nname:acid\n"));
-        assertHardError("pre-code.txt", shipped().replaceFirst("(?m)^code:ACID", "name:x\ncode:ACID"));
+    /**
+     * Returns the first projection (ACID) of the shipped file loaded with {@code edited} in place of
+     * the shipped text.
+     *
+     * <p>Function firstOf coded on 261113, commented in full on 261113.
+     *
+     * @param name   the fixture file name
+     * @param edited the full text of the file to load
+     * @return the first projection in the loaded file
+     */
+    private Projection firstOf(String name, String edited) throws IOException {
+        return load(name, edited).items().getFirst();
     }
 
+    /**
+     * Returns {@code text} with the lines after {@code code:<code>} reversed, up to the next
+     * {@code code:} line, leaving comments and blank lines out of the record.
+     *
+     * <p>Function withBodyReversed coded on 261113, commented in full on 261113.
+     *
+     * @param text the full text of the data file
+     * @param code the record whose directives are reversed
+     * @return the file text with that record's directives in the opposite order
+     */
+    private static String withBodyReversed(String text, String code) {
+        String[] lines = text.split("\n", -1);
+        int start = 0;
+        while (!lines[start].equals("code:" + code)) start++;
+        int end = start + 1;
+        while (!lines[end].startsWith("code:")) end++;
+        List<String> body = new ArrayList<>();
+        for (int i = start + 1; i < end; i++) {
+            if (!lines[i].isBlank() && !lines[i].startsWith("#")) body.add(lines[i]);
+        }
+        Collections.reverse(body);
+        StringBuilder out = new StringBuilder();
+        for (int i = 0; i <= start; i++) out.append(lines[i]).append('\n');
+        for (String line : body) out.append(line).append('\n');
+        for (int i = end; i < lines.length; i++) out.append(lines[i]).append(i < lines.length - 1 ? "\n" : "");
+        return out.toString();
+    }
+
+    /**
+     * A repeated string or number replaces the earlier one, so the last wins, as C's handlers free
+     * the old string and overwrite the old number.
+     *
+     * <p>Function aRepeatedDirectiveReplacesTheEarlierOneAsInC coded on 261113, commented in full
+     * on 261113. It replaces the repeated-{@code desc:} half of
+     * aRepeatedOrMisplacedDirectiveIsAHardErrorWhereCTakesAnyOrder.
+     */
     @Test
-    void aLeftOutTypeDescBlindDescObviousOrColourIsAHardErrorWhereCLeavesItZero() throws IOException {
-        for (String directive : List.of("type:", "desc:", "blind-desc:", "obvious:", "color:")) {
-            assertHardError("missing.txt", shipped().replaceFirst("(?m)^" + directive + ".*\n", ""));
+    void aRepeatedDirectiveReplacesTheEarlierOneAsInC() throws Exception {
+        Projection acid = firstOf("dup.txt", shipped()
+                .replaceFirst("(?m)^(desc:.*)$", "$1\n$1x")
+                .replaceFirst("(?m)^(numerator:.*)$", "$1\nnumerator:7"));
+
+        assertEquals("acidx", field(acid, "description"));
+        assertEquals(7, (int) field(acid, "numerator"));
+    }
+
+    /**
+     * A directive can come at any place after {@code code:}: a {@code name:} after {@code type:}
+     * loads, and an ACID record with its directives in the opposite order gives the same projection
+     * as the shipped order.
+     *
+     * <p>Function theDirectivesOfARecordLoadInAnyOrderAsInC coded on 261113, commented in full on
+     * 261113. It replaces the late-{@code name:} half of
+     * aRepeatedOrMisplacedDirectiveIsAHardErrorWhereCTakesAnyOrder.
+     */
+    @Test
+    void theDirectivesOfARecordLoadInAnyOrderAsInC() throws Exception {
+        assertEquals(56, load("late-name.txt",
+                shipped().replaceFirst("(?m)^(type:element)\n", "$1\nname:acid\n")).items().size());
+
+        Projection shippedOrder = firstOf("shipped-order.txt", shipped());
+        Projection reversed = firstOf("reversed.txt", withBodyReversed(shipped(), "ACID"));
+        for (String name : List.of("projection", "name", "type", "description", "playerDescription",
+                "blindDescription", "lashDescription", "numerator", "denominator", "divisor",
+                "damageCap", "msgt", "isObvious", "willWake", "colour")) {
+            assertEquals((Object) field(shippedOrder, name), field(reversed, name), name);
         }
     }
 
     /**
-     * An empty file is a grammar error here, where C's {@code finish_parse_projection} would quit on
-     * too few elements; either way the load stops.
+     * A directive with no {@code code:} before it is still a hard error: C's handlers return
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER} when there is no record yet, and here the grammar
+     * starts every record at {@code code:}.
      *
-     * <p>Function anEmptyFileIsAHardError coded on 261104, commented in full on 261104. It replaces
-     * aHeaderWithNoRecordsAndAnEmptyFileAreHardErrors, whose header-only half went with the header.
+     * <p>Function aDirectiveAheadOfCodeIsAHardErrorAsInC coded on 261113, commented in full on
+     * 261113. It replaces the {@code pre-code} third of
+     * aRepeatedOrMisplacedDirectiveIsAHardErrorWhereCTakesAnyOrder.
      */
     @Test
-    void anEmptyFileIsAHardError() throws IOException {
-        assertHardError("empty.txt", "");
+    void aDirectiveAheadOfCodeIsAHardErrorAsInC() throws IOException {
+        assertHardError("pre-code.txt", shipped().replaceFirst("(?m)^code:ACID", "name:x\ncode:ACID"));
     }
+
+    /**
+     * A record that leaves out {@code desc:}, {@code blind-desc:}, {@code obvious:} or
+     * {@code color:} loads with C's zero: a {@code null} string, {@code false}, and colour 0, which
+     * is {@code COLOUR_DARK}.
+     *
+     * <p>Function aLeftOutDescBlindDescObviousOrColourLoadsAsZeroAsInC coded on 261113, commented in
+     * full on 261113. It replaces the four loading directives of
+     * aLeftOutTypeDescBlindDescObviousOrColourIsAHardErrorWhereCLeavesItZero.
+     */
+    @Test
+    void aLeftOutDescBlindDescObviousOrColourLoadsAsZeroAsInC() throws Exception {
+        Projection noDesc = firstOf("no-desc.txt", shipped().replaceFirst("(?m)^desc:.*\n", ""));
+        assertNull(field(noDesc, "description"));
+        assertEquals("acid", field(noDesc, "blindDescription"));
+
+        Projection noBlind = firstOf("no-blind.txt", shipped().replaceFirst("(?m)^blind-desc:.*\n", ""));
+        assertNull(field(noBlind, "blindDescription"));
+        assertEquals("acid", field(noBlind, "description"));
+
+        Projection noObvious = firstOf("no-obvious.txt", shipped().replaceFirst("(?m)^obvious:.*\n", ""));
+        assertFalse((boolean) field(noObvious, "isObvious"));
+
+        Projection noColour = firstOf("no-colour.txt", shipped().replaceFirst("(?m)^color:.*\n", ""));
+        assertEquals(ColourEnum.COLOUR_DARK, field(noColour, "colour"));
+    }
+
+    /**
+     * A record with no {@code type:} holds a NULL type in C, which is not {@code "element"}, so
+     * ACID stops counting as an element and {@code finish_parse_projection} quits on 24.
+     *
+     * <p>Function aLeftOutTypeStopsTheLoadOnTheElementCountAsInC coded on 261113, commented in full
+     * on 261113. It replaces the {@code type:} case of
+     * aLeftOutTypeDescBlindDescObviousOrColourIsAHardErrorWhereCLeavesItZero.
+     */
+    @Test
+    void aLeftOutTypeStopsTheLoadOnTheElementCountAsInC() throws IOException {
+        DataFileParseException e = loadAndStop("no-type.txt", shipped().replaceFirst("(?m)^type:.*\n", ""));
+
+        assertTrue(e.getMessage().contains("expected: 25 got: 24"), e.getMessage());
+    }
+
+    /**
+     * An empty file is no grammar error: it holds no records, and the assembler stops the load on
+     * the element count, where C's {@code finish_parse_projection} quits on too few elements.
+     *
+     * <p>Function anEmptyFileStopsTheLoadOnTheElementCountAsInC coded on 261113, commented in full
+     * on 261113. It replaces anEmptyFileIsAHardError, which expected a grammar error that the
+     * {@code (projection)*} file rule no longer gives.
+     */
+    @Test
+    void anEmptyFileStopsTheLoadOnTheElementCountAsInC() throws IOException {
+        DataFileParseException e = loadAndStop("empty.txt", "");
+
+        assertTrue(e.getMessage().contains("expected: 25 got: 0"), e.getMessage());
+    }
+
+    /**
+     * The 26th record is the first whose code C does not check, and a NULL type is no fault, so an
+     * untyped LIGHT_WEAK there loads, with the type {@code PT_NONE}. Every record takes a place in
+     * C's count, typed or not.
+     *
+     * <p>Function anUntypedRecordAfterTheElementBlockLoadsAsInC coded on 261113, commented in full
+     * on 261113.
+     */
+    @Test
+    void anUntypedRecordAfterTheElementBlockLoadsAsInC() throws Exception {
+        List<Projection> items = load("untyped-26.txt",
+                shipped().replaceFirst("(code:LIGHT_WEAK\n)type:environs\n", "$1")).items();
+        Projection lightWeak = items.get(ProjectionEnum.PROJ_LIGHT_WEAK.ordinal() - 1);
+
+        assertEquals(56, items.size());
+        assertEquals(ProjectionEnum.PROJ_LIGHT_WEAK, lightWeak.getProjection());
+        assertEquals(ProjectionType.PT_NONE, field(lightWeak, "type"));
+    }
+
+    /**
+     * An untyped record among the first 25 still takes its place: NEXUS, the 10th record, matches
+     * {@code element_names[9]} without a type, as in C. It no longer counts as an element, so the
+     * file stops on 24, and an extra {@code type:element} record at the end brings it back to 25
+     * and the file loads.
+     *
+     * <p>Function anUntypedElementRecordKeepsItsPositionAndLeavesTheElementCountOneShort coded on
+     * 261113, commented in full on 261113.
+     */
+    @Test
+    void anUntypedElementRecordKeepsItsPositionAndLeavesTheElementCountOneShort() throws Exception {
+        String untyped = shipped().replaceFirst("(?s)(code:NEXUS\n.*?)type:element\n", "$1");
+
+        DataFileParseException e = loadAndStop("untyped-10.txt", untyped);
+        assertTrue(e.getMessage().contains("expected: 25 got: 24"), e.getMessage());
+
+        String extraElement = "\ncode:EXTRA\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Blue\n";
+        List<Projection> items = load("untyped-10-plus-element.txt", untyped + extraElement).items();
+        Projection nexus = items.get(ProjectionEnum.PROJ_NEXUS.ordinal() - 1);
+
+        assertEquals(57, items.size());
+        assertEquals(ProjectionEnum.PROJ_NEXUS, nexus.getProjection());
+        assertEquals(ProjectionType.PT_NONE, field(nexus, "type"));
+    }
+
+    // ---- Where the grammar differs from C (docs/grammar_issues.md) -----------------------------
 
     @Test
     void aLowerCaseOrNumericMsgtIsAHardErrorWhereCAcceptsBoth() throws IOException {

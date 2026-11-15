@@ -85,15 +85,18 @@ import java.util.List;
  * <p>The exception is not caught by {@code GrammarDriver}, so it reaches the caller of
  * {@code ProjectionReader.parseWithResults}. The empty-code stop is reachable only from hand-built
  * records: the grammar rejects a {@code code:} with no value before the assembler sees it. The
- * grammar also makes {@code code}, {@code type}, {@code desc}, {@code blind-desc}, {@code obvious}
- * and {@code color} mandatory, so only the other fields of a record can be {@code null}.
+ * grammar makes only {@code code} mandatory and takes the other fourteen directives in any order,
+ * so every other field of a record can be {@code null}. A left-out {@code type:} gives
+ * {@link ProjectionType#PT_NONE}, which counts as no element, as C's NULL type does, and the
+ * record still takes its place in the count.
  *
  * <p>The assembled list is in file order, base 0, with no blank slot: C's {@code projections}
  * array holds the same records, and {@code z_info->projection_max} is their count.
  *
  * <p>Class ProjectionAssembler coded before 260915, commented in full on 261029; every fault now
  * stops the load, the denominator range deviation recorded, on 261029; updated on 261105 for the
- * removal of the soft-error path.
+ * removal of the soft-error path, and on 261113 for every directive but {@code code} becoming
+ * optional.
  *
  * @author Rowan Crowther
  */
@@ -182,7 +185,9 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             int line = record.lineNumber();
             String codeString = record.code();
             String type = record.type();
-            ProjectionType projType = resolveType(type);
+            ProjectionType projType = ProjectionType.PT_NONE;
+            if (type != null && !type.isEmpty())
+                projType = resolveType(type);
             currentRecord++;
             ProjectionEnum projCode;
             if (currentRecord <= EXPECTED_ELEMENT_COUNT) {
@@ -419,13 +424,14 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *
      * <p>C keeps the tag as a string and only ever tests it against {@code "element"}, in
      * {@code finish_parse_projection()} in {@code obj-init.c}; the enum is a Java addition so the
-     * type survives as data. It never reports a fault. The grammar makes {@code type:} mandatory,
-     * so the tag is never {@code null}; a hand-built record with a {@code null} type would throw a
-     * {@link NullPointerException} from the {@code switch}, where C's zeroed record would hold NULL
-     * and count as no element.
+     * type survives as data. It never reports a fault. The grammar does not require {@code type:},
+     * so a record can arrive with a {@code null} type, but {@link #assemble} does not call this
+     * method for a {@code null} or empty tag. It keeps {@code PT_NONE}, which counts as no element,
+     * as C's NULL type does. Called with {@code null}, the {@code switch} would throw a
+     * {@link NullPointerException}.
      *
      * <p>Function resolveType coded before 260915, commented in full on 261029, updated on 261105 for
-     * the removal of the soft-error path.
+     * the removal of the soft-error path, and on 261113 for the optional {@code type:}.
      *
      * @param type   the tag from the {@code type:} line
      * @return the matching constant, or {@code PT_NONE} if the tag is not one of the three

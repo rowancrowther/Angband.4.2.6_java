@@ -545,7 +545,7 @@ Each pattern is one recipe applied to many grammars. Do the recipe once on the s
 
 ### 7a. Fixed record order to unordered, repeatable directives
 
-- G: `BlowMethodGrammar.g4`, `SummonGrammar.g4`, `MonsterBaseGrammar.g4`, `BrandGrammar.g4`, `ObjectBaseGrammar.g4`, `ProjectionGrammar.g4`, `ObjectPropertyGrammar.g4` (also needs `type:` optional), `PlayerPropertyGrammar.g4`, `TerrainFeatureGrammar.g4`, `QuestGrammar.g4`, `VaultGrammar.g4`, `RoomProfileGrammar.g4`, `ChestTrapGrammar.g4` (`code:` after `name:`), `PlayerTimedGrammar.g4`.
+- G: ~~`BlowMethodGrammar.g4`~~, ~~`SummonGrammar.g4`~~, ~~`MonsterBaseGrammar.g4`~~, ~~`BrandGrammar.g4`~~, ~~`ObjectBaseGrammar.g4`~~, ~~`ProjectionGrammar.g4`~~, `ObjectPropertyGrammar.g4` (also needs `type:` optional), `PlayerPropertyGrammar.g4`, `TerrainFeatureGrammar.g4`, `QuestGrammar.g4`, `VaultGrammar.g4`, `RoomProfileGrammar.g4`, `ChestTrapGrammar.g4` (`code:` after `name:`), `PlayerTimedGrammar.g4`.
 - Each needs its `ParseRecord` and assembler to cope with an absent field, so this is where the Stage 0 absent-value convention is applied for the second time.
 
 ### 7b. Name-only records and empty files
@@ -567,9 +567,84 @@ Each pattern is one recipe applied to many grammars. Do the recipe once on the s
 ### 7d. Flag and value lists
 
 - C splits on any run of spaces and bars with `strtok(s, " |")`, and an empty `?str` is legal.
-- G: `Pit` (four lists), `MonsterBase`, `Monster` (including `spells:`), `ObjectBase`, `Curse` (three lists), `EgoItems`, `Artifact`, `Shape`, `PlayerRace`, `PlayerClass`, `Trap` (`flags:` and `save:`), `TerrainFeature`, `RoomProfile`.
-- Empty `flags:` alone: G: `EgoItems`, `Artifact`, `Monster`, `Shape`.
+- G: `Pit` (four lists), ~~`MonsterBase`~~, `Monster` (including `spells:`), `ObjectBase`, `Curse` (three lists), `EgoItems`, `Artifact`, `Shape`, `PlayerRace`, `PlayerClass`, `Trap` (`flags:` and `save:`), `TerrainFeature`, `RoomProfile`. Added 2026-11-13, found by scanning the lexers for the separator token: `ItemObject` (`flags:` and `values:`), `PlayerTimed` (`flags:`) and `Vault` (`flags:`). That makes 16 grammars, the same 16 that appear under "What the lexers require now" below.
+- Empty `flags:` alone: G: `EgoItems`, `Artifact`, `Monster`, `Shape`. This is the set that was found to refuse it. The set C accepts is wider (see "Empty list" below) and the Java state of the grammars not named here was not probed.
 - Settle the shared token shape on one lexer, then copy it. This pattern is the likeliest to bite a hand-edited file.
+
+**What C accepts (read 2026-11-13).**
+
+- Every flag list and `values:` list in the gamedata parsers is split with `strtok(s, " |")`, in `init.c`, `mon-init.c`, `obj-init.c`, `generate.c` and `player-timed.c`. The delimiter set is a space or a bar, and a run of delimiters collapses into one.
+- **Multiple spaces: accepted.** `ANIMAL    EVIL` and `ANIMAL |  EVIL` give the same two names as `ANIMAL | EVIL`.
+- **No bar: accepted.** `ANIMAL EVIL` splits on the space, and `ANIMAL|EVIL` with no spaces also works. `ANIMAL||EVIL` is the same two names.
+- **Leading and trailing delimiters are skipped.** `| ANIMAL` and `ANIMAL |` both load.
+- **A tab between names works.** `file_getl` in `z-file.c` expands tabs to spaces before the parser sees the line.
+- What was read: the delimiter at every `strtok` call site, and three handlers in full (`parse_mon_base_flags`, `parse_trap_flags`, `parse_trap_save_flags`). The other handlers were not opened. For `values:` lists the split is the same, but how each handler reads the `NAME[n]` token after the split was not checked.
+
+**Empty list (read 2026-11-13).** The directive's type in `parser_reg` decides.
+
+- `?str`, an empty value loads and sets nothing: `flags:` on MonsterBase, Monster, Trap, TerrainFeature, EgoItems, Artifact and PlayerTimed; `flags-off:` on Monster and EgoItems; `flags-req:`, `flags-ban:`, `spell-req:` and `spell-ban:` on Pit; `obj-flags:` and `player-flags:` on PlayerRace, Shape and PlayerClass.
+- `str`, an empty value is `PARSE_ERROR_MISSING_FIELD` and the load stops: `flags:` on RoomProfile (`room_template.txt`), Vault, ObjectBase, ItemObject and Curse; `conflict-flags:` on Curse; `save:` on Trap; `spells:` on Monster; `values:` on ItemObject, Curse, EgoItems, Artifact, PlayerRace and Shape; `min-values:` on EgoItems.
+- A lone blank after the colon (`flags: `) counts as a value in both cases, and the split then finds no names.
+
+**What the lexers require now (read 2026-11-13).** The separator token was the same shape in 16 lexers. `MonsterBaseLexer.g4` has been changed (see "MonsterBase, first copy" below), and the other 15 still have:
+
+```antlr
+FLAG_OR
+        :   ' '? '|' ' '?
+        ;
+```
+
+- It needs a bar, with at most one blank on each side. None of the 16 used `' '*`. `ANIMAL EVIL` and `ANIMAL |  EVIL` were refused by `MonsterBase` before its change. The other 15 were not run, so a skip rule elsewhere in a flag mode could change the answer for them.
+- Written as a lexer rule, C's separator is `(' ' | '|')+`, with the same run skipped at the start and end of the value.
+- The 16, with the token and the directives it serves (all but `MonsterBaseLexer.g4` still on the old token):
+  - `ArtifactLexer.g4`: `FLAG_OR` (`flags:`) and `VALUES_OR` (`values:`).
+  - `CurseLexer.g4`: `FLAG_OR` (`flags:`, `conflict-flags:`) and `VALUE_OR` (`values:`).
+  - `EgoItemsLexer.g4`: `FLAG_OR` (`flags:`, `flags-off:`) and `VALUE_OR` (`values:`, `min-values:`).
+  - `ItemObjectLexer.g4`: `FLAG_OR` (`flags:`) and `VALUE_OR` (`values:`).
+  - `MonsterBaseLexer.g4`: `FLAG_OR` (`flags:`).
+  - `MonsterLexer.g4`: `FLAG_OR` (`flags:`, `flags-off:`, `spells:`).
+  - `ObjectBaseLexer.g4`: `FLAG_OR` (`flags:`).
+  - `PitLexer.g4`: `FLAG_OR` (`flags-req:`, `flags-ban:`, `spell-req:`, `spell-ban:`).
+  - `PlayerClassLexer.g4`: `FLAG_OR` (`obj-flags:`, `player-flags:`).
+  - `PlayerRaceLexer.g4`: `FLAG_OR` (`obj-flags:`, `player-flags:`) and `VALUE_OR` (`values:`).
+  - `PlayerTimedLexer.g4`: `FLAG_OR` (`flags:`).
+  - `RoomProfileLexer.g4`: `FLAG_OR` (`flags:`).
+  - `ShapeLexer.g4`: `FLAG_OR` (`obj-flags:`, `player-flags:`) and `VALUE_OR` (`values:`).
+  - `TerrainFeatureLexer.g4`: `FLAG_OR` (`flags:`).
+  - `TrapLexer.g4`: `FLAG_OR` (`flags:`, `save:`).
+  - `VaultLexer.g4`: `OR` (`flags:`).
+- Three lexers already take a blank before the first name: `EgoItemsLexer.g4` (`FLAG` starts with `' '?`), `ArtifactLexer.g4` (`flags:` is followed by `' '?`) and `MonsterLexer.g4` (`flags-off:` is followed by `' '?`).
+- Not affected: `BrandLexer.g4`, `ObjectPropertyLexer.g4`, `PlayerPropertyLexer.g4`, `ProjectionLexer.g4`, `SlayLexer.g4` and `SummonLexer.g4` use the flag shape for a single value and have no separator. `LoreLexer.g4` is parked (Stage 10) and its separator was not read.
+- In `PlayerTimedLexer.g4` and `TerrainFeatureLexer.g4` the flag mode is shared with single-value directives (`name:`, `msgt:`, `resist:`, `brand:`, `slay:` and `code:`, `mimic:`, `resist-flag:`). Only `flags:` is a list in C, so the separator change must not make those accept a list.
+
+**MonsterBase, first copy (checked 2026-11-13).** `MonsterBaseLexer.g4` and `MonsterBaseGrammar.g4` were regenerated and run through `MonsterBaseReaderTest` (39 pass) and a scratch harness. This is the shape to copy, with the parser half as well as the lexer half:
+
+```antlr
+FLAG_OR
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
+        ;
+```
+
+```antlr
+flags
+        :   FLAGS (FLAG_OR+
+            |   flag1=FLAG (FLAG_OR flag2=FLAG?)*
+            )? (FLAG_EOL | EOF)
+        ;
+```
+
+(The `flags` rule is shown without its actions.)
+
+- Now read as in C: `ANIMAL EVIL`, `ANIMAL    EVIL`, `ANIMAL|EVIL`, `ANIMAL |EVIL`, `ANIMAL| EVIL`, `ANIMAL |  EVIL`, `ANIMAL  |  EVIL`, `ANIMAL||EVIL`, `ANIMAL | | EVIL`, `ANIMAL| |EVIL` and `ANIMAL |  | EVIL` all give two names, and a bar or blank after the last name adds nothing.
+- A bar, a blank and a bar arrive as two `FLAG_OR` tokens in a row, because the token does not take a second bar after a blank. The parser copes only because the rule is `(FLAG_OR flag2=FLAG?)*`. Copying the lexer token without that parser rule would refuse `ANIMAL | | EVIL`.
+- An empty `flags:` and a lone blank after the colon load with no flags.
+- **A list of delimiters and no name** (`flags:|`, `flags:||`, `flags: | |`, `flags:|  |` and the like) loads with no flags, as in C, where `strtok` finds no name and the handler returns `PARSE_ERROR_NONE`. [<span style="color:#006400">**CLOSED**</span> 26-11-13: the first alternative of the rule above, `FLAG_OR+`. Pinned by `aFlagListOfOnlyBarsLoadsWithNoFlagsAsInC` in `MonsterBaseReaderTest`, flipped from `aFlagListOfOnlyBarsIsAHardErrorHereWhereCReadsNoFlags`.]
+- **Still refused, where C accepts:** a delimiter before the first name: `flags: ANIMAL`, `flags:| ANIMAL`, `flags: | ANIMAL` and `flags: | | ANIMAL`. The `flags` rule takes a flag, or a run of delimiters with no flag, straight after `FLAGS`, but not a delimiter followed by a flag. [<span style="color:#006400">**CLOSED**</span> 26-11-13: accepted deviation, decided with Rowan and recorded in `docs/Accepted_Deviations.md` under "Monster base". Pinned by `aBlankOrBarBeforeTheFirstFlagIsAHardErrorHereWhereCSkipsIt` in `MonsterBaseReaderTest`.]
+- **Found while probing, not caused by the separator:** a `flags:` line at the very end of the file with no final newline is a syntax error, because `FLAG_EOL` is `NL+` and `NL` needs a `\r` or `\n`. C reads the last line without one (`file_getl` returns an unterminated final line of at least one character, and `parse_file` feeds it to `parser_parse`). Checked 2026-11-13 against `MonsterBaseGrammar` for each directive as the last line: `name:`, `glyph:`, `pain:` and `desc:` load, and `flags:` fails in every shape (one name, two names, an empty value, a trailing blank). Stage 6 item 1 (above) and the `CommentsAndEol` entry in `docs/grammar_issues.md` say "a directive on the last line is fine", which holds for the free-text and single-value directives and is wrong for a flag list. None of the 45 files in `lib/gamedata` lacks a final newline, so shipped data is not affected. Grep for `NL -> popMode` finds newline-required pop rules in seven other lexers (`ObjectBaseLexer.g4`, `TerrainFeatureLexer.g4`, `PitLexer.g4`, `HistoryLexer.g4`, `ObjectPropertyLexer.g4`, `FlavourLexer.g4` and `LoreLexer.g4`). Not all of them are flag lists, the grep matches only that one spelling of the rule, and only MonsterBase was run. [<span style="color:#006400">**CLOSED**</span> 26-11-13 for MonsterBase: the `flags` rule in `MonsterBaseGrammar.g4` ends in `(FLAG_EOL | EOF)`. The lexer is unchanged. A lexer-only attempt, `FLAG_EOL : (NL+ | EOF) -> popMode`, was run in a scratch copy and changed nothing, because ANTLR emits no token for a zero-length match at end of input. Pinned by `aFlagsLineWithNoFinalNewlineLoadsAsInC` in `MonsterBaseReaderTest` (nine last-line shapes, from `flags:ANIMAL` to `flags: | |`), flipped from `aFlagsLineWithNoFinalNewlineIsAHardErrorHereWhereCReadsIt`, with its other half `aLastLineOfAnyOtherDirectiveNeedsNoFinalNewlineAsInC`. The four MonsterBase test classes pass (82). The other flag-list grammars need the same parser change; none was run.]
+- Tests flipped on 2026-11-13: `anEmptyFlagsValueLoadsWithNoFlagsAsInC`, `aFlagListSplitOnAnyRunOfBlanksAndBarsLoadsAsInC`, `aFlagListOfOnlyBarsLoadsWithNoFlagsAsInC`, `aFlagsLineWithNoFinalNewlineLoadsAsInC`, `directivesOutOfOrderLoadAsInC`, `aTemplateWithNoGlyphLoadsWithGlyphZeroAsInC` and `aTemplateWithNoDescLoadsWithANullDescriptionAsInC`. The last was first written with a `HereWhereC` name because the port held `""` for an absent `desc:` where C holds NULL and the Stage 0 answer is `null`. [<span style="color:#006400">**CLOSED**</span> 26-11-13: the `monsterBase` rule in `MonsterBaseGrammar.g4` passes `null` for an absent `desc:` as both `inGameName` and `description`, `MonsterBaseAssembler.java` passes it on, and the test now asserts `null` for both fields. `aNameOnlyRecordLoadsWithEveryOtherFieldAbsentAsInC` asserts it too. A base built by the code-name-only `MonsterBase` constructor still holds `""`.]
+- Interior tabs stay an accepted deviation (Stage 6), so the tab line under "What C accepts" is C's behaviour only.
+- Not marked closed: the 7d item as a whole. MonsterBase is done apart from the accepted deviation, and the other 15 grammars are untouched. The "a directive on the last line is fine" wording in Stage 6 item 1 and in `docs/grammar_issues.md` is wrong for a flag list until each of them gets the same parser change.
 
 ### 7e. `alloc:` spacing
 

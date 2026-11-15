@@ -52,10 +52,16 @@ import static org.junit.jupiter.api.Assertions.*;
  *       {@code PARSE_ERROR_NOT_NUMBER}, whatever the value, so {@code -0} is refused too;</li>
  *   <li>the order from {@code parse_brand_code} pushing each brand onto the head of its list and
  *       {@code finish_parse_brand} copying from the head, so the last record comes first;</li>
+ *   <li>the directives from {@code init_parse_brand}, which registers each on its own: after
+ *       {@code code:} they come in any order, may be left out (the zeroed field stays, and
+ *       {@code name} and {@code verb} stay {@code NULL}) and may repeat. A repeat overwrites the
+ *       field, but each line is checked as it is read, so a bad number or flag ends the load even
+ *       when a good one follows it;</li>
  *   <li>the stop-the-load policy: C's first parser error ends the whole file.</li>
  * </ul>
  *
- * <p>Class BrandAssemblerTest coded on 261023, commented in full on 261023.
+ * <p>Class BrandAssemblerTest coded on 261023, commented in full on 261023, updated on 261113 once
+ * {@link BrandParseRecord} carried every number and flag as the list of its lines.
  *
  * @author Rowan Crowther
  */
@@ -63,9 +69,41 @@ class BrandAssemblerTest {
 
     private static final String FILE = "brand.txt";
 
+    /**
+     * One directive's lines as the grammar hands them over: no entry for an empty string (the
+     * directive was left out), otherwise the one line.
+     */
+    private static List<String> lines(String text) {
+        return text.isEmpty() ? List.of() : List.of(text);
+    }
+
     private static BrandParseRecord record(String code, String mult, String oMult, String power,
                                            String resist, String vuln) {
-        return new BrandParseRecord(code, "fire", mult, oMult, power, "burn", resist, vuln, 7);
+        return new BrandParseRecord(code, "fire", lines(mult), lines(oMult), lines(power), "burn",
+                lines(resist), lines(vuln), 7);
+    }
+
+    /**
+     * A FIRE_3 record whose five repeatable directives each carry the lines given, in file order.
+     */
+    private static BrandParseRecord repeated(List<String> mult, List<String> oMult, List<String> power,
+                                             List<String> resist, List<String> vuln) {
+        return new BrandParseRecord("FIRE_3", "fire", mult, oMult, power, "burn", resist, vuln, 7);
+    }
+
+    /**
+     * A FIRE_3 record with good values everywhere except {@code directive}, which carries
+     * {@code values} in file order.
+     */
+    private static BrandParseRecord repeating(String directive, List<String> values) {
+        return switch (directive) {
+            case "multiplier" -> repeated(values, List.of("25"), List.of("113"), List.of("IM_FIRE"), List.of());
+            case "o-multiplier" -> repeated(List.of("3"), values, List.of("113"), List.of("IM_FIRE"), List.of());
+            case "power" -> repeated(List.of("3"), List.of("25"), values, List.of("IM_FIRE"), List.of());
+            case "resist-flag" -> repeated(List.of("3"), List.of("25"), List.of("113"), values, List.of());
+            case "vuln-flag" -> repeated(List.of("3"), List.of("25"), List.of("113"), List.of("IM_FIRE"), values);
+            default -> throw new IllegalArgumentException(directive);
+        };
     }
 
     private static BrandParseRecord fire3(String resist, String vuln) {
@@ -184,6 +222,65 @@ class BrandAssemblerTest {
     @ValueSource(strings = {"-113", "-0"})
     void aLeadingMinusOnThePowerEndsTheLoad(String text) {
         refused(record("FIRE_3", "3", "25", text, "IM_FIRE", ""));
+    }
+
+    // ---- Absent and repeated directives --------------------------------------
+
+    @Test
+    void aRecordOfACodeAloneIsAllZeroesAsMemZallocLeavesIt() {
+        // The grammar hands over null for a left-out name or verb and empty lists for the rest.
+        BrandParseRecord codeOnly = new BrandParseRecord("FIRE_3", null, List.of(), List.of(), List.of(),
+                null, List.of(), List.of(), 7);
+
+        assertEquals(new Brand("FIRE_3", null, null, MonsterRaceFlag.RF_NONE, MonsterRaceFlag.RF_NONE, 0, 0, 0),
+                one(codeOnly));
+    }
+
+    @Test
+    void aLeftOutNumberIsZeroAndALeftOutFlagIsNone() {
+        assertEquals(new Brand("FIRE_3", "fire", "burn", MonsterRaceFlag.RF_NONE, MonsterRaceFlag.RF_NONE, 0, 25, 0),
+                one(record("FIRE_3", "", "25", "", "", "")));
+    }
+
+    @Test
+    void aRepeatedDirectiveKeepsTheLastLine() {
+        // C overwrites the field on each line, so the last good one is what is stored.
+        BrandParseRecord twice = repeated(List.of("3", "5"), List.of("25", "30"), List.of("113", "120"),
+                List.of("IM_FIRE", "IM_COLD"), List.of("HURT_FIRE", "HURT_COLD"));
+
+        assertEquals(new Brand("FIRE_3", "fire", "burn", MonsterRaceFlag.RF_IM_COLD,
+                MonsterRaceFlag.RF_HURT_COLD, 5, 30, 120), one(twice));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "multiplier,    -2,        3",
+            "multiplier,    -0,        3",
+            "o-multiplier,  -2,        25",
+            "power,         -1,        113",
+            "resist-flag,   NOTAFLAG,  IM_FIRE",
+            "resist-flag,   NONE,      IM_FIRE",
+            "vuln-flag,     NOTAFLAG,  HURT_FIRE",
+            "vuln-flag,     NONE,      HURT_FIRE"
+    })
+    void aBadLineEndsTheLoadWhetherAGoodOneComesBeforeOrAfterIt(String directive, String bad, String good) {
+        // C refuses the bad line when it reads it, so a good line either side cannot save the load.
+        refused(repeating(directive, List.of(bad, good)));
+        refused(repeating(directive, List.of(good, bad)));
+        refused(repeating(directive, List.of(good, bad, good)));
+    }
+
+    @Test
+    void theErrorNamesTheOneBadFlagNotTheWholeList() {
+        DataFileParseException resist = assertThrows(DataFileParseException.class,
+                () -> assemble(List.of(repeating("resist-flag", List.of("IM_FIRE", "NOTAFLAG", "IM_COLD")))));
+        DataFileParseException vuln = assertThrows(DataFileParseException.class,
+                () -> assemble(List.of(repeating("vuln-flag", List.of("NONE", "HURT_FIRE")))));
+
+        assertTrue(resist.getMessage().contains("invalid resist flag value: NOTAFLAG"), resist::getMessage);
+        assertFalse(resist.getMessage().contains("["), resist::getMessage);
+        assertTrue(vuln.getMessage().contains("invalid vulnerable flag value: NONE"), vuln::getMessage);
+        assertFalse(vuln.getMessage().contains("["), vuln::getMessage);
     }
 
     // ---- Stop-the-load -----------------------------------------------------

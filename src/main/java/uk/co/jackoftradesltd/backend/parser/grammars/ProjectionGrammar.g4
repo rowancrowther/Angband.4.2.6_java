@@ -212,9 +212,11 @@ colour  returns[String projectionColour]
 /*
  * @author Rowan Crowther
  *
- * One full projection record - a fixed sequence with code/type/desc/
- * blindDesc/obvious/colour mandatory and everything else optional,
- * confirmed to match every record in projection.txt (see top-of-file note).
+ * One projection record - a "code:" line followed by any of the other
+ * fourteen directives, in any order and any number of times, as C registers
+ * each handler on its own. A repeated directive replaces the earlier one, so
+ * the last wins, and a directive that is left out stays null. Only "code:" is
+ * mandatory.
  */
 projection
         returns[List<String> proj, int lineNo]
@@ -228,26 +230,27 @@ projection
         }
         :   code { projectionStrings[0] = $code.projectionCode;
                    $lineNo = $start.getLine(); }
-            (name { projectionStrings[1] = $name.projectionName; })?
-            type { projectionStrings[2] = $type.projectionType; }
-            desc { projectionStrings[3] = $desc.projectionDesc; }
-            (playerDesc { projectionStrings[4] = $playerDesc.projectionPlayerDesc; })?
-            blindDesc { projectionStrings[5] = $blindDesc.projectionBlindDesc; }
-            (lashDesc { projectionStrings[6] = $lashDesc.projectionLashDesc; })?
-            (numerator { projectionStrings[7] = $numerator.projectionNumerator; })?
-            (denominator { projectionStrings[8] = $denominator.projectionDenominator; })?
-            (divisor { projectionStrings[9] = $divisor.projectionDivisor; })?
-            (damageCap { projectionStrings[10] = $damageCap.projectionDamageCap; })?
-            (msgt { projectionStrings[11] = $msgt.projectionMsgt; })?
-            obvious { projectionStrings[12] = $obvious.projectionIsObvious; }
-            (wake { projectionStrings[13] = $wake.projectionWillWake; })?
-            colour { projectionStrings[14] = $colour.projectionColour; }
+        (   name { projectionStrings[1] = $name.projectionName; }
+        |   type { projectionStrings[2] = $type.projectionType; }
+        |   desc { projectionStrings[3] = $desc.projectionDesc; }
+        |   playerDesc { projectionStrings[4] = $playerDesc.projectionPlayerDesc; }
+        |   blindDesc { projectionStrings[5] = $blindDesc.projectionBlindDesc; }
+        |   lashDesc { projectionStrings[6] = $lashDesc.projectionLashDesc; }
+        |   numerator { projectionStrings[7] = $numerator.projectionNumerator; }
+        |   denominator { projectionStrings[8] = $denominator.projectionDenominator; }
+        |   divisor { projectionStrings[9] = $divisor.projectionDivisor; }
+        |   damageCap { projectionStrings[10] = $damageCap.projectionDamageCap; }
+        |   msgt { projectionStrings[11] = $msgt.projectionMsgt; }
+        |   obvious { projectionStrings[12] = $obvious.projectionIsObvious; }
+        |   wake { projectionStrings[13] = $wake.projectionWillWake; }
+        |   colour { projectionStrings[14] = $colour.projectionColour; })*
         ;
 
 /*
  * @author Rowan Crowther
  *
- * Top-level rule: the whole file is one or more projection records.
+ * Top-level rule: the whole file is zero or more projection records. An empty
+ * file parses; the assembler then stops the load on the element count.
  */
 file    returns[List<List<String>> projections]
         @init {
@@ -255,6 +258,6 @@ file    returns[List<List<String>> projections]
         }
         :   (projection {
                 $projections.add($projection.proj);
-            })+
+            })*
             EOF
         ;

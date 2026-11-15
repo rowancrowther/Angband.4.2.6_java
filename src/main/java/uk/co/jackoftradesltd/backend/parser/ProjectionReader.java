@@ -105,13 +105,14 @@ public class ProjectionReader implements Reader<Projection> {
      * {@code code}, {@code name}, {@code type}, {@code desc}, {@code player-desc},
      * {@code blind-desc}, {@code lash-desc}, {@code numerator}, {@code denominator},
      * {@code divisor}, {@code damage-cap}, {@code msgt}, {@code obvious}, {@code wake} and
-     * {@code color}, with {@code ""} for a directive the record does not have, then the line the
+     * {@code color}, with {@code null} for a directive the record does not have, then the line the
      * record starts on. The line is turned into an {@code int} here. The grammar writes it with
      * {@code String.valueOf}, so the {@code NumberFormatException} branch, which would log a
      * warning and store {@code -1}, cannot be reached from a data file.
      *
      * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
-     * the removal of the soft-error path and the {@code record-count:} header.
+     * the removal of the soft-error path and the {@code record-count:} header, and on 261113 for an
+     * absent directive being {@code null}, not {@code ""}.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used

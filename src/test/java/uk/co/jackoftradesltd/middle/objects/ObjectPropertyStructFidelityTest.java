@@ -145,8 +145,8 @@ class ObjectPropertyStructFidelityTest {
 
     /**
      * Every record's power, mult and notice message match the file, with C's defaults: an absent
-     * {@code power:} or {@code mult:} is 0. An absent {@code msg:} is {@code NULL} in C and the
-     * empty string in the port.
+     * {@code power:} or {@code mult:} is 0. An absent {@code msg:} is {@code NULL} in C and
+     * {@code null} in the port.
      */
     @Test
     @DisplayName("power, mult and message match the file for all 79 records")
@@ -156,7 +156,7 @@ class ObjectPropertyStructFidelityTest {
             ObjectProperty p = loaded.get(i);
             assertEquals(e.power(), p.getPower(), e.name() + " power");
             assertEquals(e.mult(), p.getMultiplier(), e.name() + " mult");
-            assertEquals(e.msg() == null ? "" : e.msg(), p.getNoticeMessage(), e.name() + " msg");
+            assertEquals(e.msg(), p.getNoticeMessage(), e.name() + " msg");
         }
     }
 
@@ -196,12 +196,12 @@ class ObjectPropertyStructFidelityTest {
 
     /**
      * An element relation carries an element payload, no subtype and no id-type (those are
-     * flag-only), and a record with no {@code msg:} line holds the empty string. Its binding has
+     * flag-only), and a record with no {@code msg:} line holds {@code null}. Its binding has
      * an auxiliary flag of 0 and no {@code uival}, so the value is absent (C's
      * {@code have_value} false) and the flag is false.
      */
     @Test
-    @DisplayName("acid resistance: element payload, no subtype, empty message, unvalued binding")
+    @DisplayName("acid resistance: element payload, no subtype, null message, unvalued binding")
     void elementRelation() {
         ObjectProperty res = named("acid resistance");
 
@@ -210,7 +210,7 @@ class ObjectPropertyStructFidelityTest {
         assertEquals(5, res.getPower());
         assertEquals(ObjectFlagType.OFT_NONE, res.getSubtype());
         assertEquals(ObjectFlagID.OFID_NONE, res.getIdType());
-        assertEquals("", res.getNoticeMessage());
+        assertNull(res.getNoticeMessage());
         assertEquals(1, res.getBoundEntries().size());
         assertEquals("resist_ui_compact_0<ACID>", res.getBoundEntries().get(0).entry());
         assertNull(res.getBoundEntries().get(0).value());

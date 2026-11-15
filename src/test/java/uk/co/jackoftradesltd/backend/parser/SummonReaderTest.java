@@ -439,58 +439,216 @@ class SummonReaderTest {
         assertTrue(byName(result.items(), "ON").isUniquesAllowed());
     }
 
+    // ---- Directives in any order, repeated, or left out (Stage 7a) ----------------
+
     @Test
-    void raceFlagBeforeBaseIsAHardErrorHereWhereCTakesAnyOrder() throws IOException {
-        // C dispatches each line on its own, so race-flag: may precede base:.
+    void raceFlagBeforeBaseIsReadAsCDoesSinceEveryLineIsDispatchedOnItsOwn() throws IOException {
         String body = "name:A\nmsgt:SUM_MONSTER\nuniques:0\nrace-flag:UNIQUE\nbase:" + KNOWN_BASE + "\ndesc:a\n";
-        assertThrows(ParseCancellationException.class, () -> load("order-rb.txt", body));
 
+        Summon a = load("order-rb.txt", body).items().get(0);
+
+        assertEquals(List.of(KNOWN_BASE), a.getBases().stream().map(MonsterBase::getCodeName).toList());
+        assertEquals(MonsterRaceFlag.RF_UNIQUE, a.getRaceFlag());
     }
 
     @Test
-    void baseLinesSplitByAnotherDirectiveAreAHardErrorHereWhereCAccumulatesThem() throws IOException {
-        // parse_summon_base pushes onto s->bases whenever it runs; here base: lines must be adjacent.
+    void baseLinesSplitByAnotherDirectiveAccumulateAsInC() throws IOException {
+        // parse_summon_base pushes onto s->bases whenever it runs, so the second group is not lost.
+        // Written ancient dragon then vampire, held last-written first.
         String body = "name:A\nmsgt:SUM_MONSTER\nuniques:0\nbase:" + KNOWN_BASE + "\nrace-flag:UNIQUE\nbase:vampire\ndesc:a\n";
-        assertThrows(ParseCancellationException.class, () -> load("split-base.txt", body));
 
+        Summon a = load("split-base.txt", body).items().get(0);
+
+        assertEquals(List.of("vampire", KNOWN_BASE), a.getBases().stream().map(MonsterBase::getCodeName).toList());
+        assertEquals(MonsterRaceFlag.RF_UNIQUE, a.getRaceFlag());
     }
 
     @Test
-    void repeatedRaceFlagIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
+    void threeSeparateBaseGroupsAreHeldLastWrittenFirst() throws IOException {
+        String body = "name:A\nbase:canine\nmsgt:SUM_MONSTER\nbase:vampire\nuniques:0\nbase:" + KNOWN_BASE + "\ndesc:a\n";
+
+        Summon a = load("three-base-groups.txt", body).items().get(0);
+
+        assertEquals(List.of(KNOWN_BASE, "vampire", "canine"),
+                a.getBases().stream().map(MonsterBase::getCodeName).toList());
+    }
+
+    @Test
+    void repeatedRaceFlagKeepsTheLastAsInC() throws IOException {
         // parse_summon_race_flag overwrites s->race_flag.
         String body = summon("A", "SUM_MONSTER", "0", "race-flag:DEMON\nrace-flag:UNDEAD", "a");
-        assertThrows(ParseCancellationException.class, () -> load("two-flags.txt", body));
 
+        assertEquals(MonsterRaceFlag.RF_UNDEAD, load("two-flags.txt", body).items().get(0).getRaceFlag());
     }
 
     @Test
-    void repeatedDescIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
+    void repeatedDescKeepsTheLastAsInC() throws IOException {
         // parse_summon_desc is string_make, an overwrite (unlike parse_eff_desc, which appends).
         String body = "name:A\nmsgt:SUM_MONSTER\nuniques:0\ndesc:first\ndesc:second\n";
-        assertThrows(ParseCancellationException.class, () -> load("two-desc.txt", body));
 
+        assertEquals("second", load("two-desc.txt", body).items().get(0).getDescription());
     }
 
     @Test
-    void missingMsgtIsAHardErrorHereWhereCLeavesTheGenericMessage() throws IOException {
-        // msgt: is optional in C (mem_zalloc leaves message_type 0).
+    void repeatedFallbackKeepsTheLastAsInC() throws IOException {
+        // parse_summon_fallback is string_make, an overwrite.
+        String body = summon("A", "SUM_MONSTER", "0", "fallback:A\nfallback:B", "a");
+
+        assertEquals("B", load("two-fallbacks.txt", body).items().get(0).getFallbackName());
+    }
+
+    @Test
+    void repeatedMsgtKeepsTheLastAsInC() throws IOException {
+        String body = "name:A\nmsgt:SUM_MONSTER\nmsgt:SUM_UNDEAD\nuniques:0\ndesc:a\n";
+
+        assertEquals(MessageType.MSG_SUM_UNDEAD, load("two-msgt.txt", body).items().get(0).getMessageType());
+    }
+
+    @Test
+    void missingMsgtGivesTheGenericMessageAsInC() throws IOException {
+        // msgt: is optional in C (mem_zalloc leaves message_type 0, which is MSG_GENERIC).
         String body = "name:A\nuniques:0\ndesc:a\n";
-        assertThrows(ParseCancellationException.class, () -> load("no-msgt.txt", body));
 
+        assertEquals(MessageType.MSG_GENERIC, load("no-msgt.txt", body).items().get(0).getMessageType());
     }
 
     @Test
-    void missingDescIsAHardErrorHereWhereCLeavesItNull() throws IOException {
+    void missingUniquesIsFalseAsInC() throws IOException {
+        String body = "name:A\nmsgt:SUM_MONSTER\ndesc:a\n";
+
+        assertFalse(load("no-uniques.txt", body).items().get(0).isUniquesAllowed());
+    }
+
+    @Test
+    void missingDescGivesEmptyTextHereWhereCLeavesItNull() throws IOException {
+        // C's desc stays NULL; here it is the empty string.
         String body = "name:A\nmsgt:SUM_MONSTER\nuniques:0\n";
-        assertThrows(ParseCancellationException.class, () -> load("no-desc.txt", body));
 
+        assertEquals("", load("no-desc.txt", body).items().get(0).getDescription());
     }
 
     @Test
-    void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
-        // init/run/finish_parse_summon accept an empty file (summon_max becomes 1, one blank slot).
-        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
+    void aRecordWithOnlyANameLoadsWithCDefaults() throws IOException {
+        Summon a = load("name-only.txt", "name:A\n").items().get(0);
 
+        assertEquals("A", a.getName());
+        assertEquals(MessageType.MSG_GENERIC, a.getMessageType());
+        assertFalse(a.isUniquesAllowed());
+        assertTrue(a.getBases().isEmpty());
+        assertEquals(MonsterRaceFlag.RF_NONE, a.getRaceFlag());
+        assertEquals("", a.getFallbackName());
+        assertEquals("", a.getDescription());
+    }
+
+    @Test
+    void aNameOnlyRecordIsFollowedByTheNextRecordAsInC() throws IOException {
+        List<Summon> items = load("name-only-then-full.txt",
+                "name:A\nname:B\nmsgt:SUM_MONSTER\ndesc:b\n").items();
+
+        assertEquals(List.of("A", "B"), items.stream().map(Summon::getName).toList());
+        assertEquals(MessageType.MSG_GENERIC, items.get(0).getMessageType());
+        assertEquals(MessageType.MSG_SUM_MONSTER, items.get(1).getMessageType());
+    }
+
+    @Test
+    void anyDirectiveMayFollowTheNameInAnyOrder() throws IOException {
+        Summon a = load("desc-first.txt", "name:A\ndesc:a\nuniques:1\nmsgt:SUM_MONSTER\n").items().get(0);
+
+        assertEquals("a", a.getDescription());
+        assertTrue(a.isUniquesAllowed());
+        assertEquals(MessageType.MSG_SUM_MONSTER, a.getMessageType());
+    }
+
+    @Test
+    void uniquesLinesAccumulateAsInCWhereAnEarlierNonZeroIsNeverCleared() throws IOException {
+        // parse_summon_unique only ever sets unique_allowed to true.
+        String oneThenZero = "name:A\nmsgt:SUM_MONSTER\nuniques:1\nuniques:0\ndesc:a\n";
+        String zeroThenOne = "name:B\nmsgt:SUM_MONSTER\nuniques:0\nuniques:1\ndesc:b\n";
+        String zeroThenZero = "name:C\nmsgt:SUM_MONSTER\nuniques:0\nuniques:0\ndesc:c\n";
+
+        List<Summon> items = load("uniques-lines.txt", oneThenZero + zeroThenOne + zeroThenZero).items();
+
+        assertTrue(byName(items, "A").isUniquesAllowed());
+        assertTrue(byName(items, "B").isUniquesAllowed());
+        assertFalse(byName(items, "C").isUniquesAllowed());
+    }
+
+    @Test
+    void everyUniquesLineIsCheckedEvenAfterOneThatIsTrue() {
+        // C reads each line with parser_getint, so a bad figure after a non-zero one still counts.
+        // A figure outside the int range is refused here (accepted deviation, 261027).
+        String body = "name:A\nmsgt:SUM_MONSTER\nuniques:1\nuniques:99999999999\ndesc:a\n";
+
+        assertThrows(DataFileParseException.class, () -> load("uniques-bad-after-true.txt", body));
+    }
+
+    @Test
+    void anUnresolvableMsgtStopsTheLoadEvenWhenALaterOneIsValid() {
+        // parse_summon_message_type refuses the bad line when it reads it; the later line never helps.
+        String body = "name:A\nmsgt:NOPE\nmsgt:SUM_MONSTER\ndesc:a\n";
+
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-then-good-msgt.txt", body));
+
+        assertTrue(e.getMessage().contains("message type value: NOPE"), e.getMessage());
+    }
+
+    @Test
+    void anUnresolvableMsgtStopsTheLoadWhenItFollowsAValidOne() {
+        String body = "name:A\nmsgt:SUM_MONSTER\nmsgt:NOPE\ndesc:a\n";
+
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("good-then-bad-msgt.txt", body));
+
+        assertTrue(e.getMessage().contains("message type value: NOPE"), e.getMessage());
+    }
+
+    @Test
+    void anUnresolvableRaceFlagStopsTheLoadEvenWhenALaterOneIsValid() {
+        // parse_summon_race_flag returns PARSE_ERROR_INVALID_FLAG at the bad line.
+        String body = summon("A", "SUM_MONSTER", "0", "race-flag:NOSUCH\nrace-flag:DEMON", "a");
+
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-then-good-flag.txt", body));
+
+        assertTrue(e.getMessage().contains("race flag value: NOSUCH"), e.getMessage());
+    }
+
+    @Test
+    void raceFlagNoneStopsTheLoadEvenWhenALaterOneIsValid() {
+        // lookup_flag starts at FLAG_START, so NONE never matches, whatever follows it.
+        String body = summon("A", "SUM_MONSTER", "0", "race-flag:NONE\nrace-flag:DEMON", "a");
+
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("none-then-good-flag.txt", body));
+
+        assertTrue(e.getMessage().contains("sentinel monster race flag value: NONE"), e.getMessage());
+    }
+
+    @Test
+    void anUnresolvableRaceFlagStopsTheLoadWhenItFollowsAValidOne() {
+        String body = summon("A", "SUM_MONSTER", "0", "race-flag:DEMON\nrace-flag:NOSUCH", "a");
+
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("good-then-bad-flag.txt", body));
+
+        assertTrue(e.getMessage().contains("race flag value: NOSUCH"), e.getMessage());
+    }
+
+    @Test
+    void anUnresolvableBaseStopsTheLoadEvenWhenAnotherDirectiveSitsBetweenItAndAValidOne() {
+        String body = "name:A\nbase:nosuchbase\nmsgt:SUM_MONSTER\nbase:vampire\ndesc:a\n";
+
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("bad-base-first.txt", body));
+
+        assertTrue(e.getMessage().contains("monster base value: nosuchbase"), e.getMessage());
+    }
+
+    @Test
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
+        // init/run/finish_parse_summon accept an empty file. C's summon_max becomes 1 with one blank
+        // slot; here the list is empty, with no blank slot (the accepted deviation on MonsterRegistry).
+        assertTrue(load("empty.txt", "").items().isEmpty());
+    }
+
+    @Test
+    void aFileOfOnlyCommentsAndBlankLinesLoadsNothingAsInC() throws IOException {
+        assertTrue(load("comments-only.txt", "# a comment\n\n# another\n\n").items().isEmpty());
     }
 
     @Test

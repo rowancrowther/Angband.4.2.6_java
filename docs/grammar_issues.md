@@ -806,6 +806,8 @@ Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
 
 Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
 
+**Status 2026-11-13.** The `default:` line placed after the first `name:` is [<span style="color:#006400">**CLOSED**</span> 26-11-13: accepted deviation, parked for a later version, recorded in `docs/Accepted_Deviations.md` under "Object base". Pinned by `aDefaultLineAfterARecordIsAHardErrorHereWhereCAcceptsIt` and `aDefaultLineInsideARecordIsAHardErrorHereWhereCAcceptsIt` in `ObjectBaseReaderTest`; the first is the renamed pin listed below.] The other departures in this entry were not re-checked in this pass, and the rest of the text below is the state of 2026-10-17.
+
 ### What C does
 
 - `init_parse_object_base` in `obj-init.c` registers `default`, `name`, `graphics`, `break`, `max-stack` and `flags` as
@@ -1266,7 +1268,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `ProjectionGrammar.g4`: a record is a fixed sequence with five mandatory directives, C takes any directives in any order
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-13: rule `projection` in `ProjectionGrammar.g4` is now `code` followed by the other fourteen directives, in any order and any number of times, and only `code:` is required. A repeated directive replaces the earlier one (the last wins) and a left-out one is `null`, as C's zero-filled record holds. `ProjectionAssembler.assemble` reads a `null` `type` as `PT_NONE`, which counts as no element, and numbers every record whether it has a `type:` or not, so a file with a record missing its `type:` stops on the element count as C does. A directive ahead of `code:` is still a syntax error, as C's `PARSE_ERROR_MISSING_RECORD_HEADER`. The pinning tests are `ProjectionReaderTest.aRepeatedDirectiveReplacesTheEarlierOneAsInC`, `theDirectivesOfARecordLoadInAnyOrderAsInC`, `aDirectiveAheadOfCodeIsAHardErrorAsInC`, `aLeftOutDescBlindDescObviousOrColourLoadsAsZeroAsInC`, `aLeftOutTypeStopsTheLoadOnTheElementCountAsInC`, `anUntypedRecordAfterTheElementBlockLoadsAsInC` and `anUntypedElementRecordKeepsItsPositionAndLeavesTheElementCountOneShort`, with `ProjectionGrammarTest.aRecordOfOnlyCodeAndTypeParsesAndTheRestStayNull`, `directivesComeInAnyOrderAndTheLastRepeatWins` and `aDirectiveAheadOfCodeIsAParseError`. The bullets below describe the state before the fix.]
 
 - `init_parse_projection` in `obj-init.c` registers each of the fifteen directives on its own, so `parser_parse` runs them in
   whatever order the file gives. A left-out directive leaves the zero-filled field (`NULL` strings, 0 numbers, message 0,

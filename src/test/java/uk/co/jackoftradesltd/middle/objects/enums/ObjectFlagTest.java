@@ -27,7 +27,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * Unit tests for {@link ObjectFlag}, the port of C's {@code OF_*} list in
  * {@code list-object-flags.h}, and for {@link ObjectFlag#getSustainStatFlag}, the object-flag half
  * of {@code sustain_flag()} in {@code obj-properties.c}, and for {@link ObjectFlag#lookup}, the
- * port of {@code lookup_flag()} in {@code datafile.c} over the {@code obj_flags[]} name table.
+ * stand-in for {@code lookup_flag()} in {@code datafile.c} and {@code code_index_in_array()} in
+ * {@code init.c} over the object flag name table, with the optional {@code OF_} prefix and the
+ * {@code NONE} hit accepted as deviations (261115).
  *
  * <p>The expected table is typed out from the C header, not read back from the enum, so a flag
  * moved, dropped or relabelled in the port fails here. Order is the thing C's header says must
@@ -170,6 +172,15 @@ class ObjectFlagTest {
     }
 
     /**
+     * C's parameter is an {@code int}, so it has no null case; the port's enum parameter throws
+     * on a null argument, as documented on {@link ObjectFlag#getSustainStatFlag}.
+     */
+    @Test
+    void sustainStatFlagOfNullThrows() {
+        assertThrows(NullPointerException.class, () -> ObjectFlag.getSustainStatFlag(null));
+    }
+
+    /**
      * {@code lookup_flag()} in {@code datafile.c} walks {@code obj_flags[]} from index 1 and returns
      * the index of the first {@code streq()} match, so every real name finds the flag at its
      * C index.
@@ -185,12 +196,17 @@ class ObjectFlagTest {
     }
 
     /**
-     * C's {@code obj_flags[]} has {@code "NONE"} at index 0 but {@code lookup_flag()} starts at
-     * {@code FLAG_START} (1), so {@code NONE} never matches and the answer is {@code FLAG_END}.
+     * C's {@code obj_flags[]} has {@code "NONE"} at index 0. {@code lookup_flag()} starts at
+     * {@code FLAG_START} (1) and skips it, but {@code code_index_in_array()}, which reads an
+     * {@code object_property.txt} {@code code:} line, starts at 0 and finds it. The port's
+     * {@link ObjectFlag#lookup} answers {@link ObjectFlag#OF_NONE}, as {@code code_index_in_array()}
+     * does, so a caller that wants {@code lookup_flag()}'s behaviour refuses {@code NONE} itself
+     * ({@code ItemObjectAssembler} does, before it looks the token up).
      */
     @Test
-    void lookupSkipsTheNoneEntryAtIndexZero() {
-        assertNull(ObjectFlag.lookup("OF_NONE"));
+    void lookupFindsTheNoneEntryAtIndexZero() {
+        assertSame(ObjectFlag.OF_NONE, ObjectFlag.lookup("OF_NONE"));
+        assertSame(ObjectFlag.OF_NONE, ObjectFlag.lookup("NONE"));
     }
 
     /**
@@ -204,15 +220,32 @@ class ObjectFlagTest {
     }
 
     /**
-     * {@code streq()} is exact and case sensitive, and the table holds the name without the
-     * {@code OF_} prefix that the port's constants carry, so anything but the full constant name
-     * is no match.
+     * {@link ObjectFlag#lookup} puts {@code OF_} on the front of a name that lacks it, so the
+     * bare name C's {@code obj_flags[]} holds and the port's whole constant name find the same
+     * flag. {@code "NONE"} finds {@code OF_NONE}, as {@code "OF_NONE"} does, and {@code "MAX"}
+     * finds the placeholder, as {@code "OF_MAX"} does.
+     */
+    @Test
+    void lookupAcceptsTheNameWithOrWithoutThePrefix() {
+        assertSame(ObjectFlag.OF_FREE_ACT, ObjectFlag.lookup("FREE_ACT"));
+        assertSame(ObjectFlag.OF_FREE_ACT, ObjectFlag.lookup("OF_FREE_ACT"));
+        assertSame(ObjectFlag.OF_SUST_STR, ObjectFlag.lookup("SUST_STR"));
+        assertSame(ObjectFlag.OF_NONE, ObjectFlag.lookup("NONE"));
+        assertSame(ObjectFlag.OF_MAX, ObjectFlag.lookup("MAX"));
+        assertNull(ObjectFlag.lookup("OF_OF_FREE_ACT"));
+    }
+
+    /**
+     * {@code streq()} is exact and case sensitive, so anything but the name byte for byte is no
+     * match. The port's constants carry an {@code OF_} prefix that C's table does not, and
+     * {@link ObjectFlag#lookup} puts it on when the text lacks it, so the bare C name is also
+     * accepted (see {@link #lookupAcceptsTheNameWithOrWithoutThePrefix}).
      */
     @Test
     void lookupIsExactAndCaseSensitive() {
         assertNull(ObjectFlag.lookup("of_free_act"));
         assertNull(ObjectFlag.lookup("OF_Free_Act"));
-        assertNull(ObjectFlag.lookup("FREE_ACT"));
+        assertNull(ObjectFlag.lookup("Free_Act"));
         assertNull(ObjectFlag.lookup("OF_FREE_ACT "));
         assertNull(ObjectFlag.lookup(" OF_FREE_ACT"));
         assertNull(ObjectFlag.lookup("OF_FREE"));

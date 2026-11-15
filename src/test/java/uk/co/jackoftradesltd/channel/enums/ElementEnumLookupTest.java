@@ -35,12 +35,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code streq}, so a name matches only if every byte is identical. Nothing is trimmed, folded or
  * partially matched.
  *
- * <p>The Java search takes the constant's whole name, {@code ELEM_} included, because
- * {@code ParseUtils.grabElementFlag} and {@code ItemObjectAssembler} put the prefix back on the
- * text they cut from the data file. So the bare C name finds nothing here, and every test below
- * spells the prefix. The Java-only placeholders {@code ELEM_NONE} and {@code ELEM_MAX} are an
- * accepted divergence: C finds nothing for {@code "NONE"} and {@code "MAX"}, lookup finds the
- * placeholder and the caller refuses it.
+ * <p>The Java search matches the constant's whole name, {@code ELEM_} included, and puts the
+ * prefix on a name that lacks it, so the bare C name and the whole constant name find the same
+ * element. The Java-only placeholders {@code ELEM_NONE} and {@code ELEM_MAX} are an accepted
+ * divergence: C finds nothing for {@code "NONE"} and {@code "MAX"}, lookup finds the
+ * placeholder (with or without the prefix) and the caller refuses it.
  *
  * <p>Class ElementEnumLookupTest coded before 261105, commented in full on 261105 (moved from the
  * bare-name form to the whole-constant-name form on 261105).
@@ -106,13 +105,41 @@ class ElementEnumLookupTest {
     }
 
     /**
-     * No trimming, prefixes, suffixes or partial names: {@code streq} wants every byte. The bare C
-     * name is in this list, because the Java search wants the {@code ELEM_} prefix too.
+     * A name without the prefix finds the element it would find with it, as C's bare name does,
+     * and the placeholders likewise.
+     *
+     * <p>Method aNameWithoutThePrefixFindsTheSameConstant coded on 261114.
+     */
+    @ParameterizedTest(name = "[{index}] lookup(\"{0}\") gives {1}")
+    @CsvSource({"ACID, ELEM_ACID", "FIRE, ELEM_FIRE", "HOLY_ORB, ELEM_HOLY_ORB", "ARROW, ELEM_ARROW",
+            "NONE, ELEM_NONE", "MAX, ELEM_MAX"})
+    void aNameWithoutThePrefixFindsTheSameConstant(String name, ElementEnum expected) {
+        assertSame(expected, ElementEnum.lookup(name));
+    }
+
+    /**
+     * The bare form is held to the same {@code streq} standard once the prefix is on: case, spacing
+     * and partial names all fail, and a lower-case {@code elem_} is not a prefix, so it is treated
+     * as part of a bare name.
+     *
+     * <p>Method aBareNameIsStillMatchedExactly coded on 261115.
+     */
+    @ParameterizedTest(name = "[{index}] lookup(\"{0}\") finds nothing")
+    @ValueSource(strings = {"fire", "Fire", "fIRE", "holy_orb", "Holy_Orb", " FIRE", "FIRE ", "\tFIRE",
+            "FIR", "FIREX", "FIRE_", "_FIRE", "HOLY", "ORB", "HOLY ORB", "ACID|ELEC", "ACID ELEC",
+            "elem_fire", "ELEM", "elem_", "PROJ_FIRE", "RES_FIRE", "IGNORE_FIRE"})
+    void aBareNameIsStillMatchedExactly(String name) {
+        assertNull(ElementEnum.lookup(name));
+    }
+
+    /**
+     * No trimming, suffixes or partial names: {@code streq} wants every byte. The bare C name is
+     * not in this list, because the Java search supplies a missing {@code ELEM_} prefix.
      *
      * <p>Method anythingButTheWholeNameFindsNothing coded before 261105, commented in full on 261105.
      */
     @ParameterizedTest(name = "[{index}] lookup(\"{0}\") finds nothing")
-    @ValueSource(strings = {"FIRE", "HOLY_ORB", "NONE", "MAX", " ELEM_FIRE", "ELEM_FIRE ", " ELEM_FIRE ",
+    @ValueSource(strings = {" ELEM_FIRE", "ELEM_FIRE ", " ELEM_FIRE ",
             "\tELEM_FIRE", "ELEM_FIRE\n", "ELEM_FIR", "ELEM_FIREX", "ELEM_FIRE_", "ELEM__FIRE",
             "ELEM_ELEM_FIRE", "ELEM_", "ELEM", "PROJ_FIRE", "RES_FIRE", "ELEM_LIGHTS", "ELEM_LIGH",
             "ELEM_ACID|ELEM_ELEC", "ELEM_ACID ELEM_ELEC", "ELEM_HOLY_ORB ", "ELEM_HOLY ORB",

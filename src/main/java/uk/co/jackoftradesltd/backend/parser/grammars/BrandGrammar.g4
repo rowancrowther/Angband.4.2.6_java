@@ -83,22 +83,29 @@ vulnFlag
         :   VULN_FLAG FLAG { $vFlag = $FLAG.getText(); }
         ;
 
-// One brand record: a fixed sequence of code/name/verb/multiplier/o-multiplier/
-// power/resist-flag, then an OPTIONAL vuln-flag. resist-flag and vuln-flag are
-// independent (no exclusivity rule, unlike Slay's race-flag/base) - only six of
-// ten shipped brands carry a vuln-flag.
+// One brand record: code: first, then any number of the other seven directives in
+// any order, each optional, as C's init_parse_brand registers them as independent
+// handlers. Absent values arrive as null (name and verb) or as an empty list (the
+// other five) and the assembler turns them into C's zeroed fields, so a record of a
+// code alone is legal. name and verb keep the last line written, as C's handlers
+// overwrite their string. multiplier, o-multiplier, power, resist-flag and
+// vuln-flag are kept line by line, in file order: C refuses a bad number or flag
+// when it reads the line, so the assembler must see every one, and it takes the
+// last as the value. resist-flag and vuln-flag are independent (no exclusivity
+// rule, unlike Slay's race-flag/base) - four of the ten shipped brands carry a
+// vuln-flag.
 brand
         returns[BrandParseRecord record]
         @init {
             int lineInit = 0;
             String codeInit = "";
-            String nameInit = "";
-            String multiplierInit = "";
-            String oMultiplierInit = "";
-            String powerInit = "";
-            String verbInit = "";
-            String resistFlagInit = "";
-            String vulnFlagInit = "";
+            String nameInit = null;
+            List<String> multiplierInit = new ArrayList<>();
+            List<String> oMultiplierInit = new ArrayList<>();
+            List<String> powerInit = new ArrayList<>();
+            String verbInit = null;
+            List<String> resistFlagInit = new ArrayList<>();
+            List<String> vulnFlagInit = new ArrayList<>();
         }
         @after {
             $record = new BrandParseRecord(codeInit, nameInit, multiplierInit,
@@ -107,20 +114,21 @@ brand
         }
         :   code { lineInit = $code.lineNo;
                    codeInit = $code.codeStr; }
-            name { nameInit = $name.nameStr; }
-            verb { verbInit = $verb.verbStr; }
-            multiplier { multiplierInit = $multiplier.mult; }
-            oMultiplier { oMultiplierInit = $oMultiplier.oMult; }
-            power { powerInit = $power.powerStr; }
-            resistFlag { resistFlagInit = $resistFlag.rFlag; }
-            (vulnFlag { vulnFlagInit = $vulnFlag.vFlag; })?
+        (   name { nameInit = $name.nameStr; }
+        |   verb { verbInit = $verb.verbStr; }
+        |   multiplier { multiplierInit.add($multiplier.mult); }
+        |   oMultiplier { oMultiplierInit.add($oMultiplier.oMult); }
+        |   power { powerInit.add($power.powerStr); }
+        |   resistFlag { resistFlagInit.add($resistFlag.rFlag); }
+        |   vulnFlag { vulnFlagInit.add($vulnFlag.vFlag); })*
         ;
 
-// Top-level rule: one or more brand records.
+// Top-level rule: any number of brand records, including none, as C accepts an
+// empty file.
 file
         returns[List<BrandParseRecord> records]
         @init {
             $records = new ArrayList<>();
         }
-        :   (brand { $records.add($brand.record); })+ EOF
+        :   (brand { $records.add($brand.record); })* EOF
         ;

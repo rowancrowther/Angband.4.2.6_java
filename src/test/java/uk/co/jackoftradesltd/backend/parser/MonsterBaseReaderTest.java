@@ -52,7 +52,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * global state leaks to other suites.
  *
  * <p>Test class MonsterBaseReaderTest coded before 261105, updated on 261105 for the removal of the
- * soft-error path.
+ * soft-error path, and on 261113 for the unordered directives (Stage 7a) and the blank-and-bar flag
+ * separators (Stage 7d).
  *
  * @author Rowan Crowther
  */
@@ -216,17 +217,6 @@ class MonsterBaseReaderTest {
         assertTrue(e.getMessage().contains("illegal pain value: 99999999999999999999"), e::getMessage);
     }
 
-    // ---- Hard (fail-closed) parse errors ---------------------------------
-
-    @Test
-    void aTemplateMissingItsDescIsAHardError() throws IOException {
-        // monsterBase requires a desc: after the flags; omitting it is a syntax error, which the hard
-        // channel turns into an empty result carrying the error.
-        String noDesc = "name:orc\nglyph:o\npain:3\nflags:ANIMAL\n";
-        assertThrows(ParseCancellationException.class, () -> load("no-desc.txt", noDesc));
-
-    }
-
     // ---- The reader against the upstream monster_base.txt ----------------
 
     /**
@@ -244,6 +234,29 @@ class MonsterBaseReaderTest {
         Field field = MonsterBase.class.getDeclaredField("description");
         field.setAccessible(true);
         return (String) field.get(base);
+    }
+
+    /**
+     * The in-game name a base holds, read by reflection because {@code MonsterBase} has no accessor
+     * for it yet. It is the same text as the description, so a test that reads both is checking that
+     * the two stay equal.
+     *
+     * <p>Function inGameNameOf coded on 261113, commented in full on 261113.
+     */
+    private static String inGameNameOf(MonsterBase base) throws Exception {
+        Field field = MonsterBase.class.getDeclaredField("inGameName");
+        field.setAccessible(true);
+        return (String) field.get(base);
+    }
+
+    /**
+     * The race flags a base holds, as sorted enum names, so a test can compare them without
+     * depending on the order the flags were written in.
+     *
+     * <p>Function flagNamesOf coded on 261113, commented in full on 261113.
+     */
+    private static List<String> flagNamesOf(MonsterBase base) {
+        return base.getFlags().toList().stream().map(Enum::name).sorted().toList();
     }
 
     @Test
@@ -410,38 +423,292 @@ class MonsterBaseReaderTest {
 
     }
 
+    /**
+     * C declares {@code flags} as {@code ?str}, so {@code parse_mon_base_flags} returns
+     * {@code PARSE_ERROR_NONE} for an empty value and the base keeps no flags. A lone blank after the
+     * colon is a value, and {@code strtok(flags, " |")} splits it into no names, with the same result.
+     *
+     * <p>Function anEmptyFlagsValueLoadsWithNoFlagsAsInC coded on 261113, commented in full on
+     * 261113 (renamed and flipped from anEmptyFlagsValueIsAHardErrorHereWhereCAcceptsIt on 261113).
+     */
     @Test
-    void anEmptyFlagsValueIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        // "flags ?str flags" is optional and parse_mon_base_flags returns PARSE_ERROR_NONE when
-        // parser_hasval is false, so C loads this record with no flags.
-        String body = "name:orc\nglyph:o\npain:1\nflags:\ndesc:Orc\n";
-        assertThrows(ParseCancellationException.class, () -> load("empty-flags.txt", body));
+    void anEmptyFlagsValueLoadsWithNoFlagsAsInC() throws IOException {
+        for (String value : List.of("", " ")) {
+            String body = "name:orc\nglyph:o\npain:1\nflags:" + value + "\ndesc:Orc\n";
+            ParseResult<MonsterBase> result = load("empty-flags.txt", body);
 
+            assertEquals(1, result.items().size(), "flags:[" + value + "]");
+            assertTrue(result.items().get(0).getFlags().isEmpty(), "flags:[" + value + "]");
+        }
     }
 
+    /**
+     * {@code parse_mon_base_flags} splits the value with {@code strtok(flags, " |")}, so the
+     * delimiters are a blank or a bar and any run of them counts as one. A blank on its own, several
+     * blanks, a bar with any number of blanks either side, and runs of bars all separate the same two
+     * names, and a bar or blank after the last name adds nothing.
+     *
+     * <p>Function aFlagListSplitOnAnyRunOfBlanksAndBarsLoadsAsInC coded on 261113, commented in full
+     * on 261113 (renamed and flipped from spaceSeparatedFlagsAreAHardErrorHereWhereCSplitsOnSpaceToo
+     * on 261113).
+     */
     @Test
-    void spaceSeparatedFlagsAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        // strtok(flags, " |") in parse_mon_base_flags splits on a space as well as a bar, so C
-        // reads ANIMAL and EVIL here.
-        String body = "name:orc\nglyph:o\npain:1\nflags:ANIMAL EVIL\ndesc:Orc\n";
-        assertThrows(ParseCancellationException.class, () -> load("space-flags.txt", body));
+    void aFlagListSplitOnAnyRunOfBlanksAndBarsLoadsAsInC() throws IOException {
+        for (String separator : List.of(" ", "    ", "|", " | ", "||", " |  ", "  |  ", " | | ",
+                "| |", " |  | ")) {
+            String body = "name:orc\nglyph:o\npain:1\nflags:ANIMAL" + separator + "EVIL\ndesc:Orc\n";
+            ParseResult<MonsterBase> result = load("separators.txt", body);
 
+            assertEquals(List.of("RF_ANIMAL", "RF_EVIL"), flagNamesOf(result.items().get(0)),
+                    "separator [" + separator + "]");
+        }
+        for (String tail : List.of("|", " |", " | ", " ")) {
+            String body = "name:orc\nglyph:o\npain:1\nflags:ANIMAL" + tail + "\ndesc:Orc\n";
+            ParseResult<MonsterBase> result = load("tails.txt", body);
+
+            assertEquals(List.of("RF_ANIMAL"), flagNamesOf(result.items().get(0)),
+                    "tail [" + tail + "]");
+        }
     }
 
+    /**
+     * Each {@code parse_mon_base_*} handler needs only the record header, so C takes {@code pain:}
+     * before {@code glyph:} and any other order.
+     *
+     * <p>Function directivesOutOfOrderLoadAsInC coded on 261113, commented in full on 261113
+     * (renamed and flipped from directivesOutOfOrderAreAHardErrorHereWhereCTakesAnyOrder on 261113).
+     */
     @Test
-    void directivesOutOfOrderAreAHardErrorHereWhereCTakesAnyOrder() throws IOException {
-        // Each parse_mon_base_* handler only needs the record header; C accepts pain: before glyph:.
-        String body = "name:orc\npain:1\nglyph:o\ndesc:Orc\n";
-        assertThrows(ParseCancellationException.class, () -> load("order.txt", body));
+    void directivesOutOfOrderLoadAsInC() throws Exception {
+        ParseResult<MonsterBase> result =
+                load("order.txt", "name:orc\npain:1\nglyph:o\ndesc:Orc\n");
 
+        MonsterBase base = result.items().get(0);
+        assertEquals('o', base.getDefaultMonsterChar());
+        assertEquals(1, painIndexOf(base));
+        assertEquals("Orc", descOf(base));
     }
 
+    /**
+     * C's {@code mem_zalloc} leaves {@code d_char} at 0 when {@code glyph:} is absent, and the load
+     * goes on. Both halves of the port's glyph stay at zero.
+     *
+     * <p>Function aTemplateWithNoGlyphLoadsWithGlyphZeroAsInC coded on 261113, commented in full on
+     * 261113 (renamed and flipped from aTemplateWithNoGlyphIsAHardErrorHereWhereCLeavesTheGlyphZero
+     * on 261113).
+     */
     @Test
-    void aTemplateWithNoGlyphIsAHardErrorHereWhereCLeavesTheGlyphZero() throws IOException {
-        // C's mem_zalloc leaves d_char as 0 when glyph: is absent; the grammar needs the line.
-        String body = "name:orc\npain:1\ndesc:Orc\n";
-        assertThrows(ParseCancellationException.class, () -> load("no-glyph.txt", body));
+    void aTemplateWithNoGlyphLoadsWithGlyphZeroAsInC() throws IOException {
+        ParseResult<MonsterBase> result = load("no-glyph.txt", "name:orc\npain:1\ndesc:Orc\n");
 
+        MonsterBase base = result.items().get(0);
+        assertEquals('\0', base.getDefaultMonsterChar());
+        assertEquals(0, base.getWideMonsterChar());
+    }
+
+    /**
+     * C requires no directive after {@code name:}: {@code parse_mon_base_desc} runs only when a
+     * {@code desc:} line is present, so a base without one keeps the NULL {@code text} that
+     * {@code mem_zalloc} gave it. The port holds {@code null} for the description and for the
+     * in-game name, which C's one {@code text} member fills.
+     *
+     * <p>Function aTemplateWithNoDescLoadsWithANullDescriptionAsInC coded on 261113, commented in
+     * full on 261113 (renamed and flipped from aTemplateMissingItsDescIsAHardError on 261113, then
+     * from aTemplateWithNoDescLoadsWithAnEmptyDescriptionHereWhereCLeavesTheTextNull on 261113 once
+     * the grammar and the assembler passed an absent desc through as null).
+     */
+    @Test
+    void aTemplateWithNoDescLoadsWithANullDescriptionAsInC() throws Exception {
+        ParseResult<MonsterBase> result =
+                load("no-desc.txt", "name:orc\nglyph:o\npain:3\nflags:ANIMAL\n");
+
+        assertEquals(1, result.items().size());
+        assertNull(descOf(result.items().get(0)));
+        assertNull(inGameNameOf(result.items().get(0)));
+    }
+
+    /**
+     * C's {@code parse_mon_base_name} allocates a zeroed record and none of the other handlers is
+     * required, so a base of a name alone is legal: no flags, glyph 0, no pain set and no text.
+     *
+     * <p>Function aNameOnlyRecordLoadsWithEveryOtherFieldAbsentAsInC coded on 261113, commented in
+     * full on 261113, updated on 261113 once an absent desc became null.
+     */
+    @Test
+    void aNameOnlyRecordLoadsWithEveryOtherFieldAbsentAsInC() throws Exception {
+        ParseResult<MonsterBase> result = load("name-only.txt", "name:orc\n");
+
+        assertEquals(1, result.items().size());
+        MonsterBase base = result.items().get(0);
+        assertEquals("orc", base.getCodeName());
+        assertTrue(base.getFlags().isEmpty());
+        assertEquals('\0', base.getDefaultMonsterChar());
+        assertEquals(0, base.getWideMonsterChar());
+        assertEquals(-1, painIndexOf(base), "no pain set");
+        assertNull(descOf(base));
+        assertNull(inGameNameOf(base));
+    }
+
+    /**
+     * {@code parse_mon_base_pain} is the only handler that sets the record's pain set, so a base
+     * with no {@code pain:} line keeps the NULL that {@code mem_zalloc} gave it. The port holds a
+     * {@code null} pain set, and the rest of the record loads as written.
+     *
+     * <p>Function anAbsentPainLeavesThePainSetNullAsInC coded on 261113, commented in full on
+     * 261113.
+     */
+    @Test
+    void anAbsentPainLeavesThePainSetNullAsInC() throws Exception {
+        ParseResult<MonsterBase> result =
+                load("no-pain.txt", "name:orc\nglyph:o\nflags:ANIMAL\ndesc:Orc\n");
+
+        MonsterBase base = result.items().get(0);
+        assertEquals(-1, painIndexOf(base), "no pain set");
+        assertEquals('o', base.getDefaultMonsterChar());
+        assertEquals(List.of("RF_ANIMAL"), flagNamesOf(base));
+        assertEquals("Orc", descOf(base));
+    }
+
+    /**
+     * A file with no record at all loads in C and leaves {@code rb_info} empty: an empty file, or
+     * one of comments and blank lines, gives no bases.
+     *
+     * <p>Function anEmptyOrCommentOnlyFileLoadsNoBasesAsInC coded on 261113, commented in full on
+     * 261113.
+     */
+    @Test
+    void anEmptyOrCommentOnlyFileLoadsNoBasesAsInC() throws IOException {
+        for (String body : List.of("", "\n", "# nothing here\n", "# one\n\n# two\n")) {
+            assertTrue(load("no-records.txt", body).items().isEmpty(), "file [" + body + "]");
+        }
+    }
+
+    /**
+     * {@code parse_mon_base_desc} appends each {@code desc:} line to the record's text with
+     * {@code string_append}, whatever other directive sits between them, so a {@code desc:} split
+     * by a {@code flags:} line still reads {@code abcd}. The {@code flags:} line is kept as well.
+     *
+     * <p>Function aDescSplitByAnotherDirectiveIsJoinedEndToEndAsInC coded on 261113, commented in
+     * full on 261113.
+     */
+    @Test
+    void aDescSplitByAnotherDirectiveIsJoinedEndToEndAsInC() throws Exception {
+        ParseResult<MonsterBase> result = load("split-desc.txt",
+                "name:orc\nglyph:o\npain:1\ndesc:ab\nflags:ANIMAL\ndesc:cd\n");
+
+        MonsterBase base = result.items().get(0);
+        assertEquals("abcd", descOf(base));
+        assertEquals(List.of("RF_ANIMAL"), flagNamesOf(base));
+    }
+
+    /**
+     * {@code parse_mon_base_glyph} and {@code parse_mon_base_pain} each overwrite the field they
+     * set, so the last {@code glyph:} and the last {@code pain:} in a record win.
+     *
+     * <p>Function aRepeatedGlyphOrPainKeepsTheLastAsInC coded on 261113, commented in full on
+     * 261113.
+     */
+    @Test
+    void aRepeatedGlyphOrPainKeepsTheLastAsInC() throws Exception {
+        ParseResult<MonsterBase> result = load("repeats.txt",
+                "name:orc\nglyph:o\nglyph:p\npain:1\npain:2\ndesc:Orc\n");
+
+        MonsterBase base = result.items().get(0);
+        assertEquals('p', base.getDefaultMonsterChar());
+        assertEquals(2, painIndexOf(base));
+    }
+
+    /**
+     * {@code strtok(flags, " |")} skips delimiters at the start of the value as well as between
+     * names, so C reads {@code flags: ANIMAL}, {@code flags:|ANIMAL} and {@code flags: | ANIMAL} as the
+     * one flag. The {@code flags} rule takes a flag, or a run of delimiters with no flag, straight
+     * after {@code flags:}, but not a delimiter followed by a flag, so each of these is a syntax
+     * error. This is an accepted deviation, recorded in {@code docs/Accepted_Deviations.md}.
+     *
+     * <p>Function aBlankOrBarBeforeTheFirstFlagIsAHardErrorHereWhereCSkipsIt coded on 261113,
+     * commented in full on 261113, updated on 261113 once a list of delimiters alone was accepted.
+     */
+    @Test
+    void aBlankOrBarBeforeTheFirstFlagIsAHardErrorHereWhereCSkipsIt() {
+        for (String lead : List.of(" ", "  ", "|", "||", " | ", " | | ")) {
+            String body = "name:orc\nglyph:o\npain:1\nflags:" + lead + "ANIMAL\ndesc:Orc\n";
+            assertThrows(ParseCancellationException.class, () -> load("lead.txt", body),
+                    "lead [" + lead + "]");
+        }
+    }
+
+    /**
+     * A value of nothing but bars and blanks splits into no names in C, as an empty value does, and
+     * the base keeps no flags. The {@code flags} rule takes a run of delimiters with no flag, so each
+     * of these loads with an empty flag set.
+     *
+     * <p>Function aFlagListOfOnlyBarsLoadsWithNoFlagsAsInC coded on 261113, commented in full on
+     * 261113 (renamed and flipped from aFlagListOfOnlyBarsIsAHardErrorHereWhereCReadsNoFlags on
+     * 261113).
+     */
+    @Test
+    void aFlagListOfOnlyBarsLoadsWithNoFlagsAsInC() throws IOException {
+        for (String value : List.of("|", "||", " |", "| ", " | ", " | |", "|  |", "  |  | ")) {
+            String body = "name:orc\nglyph:o\npain:1\nflags:" + value + "\ndesc:Orc\n";
+            ParseResult<MonsterBase> result = load("only-bars.txt", body);
+
+            assertEquals(1, result.items().size(), "value [" + value + "]");
+            assertTrue(result.items().get(0).getFlags().isEmpty(), "value [" + value + "]");
+        }
+    }
+
+    /**
+     * C reads a last line that has no newline after it: {@code file_getl} returns an unterminated
+     * final line of at least one character, and {@code parse_file} hands it to {@code parser_parse}.
+     * The flag list is closed by {@code FLAG_EOL} or by end of file, so a {@code flags:} line at the
+     * very end of the file loads whatever its value, and a value of delimiters alone loads with no
+     * flags.
+     *
+     * <p>Function aFlagsLineWithNoFinalNewlineLoadsAsInC coded on 261113, commented in full on
+     * 261113 (renamed and flipped from aFlagsLineWithNoFinalNewlineIsAHardErrorHereWhereCReadsIt on
+     * 261113).
+     */
+    @Test
+    void aFlagsLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        record Case(String last, List<String> flags) {}
+        for (Case c : List.of(
+                new Case("flags:ANIMAL", List.of("RF_ANIMAL")),
+                new Case("flags:ANIMAL | EVIL", List.of("RF_ANIMAL", "RF_EVIL")),
+                new Case("flags:ANIMAL EVIL", List.of("RF_ANIMAL", "RF_EVIL")),
+                new Case("flags:ANIMAL ", List.of("RF_ANIMAL")),
+                new Case("flags:ANIMAL | |", List.of("RF_ANIMAL")),
+                new Case("flags:", List.of()),
+                new Case("flags: ", List.of()),
+                new Case("flags:|", List.of()),
+                new Case("flags: | |", List.of()))) {
+            String body = "name:orc\nglyph:o\npain:1\n" + c.last();
+            ParseResult<MonsterBase> result = load("flags-eof.txt", body);
+
+            assertEquals(1, result.items().size(), "last line [" + c.last() + "]");
+            assertEquals(c.flags(), flagNamesOf(result.items().get(0)), "last line [" + c.last() + "]");
+        }
+    }
+
+    /**
+     * The other half of {@link #aFlagsLineWithNoFinalNewlineLoadsAsInC}: every other directive loads
+     * as the last line with no newline, as in C. Before the flag list accepted end of file in place
+     * of its newline token, it was the only one refused.
+     *
+     * <p>Function aLastLineOfAnyOtherDirectiveNeedsNoFinalNewlineAsInC coded on 261113, commented
+     * in full on 261113, updated on 261113 once the flag list accepted end of file.
+     */
+    @Test
+    void aLastLineOfAnyOtherDirectiveNeedsNoFinalNewlineAsInC() throws Exception {
+        assertEquals(1, load("eof-name.txt", "name:orc").items().size());
+
+        MonsterBase glyphLast = load("eof-glyph.txt", "name:orc\nglyph:o").items().get(0);
+        assertEquals('o', glyphLast.getDefaultMonsterChar());
+
+        MonsterBase painLast = load("eof-pain.txt", "name:orc\nglyph:o\npain:1").items().get(0);
+        assertEquals(1, painIndexOf(painLast));
+
+        MonsterBase descLast = load("eof-desc.txt", "name:orc\nglyph:o\npain:1\ndesc:Orc").items().get(0);
+        assertEquals("Orc", descOf(descLast));
     }
 
     /**

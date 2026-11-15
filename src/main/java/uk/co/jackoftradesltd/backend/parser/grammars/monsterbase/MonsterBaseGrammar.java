@@ -275,6 +275,7 @@ public class MonsterBaseGrammar extends Parser {
 		public Token flag2;
 		public TerminalNode FLAGS() { return getToken(MonsterBaseGrammar.FLAGS, 0); }
 		public TerminalNode FLAG_EOL() { return getToken(MonsterBaseGrammar.FLAG_EOL, 0); }
+		public TerminalNode EOF() { return getToken(MonsterBaseGrammar.EOF, 0); }
 		public List<TerminalNode> FLAG() { return getTokens(MonsterBaseGrammar.FLAG); }
 		public TerminalNode FLAG(int i) {
 			return getToken(MonsterBaseGrammar.FLAG, i);
@@ -314,32 +315,75 @@ public class MonsterBaseGrammar extends Parser {
 			{
 			setState(26);
 			match(FLAGS);
-			setState(27);
-			((FlagsContext)_localctx).flag1 = match(FLAG);
-
-			                _localctx.raceFlags.add(((FlagsContext)_localctx).flag1.getText());
-			            
-			setState(34);
+			setState(44);
 			_errHandler.sync(this);
-			_la = _input.LA(1);
-			while (_la==FLAG_OR) {
+			switch (_input.LA(1)) {
+			case FLAG_OR:
 				{
-				{
-				setState(29);
-				match(FLAG_OR);
-				setState(30);
-				((FlagsContext)_localctx).flag2 = match(FLAG);
-
-				                _localctx.raceFlags.add(((FlagsContext)_localctx).flag2.getText());
-				            
-				}
-				}
-				setState(36);
+				setState(28); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
+				do {
+					{
+					{
+					setState(27);
+					match(FLAG_OR);
+					}
+					}
+					setState(30); 
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				} while ( _la==FLAG_OR );
+				}
+				break;
+			case FLAG:
+				{
+				setState(32);
+				((FlagsContext)_localctx).flag1 = match(FLAG);
+				 _localctx.raceFlags.add(((FlagsContext)_localctx).flag1.getText()); 
+				setState(41);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				while (_la==FLAG_OR) {
+					{
+					{
+					setState(34);
+					match(FLAG_OR);
+					setState(37);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+					if (_la==FLAG) {
+						{
+						setState(35);
+						((FlagsContext)_localctx).flag2 = match(FLAG);
+						 _localctx.raceFlags.add(((FlagsContext)_localctx).flag2.getText()); 
+						}
+					}
+
+					}
+					}
+					setState(43);
+					_errHandler.sync(this);
+					_la = _input.LA(1);
+				}
+				}
+				break;
+			case EOF:
+			case FLAG_EOL:
+				break;
+			default:
+				break;
 			}
-			setState(37);
-			match(FLAG_EOL);
+			setState(46);
+			_la = _input.LA(1);
+			if ( !(_la==EOF || _la==FLAG_EOL) ) {
+			_errHandler.recoverInline(this);
+			}
+			else {
+				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+				_errHandler.reportMatch(this);
+				consume();
+			}
 			}
 		}
 		catch (RecognitionException re) {
@@ -390,27 +434,33 @@ public class MonsterBaseGrammar extends Parser {
 
 		            StringBuilder sb = new StringBuilder();
 		        
-		int _la;
 		try {
+			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(42); 
+			setState(51); 
 			_errHandler.sync(this);
-			_la = _input.LA(1);
+			_alt = 1;
 			do {
-				{
-				{
-				setState(39);
-				match(DESC);
-				setState(40);
-				((DescContext)_localctx).STRING = match(STRING);
-				 sb.append(((DescContext)_localctx).STRING.getText()); 
+				switch (_alt) {
+				case 1:
+					{
+					{
+					setState(48);
+					match(DESC);
+					setState(49);
+					((DescContext)_localctx).STRING = match(STRING);
+					 sb.append(((DescContext)_localctx).STRING.getText()); 
+					}
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 				}
-				}
-				setState(44); 
+				setState(53); 
 				_errHandler.sync(this);
-				_la = _input.LA(1);
-			} while ( _la==DESC );
+				_alt = getInterpreter().adaptivePredict(_input,4,_ctx);
+			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -439,20 +489,29 @@ public class MonsterBaseGrammar extends Parser {
 		public NameContext name() {
 			return getRuleContext(NameContext.class,0);
 		}
-		public GlyphContext glyph() {
-			return getRuleContext(GlyphContext.class,0);
+		public List<GlyphContext> glyph() {
+			return getRuleContexts(GlyphContext.class);
 		}
-		public PainContext pain() {
-			return getRuleContext(PainContext.class,0);
+		public GlyphContext glyph(int i) {
+			return getRuleContext(GlyphContext.class,i);
 		}
-		public DescContext desc() {
-			return getRuleContext(DescContext.class,0);
+		public List<PainContext> pain() {
+			return getRuleContexts(PainContext.class);
+		}
+		public PainContext pain(int i) {
+			return getRuleContext(PainContext.class,i);
 		}
 		public List<FlagsContext> flags() {
 			return getRuleContexts(FlagsContext.class);
 		}
 		public FlagsContext flags(int i) {
 			return getRuleContext(FlagsContext.class,i);
+		}
+		public List<DescContext> desc() {
+			return getRuleContexts(DescContext.class);
+		}
+		public DescContext desc(int i) {
+			return getRuleContext(DescContext.class,i);
 		}
 		public MonsterBaseContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -481,48 +540,70 @@ public class MonsterBaseGrammar extends Parser {
 		            String glyphInit = "";
 		            String monPainInit = "";
 		            List<String> flagsInit = new ArrayList<>();
-		            String descInit = "";
 		            int lineNo = 0;
+		            StringBuilder descInit = new StringBuilder(); 
 		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(46);
+			setState(55);
 			((MonsterBaseContext)_localctx).name = name();
 			 nameInit = ((MonsterBaseContext)_localctx).name.nameStr;
 			                   lineNo = ((MonsterBaseContext)_localctx).name.lineNo; 
-			setState(48);
-			((MonsterBaseContext)_localctx).glyph = glyph();
-			 glyphInit = ((MonsterBaseContext)_localctx).glyph.glyphChar; 
-			setState(50);
-			((MonsterBaseContext)_localctx).pain = pain();
-			 monPainInit = ((MonsterBaseContext)_localctx).pain.monPain; 
-			setState(57);
+			setState(71);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==FLAGS) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 60L) != 0)) {
 				{
-				{
-				setState(52);
-				((MonsterBaseContext)_localctx).flags = flags();
-
-				                flagsInit.addAll(((MonsterBaseContext)_localctx).flags.raceFlags);
-				            
+				setState(69);
+				_errHandler.sync(this);
+				switch (_input.LA(1)) {
+				case GLYPH:
+					{
+					setState(57);
+					((MonsterBaseContext)_localctx).glyph = glyph();
+					 glyphInit = ((MonsterBaseContext)_localctx).glyph.glyphChar; 
+					}
+					break;
+				case PAIN:
+					{
+					setState(60);
+					((MonsterBaseContext)_localctx).pain = pain();
+					 monPainInit = ((MonsterBaseContext)_localctx).pain.monPain; 
+					}
+					break;
+				case FLAGS:
+					{
+					setState(63);
+					((MonsterBaseContext)_localctx).flags = flags();
+					 flagsInit.addAll(((MonsterBaseContext)_localctx).flags.raceFlags); 
+					}
+					break;
+				case DESC:
+					{
+					setState(66);
+					((MonsterBaseContext)_localctx).desc = desc();
+					 descInit.append(((MonsterBaseContext)_localctx).desc.description); 
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 				}
 				}
-				setState(59);
+				setState(73);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(60);
-			((MonsterBaseContext)_localctx).desc = desc();
-			 descInit = ((MonsterBaseContext)_localctx).desc.description; 
 			}
 			_ctx.stop = _input.LT(-1);
 
-			            ((MonsterBaseContext)_localctx).base =  new MonsterBaseParseRecord(nameInit, descInit, flagsInit,
-			                                    glyphInit, monPainInit, descInit, lineNo);
+			            String descFinal = descInit.toString();
+			            if (descFinal.isEmpty())
+			                descFinal = null;
+			            ((MonsterBaseContext)_localctx).base =  new MonsterBaseParseRecord(nameInit, descFinal, flagsInit,
+			                                    glyphInit, monPainInit, descFinal,
+			                                    lineNo);
 			        
 		}
 		catch (RecognitionException re) {
@@ -576,22 +657,22 @@ public class MonsterBaseGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(66); 
+			setState(79);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==NAME) {
 				{
 				{
-				setState(63);
+				setState(74);
 				((FileContext)_localctx).monsterBase = monsterBase();
 				 _localctx.bases.add(((FileContext)_localctx).monsterBase.base); 
 				}
 				}
-				setState(68); 
+				setState(81);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==NAME );
-			setState(70);
+			}
+			setState(82);
 			match(EOF);
 			}
 		}
@@ -607,48 +688,58 @@ public class MonsterBaseGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000eI\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000eU\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
-		"\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001"+
-		"\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0005\u0003!\b\u0003\n\u0003"+
-		"\f\u0003$\t\u0003\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001"+
-		"\u0004\u0004\u0004+\b\u0004\u000b\u0004\f\u0004,\u0001\u0005\u0001\u0005"+
-		"\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005"+
-		"\u0001\u0005\u0005\u00058\b\u0005\n\u0005\f\u0005;\t\u0005\u0001\u0005"+
-		"\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0004\u0006"+
-		"C\b\u0006\u000b\u0006\f\u0006D\u0001\u0006\u0001\u0006\u0001\u0006\u0000"+
-		"\u0000\u0007\u0000\u0002\u0004\u0006\b\n\f\u0000\u0000E\u0000\u000e\u0001"+
-		"\u0000\u0000\u0000\u0002\u0012\u0001\u0000\u0000\u0000\u0004\u0016\u0001"+
-		"\u0000\u0000\u0000\u0006\u001a\u0001\u0000\u0000\u0000\b*\u0001\u0000"+
-		"\u0000\u0000\n.\u0001\u0000\u0000\u0000\fB\u0001\u0000\u0000\u0000\u000e"+
-		"\u000f\u0005\u0001\u0000\u0000\u000f\u0010\u0005\u000b\u0000\u0000\u0010"+
-		"\u0011\u0006\u0000\uffff\uffff\u0000\u0011\u0001\u0001\u0000\u0000\u0000"+
-		"\u0012\u0013\u0005\u0002\u0000\u0000\u0013\u0014\u0005\n\u0000\u0000\u0014"+
-		"\u0015\u0006\u0001\uffff\uffff\u0000\u0015\u0003\u0001\u0000\u0000\u0000"+
-		"\u0016\u0017\u0005\u0003\u0000\u0000\u0017\u0018\u0005\u0006\u0000\u0000"+
-		"\u0018\u0019\u0006\u0002\uffff\uffff\u0000\u0019\u0005\u0001\u0000\u0000"+
-		"\u0000\u001a\u001b\u0005\u0004\u0000\u0000\u001b\u001c\u0005\f\u0000\u0000"+
-		"\u001c\"\u0006\u0003\uffff\uffff\u0000\u001d\u001e\u0005\r\u0000\u0000"+
-		"\u001e\u001f\u0005\f\u0000\u0000\u001f!\u0006\u0003\uffff\uffff\u0000"+
-		" \u001d\u0001\u0000\u0000\u0000!$\u0001\u0000\u0000\u0000\" \u0001\u0000"+
-		"\u0000\u0000\"#\u0001\u0000\u0000\u0000#%\u0001\u0000\u0000\u0000$\"\u0001"+
-		"\u0000\u0000\u0000%&\u0005\u000e\u0000\u0000&\u0007\u0001\u0000\u0000"+
-		"\u0000\'(\u0005\u0005\u0000\u0000()\u0005\u000b\u0000\u0000)+\u0006\u0004"+
-		"\uffff\uffff\u0000*\'\u0001\u0000\u0000\u0000+,\u0001\u0000\u0000\u0000"+
-		",*\u0001\u0000\u0000\u0000,-\u0001\u0000\u0000\u0000-\t\u0001\u0000\u0000"+
-		"\u0000./\u0003\u0000\u0000\u0000/0\u0006\u0005\uffff\uffff\u000001\u0003"+
-		"\u0002\u0001\u000012\u0006\u0005\uffff\uffff\u000023\u0003\u0004\u0002"+
-		"\u000039\u0006\u0005\uffff\uffff\u000045\u0003\u0006\u0003\u000056\u0006"+
-		"\u0005\uffff\uffff\u000068\u0001\u0000\u0000\u000074\u0001\u0000\u0000"+
-		"\u00008;\u0001\u0000\u0000\u000097\u0001\u0000\u0000\u00009:\u0001\u0000"+
-		"\u0000\u0000:<\u0001\u0000\u0000\u0000;9\u0001\u0000\u0000\u0000<=\u0003"+
-		"\b\u0004\u0000=>\u0006\u0005\uffff\uffff\u0000>\u000b\u0001\u0000\u0000"+
-		"\u0000?@\u0003\n\u0005\u0000@A\u0006\u0006\uffff\uffff\u0000AC\u0001\u0000"+
-		"\u0000\u0000B?\u0001\u0000\u0000\u0000CD\u0001\u0000\u0000\u0000DB\u0001"+
-		"\u0000\u0000\u0000DE\u0001\u0000\u0000\u0000EF\u0001\u0000\u0000\u0000"+
-		"FG\u0005\u0000\u0000\u0001G\r\u0001\u0000\u0000\u0000\u0004\",9D";
+		"\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0004"+
+		"\u0003\u001d\b\u0003\u000b\u0003\f\u0003\u001e\u0001\u0003\u0001\u0003"+
+		"\u0001\u0003\u0001\u0003\u0001\u0003\u0003\u0003&\b\u0003\u0005\u0003"+
+		"(\b\u0003\n\u0003\f\u0003+\t\u0003\u0003\u0003-\b\u0003\u0001\u0003\u0001"+
+		"\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0004\u00044\b\u0004\u000b"+
+		"\u0004\f\u00045\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001"+
+		"\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001"+
+		"\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0005\u0005F\b\u0005\n\u0005"+
+		"\f\u0005I\t\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0005\u0006N\b\u0006"+
+		"\n\u0006\f\u0006Q\t\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0000\u0000"+
+		"\u0007\u0000\u0002\u0004\u0006\b\n\f\u0000\u0001\u0001\u0001\u000e\u000e"+
+		"X\u0000\u000e\u0001\u0000\u0000\u0000\u0002\u0012\u0001\u0000\u0000\u0000"+
+		"\u0004\u0016\u0001\u0000\u0000\u0000\u0006\u001a\u0001\u0000\u0000\u0000"+
+		"\b3\u0001\u0000\u0000\u0000\n7\u0001\u0000\u0000\u0000\fO\u0001\u0000"+
+		"\u0000\u0000\u000e\u000f\u0005\u0001\u0000\u0000\u000f\u0010\u0005\u000b"+
+		"\u0000\u0000\u0010\u0011\u0006\u0000\uffff\uffff\u0000\u0011\u0001\u0001"+
+		"\u0000\u0000\u0000\u0012\u0013\u0005\u0002\u0000\u0000\u0013\u0014\u0005"+
+		"\n\u0000\u0000\u0014\u0015\u0006\u0001\uffff\uffff\u0000\u0015\u0003\u0001"+
+		"\u0000\u0000\u0000\u0016\u0017\u0005\u0003\u0000\u0000\u0017\u0018\u0005"+
+		"\u0006\u0000\u0000\u0018\u0019\u0006\u0002\uffff\uffff\u0000\u0019\u0005"+
+		"\u0001\u0000\u0000\u0000\u001a,\u0005\u0004\u0000\u0000\u001b\u001d\u0005"+
+		"\r\u0000\u0000\u001c\u001b\u0001\u0000\u0000\u0000\u001d\u001e\u0001\u0000"+
+		"\u0000\u0000\u001e\u001c\u0001\u0000\u0000\u0000\u001e\u001f\u0001\u0000"+
+		"\u0000\u0000\u001f-\u0001\u0000\u0000\u0000 !\u0005\f\u0000\u0000!)\u0006"+
+		"\u0003\uffff\uffff\u0000\"%\u0005\r\u0000\u0000#$\u0005\f\u0000\u0000"+
+		"$&\u0006\u0003\uffff\uffff\u0000%#\u0001\u0000\u0000\u0000%&\u0001\u0000"+
+		"\u0000\u0000&(\u0001\u0000\u0000\u0000\'\"\u0001\u0000\u0000\u0000(+\u0001"+
+		"\u0000\u0000\u0000)\'\u0001\u0000\u0000\u0000)*\u0001\u0000\u0000\u0000"+
+		"*-\u0001\u0000\u0000\u0000+)\u0001\u0000\u0000\u0000,\u001c\u0001\u0000"+
+		"\u0000\u0000, \u0001\u0000\u0000\u0000,-\u0001\u0000\u0000\u0000-.\u0001"+
+		"\u0000\u0000\u0000./\u0007\u0000\u0000\u0000/\u0007\u0001\u0000\u0000"+
+		"\u000001\u0005\u0005\u0000\u000012\u0005\u000b\u0000\u000024\u0006\u0004"+
+		"\uffff\uffff\u000030\u0001\u0000\u0000\u000045\u0001\u0000\u0000\u0000"+
+		"53\u0001\u0000\u0000\u000056\u0001\u0000\u0000\u00006\t\u0001\u0000\u0000"+
+		"\u000078\u0003\u0000\u0000\u00008G\u0006\u0005\uffff\uffff\u00009:\u0003"+
+		"\u0002\u0001\u0000:;\u0006\u0005\uffff\uffff\u0000;F\u0001\u0000\u0000"+
+		"\u0000<=\u0003\u0004\u0002\u0000=>\u0006\u0005\uffff\uffff\u0000>F\u0001"+
+		"\u0000\u0000\u0000?@\u0003\u0006\u0003\u0000@A\u0006\u0005\uffff\uffff"+
+		"\u0000AF\u0001\u0000\u0000\u0000BC\u0003\b\u0004\u0000CD\u0006\u0005\uffff"+
+		"\uffff\u0000DF\u0001\u0000\u0000\u0000E9\u0001\u0000\u0000\u0000E<\u0001"+
+		"\u0000\u0000\u0000E?\u0001\u0000\u0000\u0000EB\u0001\u0000\u0000\u0000"+
+		"FI\u0001\u0000\u0000\u0000GE\u0001\u0000\u0000\u0000GH\u0001\u0000\u0000"+
+		"\u0000H\u000b\u0001\u0000\u0000\u0000IG\u0001\u0000\u0000\u0000JK\u0003"+
+		"\n\u0005\u0000KL\u0006\u0006\uffff\uffff\u0000LN\u0001\u0000\u0000\u0000"+
+		"MJ\u0001\u0000\u0000\u0000NQ\u0001\u0000\u0000\u0000OM\u0001\u0000\u0000"+
+		"\u0000OP\u0001\u0000\u0000\u0000PR\u0001\u0000\u0000\u0000QO\u0001\u0000"+
+		"\u0000\u0000RS\u0005\u0000\u0000\u0001S\r\u0001\u0000\u0000\u0000\b\u001e"+
+		"%),5EGO";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

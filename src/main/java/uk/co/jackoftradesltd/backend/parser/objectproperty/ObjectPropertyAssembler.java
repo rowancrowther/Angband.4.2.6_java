@@ -48,22 +48,29 @@ import java.util.*;
  * {@link DataFileParseException} naming the record's line and the file; no record is skipped. The
  * cases are an unrecognized {@code type:},
  * {@code subtype:} or {@code id-type:}, a {@code code:} that names nothing in the table its type
- * selects, a {@code type-mult:} tval that resolves to nothing, a number that
+ * selects, a {@code code:} or a {@code bindui:} on a record with no type, a {@code type-mult:}
+ * tval that resolves to nothing, a number that
  * {@link ParseUtils#parseIntString} cannot read, and a {@code bindui:} aux figure that
  * {@link ParseUtils#isTrue} cannot read.
  *
  * <p>The checks run in a different order from C's, which meets the lines of a record in file
- * order: here the type is checked first, then the subtype and id-type, the code, the two numbers,
- * the {@code type-mult:} lines and last the {@code bindui:} numbers. A record with more than one
- * fault therefore reports a different one first, and the load ends either way.
+ * order: here a {@code bindui:} on a record with no type is checked first, then the type, the
+ * subtype and id-type, the code, the two numbers, the {@code type-mult:} lines and last the
+ * {@code bindui:} numbers. A record with more than one fault therefore reports a different one
+ * first, and the load ends either way.
  *
  * <p><b>Type.</b> The seven tokens are matched exactly as C's {@code streq} chain matches them.
- * C refuses a {@code code:} line that arrives before any {@code type:} line
- * ({@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE}); the grammar makes {@code type:} the second line of
- * every record, so that case cannot reach this class. For the same reason an empty {@code type:}
- * cannot arise from the grammar; the guard in {@link #assemble} refuses it with its own message
- * ("has no type value"), where C would leave the type at {@code OBJ_PROPERTY_NONE} and carry on
- * until a later line failed.
+ * A record with no {@code type:} line loads, as it does in C, where {@code parse_object_property_name}
+ * zero-fills the struct: the type is {@code OBJ_PROPERTY_NONE} and the payload is the NONE
+ * wrapper ({@code OBJ_PROPERTY_NONE} with {@code ELEM_NONE}), which stands for C's index 0 (see
+ * {@link ObjectProperty} for why nothing ever looks it up).
+ *
+ * <p>C refuses a {@code code:} or {@code bindui:} line that arrives before any {@code type:} line
+ * ({@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE}). The parse record keeps no line order, so this class
+ * sees only the record's final type. A {@code code:} or {@code bindui:} on a record with no type
+ * at all ends the load, with "an illegal property type value" for the code and "a bindui and no
+ * type" for the binding. One that comes before a later {@code type:} line loads, where C refuses it.
+ * This difference is not yet recorded in {@code docs/Accepted_Deviations.md}.
  *
  * <p><b>Subtype and id-type.</b> C stores both on whatever kind of property the record is, and
  * only {@code flag} records carry them in the shipped data. This class does the same: it does
@@ -85,7 +92,15 @@ import java.util.*;
  * so {@code type:flag} accepts {@code code:NONE} and {@code code:MAX}. The other two tables hold
  * only real entries, so {@code NONE} and {@code MAX} on a stat, a modifier or an element end the
  * load. An absent {@code code:} line gives index 0 of the table, which is what C's zeroed
- * {@code index} reads as: {@code OF_NONE}, {@code OM_STR} or {@code ELEM_ACID}.
+ * {@code index} reads as: {@code OF_NONE}, {@code OM_STR} or {@code ELEM_ACID}, or the NONE wrapper
+ * when the record has no type.
+ *
+ * <p>C resolves a {@code code:} line against the table the type holds when the line is read, and a
+ * later {@code type:} line only overwrites the type, so {@code type:stat}, {@code code:STR},
+ * {@code type:flag} loads in C as a flag with index 0 ({@code STR} is entry 0 of {@code obj_mods},
+ * and entry 0 of {@code obj_flags} is {@code NONE}). This class resolves the code once, against the
+ * final type, looks {@code STR} up as a flag and ends the load. Not yet recorded in
+ * {@code docs/Accepted_Deviations.md}.
  *
  * <p><b>Numbers.</b> {@link ParseUtils#parseIntString} reads {@code power:}, {@code mult:} and
  * each {@code type-mult:} figure as {@code parser_getint} does, and an absent line gives 0, the
@@ -119,7 +134,8 @@ import java.util.*;
  * line, so a record that repeats the directive keeps only the last, where C binds every line; no
  * shipped record repeats it. C also binds with the {@code index} the property holds when the {@code bindui:} line is
  * read, so a line above {@code code:} would bind index 0; this class always uses the final
- * {@code code:}. No shipped record puts {@code bindui:} above {@code code:}.
+ * {@code code:}. No shipped record puts {@code bindui:} above {@code code:}. C refuses the line
+ * outright while the type is still 0; see the Type paragraph for how far this class matches that.
  *
  * <p><b>The result.</b> The list is in file order and holds only real records. C's
  * {@code finish_parse_object_property} stores them from index 1 of {@code obj_properties}, leaves
@@ -127,9 +143,10 @@ import java.util.*;
  * deviation (decided 261009, "for the time being"): the list here is base 0, has no blank slot,
  * and its size is the record count.
  *
- * <p>Class ObjectPropertyAssembler coded before 260915, commented in full on 261107 (updated on
+ * <p>Class ObjectPropertyAssembler coded before 260915, commented in full on 261113 (updated on
  * 261105 for the removal of the soft-error path; aux reading and the list of fatal cases
- * completed 261107; subtype and id-type token lists added 261107).
+ * completed 261107; subtype and id-type token lists added 261107; type-less records, the
+ * bindui check and the code-resolution difference added 261113).
  *
  * @author Rowan Crowther
  */
@@ -152,18 +169,21 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
      * the load with a {@link DataFileParseException} (see the class comment for the cases and for
      * every place the result differs from C).
      *
-     * <p>The properties come back in file order, one per record, with nothing appended. Where the
+     * <p>The properties come back in file order, one per record, with nothing appended. A record
+     * with no {@code type:} line comes back as an {@code OBJ_PROPERTY_NONE} property with the NONE
+     * wrapper as its payload, unless it has a {@code bindui:} line, which ends the load. Where the
      * data file gives no {@code adjective:}, {@code neg-adjective:}, {@code msg:} or {@code desc:}
      * line the property holds the empty string, where C leaves a {@code NULL} pointer.
      *
-     * <p>Function assemble coded before 260915, commented in full on 261107 (aux reading added
-     * 261107).
+     * <p>Function assemble coded before 260915, commented in full on 261113 (aux reading added
+     * 261107; type-less records and the bindui check added 261113).
      *
-     * @param records  the raw records extracted by the grammar, in file order
+     * @param records  the raw records extracted by the grammar, in file order; none may be {@code null}
      * @param filename the file the records came from, named in the message of each failure
-     * @return the resolved properties, in file order
+     * @return the resolved properties, in file order; empty if there are no records
      * @throws DataFileParseException if a type, subtype, id-type, code, tval, number or aux figure
-     *                                cannot be resolved
+     *                                cannot be resolved, or a record has a {@code code:} or a
+     *                                {@code bindui:} and no type
      */
     @Override
     public List<ObjectProperty> assemble(@NotNull List<ObjectPropertyParseRecord> records,
@@ -172,13 +192,25 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
 
         for (ObjectPropertyParseRecord record : records) {
             int line = record.line();
+            
+            // C's parse_object_property_bindui returns PARSE_ERROR_MISSING_OBJ_PROP_TYPE while the
+            // type is 0. This reads the finished record, so a type: line that arrives after the
+            // bindui: still satisfies it (see the class comment).
+            if (!record.bindui().isEmpty() && record.type().isEmpty()) {
+                String msg = "Object property starting at line: " + line + " of file: " + filename + " has " +
+                        "a bindui and no type";
+                logger.fatal(msg);
+                throw new DataFileParseException(msg);                
+            }
 
             // type: selects both the property's category and the table its code resolves
-            // against, so it resolves first. The grammar makes type the second line of every
-            // record, so C's PARSE_ERROR_MISSING_OBJ_PROP_TYPE (code before type) cannot arise.
-            // An unrecognized type ends the load, as C's PARSE_ERROR_INVALID_PROPERTY does.
+            // against, so it resolves first. An absent type stays OBJ_PROPERTY_NONE, C's zero, and
+            // the record loads. The record keeps no line order, so C's
+            // PARSE_ERROR_MISSING_OBJ_PROP_TYPE (code or bindui before type) is only caught when
+            // the record has no type at all. An unrecognized type ends the load, as C's
+            // PARSE_ERROR_INVALID_PROPERTY does.
             String type = record.type();
-            ObjPropertyType objPropertyType;
+            ObjPropertyType objPropertyType = ObjPropertyType.OBJ_PROPERTY_NONE;
             if (!type.isEmpty()) {
                 objPropertyType = ObjPropertyType.fromValue(type);
                 if (objPropertyType == null) {
@@ -187,20 +219,15 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
                     logger.fatal(msg);
                     throw new DataFileParseException(msg);
                 }
-            } else {
-                String msg = "Object property starting at line: " + line + " of file: " + filename + " has " +
-                        "no type value";
-                logger.fatal(msg);
-                throw new DataFileParseException(msg);
             }
 
             // subtype: C stores it on whatever the property's type is, so it is not rejected on a
             // non-flag. An empty token resolves to OFT_NONE (the no-subtype case), so
-            // getFlagTypeFromSubtype returns null only for a genuinely unrecognized token, which
+            // lookupFromSubtype returns null only for a genuinely unrecognized token, which
             // ends the load as C's PARSE_ERROR_INVALID_SUBTYPE does. id-type below is the same,
             // against PARSE_ERROR_INVALID_ID_TYPE.
             String subtype = record.subtype();
-            ObjectFlagType flagSubtype = ObjectFlagType.getFlagTypeFromSubtype(subtype);
+            ObjectFlagType flagSubtype = ObjectFlagType.lookupFromSubtype(subtype);
             if (flagSubtype == null) {
                 String msg = "Object property starting at line: " + line + " of file: " + filename + " has " +
                         "an illegal subtype value: " + subtype;
@@ -220,9 +247,12 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
             // the same code string can mean different things under different types (e.g. LIGHT
             // is a modifier or an element). Resolved unconditionally here, not in the bindui
             // block, so records with no bindui still get an index (mirrors C's code handler).
-            // An absent code takes index 0 of the table, as C's zeroed index does. A name in no
-            // table ends the load (PARSE_ERROR_INVALID_OBJ_PROP_CODE); NONE and MAX are valid for
-            // a flag only, because C's obj_flags holds both and its other two tables neither.
+            // An absent code takes index 0 of the table, as C's zeroed index does, and a record
+            // with no type gets the NONE wrapper. A code on a record with no type reaches the
+            // default arm below and ends the load (C: PARSE_ERROR_MISSING_OBJ_PROP_TYPE). A name
+            // in no table ends the load (PARSE_ERROR_INVALID_OBJ_PROP_CODE); NONE and MAX are
+            // valid for a flag only, because C's obj_flags holds both and its other two tables
+            // neither.
             ObjectPropertyTypeWrapper index;
             String code = record.code();
             if (code.isEmpty()) {
@@ -231,6 +261,7 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
                     case OBJ_PROPERTY_IGNORE, OBJ_PROPERTY_RESIST, OBJ_PROPERTY_VULN, OBJ_PROPERTY_IMM
                             -> new ObjectPropertyTypeWrapper(objPropertyType, ElementEnum.ELEM_ACID);
                     case OBJ_PROPERTY_MOD, OBJ_PROPERTY_STAT -> new ObjectPropertyTypeWrapper(objPropertyType, ObjectModifier.OM_STR);
+                    case OBJ_PROPERTY_NONE -> new ObjectPropertyTypeWrapper(objPropertyType, ElementEnum.ELEM_NONE);
                     default -> null;
                 };
                 if (index == null) {
@@ -311,7 +342,8 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
             // keeps an empty list rather than a binding to nothing (C only pushes a bound
             // property when the directive is present). The list shape allows more than one bind
             // as the file format permits, but the parse record carries a single bindui line, so
-            // a repeated directive keeps only the last (see the class comment).
+            // a repeated directive keeps only the last (see the class comment). A bindui on a
+            // record with no type has already ended the load, above.
             List<ObjectProperty.UIBinding> boundEntries = new ArrayList<>();
             if (!record.bindui().isEmpty()) {
                 // aux is the mandatory second param; C treats any non-zero value as the aux flag.

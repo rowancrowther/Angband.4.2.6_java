@@ -44,8 +44,14 @@ import java.util.Arrays;
  * indexes {@code obj_flags}, and {@code IGNORE}/{@code RESIST}/{@code VULN}/
  * {@code IMM} all index {@code element_names}.
  *
+ * <p>Two lookups exist, and they differ on purpose. {@link #fromValue} is the data-file
+ * path: it takes a {@code type:} token and refuses {@code NONE} and {@code MAX}.
+ * {@link #lookup} is a Java-only helper with no C counterpart: it takes a constant's
+ * own name and, being a plain name match, does resolve {@code NONE} and {@code MAX}.
+ *
  * <p>Enum {@code ObjPropertyType} coded before 261009, updated on 261009 so that
- * {@code NONE} and {@code MAX} stop resolving, commented in full on 261009.
+ * {@code NONE} and {@code MAX} stop resolving, {@code lookup} added by 261115,
+ * commented in full on 261115.
  *
  * @author Rowan Crowther
  */
@@ -53,10 +59,16 @@ public enum ObjPropertyType {
     /**
      * C's {@code OBJ_PROPERTY_NONE}, the zero value a property holds before any
      * {@code type:} line has been read. Not a data-file token: {@link #fromValue}
-     * returns {@code null} for it, and a record that never sets a type is reported
-     * by the assembler as having no type (C's {@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE}).
+     * returns {@code null} for it.
      *
-     * <p>Constant {@code OBJ_PROPERTY_NONE} coded before 261009, commented in full on 261009.
+     * <p>A record that never sets a type keeps this value and loads, as it does in C, where
+     * {@code parse_object_property_name} zero-fills the struct. The assembler assigns the
+     * constant itself when the record's type is absent, without calling {@link #fromValue},
+     * and pairs it with the NONE {@code ObjectPropertyTypeWrapper}. A {@code code:} or
+     * {@code bindui:} on such a record ends the load, as C's
+     * {@code PARSE_ERROR_MISSING_OBJ_PROP_TYPE} does.
+     *
+     * <p>Constant {@code OBJ_PROPERTY_NONE} coded before 261009, commented in full on 261113.
      */
     OBJ_PROPERTY_NONE(""),
     /**
@@ -116,11 +128,12 @@ public enum ObjPropertyType {
     OBJ_PROPERTY_MAX("max");
 
     /**
-     * Logs a rejected {@code type:} token from {@link #fromValue}. The assembler also
-     * appends its own message to the caller's error list, so a bad token is reported
-     * in both places.
+     * Logs a rejected {@code type:} token from {@link #fromValue}. The log line is
+     * diagnostic only: the caller (the object-property assembler) is what throws
+     * {@code DataFileParseException} and ends the load when {@code fromValue} returns
+     * {@code null}. {@link #lookup} never logs.
      *
-     * <p>Field {@code logger} coded on 261009, commented in full on 261009.
+     * <p>Field {@code logger} coded on 261009, commented in full on 261115.
      */
     private final static Logger logger = LogManager.getLogger(ObjPropertyType.class);
 
@@ -178,6 +191,41 @@ public enum ObjPropertyType {
         }
         
         return type;
+    }
+
+    /**
+     * Resolve a constant's own name to the constant. Java-only: C has no counterpart, as it
+     * indexes {@code enum obj_property_type} directly and its one string-to-type path is
+     * {@code parse_object_property_type} ({@code obj-init.c}), which {@link #fromValue}
+     * ports.
+     *
+     * <p>The name may be given in full ({@code "OBJ_PROPERTY_STAT"}) or without its
+     * {@code OBJ_PROPERTY_} prefix ({@code "STAT"}); both return
+     * {@code OBJ_PROPERTY_STAT}. Matching is case-sensitive and exact, so {@code "stat"},
+     * which is the data-file token and not a name, returns {@code null}, as does any
+     * other unknown string.
+     *
+     * <p>Unlike {@link #fromValue}, this is a plain name match: {@code "NONE"} and
+     * {@code "MAX"} resolve to {@code OBJ_PROPERTY_NONE} and {@code OBJ_PROPERTY_MAX}.
+     * It does not log a miss. A {@code null} argument returns {@code null}, as
+     * {@link #fromValue} does for a {@code null} token.
+     *
+     * <p>Function lookup coded on 261115, commented in full on 261115.
+     *
+     * @param type the constant's name, with or without the {@code OBJ_PROPERTY_} prefix
+     * @return the matching constant, or {@code null} if no constant has that name or the
+     * argument is {@code null}
+     */
+    public static ObjPropertyType lookup(String type) {
+        if (type == null) return null;
+        
+        String searchString;
+        if (!type.startsWith("OBJ_PROPERTY_")) searchString = "OBJ_PROPERTY_" + type;
+        else searchString = type;
+        
+        return Arrays.stream(ObjPropertyType.values())
+                .filter(op -> op.name().equals(searchString))
+                .findFirst().orElse(null);
     }
 
     /**

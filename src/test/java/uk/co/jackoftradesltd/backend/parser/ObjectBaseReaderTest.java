@@ -63,8 +63,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * will need to change with the fix recorded in {@code docs/grammar_issues.md} or
  * {@code docs/Assembler_Issues.md}.
  *
- * <p>Every synthetic fixture opens with {@link #DEFAULTS}, the {@code default:} lines the
- * {@code file} rule requires, except the tests about those lines themselves.
+ * <p>Every synthetic fixture opens with {@link #DEFAULTS}, the two {@code default:} lines, so that
+ * the break chance and maximum stack the records inherit are known. The {@code file} rule accepts
+ * those lines but does not require them. The tests about the lines themselves are the exception.
  *
  * @author Rowan Crowther
  */
@@ -73,7 +74,8 @@ class ObjectBaseReaderTest {
     private static final String REAL_FILE = "lib/gamedata/object_base.txt";
 
     /**
-     * The two file-wide defaults the {@code file} rule requires ({@code (default_value)+}).
+     * The two file-wide defaults most fixtures open with. The {@code file} rule takes any number of
+     * {@code default:} lines ({@code (default_value)*}), so a file may leave them out.
      */
     private static final String DEFAULTS = "default:break-chance:10\ndefault:max-stack:40\n";
 
@@ -429,7 +431,9 @@ class ObjectBaseReaderTest {
     /** A syntax error ends the load on both entry points; {@code parse} no longer hides it. */
     @Test
     void aSyntaxErrorEndsTheLoadOnBothEntryPoints() throws IOException {
-        String file = tempFile("syntax.txt", DEFAULTS + "name:sword:S~\nflags:SHOW_DICE\n");
+        // A record directive before any name: is a syntax error here and in C
+        // (PARSE_ERROR_MISSING_RECORD_HEADER), so this stays one however the grammar loosens.
+        String file = tempFile("syntax.txt", DEFAULTS + "break:5\nname:sword:S~\ngraphics:white\n");
 
         assertThrows(ParseCancellationException.class, () -> new ObjectBaseReader().parseWithResults(file));
 
@@ -601,36 +605,91 @@ class ObjectBaseReaderTest {
     }
 
     /**
-     * C: a {@code default:} line anywhere, affecting only the records after it. The grammar takes
-     * them only before the first {@code name:}.
+     * C: a {@code default:} line anywhere, affecting only the records after it, so here {@code A}
+     * would keep the break chance of 10 and {@code B} would take 99. The grammar takes the
+     * {@code default:} lines only before the first {@code name:}, so this ends the load.
+     *
+     * <p>Accepted deviation ("A {@code default:} line after the first {@code name:} ends the load,
+     * where C applies it to the records that follow" under "Object base" in
+     * {@code docs/Accepted_Deviations.md}), parked for a later version. When the {@code file} rule
+     * takes the line, this goes red: flip it to read {@code A} as 10 and {@code B} as 99 and
+     * remove the entry.
      */
     @Test
-    void aDefaultLineAfterARecordIsAHardErrorWhereCAcceptsIt() throws IOException {
+    void aDefaultLineAfterARecordIsAHardErrorHereWhereCAcceptsIt() throws IOException {
         assertHardError("late-default.txt", DEFAULTS + "name:sword:A~\ngraphics:white\ndefault:break-chance:99\nname:shot:B~\ngraphics:red\n");
     }
 
-    /** C: a file with no record at all leaves {@code kb_info} zeroed. The grammar needs one. */
+    /**
+     * C: a {@code default:} line between a {@code name:} and the record's own directives changes
+     * nothing for that record, whose defaults were copied at {@code name:}, and the
+     * {@code graphics:} line after it still belongs to the same record. The {@code object_base}
+     * rule has no {@code default:} alternative, so this ends the load.
+     *
+     * <p>Accepted deviation, the second shape of the entry named on
+     * {@link #aDefaultLineAfterARecordIsAHardErrorHereWhereCAcceptsIt}. When the rule takes the
+     * line, this goes red: flip it to expect a white record with a break chance of 10.
+     */
     @Test
-    void aFileWithNoRecordIsAHardErrorWhereCAcceptsIt() throws IOException {
-        assertHardError("no-records.txt", DEFAULTS);
+    void aDefaultLineInsideARecordIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError("inner-default.txt", DEFAULTS + "name:sword:A~\ndefault:break-chance:99\ngraphics:white\n");
     }
 
-    /** C: {@code graphics:} is optional, and a record without one keeps colour 0. */
+    /**
+     * C: a file with no record at all leaves {@code kb_info} zeroed, so nothing is declared and only
+     * the synthetic {@code TV_NONE} base the assembler appends is left.
+     */
     @Test
-    void aRecordWithNoGraphicsLineIsAHardErrorWhereCAcceptsIt() throws IOException {
-        assertHardError("no-graphics.txt", DEFAULTS + "name:sword:S~\n");
+    void aFileWithNoRecordLoadsOnlyTheSyntheticNoneBaseAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("no-records.txt", DEFAULTS);
+
+        assertEquals(0, declared(result).size(), "no record, so nothing is declared");
+        assertEquals(1, result.items().size(), "only the synthetic TV_NONE base is left");
+        assertEquals(TValue.TV_NONE, result.items().get(0).gettVal());
     }
 
-    /** C: the record directives may come in any order. The grammar fixes it. */
+    /**
+     * C: {@code graphics:} is optional, and a record without one keeps colour 0, which is
+     * {@link ColourEnum#COLOUR_DARK}. The file-wide defaults still fill the break chance and stack.
+     */
     @Test
-    void maxStackBeforeBreakIsAHardErrorWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError("order.txt", DEFAULTS + "name:sword:S~\ngraphics:white\nmax-stack:5\nbreak:3\n");
+    void aRecordWithNoGraphicsLineLoadsWithDarkAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("no-graphics.txt", DEFAULTS + "name:sword:S~\n");
+
+        assertEquals(1, declared(result).size());
+        ObjectBase base = declared(result).get(0);
+        assertEquals(TValue.TV_SWORD, base.gettVal());
+        assertEquals(ColourEnum.COLOUR_DARK, base.getAttr(), "no graphics: line, so colour is C's zero");
+        assertEquals(10, base.getBreakPerc(), "the file-wide break-chance default");
+        assertEquals(40, base.getMaxStack(), "the file-wide max-stack default");
     }
 
-    /** C: a repeated {@code break:} overwrites the first. The grammar allows it once. */
+    /** C: the record directives may come in any order, so {@code max-stack:} may precede {@code break:}. */
     @Test
-    void aRepeatedBreakLineIsAHardErrorWhereCLetsItOverwrite() throws IOException {
-        assertHardError("repeat-break.txt", DEFAULTS + "name:sword:S~\ngraphics:white\nbreak:3\nbreak:4\n");
+    void maxStackBeforeBreakLoadsAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("order.txt",
+                DEFAULTS + "name:sword:S~\ngraphics:white\nmax-stack:5\nbreak:3\n");
+
+        assertEquals(1, declared(result).size());
+        ObjectBase base = declared(result).get(0);
+        assertEquals(3, base.getBreakPerc());
+        assertEquals(5, base.getMaxStack());
+        assertEquals(ColourEnum.COLOUR_WHITE, base.getAttr());
+    }
+
+    /**
+     * C: a repeated {@code break:} overwrites the first, so the last one wins. The other default,
+     * the max stack, is untouched.
+     */
+    @Test
+    void aRepeatedBreakLineOverwritesAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("repeat-break.txt",
+                DEFAULTS + "name:sword:S~\ngraphics:white\nbreak:3\nbreak:4\n");
+
+        assertEquals(1, declared(result).size());
+        ObjectBase base = declared(result).get(0);
+        assertEquals(4, base.getBreakPerc(), "the later break: line replaces the earlier");
+        assertEquals(40, base.getMaxStack(), "max stack was not given, so it keeps the file default");
     }
 
     /** C: flag names are separated by any run of spaces and pipes. The grammar needs a pipe. */

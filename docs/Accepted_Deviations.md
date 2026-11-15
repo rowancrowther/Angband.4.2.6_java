@@ -74,6 +74,25 @@ recorded here as the summary states them; fill in the detail when you next touch
   record, the grammar, the assembler and the `MonsterBase` constructor.
 - **Accepted:** 2026-10-10. Marked in the `MonsterBase` and `MonsterBaseParseRecord` Javadoc.
 
+### A blank or bar before the first flag on a `flags:` line
+
+- **Java:** the `flags` rule in `MonsterBaseGrammar.g4`, with `FLAG_OR` in `MonsterBaseLexer.g4`. **C:**
+  `parse_mon_base_flags` (`mon-init.c`), which splits the value with `strtok(flags, " |")`.
+- **Differs:** `strtok` skips delimiters at the start of the value as well as between names, so C reads `flags: ANIMAL`,
+  `flags:| ANIMAL` and `flags: | ANIMAL` as the one flag. The Java rule takes a flag or the end of the line straight
+  after `flags:`, and the lexer makes the leading blank or bar a `FLAG_OR`, so each of these is a syntax error and the
+  load stops.
+- **Reach:** none from shipped data, where every `flags:` value starts with its first name. A hand-edited file with a
+  blank after the colon. A blank or bar elsewhere in the list, and after the last name, loads as in C.
+- **Revisit:** if the `flags` rule is ever changed to take a `FLAG_OR` straight after `FLAGS`. Then the pin below goes
+  red, which is the prompt to take this entry out. The same decision applies to the other flag lists when they are
+  brought to the same shape (Stage 7d of `docs/Issue_Approach_Order.md`).
+- **Pinned by:** `aBlankOrBarBeforeTheFirstFlagIsAHardErrorHereWhereCSkipsIt` in `MonsterBaseReaderTest`.
+- **Accepted:** 2026-11-13, decided with you. A list of bars and blanks with no name (`flags:|`) is not part of this
+  deviation: the rule takes it as no flags, as C does, and `aFlagListOfOnlyBarsLoadsWithNoFlagsAsInC` pins that. A
+  `flags:` line with no final newline is not part of it either: the rule ends in `(FLAG_EOL | EOF)`, and
+  `aFlagsLineWithNoFinalNewlineLoadsAsInC` pins it (Stage 7d of `docs/Issue_Approach_Order.md`).
+
 ## Terrain
 
 ### An unknown terrain colour is rejected, where C reads it as white
@@ -677,6 +696,37 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-26, during the `MonsterAssembler` port pass. Marked in the `MonsterAssembler` comment above the
   spell power block. Not pinned by a test yet.
 
+## Object base
+
+### A `default:` line after the first `name:` ends the load, where C applies it to the records that follow
+
+- **Java:** the `file` rule in `ObjectBaseGrammar.g4`, which takes its `default:` lines first and the records after
+  them, and the `object_base` rule, whose directive loop has no `default:` alternative. **C:**
+  `parse_object_base_defaults` and `parse_object_base_name` (`obj-init.c`).
+- **Differs:** C's `default:` handler writes one field of the parser's running defaults and needs no record to exist,
+  and `parse_object_base_name` copies those defaults into each record as it starts it. So a `default:` line anywhere
+  changes only the records whose `name:` comes after it. Two shapes follow from that, both legal in C and both a
+  syntax error at the `default:` token in Java, which stops the load:
+  - **Between records.** `default:break-chance:99` after the `sword` record and before the `shot` record leaves `sword`
+    on the earlier defaults and gives `shot` a break chance of 99.
+  - **Inside a record.** `default:break-chance:99` between `name:sword` and its `graphics:` line changes nothing for
+    `sword`, whose defaults were copied at `name:`. The `graphics:` line still belongs to `sword`, because C's current
+    record has not changed.
+- **Why:** the running defaults in the `file` rule are already folded into each record in file order, so the
+  between-records shape is only a change to the loop shape. The inside shape is harder: the fold would have to read the
+  defaults as they stood at the `name:`, where it reads them now when the record ends. Neither was judged worth doing
+  now.
+- **Reach:** none from shipped data. `object_base.txt` has both of its `default:` lines (`break-chance` and
+  `max-stack`) before the first `name:`. It takes a hand-edited file that moves one.
+- **Revisit:** planned for a later version. The between-records shape first, as one loop of `default_value` and
+  `object_base` alternatives in the `file` rule with the fold unchanged, then the inside shape. When either lands its
+  pin goes red, which is the prompt to take that half of this entry out.
+- **Pinned by:** `aDefaultLineAfterARecordIsAHardErrorHereWhereCAcceptsIt` (between records) and
+  `aDefaultLineInsideARecordIsAHardErrorHereWhereCAcceptsIt` (inside a record), both in `ObjectBaseReaderTest`. The
+  `default:` lines before the first record load as in C and are pinned by
+  `aFileWithNoDefaultLineLoadsWithZeroDefaultsAsInC` and `aFileWithOnlyOneDefaultLineLeavesTheOtherAtZeroAsInC`.
+- **Accepted:** 2026-11-13, decided with you, to be worked on in a later version. Listed in `docs/Parked.md`.
+
 ## Object property
 
 ### A `type-mult:` tval written twice under two spellings can keep the earlier line, where C keeps the later one
@@ -698,6 +748,77 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-28, during the `ObjectPropertyAssembler` port pass. Marked in the `ObjectPropertyAssembler`
   comment above the `type-mult:` loop. Pinned by
   `ObjectPropertyAssemblerTest.aRepeatedSpellingAfterAnAliasKeepsTheAliasHereWhereCKeepsTheLastLine`.
+
+### A `type:` line that follows a `code:` line is refused when the carried index is past the new type's table, where C loads it
+
+- **Java:** `ObjectProperty2Assembler.parseType` and `parsePrevCode`. **C:** `parse_object_property_type` and
+  `parse_object_property_code` (`obj-init.c`).
+- **Differs:** C's `type:` handler writes only `prop->type`. It never looks at `prop->index`, so a `code:` line followed
+  by a `type:` line in a different table leaves the same integer index and reads it through the new table. A `code:` is
+  resolved only at its own line, against the type current then, and a bare `type:` line with no `code:` leaves the zeroed
+  index. Java holds the enum constant rather than an integer, so on every `type:` line it rebuilds the payload from the
+  carried C index (`prevCode`) in the new type's table. `prevCode` is the C index, not the Java ordinal: for
+  `ObjectModifier` and `ElementEnum` it is the ordinal minus 1, because those enums carry an `OM_NONE`/`ELEM_NONE`
+  placeholder at ordinal 0 that C's tables do not have, and for `ObjectFlag` it is the ordinal, because `OF_NONE` lines
+  up with C's leading `"NONE"`. That agrees with C whenever the index fits: stat and mod share `obj_mods`, the four
+  element types share `element_names`, a mod or element index fits in the larger flag table, and retyping away and back
+  restores the original code. It differs when the index is past the new table. A flag index of 17 or more retyped to
+  `stat`/`mod`, a flag index of 26 or more retyped to an element type, and an element index of 17 or more retyped to
+  `stat`/`mod`, are refused with a `DataFileParseException` that names the line and says the value is out of range.
+  C stores the index and the record loads.
+- **Also accepted:** the last slot is the one C's table ends on, not the last real entry. `obj_mods` has 16 entries
+  (index 0 to 15) and `element_names` has 25 (0 to 24), but the Java enums close with `OM_MAX` and `ELEM_MAX`, so index
+  16 retyped to `stat`/`mod` (from a flag or an element) loads with `OM_MAX` as its modifier, and flag index 25 retyped
+  to an element type loads with `ELEM_MAX`. C's tables have no entry there, so C stores an index that points at the NULL
+  terminator.
+- **Why:** the payload is a typed enum, and there is no constant to hold an index that names nothing in its table.
+  Throwing at the `type:` line is the nearest Java can get to C storing a number that only means something later.
+- **Reach:** none from shipped data. `object_property.txt` puts `type:` before `code:` in all 79 records (checked
+  when `ObjectProperty2Grammar.g4` was written), and none of them retypes after a code. It takes a hand-edited file.
+- **Revisit:** if a modded `object_property.txt` ever retypes after a `code:`, or the payload is made to carry a bare
+  index.
+- **Pinned by:** `retypeWithAnIndexPastTheNewTableIsRefused` and `elementRetypedToModPastTheTableIsRefused`, in
+  `ObjectProperty2AssemblerTest`. The in-range half is pinned as C does it by `typeOnlyRecordHoldsIndexZeroUnderItsType`,
+  `statRetypedToModKeepsTheModifier`, `elementRetypedToAnotherElementTypeKeepsTheElement`,
+  `crossTableRetypeKeepsTheIndexWhenItFits`, `retypingAwayAndBackKeepsTheOriginalCode`,
+  `aCodeAfterARetypeResolvesInTheNewTable` and `theCarriedCodeDoesNotLeakIntoTheNextRecord`. The `OM_MAX` landing is
+  pinned by `aRetypeLandingOnOmMaxLoads`, and the edge of each target table (loads at the last slot, refused one past)
+  by `theEdgeOfEachRetypeTargetTable`.
+- **Corrected:** 2026-11-14, after the `prevCode` index/ordinal fix. The cutoffs above were 18, 27 and 18, and the
+  landing index 17, when `prevCode` held the Java ordinal.
+- **Accepted:** 2026-11-14, found while checking which of `code:` and `type:` may come first in
+  `ObjectProperty2Assembler`.
+
+### A `bindui:` entry name with a stray `<` or `>`, or with an empty tag, is refused or renamed, where C takes the whole name
+
+- **Java:** `BINDUI_STRING`, `BINDUI_LTHAN`, `BINDUI_TAG` and `BINDUI_GTHAN` in `ObjectProperty2Lexer.g4`, the `bindui`
+  rule of `ObjectProperty2Grammar.g4`, and `ObjectProperty2Assembler.parseBindui`. **C:** `parse_object_property_bindui`
+  (`obj-init.c`) and `parser_parse` (`parser.c`).
+- **Differs:** C registers `bindui` as `sym ui`, `int aux`, `?int uival`. A `sym` is cut with `strtok(sp, ":")`, so the
+  entry name is any text up to the next `:`, and `<` and `>` are ordinary characters in it. The name goes to
+  `ui_entry_search`, and a name that matches no entry is dropped without an error. Java reads the name up to a `<`, then
+  a tag up to a `>`, then expects the aux figure, and `parseBindui` joins the pieces back as `name<TAG>`. It agrees with
+  C on a plain name and on one tag, whatever the case of the tag. It differs in these shapes:
+  - `bindui:resist<FIRE:0`    C loads, Java refuses (a tag with no `>` meets the `:`, which the tag mode has no rule for)
+  - `bindui:resist<FIRE>x:0`    C loads, Java refuses (text after the `>` meets a mode that expects the aux figure)
+  - `bindui:a<B>c<D>:0`    C loads, Java refuses (a second `<` meets the same missing rule)
+  - `bindui:<:0`    C loads, Java refuses (a `<` with no tag after it)
+  - `bindui::x:0`    C loads as `x` (`strtok` skips the leading `:`), Java refuses (the first `:` ends the name, and `x` is not
+    an aux figure)
+  - `bindui:x<>:0`    C loads the name `x<>`, Java loads the name `x` (an empty tag gives no tag token, so no `<>` is put back)
+- **Same in both:** `bindui:Resist-UI:0`, `bindui:resist<fire>:0`, `bindui:resist_ui_compact_0<FIRE>:0` and `:1:5`, and
+  `bindui:resist ui:0` load. `bindui:x`, `bindui:x:` and `bindui::0` are refused. `bindui:x::0` and `bindui:x:0::5`
+  load. The shipped file (79 records, 66 `bindui` lines) parses with no errors.
+- **Why:** making every shape load means taking the whole name to the colon and dropping the tag rules, which the
+  shipped file does not need. The refused shapes are typing slips in a hand-edited file.
+- **Reach:** none from shipped data. Every shipped `bindui:` line is a plain lower-case name or one `<UPPER>` tag. The
+  `x<>` rename binds a different entry only if a modded `ui_entry.txt` has an entry named `x`.
+- **Revisit:** if a modded file is ever expected to carry a `<` or `>` in an entry name. Then `BINDUI_STRING` takes
+  everything up to the colon, and the tag rules in the lexer and grammar go.
+- **Pinned by:** `scratch/ObjectProperty2BinduiGrammarCheck.java`, which runs 19 lines through the regenerated lexer
+  and parser (lexer errors count as refusals) and parses the shipped file. Gradle does not compile `src/main/gen`, so
+  the suite cannot see this half, and `ObjectProperty2AssemblerTest` covers only the assembler.
+- **Accepted:** 2026-11-14, decided with you, while checking item 8 of `scratch/IssuesWithObjectProperty2.md`.
 
 ## Projection
 
@@ -890,6 +1011,37 @@ The four entries below are the `shape.txt` `values:` bracket, the same four case
 - **Revisit:** if the data-file parsers are meant to be as strict as C about tval text, or if no port-side caller turns
   out to need the identifier form.
 - **Accepted:** 2026-11-07, during the `TValue` port pass.
+
+## Object modifiers
+
+### `ObjectModifier.lookup` can return the `OM_NONE` and `OM_MAX` sentinels, where C's table has no such names
+
+- **Java:** `ObjectModifier.lookup(String)`, called from `ObjectProperty2Assembler` for `stat` and `mod` properties.
+  **C:** `code_index_in_array(obj_mods, code)` (`datafile.c`), as called from `parse_object_property_code`
+  (`obj-init.c`).
+- **Differs:** C's `obj_mods` table holds only the sixteen real names, `STR` to `MOVES`, so `NONE` and `MAX` find
+  nothing and the load fails with an unknown code. Java returns `OM_NONE` for `NONE` and `OM_NONE`, and `OM_MAX` for
+  `MAX` and `OM_MAX`, and leaves the caller to refuse them. `ObjectProperty2Assembler` does, but words the refusal as an
+  illegal sentinel rather than an unknown name.
+- **Why:** the sentinels are real constants of the enum, and a lookup that finds by name finds them too.
+- **Reach:** none from shipped data. No `code:` line in `lib/gamedata/object_property.txt` names a sentinel (checked
+  2026-11-15). Hand-edited files only, and the load still fails, with a different message.
+- **Revisit:** if the message wording needs to match C, or a second caller of `lookup` forgets to refuse the sentinels.
+- **Accepted:** 2026-11-15, during the `ObjectModifier` port pass. Pinned by `lookupFindsTheSentinels` in
+  `ObjectModifierTest`.
+
+### `ObjectModifier.lookup` takes the `OM_` prefix as optional, where C finds only the bare name
+
+- **Java:** `ObjectModifier.lookup(String)`. **C:** `code_index_in_array(obj_mods, code)` (`datafile.c`).
+- **Differs:** C finds `STR` and refuses `OM_STR`. Java adds `OM_` when it is missing, so `STR` and `OM_STR` both return
+  `OM_STR`, and a data file that writes `code:OM_STR` loads where C ends the load. `OM_` on its own, `OM_OM_STR` and any
+  wrong-case form find nothing in both.
+- **Why:** the same convenience `ElementEnum.lookup` has, for port-side callers that hold a constant's name.
+- **Reach:** none from shipped data. All sixteen `stat` and `mod` codes in `lib/gamedata/object_property.txt` are bare
+  names (checked 2026-11-15). Hand-edited files only.
+- **Revisit:** if the data-file parsers are meant to be as strict as C about code names.
+- **Accepted:** 2026-11-15, during the `ObjectModifier` port pass. Pinned by `lookupAcceptsTheOptionalPrefix` in
+  `ObjectModifierTest`.
 
 ## UI entry
 

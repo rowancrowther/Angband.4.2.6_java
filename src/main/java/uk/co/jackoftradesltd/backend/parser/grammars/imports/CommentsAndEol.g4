@@ -36,6 +36,7 @@ COMMENT
 
 fragment NL
         :   (' ' | '\t')* ('\r'+ '\n'? | '\n')
+        |   ('\t' | ' ')+ EOF
         ;
 
 fragment NEWLINE

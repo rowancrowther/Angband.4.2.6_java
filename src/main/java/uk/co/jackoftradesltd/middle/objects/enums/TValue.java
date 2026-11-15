@@ -51,8 +51,11 @@ import java.util.List;
  * {@code _k} variants ({@code tval_is_food_k}, {@code tval_is_light_k} and so on) collapse
  * into the same method as their object twins.
  *
- * <p>Class TValue coded before 260827, commented in full on 261002, updated on 261002 to
- * add {@code tval_find_name}.
+ * <p>One method has no C original: {@link #lookup(String)}, which finds a constant by its
+ * identifier. The name resolution C does lives in {@link #fromName(String)}.
+ *
+ * <p>Class TValue coded before 260827, commented in full on 261115, updated on 261002 to
+ * add {@code tval_find_name} and on 261115 to name {@code lookup}.
  *
  * @author Rowan Crowther
  */
@@ -438,11 +441,16 @@ public enum TValue {
      * form above is extra, so a typo such as {@code "digging"} resolves here where C returns
      * {@code -1}; and {@link #changeArmour(String)} can rewrite the wrong {@code armour} when a
      * capitalised one comes first. The others are that {@link Integer#parseInt(String)} also
-     * reads non-ASCII Unicode digits, which {@code strtoul} does not, and that C copies the name
-     * into a 40-character buffer before the armour rewrite, which only matters for longer input.
+     * reads non-ASCII Unicode digits, which {@code strtoul} does not; that C copies the name
+     * into a 40-character buffer before the armour rewrite, which only matters for longer input; and
+     * that {@code strtoul} wraps a minus sign modulo the size of {@code unsigned long}, so on a 64-bit
+     * build {@code "-18446744073709551615"} is {@code 1} and gives {@link #TV_CHEST}, through
+     * {@code "-18446744073709551581"} for {@link #TV_GOLD}, where this method finds the number
+     * outside {@code int} and gives {@code null}. {@code "-0"}, {@code "-1"} and every other small
+     * negative agree with C.
      *
      * <p>Function fromName coded before 260827, updated on 261002 to match C's armour rewrite
-     * and whitespace rules, commented in full on 261107.
+     * and whitespace rules, commented in full on 261115.
      *
      * @param name the tval text to resolve: a number, a display name, or an identifier
      * @return the matching {@link TValue}, or {@code null} if the text resolves to no tval
@@ -451,7 +459,6 @@ public enum TValue {
     @Contract(pure = true)
     public static @Nullable TValue fromName(@NotNull String name) {
         String toSearch;
-        // logger.debug("Trying to parse {} as a TV name", name);
         toSearch = changeArmour(name);
 
         String isNumber = removeTabsAndSpaces(toSearch);
@@ -629,6 +636,39 @@ public enum TValue {
         }
 
         return list;
+    }
+
+    /**
+     * Finds a tval by the name of its constant — a port-only convenience with no C counterpart, and
+     * not a form of {@link #fromName(String)}.
+     *
+     * <p>The match is exact and case-sensitive against {@link #name()}, the identifier, never the
+     * display name from {@link #getName()}. The {@code TV_} prefix is optional: {@code "SWORD"} and
+     * {@code "TV_SWORD"} both give {@link #TV_SWORD}. Nothing else is forgiven: {@code "sword"},
+     * {@code "soft armor"} (a display name) and {@code " SWORD"} all give {@code null}, as does any
+     * text that names no constant. A number is never read, so {@code "5"} is {@code null} where
+     * {@code fromName("5")} is {@link #TV_BOW}.
+     *
+     * <p>The identifier step inside {@code fromName} is the looser cousin of this: it ignores case,
+     * reads spaces as underscores, and refuses the {@code TV_} prefix. Unlike {@code fromName} this
+     * method does not apply the {@code armour} rewrite, so {@code "DRAG_ARMOUR"} gives {@code null}.
+     * Nothing in the port calls it yet.
+     *
+     * <p>Function lookup coded before 261115, commented in full on 261115.
+     *
+     * @param tValString the constant's name, with or without the {@code TV_} prefix; must not be {@code null}
+     * @return the matching {@link TValue}, or {@code null} if no constant has that name
+     * @throws NullPointerException if {@code tValString} is {@code null}
+     */
+    public static TValue lookup(String tValString) {
+        String toSearch;
+        if (tValString.startsWith("TV_"))
+            toSearch = tValString;
+        else 
+            toSearch = "TV_" + tValString;
+        
+        return Arrays.stream(TValue.values()).filter(tv -> tv.name().equals(toSearch))
+                .findFirst().orElse(null);
     }
 
     /**

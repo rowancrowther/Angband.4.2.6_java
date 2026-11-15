@@ -27,7 +27,7 @@ import java.util.Arrays;
  * is the count sentinel and {@code OFT_NONE} the zero placeholder.
  *
  * <p>The string beside each constant is the exact {@code subtype:} token used in
- * {@code object_property.txt}, matched by {@link #getFlagTypeFromSubtype}; these
+ * {@code object_property.txt}, matched by {@link #lookupFromSubtype}; these
  * mirror the {@code streq} chain in C's {@code parse_object_property_subtype}
  * ({@code obj-init.c}). Note that three tokens do not transliterate from the
  * constant name — {@code sustain}/{@code protection}/{@code misc ability} map to
@@ -71,7 +71,7 @@ public enum ObjectFlagType {
     OFT_CURSE_ONLY("curse-only"),
     /**
      * Count sentinel, not a real grouping; its empty token is never reached by
-     * {@link #getFlagTypeFromSubtype} because {@link #OFT_NONE} matches first.
+     * {@link #lookupFromSubtype} because {@link #OFT_NONE} matches first.
      */
     OFT_MAX("");
 
@@ -118,7 +118,9 @@ public enum ObjectFlagType {
      * @return the matching grouping, or {@code null} if the token is unrecognized
      * (C returns {@code PARSE_ERROR_INVALID_SUBTYPE})
      */
-    public static ObjectFlagType getFlagTypeFromSubtype(String subtype) {
+    public static ObjectFlagType lookupFromSubtype(String subtype) {
+        if (subtype == null) return null;
+        
         return Arrays.stream(values())
                 .filter(o -> o.getSubtypeText().equals(subtype))
                 .findFirst().orElse(null);
@@ -126,7 +128,7 @@ public enum ObjectFlagType {
 
     /**
      * The {@code subtype:} token for this grouping, the inverse of
-     * {@link #getFlagTypeFromSubtype}. Empty for {@link #OFT_NONE} and {@link #OFT_MAX}.
+     * {@link #lookupFromSubtype}. Empty for {@link #OFT_NONE} and {@link #OFT_MAX}.
      *
      * <p>coded on 2026-10-08 / commented in full on 2026-10-08
      *

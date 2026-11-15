@@ -47,11 +47,15 @@ import java.util.Arrays;
  * sentinels, not real flags, so a loop over every flag runs from {@code ordinal() == 1} up to
  * but excluding {@code OF_MAX}, as C's loops do from {@code 1} to {@code OF_MAX}.
  *
- * <p>Finding a flag by name is {@link #lookup(String)}, the port of C's {@code lookup_flag()}
- * ({@code datafile.c}) run over the {@code obj_flags[]} name tables, which are built from the
- * same header with a {@code "NONE"} entry at index 0 and the header's {@code "MAX"} entry last.
- * Because {@code lookup_flag()} starts at index 1, {@code "NONE"} never matches there, while
- * {@code "MAX"} does.
+ * <p>Finding a flag by name is {@link #lookup(String)}, which stands in for C's
+ * {@code lookup_flag()} and {@code code_index_in_array()} ({@code datafile.c}, {@code init.c})
+ * run over the name tables built from the same header, with a {@code "NONE"} entry at index 0
+ * and the header's {@code "MAX"} entry last. C's tables hold the bare names
+ * ({@code "SUST_STR"}), and {@code lookup_flag()} starts at index 1, so {@code "NONE"} never
+ * matches there, while {@code code_index_in_array()} starts at 0 and does find it. The port
+ * accepts two deviations, both decided 261115: the name may be given with or without the
+ * {@code OF_} prefix, and {@code "NONE"} finds {@link #OF_NONE} (a caller that wants
+ * {@code lookup_flag()}'s refusal must test for it).
  *
  * <p>The first five real flags, {@code OF_SUST_STR} to {@code OF_SUST_CON}, must stay in the
  * same order as the stats in {@code list-stats.h}, because C's {@code sustain_flag()}
@@ -59,7 +63,7 @@ import java.util.Arrays;
  * {@link uk.co.jackoftradesltd.middle.player.enums.SustainStat} records that pairing and
  * {@link #getSustainStatFlag} reads it.
  *
- * <p>Class ObjectFlag coded before 261005, commented in full on 261107.
+ * <p>Class ObjectFlag coded before 261005, commented in full on 261115.
  *
  * @author Rowan Crowther
  */
@@ -69,11 +73,14 @@ public enum ObjectFlag {
      * its enum. It is not a real flag, and C's flag loops start after it. Its label is the empty
      * string.
      *
-     * <p>C's name table does carry a {@code "NONE"} entry for it at index 0, but
-     * {@code lookup_flag()} starts at index 1, so a flag list naming {@code NONE} finds nothing.
-     * {@link #lookup(String)} follows that and answers {@code null} for {@code "OF_NONE"}.
+     * <p>C's name table carries a {@code "NONE"} entry for it at index 0.
+     * {@code lookup_flag()} starts at index 1 and so skips it, but {@code code_index_in_array()}
+     * starts at 0 and finds it. {@link #lookup(String)} follows the second and answers this
+     * constant for {@code "OF_NONE"} and {@code "NONE"} (an accepted deviation, 261115), so a
+     * caller that must refuse a flag list naming {@code NONE}, as {@code lookup_flag()} does, has
+     * to test for it.
      *
-     * <p>Constant OF_NONE coded before 261005, commented in full on 261107.
+     * <p>Constant OF_NONE coded before 261005, commented in full on 261115.
      */
     OF_NONE(""),
     /**
@@ -284,10 +291,10 @@ public enum ObjectFlag {
      *
      * <p>C's header lists it as an ordinary {@code OF(MAX, "")} entry, so the name tables hold
      * {@code "MAX"} and {@code lookup_flag()} finds it at index 39. {@link #lookup(String)}
-     * does the same and returns this constant for {@code "OF_MAX"}; nothing in the lookup
-     * refuses it, so a caller that must not turn it on has to test for it.
+     * does the same and returns this constant for {@code "OF_MAX"} and {@code "MAX"}; nothing in
+     * the lookup refuses it, so a caller that must not turn it on has to test for it.
      *
-     * <p>Constant OF_MAX coded before 261005, commented in full on 261107.
+     * <p>Constant OF_MAX coded before 261005, commented in full on 261115.
      */
     OF_MAX("");
 
@@ -310,7 +317,6 @@ public enum ObjectFlag {
      *
      * @param flag the display label
      */
-    @Contract(pure = true)
     ObjectFlag(String flag) {
         this.flag = flag;
     }
@@ -325,9 +331,10 @@ public enum ObjectFlag {
      * {@code OF_SUST_STR}, {@code _INT}, {@code _WIS}, {@code _DEX} and {@code _CON}. The two
      * sentinels, {@code SUS_STAT_NONE} and {@code SUS_STAT_MAX}, give {@code null}, which
      * stands for the {@code -1} C returns when the stat is outside 0 to 4. A caller must test
-     * for {@code null} where C tests {@code flag < 0}.
+     * for {@code null} where C tests {@code flag < 0}. A {@code null} argument throws
+     * {@link NullPointerException}; C's {@code int} parameter has no such case.
      *
-     * <p>Method getSustainStatFlag coded before 261005, commented in full on 261012.
+     * <p>Method getSustainStatFlag coded before 261005, commented in full on 261115.
      *
      * @param sustainStat the stat whose sustain is wanted
      * @return the matching {@code OF_SUST_*} flag, or {@code null} for a sentinel
@@ -344,29 +351,49 @@ public enum ObjectFlag {
     }
 
     /**
-     * Find a flag by its constant name, the port of C's {@code lookup_flag()}
-     * ({@code datafile.c}) as used by {@code grab_flag()} over the {@code obj_flags[]} name
-     * tables. C walks the table from index 1, compares with {@code streq()} (exact, case
-     * sensitive) and returns {@code FLAG_END} (0) when the table runs out; here the argument is
-     * the full constant name, prefix included, and the answer is the constant or {@code null}.
+     * Find a flag by its name, standing in for both of C's searches of the object flag name table
+     * ({@code list_obj_flag_names[]} in {@code init.c}, {@code obj_flags[]} in
+     * {@code obj-init.c}): {@code lookup_flag()} ({@code datafile.c}, used through
+     * {@code grab_flag()}), which walks from index 1, and {@code code_index_in_array()}
+     * ({@code init.c}), which walks from index 0. Both compare with {@code streq()} (exact, case
+     * sensitive) against the bare names C holds, such as {@code "SUST_STR"}, and
+     * {@code lookup_flag()} returns {@code FLAG_END} (0) when the table runs out.
      *
-     * <p>{@code "OF_SUST_STR"} to {@code "OF_MULTIPLY_WEIGHT"} give their constants, and
-     * {@code "OF_MAX"} gives {@link #OF_MAX}, as C finds {@code "MAX"}. {@code "OF_NONE"} gives
-     * {@code null}, as C's search skips the {@code "NONE"} entry at index 0, and so does a name
-     * with the wrong case, a missing {@code OF_} prefix, or no such flag. A {@code null} argument
-     * gives {@code null}; C would crash in {@code streq()}.
+     * <p>Two accepted deviations (decided 261115):
+     * <ul>
+     * <li>The name may carry the {@code OF_} prefix or not: {@code "FREE_ACT"} and
+     * {@code "OF_FREE_ACT"} find the same constant. C has no prefix, so {@code "OF_FREE_ACT"}
+     * finds nothing there. A name with the prefix twice, such as {@code "OF_OF_FREE_ACT"}, finds
+     * nothing.</li>
+     * <li>{@code "NONE"} and {@code "OF_NONE"} find {@link #OF_NONE}, as
+     * {@code code_index_in_array()} does; {@code lookup_flag()} would skip index 0 and fail. A
+     * caller that wants {@code lookup_flag()}'s refusal must test for {@link #OF_NONE} itself, as
+     * {@code ShapeAssembler} does.</li>
+     * </ul>
      *
-     * <p>C's other table search, {@code code_index_in_array()}, starts at index 0 and so does
-     * accept {@code "NONE"}; this method is not a port of that one.
+     * <p>{@code "SUST_STR"} to {@code "MULTIPLY_WEIGHT"} give their constants, and {@code "MAX"}
+     * gives {@link #OF_MAX}, as C finds its {@code "MAX"} entry. Anything else, including a name
+     * with the wrong case, stray blanks or no such flag, gives {@code null}. A {@code null}
+     * argument gives {@code null}; C would crash in {@code streq()}.
      *
-     * <p>Method lookup coded on 261107, commented in full on 261107.
+     * <p>Method lookup coded on 261107, commented in full on 261115.
      *
-     * @param flag the constant name, for example {@code "OF_FREE_ACT"}
-     * @return the matching constant, or {@code null} for no match or for {@link #OF_NONE}
+     * @param oFlag the flag name, with or without the {@code OF_} prefix, for example
+     *              {@code "OF_FREE_ACT"} or {@code "FREE_ACT"}
+     * @return the matching constant (which may be {@link #OF_NONE} or {@link #OF_MAX}), or
+     *         {@code null} for no match
      */
-    public static ObjectFlag lookup(String flag) {
-        ObjectFlag result = Arrays.stream(ObjectFlag.values()).filter(of -> of.name().equals(flag)).findFirst().orElse(null);
-        if (result == ObjectFlag.OF_NONE) return null;
+    public static ObjectFlag lookup(String oFlag) {
+        if (oFlag == null) return null;
+        
+        String search;
+        if (!oFlag.startsWith("OF_"))
+            search = "OF_" + oFlag;
+        else
+            search = oFlag;
+        
+        ObjectFlag result = Arrays.stream(ObjectFlag.values()).filter(of -> of.name().equals(search)).findFirst().orElse(null);
+        
         return result;
     }
 

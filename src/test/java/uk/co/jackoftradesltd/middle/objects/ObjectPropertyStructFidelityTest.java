@@ -17,15 +17,14 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.backend.parser.ObjectPropertyReader;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagID;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.testsupport.UIRegistryFixture;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -67,6 +66,31 @@ class ObjectPropertyStructFidelityTest {
 
     private List<ObjectProperty> loaded;
     private List<Expected> expected;
+
+    /**
+     * The registry as the previous test class left it, put back by {@link #restoreUIEntries()}.
+     */
+    private static UIRegistryFixture.Saved savedUIEntries;
+
+    /**
+     * Loads the real UI entries. The assembler drops a {@code bindui:} whose entry it cannot find,
+     * as C does, and throws if the registry is not loaded at all, so without the real entries no
+     * property in the file would carry its binding.
+     *
+     * @throws IOException if a UI data file cannot be read
+     */
+    @BeforeAll
+    static void loadUIEntries() throws IOException {
+        savedUIEntries = UIRegistryFixture.loadReal();
+    }
+
+    /**
+     * Puts the UI registry back as it was found.
+     */
+    @AfterAll
+    static void restoreUIEntries() {
+        UIRegistryFixture.restore(savedUIEntries);
+    }
 
     /**
      * Loads the file through the real reader and reads the same file again with the test's own

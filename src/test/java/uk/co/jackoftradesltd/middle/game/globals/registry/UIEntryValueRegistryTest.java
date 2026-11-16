@@ -31,43 +31,18 @@ import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.cached.CachedPlayerData;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.CurseData;
-import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.KnownObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
-import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
-import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
-import uk.co.jackoftradesltd.middle.player.Player;
-import uk.co.jackoftradesltd.middle.player.PlayerBody;
-import uk.co.jackoftradesltd.middle.player.PlayerClass;
-import uk.co.jackoftradesltd.middle.player.PlayerProperty;
-import uk.co.jackoftradesltd.middle.player.PlayerRace;
-import uk.co.jackoftradesltd.middle.player.PlayerShape;
-import uk.co.jackoftradesltd.middle.player.PlayerState;
+import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.player.*;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link UIEntryValueRegistry}, the registry of {@link ObjectProperty}/{@link PlayerProperty}
@@ -107,7 +82,7 @@ class UIEntryValueRegistryTest {
     }
 
     private static ObjectProperty.UIBinding uiBinding(Integer value, boolean aux) {
-        return new ObjectProperty.UIBinding(ENTRY, value, aux);
+        return new ObjectProperty.UIBinding(ENTRY, value, aux, null, null);
     }
 
     private static ObjectProperty statOrModProperty(ObjPropertyType type, ObjectModifier modifier,

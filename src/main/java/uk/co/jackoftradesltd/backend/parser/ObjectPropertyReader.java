@@ -76,9 +76,13 @@ import java.util.List;
  * <p>
  * <strong>{@code bindui:}.</strong> C's handler calls
  * {@code bind_object_property_to_ui_entry_by_name} while it reads the line, which links the property
- * to the UI entry at once. The port does not: the assembler stores the entry's name (with any
- * {@code <TAG>} folded in), the aux flag and the optional explicit value as an
- * {@link ObjectProperty.UIBinding}, and {@code UIEntryValueRegistry} looks the entry up when it is
+ * to the UI entry at once, and drops the bind silently if no entry has that name. The assembler
+ * keeps that order. It reads the aux flag and the optional explicit value, asks
+ * {@code GameConstants.uiEntryExists} whether an entry has the name (with any {@code <TAG>} folded
+ * in), and only if one does stores the name, the aux flag and the value as an
+ * {@link ObjectProperty.UIBinding}; a line naming no entry adds nothing. The names are the specs in
+ * {@code GameConstants.entries}, so the reader must run after {@code GameConstants.init} has
+ * received the front end's entries. {@code UIEntryValueRegistry} looks the entry up when it is
  * needed.
  * <p>
  * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
@@ -94,7 +98,8 @@ import java.util.List;
  *       property) and accepts a file with no records. The parse record keeps every directive line
  *       in file order, and {@link ObjectProperty2Assembler} applies them one at a time as C's
  *       handlers do: a repeated {@code msg:}, {@code desc:}, {@code adjective:} or
- *       {@code neg-adjective:} replaces the earlier text, every {@code bindui:} binds, and
+ *       {@code neg-adjective:} replaces the earlier text, every {@code bindui:} that names a UI
+ *       entry binds, and
  *       {@code adjective:} takes any string. A {@code code:} or {@code bindui:} ahead of the
  *       {@code type:} is refused, as C refuses it, and a {@code type:} after a {@code code:} reads
  *       the same index through the new type's table.</li>
@@ -118,7 +123,8 @@ import java.util.List;
  * for the removal of the soft-error path, and for the {@code code:} sentinel and aux handling now
  * matching C; type-less records, repeated directives and the order differences added 261113; the
  * differences list rewritten 261115 for the switch to {@link ObjectProperty2Assembler}, which now
- * matches C on repeated and out-of-order directives).
+ * matches C on repeated and out-of-order directives; the {@code bindui:} paragraph rewritten 261116
+ * for the check of the entry name).
  *
  * @author Rowan Crowther
  */

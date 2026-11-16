@@ -369,7 +369,7 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
                 String uiEntryName = record.bindui();
                 if (!record.tag().isEmpty())
                     uiEntryName = uiEntryName + "<" + record.tag() + ">";
-                ObjectProperty.UIBinding uibinding = new ObjectProperty.UIBinding(uiEntryName, value, isAux);
+                ObjectProperty.UIBinding uibinding = new ObjectProperty.UIBinding(uiEntryName, value, isAux, null, null);
                 boundEntries.add(uibinding);
             }
 

@@ -26,21 +26,12 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.uichannel.UIEntryValue;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.CurseData;
-import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
-import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
+import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -57,7 +48,7 @@ class CurseSparseElInfoProbeTest {
     private static ObjectProperty elementProperty(ObjPropertyType type, ElementEnum element) {
         return new ObjectProperty(type, null, null,
                 new ObjectPropertyTypeWrapper(type, element), 0, 0, Map.of(),
-                "test", "", "", "", "", List.of(new ObjectProperty.UIBinding(ENTRY, null, false)));
+                "test", "", "", "", "", List.of(new ObjectProperty.UIBinding(ENTRY, null, false, null, null)));
     }
 
     private static UIEntryValue computeWithSparseCurse(ObjPropertyType type) {

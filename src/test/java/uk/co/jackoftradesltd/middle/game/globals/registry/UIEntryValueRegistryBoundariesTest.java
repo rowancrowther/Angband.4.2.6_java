@@ -32,36 +32,15 @@ import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.cached.CachedPlayerData;
-import uk.co.jackoftradesltd.middle.objects.Curse;
-import uk.co.jackoftradesltd.middle.objects.CurseData;
-import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.KnownObject;
-import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
-import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
-import uk.co.jackoftradesltd.middle.player.Player;
-import uk.co.jackoftradesltd.middle.player.PlayerBody;
-import uk.co.jackoftradesltd.middle.player.PlayerClass;
-import uk.co.jackoftradesltd.middle.player.PlayerProperty;
-import uk.co.jackoftradesltd.middle.player.PlayerRace;
-import uk.co.jackoftradesltd.middle.player.PlayerShape;
-import uk.co.jackoftradesltd.middle.player.PlayerState;
+import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.player.*;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -103,20 +82,20 @@ class UIEntryValueRegistryBoundariesTest {
                                               boolean aux) {
         return new ObjectProperty(type, null, null, new ObjectPropertyTypeWrapper(type, modifier), 0, 0,
                 Map.of(), "test", "", "", "", "",
-                List.of(new ObjectProperty.UIBinding(ENTRY, value, aux)));
+                List.of(new ObjectProperty.UIBinding(ENTRY, value, aux, null, null)));
     }
 
     private static ObjectProperty flagProperty(ObjectFlag flag, Integer value, boolean aux) {
         return new ObjectProperty(ObjPropertyType.OBJ_PROPERTY_FLAG, null, null,
                 new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_FLAG, flag), 0, 0, Map.of(),
-                "test", "", "", "", "", List.of(new ObjectProperty.UIBinding(ENTRY, value, aux)));
+                "test", "", "", "", "", List.of(new ObjectProperty.UIBinding(ENTRY, value, aux, null, null)));
     }
 
     private static ObjectProperty elementProperty(ObjPropertyType type, ElementEnum element, Integer value,
                                                   boolean aux) {
         return new ObjectProperty(type, null, null, new ObjectPropertyTypeWrapper(type, element), 0, 0,
                 Map.of(), "test", "", "", "", "",
-                List.of(new ObjectProperty.UIBinding(ENTRY, value, aux)));
+                List.of(new ObjectProperty.UIBinding(ENTRY, value, aux, null, null)));
     }
 
     private static PlayerProperty playerFlagProperty(PlayerFlag pFlag, int value, boolean special, boolean aux) {

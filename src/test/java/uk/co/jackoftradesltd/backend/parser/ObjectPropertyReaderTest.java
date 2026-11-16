@@ -18,6 +18,8 @@
 package uk.co.jackoftradesltd.backend.parser;
 
 import org.antlr.v4.runtime.misc.ParseCancellationException;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
@@ -26,6 +28,7 @@ import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.testsupport.UIRegistryFixture;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -61,16 +64,41 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>{@link ObjectProperty} has getters for most fields, which the newer tests use; the adjectives,
  * the description and the type-mult map have none, so those reads go through the
  * {@link #field(ObjectProperty, String)} reflection helper, as the older tests do for everything.
- * The assembler no longer resolves
- * {@code bindui} targets against a UI-entry registry: it stores the raw {@code name + tag}
- * string verbatim, leaving the look-up to the UI layer (via {@code UIRegistryLoader}) at the
- * point the entry is actually needed.
+ * The assembler looks each {@code bindui} name, with its {@code <TAG>} folded in, up in the UI
+ * registry as C does, and drops the bind if no entry has that name. These tests therefore load the
+ * real entries and add the invented names some of them use, through {@code UIRegistryFixture}.
  *
  * @author Rowan Crowther
  */
 class ObjectPropertyReaderTest {
 
     private static final String REAL_FILE = "lib/gamedata/object_property.txt";
+
+    /**
+     * The UI registry as the previous test class left it, put back by {@link #restoreUIEntries()}.
+     */
+    private static UIRegistryFixture.Saved savedUIEntries;
+
+    /**
+     * Loads the real UI entries. The assembler drops a {@code bindui:} whose entry it cannot find,
+     * as C does, and throws if the registry is not loaded at all.
+     *
+     * @throws IOException if a UI data file cannot be read
+     */
+    @BeforeAll
+    static void loadUIEntries() throws IOException {
+        savedUIEntries = UIRegistryFixture.loadReal();
+        // Entry names the tests below invent; the real file does not hold them.
+        UIRegistryFixture.addEntries("entry", "entry<TAG>", "first_entry", "second_entry", "face<FACE>");
+    }
+
+    /**
+     * Puts the UI registry back as it was found.
+     */
+    @AfterAll
+    static void restoreUIEntries() {
+        UIRegistryFixture.restore(savedUIEntries);
+    }
 
     @TempDir
     Path tempDir;

@@ -17,28 +17,18 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import uk.co.jackoftradesltd.backend.parser.ObjectPropertyReader;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagID;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.testsupport.UIRegistryFixture;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link ObjectProperty}'s pricing accessors, and the multipliers on {@link Brand} and
@@ -53,6 +43,30 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Rowan Crowther
  */
 class ObjectPropertyAccessorsTest {
+
+    /**
+     * The UI registry as the previous test class left it, put back by {@link #restoreUIEntries()}.
+     */
+    private static UIRegistryFixture.Saved savedUIEntries;
+
+    /**
+     * Loads the real UI entries. The assembler drops a {@code bindui:} whose entry it cannot find,
+     * as C does, and throws if the registry is not loaded at all.
+     *
+     * @throws IOException if a UI data file cannot be read
+     */
+    @BeforeAll
+    static void loadUIEntries() throws IOException {
+        savedUIEntries = UIRegistryFixture.loadReal();
+    }
+
+    /**
+     * Puts the UI registry back as it was found.
+     */
+    @AfterAll
+    static void restoreUIEntries() {
+        UIRegistryFixture.restore(savedUIEntries);
+    }
 
     /**
      * An object property with the given power, ability multiplier and per-type multipliers.
@@ -340,8 +354,8 @@ class ObjectPropertyAccessorsTest {
         @Test
         @DisplayName("a binding carries its entry, value and auxiliary flag")
         void bindingCarriesItsParts() {
-            ObjectProperty.UIBinding withValue = new ObjectProperty.UIBinding(null, 3, false);
-            ObjectProperty.UIBinding withoutValue = new ObjectProperty.UIBinding(null, null, true);
+            ObjectProperty.UIBinding withValue = new ObjectProperty.UIBinding(null, 3, false, null, null);
+            ObjectProperty.UIBinding withoutValue = new ObjectProperty.UIBinding(null, null, true, null, null);
 
             assertEquals(3, withValue.value());
             assertNull(withoutValue.value());
@@ -355,10 +369,10 @@ class ObjectPropertyAccessorsTest {
         @Test
         @DisplayName("two bindings differing only in their value are not equal")
         void bindingsCompareByComponents() {
-            ObjectProperty.UIBinding withValue = new ObjectProperty.UIBinding(null, 3, false);
-            ObjectProperty.UIBinding withoutValue = new ObjectProperty.UIBinding(null, null, false);
+            ObjectProperty.UIBinding withValue = new ObjectProperty.UIBinding(null, 3, false, null, null);
+            ObjectProperty.UIBinding withoutValue = new ObjectProperty.UIBinding(null, null, false, null, null);
 
-            assertEquals(withValue, new ObjectProperty.UIBinding(null, 3, false));
+            assertEquals(withValue, new ObjectProperty.UIBinding(null, 3, false, null, null));
             assertTrue(!withValue.equals(withoutValue));
         }
     }

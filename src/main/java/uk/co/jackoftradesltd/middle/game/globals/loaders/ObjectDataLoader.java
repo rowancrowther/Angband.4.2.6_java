@@ -101,15 +101,18 @@ public class ObjectDataLoader {
     /**
      * Load the object properties from {@code object_property.txt} into {@link ObjectRegistry} — the
      * port of C's {@code object_property_parser} ({@code obj-init.c}), whose
-     * {@code finish_parse_object_property} builds {@code obj_properties}. Must run after the UI
-     * entries, which the property assembler resolves {@code bindui} targets against.
+     * {@code finish_parse_object_property} builds {@code obj_properties}. Must run after
+     * {@code GameConstants.entries} has been set from the front end's UI entries: the property
+     * assembler checks each {@code bindui} name against them and drops a line that names no entry,
+     * and throws if they have not been set.
      * <p>
      * Every error stops the load. An IO failure is logged and <em>rethrown</em> as a
      * {@link RuntimeException}, as C quits when this file cannot be read; a grammar or assembler
      * error passes through unwrapped (see the class description).
      *
      * <p>Function loadObjectProperties coded before 261005, commented in full on 261013, updated on
-     * 261104 for the removal of the soft-error path.
+     * 261104 for the removal of the soft-error path and on 261116 for the check of the {@code bindui}
+     * entry name.
      */
     public static void loadObjectProperties() {
         ObjectPropertyReader parser = new ObjectPropertyReader();

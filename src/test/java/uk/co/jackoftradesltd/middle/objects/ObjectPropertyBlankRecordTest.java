@@ -148,7 +148,7 @@ class ObjectPropertyBlankRecordTest {
             ObjectProperty second = new ObjectProperty();
 
             first.putTypeMults(TValue.TV_RING, 3);
-            first.addBoundEntry(new ObjectProperty.UIBinding("entry", null, false));
+            first.addBoundEntry(new ObjectProperty.UIBinding("entry", null, false, null, null));
 
             assertNotSame(first.getTypeMults(), second.getTypeMults());
             assertNotSame(first.getBoundEntries(), second.getBoundEntries());
@@ -345,12 +345,12 @@ class ObjectPropertyBlankRecordTest {
         @DisplayName("every bindui line adds a binding, in file order")
         void everyLineBinds() {
             ObjectProperty property = new ObjectProperty();
-            ObjectProperty.UIBinding first = new ObjectProperty.UIBinding("compact_0", null, false);
-            ObjectProperty.UIBinding second = new ObjectProperty.UIBinding("aux_1", 7, true);
+            ObjectProperty.UIBinding first = new ObjectProperty.UIBinding("compact_0", null, false, null, null);
+            ObjectProperty.UIBinding second = new ObjectProperty.UIBinding("aux_1", 7, true, null, null);
 
             property.addBoundEntry(first);
             property.addBoundEntry(second);
-            property.addBoundEntry(new ObjectProperty.UIBinding("compact_0", null, false));
+            property.addBoundEntry(new ObjectProperty.UIBinding("compact_0", null, false, null, null));
 
             List<ObjectProperty.UIBinding> bound = property.getBoundEntries();
             assertEquals(3, bound.size());
@@ -366,9 +366,9 @@ class ObjectPropertyBlankRecordTest {
         @DisplayName("replacing the list drops the earlier bindings")
         void replacingTheList() {
             ObjectProperty property = new ObjectProperty();
-            property.addBoundEntry(new ObjectProperty.UIBinding("old", null, false));
+            property.addBoundEntry(new ObjectProperty.UIBinding("old", null, false, null, null));
             List<ObjectProperty.UIBinding> replacement = new java.util.ArrayList<>();
-            replacement.add(new ObjectProperty.UIBinding("new", 1, false));
+            replacement.add(new ObjectProperty.UIBinding("new", 1, false, null, null));
 
             property.setBoundEntries(replacement);
 

@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,7 +34,9 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.testsupport.UIRegistryFixture;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -48,6 +52,31 @@ import static org.junit.jupiter.api.Assertions.*;
  * and not the grammar.
  */
 class ObjectProperty2AssemblerTest {
+
+    /**
+     * The UI registry as the previous test class left it, put back by {@link #restoreUIEntries()}.
+     */
+    private static UIRegistryFixture.Saved savedUIEntries;
+
+    /**
+     * Loads the real UI entries. The assembler drops a {@code bindui:} whose entry it cannot find,
+     * as C does, and throws if the registry is not loaded at all.
+     *
+     * @throws IOException if a UI data file cannot be read
+     */
+    @BeforeAll
+    static void loadUIEntries() throws IOException {
+        savedUIEntries = UIRegistryFixture.loadReal();
+        UIRegistryFixture.addEntries("ui_a", "ui_b", "ui_entry", "ui_a<STR>");
+    }
+
+    /**
+     * Puts the UI registry back as it was found.
+     */
+    @AfterAll
+    static void restoreUIEntries() {
+        UIRegistryFixture.restore(savedUIEntries);
+    }
     private static Directive d(String name, int line, String... values) {
         return new Directive(name, Arrays.asList(values), line);
     }
@@ -353,5 +382,65 @@ class ObjectProperty2AssemblerTest {
     void aNameTheTableLacksIsRefused(String type, String code) {
         assertThrows(DataFileParseException.class, () ->
                 assemble(d("name", 1, "x"), d("type", 2, type), d("code", 3, code)));
+    }
+
+    @Test
+    @DisplayName("a bindui: is frozen at its line: a later code: does not change it (C binds at the line)")
+    void aBindingKeepsTheCodeCurrentAtItsLine() {
+        ObjectProperty p = assemble(d("name", 1, "x"), d("type", 2, "flag"), d("code", 3, "SUST_STR"),
+                d("bindui", 4, "ui_a", "", "0", "0"), d("code", 5, "FREE_ACT")).getFirst();
+        ObjectProperty.UIBinding binding = p.getBoundEntries().getFirst();
+        assertEquals(ObjectFlag.OF_SUST_STR, binding.code().getFlag(ObjPropertyType.OBJ_PROPERTY_FLAG));
+        assertEquals(ObjectFlag.OF_FREE_ACT, p.getPayload().getFlag(ObjPropertyType.OBJ_PROPERTY_FLAG));
+    }
+
+    @Test
+    @DisplayName("a bindui: with no code: yet binds index 0 (STR) even if code: SPEED follows (C index 0)")
+    void aBindingBeforeAnyCodeBindsIndexZero() {
+        ObjectProperty p = assemble(d("name", 1, "x"), d("type", 2, "mod"),
+                d("bindui", 3, "ui_a", "", "0", "0"), d("code", 4, "SPEED")).getFirst();
+        ObjectProperty.UIBinding binding = p.getBoundEntries().getFirst();
+        assertEquals(ObjectModifier.OM_STR, binding.code().getModifier(ObjPropertyType.OBJ_PROPERTY_MOD));
+        assertEquals(ObjectModifier.OM_SPEED, p.getPayload().getModifier(ObjPropertyType.OBJ_PROPERTY_MOD));
+    }
+
+    @Test
+    @DisplayName("a bindui: keeps the type current at its line when type: is changed afterwards")
+    void aBindingKeepsTheTypeCurrentAtItsLine() {
+        ObjectProperty p = assemble(d("name", 1, "x"), d("type", 2, "flag"),
+                d("bindui", 3, "ui_a", "", "0", "0"), d("type", 4, "mod")).getFirst();
+        assertEquals(ObjPropertyType.OBJ_PROPERTY_FLAG, p.getBoundEntries().getFirst().type());
+        assertEquals(ObjPropertyType.OBJ_PROPERTY_MOD, p.getType());
+    }
+
+    @Test
+    @DisplayName("a bindui: naming no UI entry is dropped without error (C: the bind returns 1 and is ignored)")
+    void aBinduiNamingNoEntryIsDropped() {
+        ObjectProperty p = assemble(d("name", 1, "x"), d("type", 2, "flag"),
+                d("bindui", 3, "no_such_entry", "", "0", null),
+                d("bindui", 4, "ui_a", "", "0", null)).getFirst();
+        assertEquals(1, p.getBoundEntries().size());
+        assertEquals("ui_a", p.getBoundEntries().getFirst().entry());
+    }
+
+    @Test
+    @DisplayName("the tag is part of the name looked up: ui_a<STR> binds, ui_a<DEX> is dropped")
+    void theTagIsPartOfTheNameLookedUp() {
+        ObjectProperty p = assemble(d("name", 1, "x"), d("type", 2, "flag"),
+                d("bindui", 3, "ui_a", "STR", "0", null),
+                d("bindui", 4, "ui_a", "DEX", "0", null)).getFirst();
+        assertEquals(1, p.getBoundEntries().size());
+        assertEquals("ui_a<STR>", p.getBoundEntries().getFirst().entry());
+    }
+
+    @Test
+    @DisplayName("a bindui: with a bad aux or value is refused even when no UI entry has its name (C reads the numbers first)")
+    void aBadNumberIsRefusedWhateverTheEntry() {
+        assertThrows(DataFileParseException.class, () ->
+                assemble(d("name", 1, "x"), d("type", 2, "flag"),
+                        d("bindui", 3, "no_such_entry", "", "abc", null)));
+        assertThrows(DataFileParseException.class, () ->
+                assemble(d("name", 1, "x"), d("type", 2, "flag"),
+                        d("bindui", 3, "no_such_entry", "", "0", "abc")));
     }
 }

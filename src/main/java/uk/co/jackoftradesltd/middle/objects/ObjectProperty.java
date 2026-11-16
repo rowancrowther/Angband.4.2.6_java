@@ -44,11 +44,12 @@ import java.util.Map;
  * ({@code obj-init.c}), which calls {@code bind_object_property_to_ui_entry_by_name}
  * ({@code ui-entry.c}) to push a {@code struct bound_object_property} straight onto the named
  * {@code struct ui_entry}'s own growable array — the property itself keeps no record of what it is
- * bound to. The port keeps the list here instead, because building it at parse time needs no
- * {@code struct ui_entry} to exist yet: {@code GameConstants} matches each binding against the
- * front end's UI entries only once they have arrived over the channel. C has no such ordering
- * problem, since its parser can search {@code entries[]} for the named entry the moment
- * {@code bindui:} is read.
+ * bound to. The port keeps the list here instead, because no {@code struct ui_entry} exists on the
+ * core side to push onto: the entries live in the front end and cross the channel as one message of
+ * {@code UIEntrySpec}s. {@code ObjectProperty2Assembler} still drops a {@code bindui:} line whose
+ * name is not among those specs, as C's {@code ui_entry_search} does, by asking
+ * {@code GameConstants.uiEntryExists} (the specs are in {@code GameConstants.entries} before the
+ * file is read), and {@code GameConstants} then groups the bindings that remain by entry.
  *
  * <p><b>A property with no type.</b> C accepts an {@code object_property.txt} record with no {@code type:} line:
  * {@code parse_object_property_name} zero-fills the struct, so {@code type} stays {@code OBJ_PROPERTY_NONE} (0) and
@@ -68,7 +69,8 @@ import java.util.Map;
  * C's {@code NULL}.
  *
  * <p>Class ObjectProperty coded before 260827, commented in full on 261115 (struct location corrected and the
- * type-less property added 261113; the blank-record route added 261115).
+ * type-less property added 261113; the blank-record route added 261115; the paragraph on matching
+ * bindings to entries corrected 261116).
  *
  * @author Rowan Crowther
  */
@@ -200,15 +202,19 @@ public class ObjectProperty {
     private String description;
     /**
      * The UI entries this property is bound to, one {@link UIBinding} per {@code bindui:} line in
-     * this property's {@code object_property.txt} record. See the class Javadoc for why this list
-     * lives here rather than on a {@code struct ui_entry} as it does in C.
+     * this property's {@code object_property.txt} record that {@code ObjectProperty2Assembler}
+     * found an entry for. See the class Javadoc for why this list lives here rather than on a
+     * {@code struct ui_entry} as it does in C.
      *
      * <p>The two assemblers fill it differently. {@code ObjectPropertyAssembler} builds from a parse
      * record that keeps only the last {@code bindui:} line of a record, so its list holds at most one
-     * binding, where C binds every line. {@code ObjectProperty2Assembler} calls {@link #addBoundEntry}
-     * once per {@code bindui:} line, so its list holds every binding, in file order.
+     * binding, where C binds every line, and it does not check the entry name.
+     * {@code ObjectProperty2Assembler} calls {@link #addBoundEntry} once per {@code bindui:} line
+     * whose name an entry has, so its list holds every such binding, in file order; a line naming
+     * no entry adds nothing, as C drops the bind.
      *
-     * <p>Field boundEntries coded before 260919, commented in full on 261115.
+     * <p>Field boundEntries coded before 260919, commented in full on 261115, updated on 261116 for
+     * the check of the entry name.
      */
     private List<UIBinding> boundEntries;
     /**
@@ -397,8 +403,8 @@ public class ObjectProperty {
      * {@code bindui:} handling. Where C's {@code bind_object_property_to_ui_entry_by_name}
      * ({@code ui-entry.c}) pushes each binding onto the named {@code struct ui_entry} directly, so
      * nothing on the C {@code struct obj_property} itself records what it is bound to, this list is
-     * the port's own record of the same bindings. {@code GameConstants} reads it to match
-     * properties to the front end's UI entries once those have arrived, and
+     * the port's own record of the same bindings. {@code GameConstants} reads it to group
+     * properties by the front end's UI entry each binding names, and
      * {@code UIEntryValueRegistry} filters it by entry name to find the binding for the entry it is
      * evaluating — see the class Javadoc for why the port does this in a different order.
      *
@@ -407,7 +413,8 @@ public class ObjectProperty {
      * {@link #setBoundEntries}), but the assembler is finished with the property before any
      * reader sees it.
      *
-     * <p>Function getBoundEntries coded before 260919, commented in full on 261115.
+     * <p>Function getBoundEntries coded before 260919, commented in full on 261115, updated on 261116
+     * for the grouping by entry.
      *
      * @return this property's {@code bindui:} bindings, in data-file order; the list is empty for a property with no
      * {@code bindui:} line (see the {@link #boundEntries} field for how many each assembler gives)
@@ -730,11 +737,16 @@ public class ObjectProperty {
      * {@code struct bound_object_property} ({@code ui-entry.c}: {@code type}, {@code index},
      * {@code value}, {@code have_value}, {@code isaux}), built from a single {@code bindui:} line in
      * {@code object_property.txt} ({@code parse_object_property_bindui} in {@code obj-init.c}). The
-     * {@code type}/{@code index} pair C carries per binding is not repeated here, since every
-     * {@link UIBinding} in {@link #boundEntries} already belongs to the one {@link ObjectProperty}
-     * whose type and index it shares.
+     * {@code type}/{@code index} pair C carries per binding is held here as {@code type} and
+     * {@code code}, the property's type and payload when the {@code bindui:} line was read. They
+     * differ from the property's own only if a later {@code type:} or {@code code:} line changed it,
+     * which C's per-line binding also survives.
      *
-     * <p>Record UIBinding coded before 260919, commented in full on 261005.
+     * <p>{@code ObjectProperty2Assembler} fills {@code type} and {@code code}. {@code ObjectPropertyAssembler}
+     * passes {@code null} for both, and nothing reads them yet.
+     *
+     * <p>Record UIBinding coded before 260919, commented in full on 261005 (the type and code
+     * described 261116).
      *
      * @param entry the UI entry this property is bound to, C's {@code name} parameter to
      *              {@code bind_object_property_to_ui_entry_by_name}
@@ -743,8 +755,12 @@ public class ObjectProperty {
      *              is this field's presence, and {@code value} is its content
      * @param aux   whether this property should be treated as an auxiliary value for the UI entry,
      *              C's {@code isaux}
+     * @param code  the property's payload when the line was read, C's {@code index}; {@code null}
+     *              from {@code ObjectPropertyAssembler}
+     * @param type  the property's type when the line was read, C's {@code type}; {@code null} from
+     *              {@code ObjectPropertyAssembler}
      * @author Rowan Crowther
      */
-    public record UIBinding(String entry, @Nullable Integer value, boolean aux) {
+    public record UIBinding(String entry, @Nullable Integer value, boolean aux, ObjectPropertyTypeWrapper code, ObjPropertyType type) {
     }
 }

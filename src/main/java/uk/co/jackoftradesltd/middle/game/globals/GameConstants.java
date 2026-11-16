@@ -242,6 +242,58 @@ public class GameConstants {
      * <p>Field changeTileSize coded before 261010, commented in full on 261010.
      */
     public boolean changeTileSize = false;
+    
+    /**
+     * The front end's UI entries as the core knows them: one {@link UIEntrySpec} per entry, in the
+     * order the front end sent them in its {@code UIEntriesLoaded} message. The Java form of the
+     * names in C's {@code entries[]} array in {@code ui-entry.c}, which {@code ui_entry_search}
+     * searches by name; the combiner and flags in each spec are what {@link #init(Core)} later hands
+     * to {@code UIEntryValueRegistry}.
+     *
+     * <p>{@code null} until {@link #init(Core)} has received that message. {@link #init(Core)} sets
+     * it straight after the message, before {@code player_property.txt} and
+     * {@code object_property.txt} are read, so that {@link #uiEntryExists} can answer while
+     * {@code ObjectProperty2Assembler} parses the second. The field is public and static, so a test
+     * that reads {@code object_property.txt} without running {@link #init(Core)} must set it first,
+     * and put it back afterwards; {@code UIRegistryFixture} does both.
+     *
+     * <p>Field entries coded on 261116, commented in full on 261116.
+     */
+    public static List<UIEntrySpec> entries;
+    
+    /**
+     * Reports whether a UI entry of exactly this name exists - the port of C's {@code ui_entry_search}
+     * in {@code ui-entry.c}, which {@code bind_object_property_to_ui_entry_by_name} calls and which
+     * returns 0 for no match. C does a binary search of its name-sorted {@code entries[]} with
+     * {@code strcmp}; this is a linear search of {@link #entries} that compares the whole name,
+     * case-sensitively, so {@code name<TAG>} is found only as a whole, and {@code name} alone is not.
+     * Both find the same entry while a name occurs once. C returns the entry's index; the caller
+     * here needs only whether it is there.
+     *
+     * <p>{@code ObjectProperty2Assembler.parseBindui} is the one caller. It drops a {@code bindui:}
+     * line when this returns {@code false}, as C drops the bind.
+     *
+     * <p>An unset {@link #entries} is a programming error and not a missing name: it is logged at
+     * fatal level and thrown. C has no such state, since its {@code entries[]} is simply empty until
+     * {@code ui_entry.txt} is read. A {@code null} name finds nothing.
+     *
+     * <p>Function uiEntryExists coded on 261116, commented in full on 261116.
+     *
+     * @param name the entry name to find, with any {@code <TAG>} folded in
+     * @return {@code true} if an entry has exactly that name
+     * @throws IllegalStateException if {@link #entries} has not been set
+     */
+    public static boolean uiEntryExists(String name) {
+        if (entries == null) {
+            String message = "Invalid attempt to access UIEntry when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+        
+        UIEntrySpec entry = entries.stream().filter(e -> e.entryName().equals(name)).findFirst().orElse(null);
+        return entry != null;
+    }
 
     /**
      * Load the scalar tunables from {@code constants.txt} into {@link #data}, which the {@code get*}
@@ -314,6 +366,14 @@ public class GameConstants {
      * in one call per entry. The end state — every {@code ui_entry} knowing every property bound to
      * it — is the same either way; only the order the wiring happens in differs.
      *
+     * <p>The specs are also kept in {@link #entries} straight after that message, before
+     * {@code player_property.txt} is read, because {@code ObjectProperty2Assembler} asks
+     * {@link #uiEntryExists} while it reads {@code object_property.txt} and drops any
+     * {@code bindui:} line whose entry is not among them, as C's {@code ui_entry_search} does. The
+     * object properties reaching the grouping above therefore all name a real entry. The
+     * {@code player_property.txt} bindings are not checked when they are read, so for those the
+     * grouping's own {@code spec != null} test is what drops an unknown name.
+     *
      * <p><b>Load order drift from C's {@code pl[]}.</b> C's own array ({@code init.c}) parses
      * {@code slay.txt} and {@code brand.txt} before {@code monster_base.txt} exists, even though
      * {@code parse_slay_base} ({@code obj-init.c}) looks a monster base up by name and hard-fails with
@@ -336,7 +396,8 @@ public class GameConstants {
      * quests, hints, names, flavours, chest traps. Flavours still follow the object kinds they attach
      * to, and quests still follow monsters.
      *
-     * <p>Function init coded before 261010, commented in full on 261010.
+     * <p>Function init coded before 261010, commented in full on 261010, updated on 261116 for
+     * {@link #entries}.
      *
      * @param core the core whose inbox is read for the front end's {@code UIEntriesLoaded} message
      * @return {@code true} if another message handled during that wait asked the core to stop, in which
@@ -381,7 +442,9 @@ public class GameConstants {
                 }
                 message = core.getCoreChannel().coreReceiver().receive();
             }
-
+            
+            GameConstants.entries = new ArrayList<>(entries);
+                    
             file = "player_property.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing player properties...");
             PlayerDataLoader.loadPlayerProperties();     // Dependent on UIEntry

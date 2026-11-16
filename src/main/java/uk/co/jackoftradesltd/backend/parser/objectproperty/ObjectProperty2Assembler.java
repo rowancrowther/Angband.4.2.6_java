@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseUtils;
+import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
@@ -50,7 +51,7 @@ import java.util.Optional;
  * line by line, so the first fault in file order is the one reported, a repeated {@code msg:},
  * {@code desc:}, {@code adjective:}, {@code neg-adjective:}, {@code power:} or {@code mult:}
  * replaces the earlier value, a {@code type-mult:} line for a tval already seen replaces that
- * tval's figure, and every {@code bindui:} binds.
+ * tval's figure, and every {@code bindui:} that names a UI entry binds.
  *
  * <p><b>Handlers.</b> Each directive has a method named for it, standing in for the C handler of
  * the same name: {@link #parseName} ({@code parse_object_property_name}), {@link #parseType},
@@ -86,6 +87,17 @@ import java.util.Optional;
  * ({@link #prevCode}) in the new type's table, and a {@code type:} line before any {@code code:}
  * builds the payload for index 0 of that table.
  *
+ * <p><b>The UI binding.</b> C's {@code parse_object_property_bindui} has the parser read the aux
+ * and value figures before the handler runs, then calls {@code bind_object_property_to_ui_entry_by_name},
+ * which drops the bind silently if {@code ui_entry_search} finds no entry of that name. {@link #parseBindui}
+ * keeps that order: it refuses a bad figure first, then asks {@link GameConstants#uiEntryExists}
+ * whether an entry has the name (with any {@code <TAG>} folded in), and adds no binding if none
+ * does. The names are the specs in {@link GameConstants#entries}, which {@code GameConstants.init}
+ * fills from the front end's {@code UIEntriesLoaded} message before it loads
+ * {@code object_property.txt}. This class reads that list and never the front end, so it stays on
+ * the IO side of the boundary. With the list unset the lookup throws an
+ * {@link IllegalStateException}, where C's {@code entries[]} is simply empty.
+ *
  * <p><b>Where this class differs from C.</b>
  * <ul>
  *   <li>A {@code type:} line that carries an index past the end of the new type's table is
@@ -101,9 +113,6 @@ import java.util.Optional;
  *       either of the others. The index-0 payload of a record with a type and no code is
  *       {@code OM_STR} or {@code ELEM_ACID}, as in C, because {@link #parsePrevCode} adds the
  *       1.</li>
- *   <li>A {@code bindui:} binding does not record the type and index the property held at its
- *       line, as C's {@code bind_object_property_to_ui_entry_by_name} call does. The binding is read
- *       back only against the property's final type and code, since the binding holds neither.</li>
  *   <li>Names are looked up with {@code lookup} on each enum, which takes the constant's full Java
  *       name ({@code OM_STR}, {@code OF_FREE_ACT}, {@code ELEM_FIRE}) as well as C's name without
  *       the prefix; C's tables accept only the second.</li>
@@ -122,7 +131,8 @@ import java.util.Optional;
  *       Accepted deviation, decided 261009, "for the time being".</li>
  * </ul>
  *
- * <p>Class ObjectProperty2Assembler coded on 261114, commented in full on 261114.
+ * <p>Class ObjectProperty2Assembler coded on 261114, commented in full on 261114, updated on 261116
+ * for the check of the {@code bindui:} entry name.
  *
  * @author Rowan Crowther
  */
@@ -922,15 +932,28 @@ public class ObjectProperty2Assembler implements Assembler<ObjectProperty2ParseR
      * read as non-zero makes the binding aux. The explicit value is read by
      * {@link ParseUtils#parseIntString} (message token {@code optional value}); when there is none it
      * stays {@code null}, which keeps C's {@code parser_hasval} distinction between no value and a
-     * real 0. The result is added to the property's list of bindings, so every {@code bindui:} line
-     * binds.
+     * real 0. The figures are read first, so a bad aux or value stops the load whatever the name, as
+     * in C, where the parser reads every field before the handler runs. Only then is the name looked
+     * up: the binding is added to the property's list only if an entry has that name, and a line
+     * naming no entry adds nothing and raises no error.
      *
-     * <p>C binds straight onto the named {@code struct ui_entry} and drops the bind silently if no
-     * entry has that name. No UI entry exists yet when the file is read, so this method only builds
-     * the {@link ObjectProperty.UIBinding}; {@code GameConstants} matches it to an entry later. The
-     * binding carries no type or index of its own (see the class comment).
+     * <p>C binds straight onto the named {@code struct ui_entry}, found by {@code ui_entry_search},
+     * and drops the bind silently if no entry has that name. The port has no {@code struct ui_entry}
+     * on this side, so it asks {@link GameConstants#uiEntryExists}, which searches the specs in
+     * {@link GameConstants#entries}, the list the front end sent over the channel. The name searched
+     * is the whole {@code name<TAG>}, compared exactly as C's {@code strcmp} does. This method
+     * builds the {@link ObjectProperty.UIBinding}; {@code GameConstants} later groups the bindings
+     * by entry.
      *
-     * <p>Function parseBindui coded on 261114, commented in full on 261114.
+     * <p>The binding is frozen at its line, as in C, where
+     * {@code bind_object_property_to_ui_entry_by_name} is called straight away with the property's
+     * {@code type} and {@code index} as they are then. The binding takes the property's current type
+     * and payload, which are replaced rather than changed in place by a later {@code type:} or
+     * {@code code:}, so a later line does not alter it. A {@code bindui:} before any {@code code:}
+     * takes the index-0 payload that {@link #parseType} built, which is C's index 0.
+     *
+     * <p>Function parseBindui coded on 261114, commented in full on 261114 (the type and code held
+     * by the binding described 261116), updated on 261116 for the lookup of the entry name.
      *
      * @param property  the property being built
      * @param directive the {@code bindui} directive
@@ -938,6 +961,9 @@ public class ObjectProperty2Assembler implements Assembler<ObjectProperty2ParseR
      * @throws DataFileParseException if the directive does not hold exactly four values, the aux
      *                                figure is not a number {@code strtol} would read, or the
      *                                explicit value is not
+     * @throws IllegalStateException  if {@link GameConstants#entries} has not been set, which is the
+     *                                case until {@code GameConstants.init} has received the front
+     *                                end's entries
      */
     private void parseBindui(ObjectProperty property, Directive directive, String filename) {
         if (directive.values().size() != 4) {
@@ -961,6 +987,7 @@ public class ObjectProperty2Assembler implements Assembler<ObjectProperty2ParseR
         
         String bindingTag = tag.isEmpty() ? "" : "<" + tag + ">";
         String bindingName = name + bindingTag;
+                
         Optional<Boolean> isAux = ParseUtils.isTrue(auxString);
         if (isAux.isEmpty()) {
             String msg = "Object property starting at line: " + directive.line() + " of file: " + filename + " has " +
@@ -973,8 +1000,12 @@ public class ObjectProperty2Assembler implements Assembler<ObjectProperty2ParseR
         if (optionalUID != null) {
             bindingValue = ParseUtils.parseIntString("Object property", optionalUID, directive.line(), filename, "optional value");
         }
+
+        // Check it's a valid UIEntry name
+        boolean valid = GameConstants.uiEntryExists(bindingName);
+        if (!valid) return;
         
-        property.addBoundEntry(new ObjectProperty.UIBinding(bindingName, bindingValue, bindingIsAux));
+        property.addBoundEntry(new ObjectProperty.UIBinding(bindingName, bindingValue, bindingIsAux, property.getPayload(), property.getType()));
     }
     
     /**

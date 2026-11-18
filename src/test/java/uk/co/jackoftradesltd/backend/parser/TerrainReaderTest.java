@@ -401,36 +401,168 @@ class TerrainReaderTest {
     }
 
     // =====================================================================
-    // Where the grammar is stricter than C (docs/grammar_issues.md)
+    // Missing, repeated and out-of-order directives, as C (Issue_Approach_Order.md Stage 7a)
     // =====================================================================
 
-    /** C: {@code parse_feat_code} is the only line a record needs. */
+    /**
+     * C: {@code parse_feat_code} is the only line a record needs. A slot that never sees a
+     * {@code graphics:} line keeps the zeroed {@code d_char} and {@code d_attr}, which are NUL and
+     * {@code COLOUR_DARK}.
+     *
+     * <p>Function aRecordWithOnlyACodeLoadsAsInC coded on 261118, commented in full on 261118.
+     */
     @Test
-    void aRecordWithOnlyACodeIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("code-only.txt", "code:FLOOR\n");
+    void aRecordWithOnlyACodeLoadsAsInC() throws IOException {
+        ParseResult<Feature> r = load("code-only.txt", "code:FLOOR\n");
+
+        assertEquals(1, r.items().size());
+        assertEquals(TerrainFlags.FEAT_FLOOR, r.items().get(0).getCodeFlags());
+        assertEquals("", r.items().get(0).getName());
+        assertNulAndDark(r.items().get(0));
+    }
+
+    /**
+     * C: with no {@code graphics:} line the slot keeps NUL and {@code COLOUR_DARK}, whatever the
+     * code or the name is. The floor and the name "open floor" have no special standing.
+     *
+     * <p>Function aRecordWithNoGraphicsLoadsAsNulAndDarkForAnyCodeAndName coded on 261118,
+     * commented in full on 261118.
+     */
+    @Test
+    void aRecordWithNoGraphicsLoadsAsNulAndDarkForAnyCodeAndName() throws IOException {
+        String[][] cases = {
+                {"code:FLOOR\nname:open floor\n", "open floor"},
+                {"code:FLOOR\nname:lava\n", "lava"},
+                {"code:CLOSED\nname:closed door\n", "closed door"},
+                {"code:CLOSED\nname:open floor\n", "open floor"},
+        };
+        for (String[] c : cases) {
+            ParseResult<Feature> r = load("no-graphics.txt", c[0]);
+
+            assertEquals(1, r.items().size(), c[0]);
+            assertEquals(c[1], r.items().get(0).getName(), c[0]);
+            assertNulAndDark(r.items().get(0));
+        }
+    }
+
+    /**
+     * C: a {@code graphics:} line is assigned whatever the code or name, so a non-floor terrain
+     * keeps the glyph and colour it was given and a real glyph in the dark colour is not mistaken
+     * for an absent line.
+     *
+     * <p>Function aGraphicsLineIsUsedForAnyCodeAndKeepsADarkColour coded on 261118, commented in full
+     * on 261118.
+     */
+    @Test
+    void aGraphicsLineIsUsedForAnyCodeAndKeepsADarkColour() throws IOException {
+        ParseResult<Feature> r = load("any-code.txt",
+                "code:FLOOR\ngraphics:.:d\ncode:CLOSED\nname:closed door\ngraphics:+:U\n");
+
+        assertEquals(new AngbandDisplayCharacter('.', ColourEnum.COLOUR_DARK),
+                r.items().get(0).getDisplayCharacter());
+        assertEquals(new AngbandDisplayCharacter('+', ColourEnum.COLOUR_LIGHT_UMBER),
+                r.items().get(1).getDisplayCharacter());
     }
 
     @Test
-    void aRecordWithNoGraphicsIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("no-graphics.txt", "code:FLOOR\nname:open floor\n");
-    }
+    void aRecordWithNoNameLoadsWithAnEmptyName() throws IOException {
+        ParseResult<Feature> r = load("no-name.txt", "code:FLOOR\ngraphics:.:w\n");
 
-    @Test
-    void aRecordWithNoNameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("no-name.txt", "code:FLOOR\ngraphics:.:w\n");
+        assertEquals("", r.items().get(0).getName());
+        assertEquals(new AngbandDisplayCharacter('.', ColourEnum.COLOUR_WHITE),
+                r.items().get(0).getDisplayCharacter());
     }
 
     /** C: after {@code code:} the handlers run in whatever order the lines come. */
     @Test
-    void graphicsBeforeTheNameIsAHardErrorHereWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError("graphics-first.txt", "code:FLOOR\ngraphics:.:w\nname:open floor\n");
+    void graphicsBeforeTheNameLoadsAsInC() throws IOException {
+        ParseResult<Feature> r = load("graphics-first.txt", "code:FLOOR\ngraphics:.:w\nname:open floor\n");
+
+        assertEquals("open floor", r.items().get(0).getName());
+        assertEquals(new AngbandDisplayCharacter('.', ColourEnum.COLOUR_WHITE),
+                r.items().get(0).getDisplayCharacter());
     }
 
-    /** C: {@code parse_feat_graphics} assigns, so a second line replaces the first. */
+    /** C: {@code parse_feat_graphics} assigns, so a second line in the same record replaces the first. */
     @Test
-    void aRepeatedGraphicsLineIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
-        assertHardError("two-graphics.txt", VALID_RECORD + "graphics:#:r\n");
+    void aRepeatedGraphicsLineKeepsTheLastAsInC() throws IOException {
+        ParseResult<Feature> r = load("two-graphics.txt", VALID_RECORD + "graphics:#:r\n");
+
+        assertEquals(new AngbandDisplayCharacter('#', ColourEnum.COLOUR_RED),
+                r.items().get(0).getDisplayCharacter());
     }
+
+    /**
+     * C: {@code parse_feat_code} picks the same {@code f_info} slot for a repeated code and
+     * {@code parse_feat_graphics} assigns into it, so the four orders of "graphics or none" give: the
+     * later line when there is one, otherwise what the slot already held.
+     *
+     * <p>Function aRepeatedCodeTakesTheLaterGraphicsOtherwiseKeepsTheEarlier coded on 261118,
+     * commented in full on 261118.
+     */
+    @Test
+    void aRepeatedCodeTakesTheLaterGraphicsOtherwiseKeepsTheEarlier() throws IOException {
+        Feature noneThenLine = load("o1.txt", "code:FLOOR\ncode:FLOOR\ngraphics:#:r\n").items().get(0);
+        Feature lineThenNone = load("o2.txt", "code:FLOOR\ngraphics:.:w\ncode:FLOOR\nflags:LOS\n").items().get(0);
+        Feature lineThenLine = load("o3.txt", "code:FLOOR\ngraphics:.:w\ncode:FLOOR\ngraphics:#:r\n").items().get(0);
+        Feature noneThenNone = load("o4.txt", "code:FLOOR\ncode:FLOOR\nflags:LOS\n").items().get(0);
+
+        assertEquals(new AngbandDisplayCharacter('#', ColourEnum.COLOUR_RED), noneThenLine.getDisplayCharacter());
+        assertEquals(new AngbandDisplayCharacter('.', ColourEnum.COLOUR_WHITE), lineThenNone.getDisplayCharacter());
+        assertEquals(new AngbandDisplayCharacter('#', ColourEnum.COLOUR_RED), lineThenLine.getDisplayCharacter());
+        assertNulAndDark(noneThenNone);
+    }
+
+    /** C: a header with no records runs {@code finish_parse_feat} over the zeroed table and loads. */
+    @Test
+    void anEmptyFileLoadsWithNoRecords() throws IOException {
+        assertEquals(0, load("empty.txt", "").items().size());
+    }
+
+    /**
+     * C: {@code parse_feat_name} returns {@code PARSE_ERROR_REPEATED_DIRECTIVE} when the slot's
+     * name is already set, so a second {@code name:} refuses even with the same text and whatever
+     * lines come between.
+     *
+     * <p>Function aSecondNameLineInOneRecordIsRefusedAsInC coded on 261118, commented in full on
+     * 261118.
+     */
+    @Test
+    void aSecondNameLineInOneRecordIsRefusedAsInC() throws IOException {
+        assertFatal("two-names.txt", "code:FLOOR\nname:a\nname:b\ngraphics:.:w\n", "more than one name");
+        assertFatal("same-name-twice.txt", "code:FLOOR\nname:a\nname:a\n", "more than one name");
+        assertFatal("names-apart.txt", "code:FLOOR\nname:a\ngraphics:.:w\nflags:LOS\nname:b\n",
+                "more than one name");
+        assertFatal("three-names.txt", "code:FLOOR\nname:a\nname:b\nname:c\n", "more than one name");
+    }
+
+    /**
+     * C: the name check is on the slot, so a second record with the same code and a name is refused
+     * when the slot already has one, and accepted when it did not. Two codes with the same name are
+     * separate slots.
+     *
+     * <p>Function aNameOnARepeatedCodeFollowsTheSlotAsInC coded on 261118, commented in full on
+     * 261118.
+     */
+    @Test
+    void aNameOnARepeatedCodeFollowsTheSlotAsInC() throws IOException {
+        assertFatal("slot-a-b.txt", "code:FLOOR\nname:a\ncode:FLOOR\nname:b\n", "second name");
+        assertEquals("a", load("slot-a-none.txt", "code:FLOOR\nname:a\ncode:FLOOR\nflags:LOS\n")
+                .items().get(0).getName());
+        assertEquals("b", load("slot-none-b.txt", "code:FLOOR\ncode:FLOOR\nname:b\n")
+                .items().get(0).getName());
+        ParseResult<Feature> two = load("two-codes.txt", "code:FLOOR\nname:a\ncode:CLOSED\nname:a\n");
+        assertEquals(2, two.items().size());
+        assertEquals("a", two.items().get(1).getName());
+    }
+
+    private void assertNulAndDark(Feature f) {
+        assertEquals(new AngbandDisplayCharacter('\0', ColourEnum.COLOUR_DARK), f.getDisplayCharacter());
+    }
+
+    // =====================================================================
+    // Where the grammar is stricter than C (docs/grammar_issues.md)
+    // =====================================================================
 
     /** C: {@code string_append} on a {@code walk-msg:} line that already has text, so the lines join. */
     @Test
@@ -470,12 +602,6 @@ class TerrainReaderTest {
     @Test
     void anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
         assertHardError("empty-flags.txt", VALID_RECORD + "flags:\n");
-    }
-
-    /** C: a file with a header and no records runs {@code finish_parse_feat} over a zeroed table. */
-    @Test
-    void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertHardError("empty.txt", "");
     }
 
     /** C: {@code strtoul(tok, &z, 0)}, so {@code 0x3} is 3. */

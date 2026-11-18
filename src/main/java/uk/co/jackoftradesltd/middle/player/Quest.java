@@ -41,11 +41,14 @@ import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
  * port holds plain {@code int}s, and the shipped data (levels 99 and 100) never gets near that.
  *
  * <p><b>Status:</b> the accessors, {@link #copy()} and the {@code quest.txt} load are ported, and
- * {@link PlayerQuest#isQuest} and {@link PlayerQuest#playerQuestsReset} use them. The class has no
- * setters yet: the only C code that changes a quest after birth is {@code quest_check}, which bumps
- * {@code cur_num} and zeroes {@code level}, and it is not ported.
+ * {@link PlayerQuest#isQuest} and {@link PlayerQuest#playerQuestsReset} use them. The setters exist
+ * because {@code QuestAssembler} fills a quest one directive at a time, as C's {@code parse_quest_*}
+ * hooks fill the current {@code struct quest}. The only C code that changes a quest after birth is
+ * {@code quest_check}, which bumps {@code cur_num} and zeroes {@code level}; it is not ported, and when it
+ * is, those two setters are what it will call on a character's own copy.
  *
- * <p>Class Quest coded before 261009, commented in full on 261009.
+ * <p>Class Quest coded before 261009, commented in full on 261118 (setters added to the status note;
+ * earlier comment pass 261009).
  *
  * @author Rowan Crowther
  */
@@ -217,5 +220,66 @@ public class Quest {
      */
     public Quest copy() {
         return new Quest(0, name, level, race, 0, maxNumber);
+    }
+
+    /**
+     * Writes {@link #currentNumber}. {@code QuestAssembler} seeds it with 0 at load, as C's
+     * {@code mem_zalloc} leaves {@code cur_num}; the unported {@code quest_check} is what increments it on a
+     * character's copy.
+     *
+     * <p>Function setCurrentNumber coded before 261118, commented in full on 261118.
+     *
+     * @param currentNumber the number of the target killed so far
+     */
+    public void setCurrentNumber(int currentNumber) {
+        this.currentNumber = currentNumber;
+    }
+
+    /**
+     * Writes {@link #level}. No range check is made here: {@code QuestAssembler} stores the {@code level:}
+     * value modulo 256 to match C's {@code uint8_t}. On a character's own copy the unported
+     * {@code quest_check} is what will set it to 0 when the quest is finished.
+     *
+     * <p>Function setLevel coded before 261118, commented in full on 261118.
+     *
+     * @param level the dungeon depth at which the target is found
+     */
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
+    /**
+     * Writes {@link #maxNumber}, the number that must be killed for completion. No range check is made
+     * here.
+     *
+     * <p>Function setMaxNumber coded before 261118, commented in full on 261118.
+     *
+     * @param maxNumber the number that must be killed for completion
+     */
+    public void setMaxNumber(int maxNumber) {
+        this.maxNumber = maxNumber;
+    }
+
+    /**
+     * Writes {@link #name}, kept as given (C's {@code string_make} of the {@code name:} line).
+     *
+     * <p>Function setName coded before 261118, commented in full on 261118.
+     *
+     * @param name the display name
+     */
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    /**
+     * Writes {@link #race}. The reference is stored as given and not copied, so the quest keeps sharing the
+     * registry's {@link MonsterRace} as C's pointer does (see {@link #copy()}).
+     *
+     * <p>Function setRace coded before 261118, commented in full on 261118.
+     *
+     * @param race the monster race that must be killed to complete the quest
+     */
+    public void setRace(MonsterRace race) {
+        this.race = race;
     }
 }

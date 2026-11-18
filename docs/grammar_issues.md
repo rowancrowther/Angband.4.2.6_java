@@ -1764,15 +1764,18 @@ Found 2026-10-18 during `/port PlayerPropertyReader.java`. Not fixed.
 - Indentation is the shared `CommentsAndEol.g4` gap;
   `PlayerPropertyReaderTest.anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pins it for `PlayerPropertyLexer`.
 
-## `TerrainFeatureGrammar.g4` and `TerrainFeatureLexer.g4`: a fixed three-line header, a repeated `graphics:`, replaced message lines, space-only and empty flags, base-10 numbers with nothing after them, a second field after `resist-flag:` and an unknown colour name differ from C
+## `TerrainFeatureGrammar.g4` and `TerrainFeatureLexer.g4`: replaced message lines, space-only and empty flags, base-10 numbers with nothing after them, a second field after `resist-flag:` and an unknown colour name differ from C
 
-Found 2026-10-19 during `/port TerrainReader.java`. Not fixed.
+Found 2026-10-19 during `/port TerrainReader.java`. Updated 2026-11-18: the record order, the absent `name:` and `graphics:`, the repeated
+`graphics:`, the empty file and the repeated `name:` are closed (Stage 7a of `docs/Issue_Approach_Order.md`); the rest is not fixed.
 
 ### What C does
 
 - `init_parse_feat` in `init.c` registers sixteen handlers. A record starts at `code:`, which picks the `f_info` slot, and every other
   line needs only a slot to act on, so `code:FLOOR` on its own is a record and the lines after it come in any order.
-- `parse_feat_graphics` assigns, so a second `graphics:` replaces the first.
+- `parse_feat_graphics` is the only writer of the slot's `d_char` and `d_attr`, which `mem_zalloc` leaves at NUL and `COLOUR_DARK`. It
+  assigns, so a second `graphics:` replaces the first, and a record with no `graphics:` line leaves the slot as it was, whatever the code or
+  the name. For a repeated code the later line wins, otherwise the earlier value stays.
 - `parse_feat_desc`, `parse_feat_walk_msg`, `parse_feat_run_msg`, `parse_feat_hurt_msg`, `parse_feat_die_msg`,
   `parse_feat_confused_msg`, `parse_feat_look_prefix` and `parse_feat_look_in_preposition` all call `string_append`, so repeated lines join
   with nothing between them. `parse_feat_name` is the one that refuses a repeat, with `PARSE_ERROR_REPEATED_DIRECTIVE`.
@@ -1788,10 +1791,18 @@ Found 2026-10-19 during `/port TerrainReader.java`. Not fixed.
 
 ### What Java does
 
-- `TerrainFeatureGrammar.g4`: `terrain` is `code`, `name` and `graphics` in that order, then the optional lines. A record missing any of the
-  three, or with them in another order, is a syntax error, and so is a second `graphics:`, because the optional group has no alternative for
-  it.
-- `TerrainFeatureGrammar.g4`: `file` is `recordCount` and one or more `terrain`, so a header with no records is a syntax error.
+- `TerrainFeatureGrammar.g4`: `terrain` is `code` followed by any mix of the other directives in any order and number, and `file` is
+  zero or more `terrain`. [<span style="color:#006400">**CLOSED**</span> 26-11-18: a record with only a code, one with no `name:` or `graphics:`, `graphics:` before `name:`, a repeated
+  `graphics:` (the last wins) and an empty file all load as in C. A record with no `graphics:` leaves glyph and colour empty and
+  `TerrainFeatureAssembler` builds NUL in `COLOUR_DARK`; for a repeated code the later line wins, otherwise the earlier display character
+  is kept. A second `name:` in one record is counted in `nameCount` and refused, as `parse_feat_name` refuses it; the cross-record check
+  for a repeated code was already there. Pinned by `TerrainReaderTest.aRecordWithOnlyACodeLoadsAsInC`,
+  `aRecordWithNoGraphicsLoadsAsNulAndDarkForAnyCodeAndName`, `aGraphicsLineIsUsedForAnyCodeAndKeepsADarkColour`,
+  `aRecordWithNoNameLoadsWithAnEmptyName`, `graphicsBeforeTheNameLoadsAsInC`, `aRepeatedGraphicsLineKeepsTheLastAsInC`,
+  `aRepeatedCodeTakesTheLaterGraphicsOtherwiseKeepsTheEarlier`, `anEmptyFileLoadsWithNoRecords`,
+  `aSecondNameLineInOneRecordIsRefusedAsInC` and `aNameOnARepeatedCodeFollowsTheSlotAsInC`, and in `TerrainFeatureAssemblerTest` by
+  `anAbsentGraphicsLineIsNulAndDark`, `anAbsentGraphicsLineOnARepeatedCodeKeepsTheEarlierOne`,
+  `anAbsentGraphicsLineOnTheFirstRecordIsReplacedByALaterOne` and `aRecordWithMoreThanOneNameLineIsFatal`.]
 - `TerrainFeatureGrammar.g4`: `walk_message`, `run_message`, `hurt_message`, `die_message`, `confused_message`, `look_prefix` and
   `look_in_preposition` assign into the record, so the last line wins. `desc` is the one that adds (`descInit + $desc.descStr`), as C does.
   `priority`, `digging`, `mimic` and `resist_flag` assign, as C does.
@@ -1802,13 +1813,10 @@ Found 2026-10-19 during `/port TerrainReader.java`. Not fixed.
 - `AngbandDisplayCharacter.g4`: `COLOUR_VALUES` is built from C's colour characters and names, so `graphics:.:nonsense` is a lexer error.
   C loads it and draws white.
 - Indentation is the shared `CommentsAndEol.g4` gap under "Leading whitespace on a line" above.
-- All of these are hard errors except the replaced message lines: nothing loads and the messages come back.
-- `TerrainReaderTest.aRecordWithOnlyACodeIsAHardErrorHereWhereCAcceptsIt`, `aRecordWithNoGraphicsIsAHardErrorHereWhereCAcceptsIt`,
-  `aRecordWithNoNameIsAHardErrorHereWhereCAcceptsIt`, `graphicsBeforeTheNameIsAHardErrorHereWhereCAcceptsAnyOrder`,
-  `aRepeatedGraphicsLineIsAHardErrorHereWhereCKeepsTheLast`, `repeatedMessageLinesReplaceEachOtherHereWhereCAppendsThem`,
+- The ones still open are hard errors except the replaced message lines: nothing loads and the messages come back.
+- `TerrainReaderTest.repeatedMessageLinesReplaceEachOtherHereWhereCAppendsThem`,
   `repeatedLookLinesReplaceEachOtherHereWhereCAppendsThem`, `flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo`,
-  `anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt`, `aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile`,
-  `aHexadecimalPriorityIsAHardErrorHereWhereCReadsBaseZero`, `textAfterThePriorityNumberIsAHardErrorHereWhereCIgnoresIt`,
+  `anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt`, `aHexadecimalPriorityIsAHardErrorHereWhereCReadsBaseZero`, `textAfterThePriorityNumberIsAHardErrorHereWhereCIgnoresIt`,
   `aSecondFieldAfterTheDiggingNumberIsAHardErrorHereWhereCIgnoresIt`, `aSecondFieldAfterTheResistFlagIsAHardErrorHereWhereCIgnoresIt`,
   `anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite` and `anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pin them.
 
@@ -1816,7 +1824,7 @@ Found 2026-10-19 during `/port TerrainReader.java`. Not fixed.
 
 - None on the shipped data: all 25 records have `code:`, `name:` and `graphics:` in that order, repeat no message line, put `|` between
   flags, and use plain decimal numbers and a colour from C's table.
-- The line order and a missing `name:` or `graphics:` are the likeliest to bite a hand-edited file, and each loses the whole file.
+- The line order and a missing `name:` or `graphics:` were the likeliest to bite a hand-edited file; [<span style="color:#006400">**CLOSED**</span> 26-11-18 for both.]
 - A repeated message line in a modded file keeps only the last line in Java, and C would have joined them; the look strings then get their
   one trailing space from `TerrainFeatureAssembler` either way.
 - `lib/gamedata/terrain.txt`: it differs from the upstream file in the `record-count:25` header with the blank line after it, one trailing

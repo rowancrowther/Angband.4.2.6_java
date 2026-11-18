@@ -22,6 +22,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.backend.parser.grammars.objectproperty2.ObjectProperty2Lexer;
+import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectProperty2Assembler;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
@@ -41,9 +43,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * End-to-end tests for the object-property pipeline: text file → ANTLR
- * lexer/parser ({@link uk.co.jackoftradesltd.backend.parser.grammars.objectproperty.ObjectPropertyLexer}
- * / {@code ObjectPropertyGrammar}) → {@link ObjectPropertyReader} →
- * {@link uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyAssembler}
+ * lexer/parser ({@link ObjectProperty2Lexer}
+ * / {@code ObjectProperty2Grammar}) → {@link ObjectPropertyReader} →
+ * {@link ObjectProperty2Assembler}
  * → resolved {@link ObjectProperty} domain objects, wrapped in a {@link ParseResult}.
  *
  * <p>The headline test runs against the real shipped

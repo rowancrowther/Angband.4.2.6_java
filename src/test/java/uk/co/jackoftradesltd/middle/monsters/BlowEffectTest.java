@@ -43,13 +43,15 @@ import static org.junit.jupiter.api.Assertions.*;
  * Tests for {@link BlowEffect}, the Java port of {@code struct blow_effect} in {@code mon-blows.h}.
  *
  * <p>The class has no behaviour beyond storing what the {@code parse_eff_*} handlers in
- * {@code mon-init.c} leave in the struct. The first group pins the constructor and getters,
+ * {@code mon-init.c} leave in the struct. The first group pins the full constructor and getters,
  * including the {@code null} and sentinel values that stand in for C's zeroed defaults. The second
- * group loads the shipped {@code blow_effects.txt} and checks every one of its thirty records
- * against a table typed in from that file, so the expected values come from the C data rather than
- * from the Java assembler.
+ * group pins the no-argument constructor, which is C's {@code mem_zalloc} state (including the ACID
+ * lash that C's zeroed {@code lash_type} 0 names), and the setters. The third group loads the
+ * shipped {@code blow_effects.txt} and checks every one of its thirty records against a table typed
+ * in from that file, so the expected values come from the C data rather than from the Java
+ * assembler.
  *
- * <p>Class BlowEffectTest coded on 261009, commented in full on 261009.
+ * <p>Class BlowEffectTest coded on 261009, commented in full on 261118.
  *
  * @author Rowan Crowther
  */
@@ -110,7 +112,7 @@ class BlowEffectTest {
         Projection lash = projection(ProjectionEnum.PROJ_POIS);
         BlowEffect e = new BlowEffect("POISON", 20, 10, "poison", ColourEnum.COLOUR_ORANGE,
                 ColourEnum.COLOUR_LIGHT_GREEN, ColourEnum.COLOUR_DARK, BlowEffectType.BET_ELEMENT,
-                ObjectFlag.OF_NONE, ElementEnum.ELEM_POIS, lash);
+                ObjectFlag.OF_NONE, ElementEnum.ELEM_POIS, ProjectionEnum.PROJ_POIS, lash);
 
         assertEquals("POISON", e.getName());
         assertEquals(20, e.getPower());
@@ -122,6 +124,7 @@ class BlowEffectTest {
         assertEquals(BlowEffectType.BET_ELEMENT, e.getEffectType());
         assertEquals(ObjectFlag.OF_NONE, e.getObjectFlagResist());
         assertEquals(ElementEnum.ELEM_POIS, e.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_POIS, e.getProjectionResist());
         assertSame(lash, e.getLashType());
     }
 
@@ -133,7 +136,7 @@ class BlowEffectTest {
         // itself stores whatever it is given, so null is legal for desc here even though the
         // assembler supplies "" (see realFileScalarFieldsMatchTheCData).
         BlowEffect e = new BlowEffect("NONE", 0, 0, null, ColourEnum.COLOUR_DARK, null, null, null,
-                ObjectFlag.OF_NONE, ElementEnum.ELEM_NONE, null);
+                ObjectFlag.OF_NONE, ElementEnum.ELEM_NONE, ProjectionEnum.PROJ_NONE, null);
 
         assertEquals("NONE", e.getName());
         assertEquals(0, e.getPower());
@@ -145,6 +148,7 @@ class BlowEffectTest {
         assertNull(e.getEffectType());
         assertEquals(ObjectFlag.OF_NONE, e.getObjectFlagResist());
         assertEquals(ElementEnum.ELEM_NONE, e.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_NONE, e.getProjectionResist());
         assertNull(e.getLashType());
     }
 
@@ -154,7 +158,7 @@ class BlowEffectTest {
         // PARALYZE: effect-type:flag, resist:FREE_ACT.
         BlowEffect e = new BlowEffect("PARALYZE", 0, 40, "paralyze", ColourEnum.COLOUR_LIGHT_RED,
                 ColourEnum.COLOUR_LIGHT_GREEN, null, BlowEffectType.BET_FLAG, ObjectFlag.OF_FREE_ACT,
-                ElementEnum.ELEM_NONE, null);
+                ElementEnum.ELEM_NONE, ProjectionEnum.PROJ_NONE, null);
 
         assertEquals(BlowEffectType.BET_FLAG, e.getEffectType());
         assertEquals(ObjectFlag.OF_FREE_ACT, e.getObjectFlagResist());
@@ -166,14 +170,231 @@ class BlowEffectTest {
     void numericFieldsAreNotClamped() {
         // SHATTER has the file's largest values (power 60, eval 300); nothing in C bounds them.
         BlowEffect big = new BlowEffect("SHATTER", 60, 300, "shatter", ColourEnum.COLOUR_YELLOW,
-                null, null, null, ObjectFlag.OF_NONE, ElementEnum.ELEM_NONE, null);
+                null, null, null, ObjectFlag.OF_NONE, ElementEnum.ELEM_NONE, ProjectionEnum.PROJ_NONE, null);
         assertEquals(60, big.getPower());
         assertEquals(300, big.getEval());
 
         BlowEffect negative = new BlowEffect("X", -5, -7, null, null, null, null, null,
-                ObjectFlag.OF_NONE, ElementEnum.ELEM_NONE, null);
+                ObjectFlag.OF_NONE, ElementEnum.ELEM_NONE, ProjectionEnum.PROJ_NONE, null);
         assertEquals(-5, negative.getPower());
         assertEquals(-7, negative.getEval());
+    }
+
+    // ---- The no-argument constructor and the setters ----------------------
+
+    /**
+     * C's {@code parse_eff_name} makes each record with {@code mem_zalloc}, so every number is 0,
+     * every pointer is NULL and every colour is 0, which is {@code COLOUR_DARK}. The port holds the
+     * empty string for the two NULL strings and its {@code X_NONE} values for the zeroed resist.
+     *
+     * <p>Function noArgumentConstructorHoldsCsZeroedStruct coded on 261118, commented in full on
+     * 261118.
+     */
+    @Test
+    @DisplayName("new BlowEffect() holds the state C's mem_zalloc gives a new record")
+    void noArgumentConstructorHoldsCsZeroedStruct() {
+        BlowEffect e = new BlowEffect();
+
+        assertEquals("", e.getName(), "C: NULL name");
+        assertEquals(0, e.getPower());
+        assertEquals(0, e.getEval());
+        assertEquals("", e.getDesc(), "C: NULL desc");
+        assertEquals(ColourEnum.COLOUR_DARK, e.getLoreAttr());
+        assertEquals(ColourEnum.COLOUR_DARK, e.getLoreAttrResist());
+        assertEquals(ColourEnum.COLOUR_DARK, e.getLoreAttrImmune());
+        assertNull(e.getEffectType(), "C: NULL effect_type");
+        assertEquals(ObjectFlag.OF_NONE, e.getObjectFlagResist());
+        assertEquals(ElementEnum.ELEM_NONE, e.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_NONE, e.getProjectionResist());
+    }
+
+    /**
+     * C's zeroed {@code lash_type} is 0, the first entry of {@code proj_name_list} and the first
+     * record of {@code projection.txt}, which is {@code code:ACID}. The effect-handler and
+     * {@code mon-spell.c} read it as {@code projections[0]}, so the default lash has to be that
+     * same first record, not just any projection with the ACID code.
+     *
+     * <p>Function noArgumentConstructorLashIsProjectionZeroWhichIsAcid coded on 261118, commented
+     * in full on 261118.
+     */
+    @Test
+    @DisplayName("new BlowEffect() holds projections[0], which is ACID, as C's zeroed lash_type does")
+    void noArgumentConstructorLashIsProjectionZeroWhichIsAcid() {
+        Projection first = WorldRegistry.getProjections().get(0);
+
+        assertEquals(ProjectionEnum.PROJ_ACID, first.getProjection(),
+                "projection.txt lists acid first, so C's index 0 is ACID");
+        assertSame(first, new BlowEffect().getLashType());
+    }
+
+    /**
+     * Two default effects are two objects, and they share the registry's one ACID record rather
+     * than each taking a copy, as two C records would both index {@code projections[0]}.
+     *
+     * <p>Function twoDefaultsAreIndependentButShareTheLashRecord coded on 261118, commented in
+     * full on 261118.
+     */
+    @Test
+    @DisplayName("two default effects are independent but share the one ACID projection record")
+    void twoDefaultsAreIndependentButShareTheLashRecord() {
+        BlowEffect first = new BlowEffect();
+        BlowEffect second = new BlowEffect();
+
+        first.setPower(5);
+        first.setName("A");
+
+        assertEquals(0, second.getPower());
+        assertEquals("", second.getName());
+        assertSame(first.getLashType(), second.getLashType());
+    }
+
+    /**
+     * The default lash is a registry lookup, which C does not need because it stores only the
+     * index. With the table empty the constructor fails at once with an
+     * {@link IllegalStateException}; this is the accepted deviation recorded in
+     * {@code docs/Accepted_Deviations.md}. The table is put back afterwards.
+     *
+     * <p>Function noArgumentConstructorNeedsTheProjectionsLoaded coded on 261118, commented in
+     * full on 261118.
+     */
+    @Test
+    @DisplayName("new BlowEffect() with no projections loaded is an IllegalStateException")
+    void noArgumentConstructorNeedsTheProjectionsLoaded() throws Exception {
+        Object saved = setProjections(null);
+        try {
+            assertThrows(IllegalStateException.class, BlowEffect::new);
+        } finally {
+            setProjections(saved);
+        }
+    }
+
+    /**
+     * The full constructor stores what it is given and never reads the registry, so it still works
+     * with no projections loaded, and a {@code null} lash stays {@code null}.
+     *
+     * <p>Function fullConstructorNeedsNoRegistry coded on 261118, commented in full on 261118.
+     */
+    @Test
+    @DisplayName("the full constructor does not touch the registry")
+    void fullConstructorNeedsNoRegistry() throws Exception {
+        Object saved = setProjections(null);
+        try {
+            BlowEffect e = new BlowEffect("X", 1, 2, "x", null, null, null, null,
+                    ObjectFlag.OF_NONE, ElementEnum.ELEM_NONE, ProjectionEnum.PROJ_NONE, null);
+
+            assertEquals("X", e.getName());
+            assertNull(e.getLashType());
+            assertNull(e.getLoreAttr());
+        } finally {
+            setProjections(saved);
+        }
+    }
+
+    /**
+     * Each setter replaces its own field and no other. Every field is changed from its default to
+     * a distinct value, and all twelve are read back afterwards, so a setter that wrote the wrong
+     * field, or two, shows up.
+     *
+     * <p>Function eachSetterReplacesItsOwnFieldOnly coded on 261118, commented in full on 261118.
+     */
+    @Test
+    @DisplayName("each setter replaces its own field and no other")
+    void eachSetterReplacesItsOwnFieldOnly() {
+        Projection poison = projection(ProjectionEnum.PROJ_POIS);
+        BlowEffect e = new BlowEffect();
+
+        e.setName("POISON");
+        e.setPower(20);
+        e.setEval(10);
+        e.setDesc("poison");
+        e.setLoreAttr(ColourEnum.COLOUR_ORANGE);
+        e.setLoreAttrResist(ColourEnum.COLOUR_LIGHT_GREEN);
+        e.setLoreAttrImmune(ColourEnum.COLOUR_YELLOW);
+        e.setEffectType(BlowEffectType.BET_ELEMENT);
+        e.setObjectFlagResist(ObjectFlag.OF_FREE_ACT);
+        e.setElementEnumResist(ElementEnum.ELEM_POIS);
+        e.setProjectionResist(ProjectionEnum.PROJ_POIS);
+        e.setLashType(poison);
+
+        assertEquals("POISON", e.getName());
+        assertEquals(20, e.getPower());
+        assertEquals(10, e.getEval());
+        assertEquals("poison", e.getDesc());
+        assertEquals(ColourEnum.COLOUR_ORANGE, e.getLoreAttr());
+        assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, e.getLoreAttrResist());
+        assertEquals(ColourEnum.COLOUR_YELLOW, e.getLoreAttrImmune());
+        assertEquals(BlowEffectType.BET_ELEMENT, e.getEffectType());
+        assertEquals(ObjectFlag.OF_FREE_ACT, e.getObjectFlagResist());
+        assertEquals(ElementEnum.ELEM_POIS, e.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_POIS, e.getProjectionResist());
+        assertSame(poison, e.getLashType());
+    }
+
+    /**
+     * C's {@code parse_eff_desc} appends with {@code string_append}, so two {@code desc:} lines
+     * make one longer description. The setter only replaces; the appending is the caller's job, and
+     * {@code BlowEffect2Assembler} does it by passing the old text plus the new. A second call
+     * with a shorter text therefore leaves only the second text.
+     *
+     * <p>Function setDescReplacesWhereCAppends coded on 261118, commented in full on 261118.
+     */
+    @Test
+    @DisplayName("setDesc replaces; the appending C does is the caller's")
+    void setDescReplacesWhereCAppends() {
+        BlowEffect e = new BlowEffect();
+
+        e.setDesc("reduce ");
+        e.setDesc(e.getDesc() + "strength");
+        assertEquals("reduce strength", e.getDesc());
+
+        e.setDesc("x");
+        assertEquals("x", e.getDesc());
+    }
+
+    /**
+     * C's {@code parse_eff_effect_type} replaces only the type string, so the one {@code resist}
+     * int survives a change of type. The setter does the same for the three resist fields: it
+     * leaves them as they are, and any clearing is the caller's decision (accepted deviation, see
+     * {@code docs/Accepted_Deviations.md}, "Changing effect-type: clears the resist").
+     *
+     * <p>Function setEffectTypeLeavesTheResistFieldsAlone coded on 261118, commented in full on
+     * 261118.
+     */
+    @Test
+    @DisplayName("setEffectType leaves the resist fields alone")
+    void setEffectTypeLeavesTheResistFieldsAlone() {
+        BlowEffect e = new BlowEffect();
+        e.setEffectType(BlowEffectType.BET_ELEMENT);
+        e.setElementEnumResist(ElementEnum.ELEM_FIRE);
+        e.setProjectionResist(ProjectionEnum.PROJ_FIRE);
+        e.setObjectFlagResist(ObjectFlag.OF_FREE_ACT);
+
+        e.setEffectType(BlowEffectType.BET_FLAG);
+
+        assertEquals(BlowEffectType.BET_FLAG, e.getEffectType());
+        assertEquals(ElementEnum.ELEM_FIRE, e.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_FIRE, e.getProjectionResist());
+        assertEquals(ObjectFlag.OF_FREE_ACT, e.getObjectFlagResist());
+    }
+
+    /**
+     * A setter given {@code null} stores it, as the full constructor does, so a caller can clear
+     * the effect type and the lash again.
+     *
+     * <p>Function settersStoreNullWhereTheFieldIsNullable coded on 261118, commented in full on
+     * 261118.
+     */
+    @Test
+    @DisplayName("setEffectType and setLashType accept null")
+    void settersStoreNullWhereTheFieldIsNullable() {
+        BlowEffect e = new BlowEffect();
+        e.setEffectType(BlowEffectType.BET_THEFT);
+
+        e.setEffectType(null);
+        e.setLashType(null);
+
+        assertNull(e.getEffectType());
+        assertNull(e.getLashType());
     }
 
     // ---- The shipped blow_effects.txt ------------------------------------
@@ -199,7 +420,9 @@ class BlowEffectTest {
      * {@code parse_eff_lash_type} falls back to {@code PROJ_MISSILE}.
      */
     private static final List<Expected> EXPECTED = List.of(
-            // NONE ships no lash-type:, so C's zeroed lash_type is 0, which is PROJ_ACID.
+            // NONE ships no lash-type:, so C's zeroed lash_type is 0, which is PROJ_ACID (the first
+            // entry of proj_name_list). The BlowEffect() default looks that projection up, so the
+            // expected lash is PROJ_ACID.
             new Expected("NONE", 0, 0, null, ColourEnum.COLOUR_DARK, null, null, null, null,
                     ProjectionEnum.PROJ_ACID),
             new Expected("HURT", 40, 0, "attack", LGREEN, null, null, null, null, MISSILE),
@@ -284,8 +507,11 @@ class BlowEffectTest {
             // C holds NULL for an absent desc (blowe.c: null(e->desc)); the assembler yields "".
             assertEquals(want.desc() == null ? "" : want.desc(), got.getDesc(), at + "desc");
             assertEquals(want.base(), got.getLoreAttr(), at + "lore-color-base");
-            assertEquals(want.resistColour(), got.getLoreAttrResist(), at + "lore-color-resist");
-            assertEquals(want.immuneColour(), got.getLoreAttrImmune(), at + "lore-color-immune");
+            // C's zeroed lore_attr_resist and lore_attr_immune are 0, which is COLOUR_DARK.
+            assertEquals(want.resistColour() == null ? ColourEnum.COLOUR_DARK : want.resistColour(),
+                    got.getLoreAttrResist(), at + "lore-color-resist");
+            assertEquals(want.immuneColour() == null ? ColourEnum.COLOUR_DARK : want.immuneColour(),
+                    got.getLoreAttrImmune(), at + "lore-color-immune");
             assertEquals(want.type(), got.getEffectType(), at + "effect-type");
         }
     }
@@ -299,12 +525,16 @@ class BlowEffectTest {
             Expected want = EXPECTED.get(i);
             BlowEffect got = effects.get(i);
             // C's single resist int starts at 0, which reads as ELEM_ACID in the element slot
-            // and OF_NONE in the flag slot.
+            // and OF_NONE in the flag slot. The port holds ELEM_NONE and PROJ_NONE for "no resist"
+            // in the element and projection slots (the accepted X_NONE register).
             ElementEnum wantElement = want.type() == BlowEffectType.BET_ELEMENT
-                    ? ElementEnum.valueOf("ELEM_" + want.resist()) : ElementEnum.ELEM_ACID;
+                    ? ElementEnum.valueOf("ELEM_" + want.resist()) : ElementEnum.ELEM_NONE;
+            ProjectionEnum wantProjection = want.type() == BlowEffectType.BET_ELEMENT
+                    ? ProjectionEnum.valueOf("PROJ_" + want.resist()) : ProjectionEnum.PROJ_NONE;
             ObjectFlag wantFlag = want.type() == BlowEffectType.BET_FLAG
                     ? ObjectFlag.valueOf("OF_" + want.resist()) : ObjectFlag.OF_NONE;
             assertEquals(wantElement, got.getElementEnumResist(), want.name() + ": element resist");
+            assertEquals(wantProjection, got.getProjectionResist(), want.name() + ": projection resist");
             assertEquals(wantFlag, got.getObjectFlagResist(), want.name() + ": flag resist");
         }
     }
@@ -332,18 +562,18 @@ class BlowEffectTest {
     }
 
     @Test
-    @DisplayName("an effect with no resist colours has both as null, never COLOUR_DARK")
-    void unsetResistColoursAreNullNotDark() throws IOException {
+    @DisplayName("an effect with no resist or immune colour holds COLOUR_DARK, as C's zeroed fields do")
+    void unsetResistColoursAreDarkAsInC() throws IOException {
         // C stores 0 (COLOUR_DARK) and blow_color() in mon-lore.c reads a zero resist and immune
-        // pair as "no protected colours". The port's null must stay distinct from an explicit Dark.
+        // pair as "no protected colours". The BlowEffect() constructor now holds the same zero.
         Map<String, BlowEffect> byName = new java.util.HashMap<>();
         for (BlowEffect e : realFile()) {
             byName.put(e.getName(), e);
         }
 
         for (String name : List.of("NONE", "HURT", "SHATTER", "BLACK_BREATH")) {
-            assertNull(byName.get(name).getLoreAttrResist(), name + ": resist colour");
-            assertNull(byName.get(name).getLoreAttrImmune(), name + ": immune colour");
+            assertEquals(ColourEnum.COLOUR_DARK, byName.get(name).getLoreAttrResist(), name + ": resist colour");
+            assertEquals(ColourEnum.COLOUR_DARK, byName.get(name).getLoreAttrImmune(), name + ": immune colour");
         }
         assertEquals(ColourEnum.COLOUR_DARK, byName.get("NONE").getLoreAttr(),
                 "NONE names lore-color-base:Dark explicitly");
@@ -353,7 +583,7 @@ class BlowEffectTest {
     @DisplayName("only ACID, ELEC, FIRE and COLD carry an immune colour")
     void onlyTheFourRawElementsHaveAnImmuneColour() throws IOException {
         List<String> withImmune = realFile().stream()
-                .filter(e -> e.getLoreAttrImmune() != null).map(BlowEffect::getName).toList();
+                .filter(e -> e.getLoreAttrImmune() != ColourEnum.COLOUR_DARK).map(BlowEffect::getName).toList();
 
         assertEquals(List.of("ACID", "ELEC", "FIRE", "COLD"), withImmune);
     }

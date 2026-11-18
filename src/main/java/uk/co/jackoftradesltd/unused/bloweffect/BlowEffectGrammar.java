@@ -16,7 +16,7 @@
  */
 
 // Generated from BlowEffectGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftradesltd.backend.parser.grammars.bloweffect;
+package uk.co.jackoftradesltd.unused.bloweffect;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATN;
@@ -26,7 +26,7 @@ import org.antlr.v4.runtime.atn.PredictionContextCache;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffectParseRecord;
+import uk.co.jackoftradesltd.unused.BlowEffectParseRecord;
 
 import java.util.ArrayList;
 import java.util.List;

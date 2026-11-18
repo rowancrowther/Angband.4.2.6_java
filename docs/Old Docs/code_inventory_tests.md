@@ -1215,7 +1215,7 @@
 
 ##### `ObjectPropertyReaderTest.java`
 
-**Responsible for:** End-to-end tests for the object-property pipeline: text file → ANTLR lexer/parser (uk.co.jackoftradesltd.backend.parser.grammars.objectproperty.ObjectPropertyLexer / ObjectPropertyGrammar) → ObjectPropertyReader → uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyAssembler → resol...
+**Responsible for:** End-to-end tests for the object-property pipeline: text file → ANTLR lexer/parser (uk.co.jackoftradesltd.backend.parser.grammars.objectproperty.ObjectPropertyLexer / ObjectPropertyGrammar) → ObjectPropertyReader → uk.co.jackoftradesltd.unused.ObjectPropertyAssembler → resol...
 
 **class `ObjectPropertyReaderTest`** — class Javadoc: ✔ · type stamp: —
 

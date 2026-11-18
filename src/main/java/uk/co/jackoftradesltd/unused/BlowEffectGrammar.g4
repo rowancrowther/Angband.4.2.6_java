@@ -35,7 +35,7 @@ parser grammar BlowEffectGrammar;
 options { tokenVocab = BlowEffectLexer; }
 
 @header {
-    import uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffectParseRecord;
+    import uk.co.jackoftradesltd.unused.BlowEffectParseRecord;
 
     import java.util.ArrayList;
     import java.util.List;

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.backend.parser.bloweffect;
+package uk.co.jackoftradesltd.unused;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -238,7 +238,7 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
 
             effects.add(new BlowEffect(name, power, eval, desc, base,
                     resist, immune, effectType, objectFlagResist,
-                    elementEnumResist, lash));
+                    elementEnumResist, null, lash));
         }
 
         return effects;

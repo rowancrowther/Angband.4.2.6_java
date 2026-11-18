@@ -48,8 +48,9 @@ import java.util.List;
  * grammar stripped ({@code FEAT_} for the code and mimic, {@code TF_} for terrain flags,
  * {@code RF_} for resist flags) and look the values up; parse {@code priority} and {@code digging}
  * as integers; and build the {@link AngbandDisplayCharacter} from the raw glyph and colour. The
- * grammar makes {@code graphics:} mandatory, so the display character is always built in practice.
- * The mimic is left {@code null} when the record has no {@code mimic:} line, never
+ * grammar leaves both empty when a record has no {@code graphics:} line, and the display character
+ * is then NUL in {@code COLOUR_DARK}, which is C's zeroed {@code d_char} and {@code d_attr}: it does
+ * not depend on the code or the name. The mimic is left {@code null} when the record has no {@code mimic:} line, never
  * {@code FEAT_NONE}: {@link Feature#isMimicing()} tests for {@code null}, so a {@code FEAT_NONE}
  * default would make every feature look like a mimic. An explicit {@code mimic:NONE} is valid, as it
  * is in C, where {@code FEAT_NONE} is index 0 of {@code list-terrain.h}.
@@ -79,7 +80,9 @@ import java.util.List;
  *       appended to the earlier text with no separator, as {@code string_append()} ({@code z-virt.c})
  *       does.</li>
  *   <li>{@code flags:} - added to the earlier flag set.</li>
- *   <li>{@code graphics:} - replaced; the grammar requires it on every record.</li>
+ *   <li>{@code graphics:} - replaced when the later record has the line, otherwise kept from the
+ *       earlier record, because {@code parse_feat_graphics()} is the only writer of the slot's glyph
+ *       and colour. A code that never has the line stays NUL in {@code COLOUR_DARK}.</li>
  *   <li>{@code mimic:}, {@code priority:}, {@code digging:}, {@code resist-flag:} - replaced when the
  *       later record has the line, otherwise kept from the earlier record.</li>
  * </ul>
@@ -104,7 +107,8 @@ import java.util.List;
  * {@code parse_feat_*} error ends the load through {@code parse_file_quit_not_found()}. Each one is
  * logged at fatal and thrown as a {@link DataFileParseException}: an unknown or sentinel code, mimic,
  * terrain flag or resist flag; a negative or unparseable {@code priority}; a {@code digging} outside
- * 1 to 5 or unparseable; an empty glyph; and a second {@code name:} for a repeated code. The first
+ * 1 to 5 or unparseable; a second {@code name:} line in one record, which the grammar reports as a
+ * count above one; and a second {@code name:} for a repeated code. The first
  * bad terrain flag on a line throws, as C's {@code parse_feat_flags()} stops at the first. No
  * record is skipped. An unknown colour is not an error:
  * like C's {@code color_text_to_attr()} and {@code color_char_to_attr()} ({@code z-color.c}), it
@@ -117,7 +121,8 @@ import java.util.List;
  * form of C's NULL pointer for the name, description, message and look strings.
  *
  * <p>Class TerrainFeatureAssembler coded before 260915, reworked to fatal errors and repeated codes
- * on 261030, commented in full on 261030, updated on 261105 for the removal of the soft-error path.
+ * on 261030, commented in full on 261030, updated on 261105 for the removal of the soft-error path,
+ * updated on 261118 for absent {@code graphics:} lines and a repeated {@code name:} in one record.
  *
  * @author Rowan Crowther
  */
@@ -168,9 +173,15 @@ public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRec
     public List<Feature> assemble(@NotNull List<TerrainFeatureParseRecord> records,
                                     String filename) {
         List<Feature> result = new ArrayList<>();
-        List<String> allFlagsSeen = new ArrayList<>();
         for (TerrainFeatureParseRecord record : records) {
             int line = record.line();
+            
+            if (record.nameCount() > 1) {
+                String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
+                        "more than one name value";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
 
             String rawCode = record.code();
             TerrainFlags flagCode;
@@ -190,11 +201,11 @@ public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRec
             }
 
             String name = record.name();
-            
+
             boolean noName = name.isEmpty();
             boolean duplicateCode = result.stream().anyMatch(f -> f.getTerrainFlag().equals(flagCode));
             Feature previous = result.stream().filter(f -> f.getTerrainFlag().equals(flagCode)).findFirst().orElse(null);
-            
+
             if (previous != null && duplicateCode) {
                 if (!name.isEmpty() && previous.getName().isEmpty())
                     name = record.name();
@@ -208,7 +219,7 @@ public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRec
                 logger.fatal(message);
                 throw new DataFileParseException(message);
             }
-            
+
             String description = "";
             if (previous != null)
                 description = previous.getDescription();
@@ -284,31 +295,53 @@ public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRec
                 }
                 flags.on(flag);
             }
-            // The grammar requires graphics:, so glyph and colour always arrive together and adc is
-            // always built; the isEmpty() guard below is defensive and keeps a lone half from
-            // becoming a partial display character.
+            // The grammar leaves glyph and colour empty together when the record has no graphics:
+            // line. firstAdc is what the earlier record for this code holds (NUL and dark if none),
+            // secondAdc is this record's, and the later one wins unless it is the NUL and dark
+            // "absent" value, in which case the earlier one is kept, as parse_feat_graphics assigns
+            // into the slot only when the line is present.
             String glyphStr = record.glyph();
             String colourStr = record.colour();
-            int wideGlyph = 0;
-            char glyph = '\0';
+            int wideGlyph;
+            char glyph;
             ColourEnum colourEnum = ColourEnum.fromCode(colourStr);
             if (colourEnum == null) {
                 colourEnum = ColourEnum.COLOUR_WHITE;
             }
+            
+            List<TerrainFlags> featuresList = new ArrayList<>();
+            for (Feature feature : result) {
+                featuresList.add(feature.getCode());
+            }
+            
             AngbandDisplayCharacter adc;
+            AngbandDisplayCharacter firstAdc = new AngbandDisplayCharacter('\0', ColourEnum.COLOUR_DARK);
+            AngbandDisplayCharacter secondAdc;
             if (glyphStr == null || glyphStr.isEmpty()) {
-                String message = "Terrain feature starting at line: " + line + " of file: " + filename + " has " +
-                        "an illegal empty glyph value: " + record.glyph();
-                logger.fatal(message);
-                throw new DataFileParseException(message);
-            }
-            wideGlyph = Character.codePointAt(glyphStr, 0);
-            if (!Character.isSupplementaryCodePoint(wideGlyph)) {
-                glyph = glyphStr.charAt(0);
-                adc = new AngbandDisplayCharacter(glyph, colourEnum);
+                secondAdc = new AngbandDisplayCharacter('\0', ColourEnum.COLOUR_DARK);
             } else {
-                adc = new AngbandDisplayCharacter(wideGlyph, colourEnum);
+                wideGlyph = Character.codePointAt(glyphStr, 0);
+                if (!Character.isSupplementaryCodePoint(wideGlyph)) {
+                    glyph = glyphStr.charAt(0);
+                    secondAdc = new AngbandDisplayCharacter(glyph, colourEnum);
+                } else {
+                    secondAdc = new AngbandDisplayCharacter(wideGlyph, colourEnum);
+                }
             }
+            
+            if (featuresList.contains(flagCode)) {
+                int index = featuresList.indexOf(flagCode);
+                Feature firstFeature = result.get(index);
+                firstAdc = firstFeature.getDisplayCharacter();
+            }
+            
+            if (firstAdc.getAttributeColour() == ColourEnum.COLOUR_DARK && firstAdc.getCharacter().equals("\0"))
+                adc = secondAdc;
+            else if (secondAdc.getCharacter().equals("\0") && secondAdc.getAttributeColour() == ColourEnum.COLOUR_DARK)
+                adc = firstAdc;
+            else 
+                adc = secondAdc;
+            
             String walkMsg = "";
             if (duplicateCode && previous != null)
                 walkMsg = previous.getWalkMsg();

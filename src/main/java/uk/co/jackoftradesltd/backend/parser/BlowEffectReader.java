@@ -20,10 +20,10 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffectAssembler;
-import uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffectParseRecord;
-import uk.co.jackoftradesltd.backend.parser.grammars.bloweffect.BlowEffectGrammar;
-import uk.co.jackoftradesltd.backend.parser.grammars.bloweffect.BlowEffectLexer;
+import uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffect2Assembler;
+import uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffect2ParseRecord;
+import uk.co.jackoftradesltd.backend.parser.grammars.bloweffect2.BlowEffect2Grammar;
+import uk.co.jackoftradesltd.backend.parser.grammars.bloweffect2.BlowEffect2Lexer;
 import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
 import uk.co.jackoftradesltd.channel.parser.ParseErrors;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
@@ -36,14 +36,16 @@ import java.util.List;
 
 /**
  * Loads {@code lib/gamedata/blow_effects.txt} into {@link BlowEffect} objects by driving the
- * ANTLR-generated {@code BlowEffectLexer} / {@code BlowEffectGrammar}. It is the thin
- * hand-written bridge between the generated grammar code and the game, implementing the shared
- * {@link Reader} contract.
+ * ANTLR-generated {@link BlowEffect2Lexer} / {@link BlowEffect2Grammar}, which turn each record
+ * into a {@link BlowEffect2ParseRecord}. It is the thin hand-written bridge between the generated
+ * grammar code and the game, implementing the shared {@link Reader} contract. The loader that
+ * calls it is {@code MonsterDataLoader.loadBlowEffects}, which hands the list to
+ * {@code MonsterRegistry.setBlowEffects}.
  * <p>
  * It stands in for the blow-effect data-file machinery in {@code mon-init.c}:
  * <ul>
  *   <li>{@code init_parse_eff} and the {@code parse_eff_*} handlers become the grammar plus
- *       {@link BlowEffectAssembler}, which resolves each raw directive into its enum or object;</li>
+ *       {@link BlowEffect2Assembler}, which resolves each raw directive into its enum or object;</li>
  *   <li>{@code run_parse_eff} (which calls {@code parse_file_quit_not_found}) becomes
  *       {@link GrammarDriver#run}, which opens the file; a file that cannot be read surfaces as an
  *       {@link IOException}, and the caller decides that it is fatal, as C's {@code quit()} is;</li>
@@ -61,16 +63,20 @@ import java.util.List;
  * Differences from C worth knowing about:
  * <ul>
  *   <li>The list is base 0 and holds only real records, with no blank trailing slot; this is the
- *       accepted deviation recorded in the registry's class block, so the {@code blow_effects_max}
- *       counter is the plain record count, one lower than C's.</li>
+ *       accepted deviation recorded in the {@code MonsterRegistry} class block, so the
+ *       {@code blow_effects_max} counter is the plain record count, one lower than C's.</li>
+ *   <li>The whole file is parsed before any record is assembled ({@link GrammarDriver#run}), where
+ *       C acts on each line as it is read. A file with a refused record early and a syntax error
+ *       later is therefore reported as the syntax error, where C reports the earlier line. Either
+ *       way the load stops and nothing is returned.</li>
  *   <li>The file is opened at exactly the path given. C's {@code parse_file} would look for a
  *       customised copy in the user directory first.</li>
  * </ul>
  *
- * @author Rowan Crowther
+ * <p>Class BlowEffectReader coded before 260915, commented in full on 261116, updated on 261116
+ * for the move to {@code BlowEffect2Lexer} / {@code BlowEffect2Grammar}.
  *
- * <p>Class BlowEffectReader coded before 260915, commented in full on 261017, updated on 261105
- * for the removal of the soft-error path.
+ * @author Rowan Crowther
  */
 public class BlowEffectReader implements Reader<BlowEffect> {
     /**
@@ -104,7 +110,7 @@ public class BlowEffectReader implements Reader<BlowEffect> {
 
     /**
      * The {@link GrammarDriver.Extractor} for this grammar: drive the {@code file} rule and hand
-     * back its records as {@link BlowEffectParseRecord}s, still holding raw text.
+     * back its records as {@link BlowEffect2ParseRecord}s, still holding raw text.
      * <p>
      * Syntax errors are fatal: {@link ParseErrors#throwIfAny()} runs straight after the parse and
      * throws a {@code ParseCancellationException}, which {@link GrammarDriver#run} does not catch,
@@ -121,11 +127,11 @@ public class BlowEffectReader implements Reader<BlowEffect> {
      * @param errorCatcher collector for the lexer/parser syntax errors
      * @return the parsed records in file order
      */
-    private static List<BlowEffectParseRecord> extract(
-            @NotNull BlowEffectGrammar parser,
+    private static List<BlowEffect2ParseRecord> extract(
+            @NotNull BlowEffect2Grammar parser,
             @NotNull ParseErrors errorCatcher) {
-        BlowEffectGrammar.FileContext output = parser.file();
-        List<BlowEffectParseRecord> results = output.blowEffects;
+        BlowEffect2Grammar.FileContext output = parser.file();
+        List<BlowEffect2ParseRecord> results = output.blowEffects;
         errorCatcher.throwIfAny();
 
         return new ArrayList<>(results);
@@ -135,16 +141,16 @@ public class BlowEffectReader implements Reader<BlowEffect> {
      * Run the parser and return the assembled effects wrapped in a {@link ParseResult}.
      * <p>
      * This is the Java counterpart of {@code run_parse_eff} and the {@code parse_eff_*} handlers
-     * in {@code mon-init.c}: it wires {@code BlowEffectLexer}, {@code BlowEffectGrammar},
-     * {@link #extract} and {@link BlowEffectAssembler} into {@link GrammarDriver#run}. As C stops
+     * in {@code mon-init.c}: it wires {@link BlowEffect2Lexer}, {@link BlowEffect2Grammar},
+     * {@link #extract} and {@link BlowEffect2Assembler} into {@link GrammarDriver#run}. As C stops
      * at the first error, so does this: a syntax error throws a
      * {@code ParseCancellationException} and a refused record throws a
      * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}, and no result is
      * returned. An unreadable file is an {@link IOException}, the analogue of
      * {@code parse_file_quit_not_found}'s {@code quit()}.
      *
-     * <p>Function parseWithResults coded before 260915, commented in full on 261017, updated on
-     * 261105 for the removal of the soft-error path.
+     * <p>Function parseWithResults coded before 260915, commented in full on 261116, updated on
+     * 261116 for the move to {@code BlowEffect2Lexer} / {@code BlowEffect2Grammar}.
      *
      * @param filename the name of the file
      * @return every blow effect in the file, in file order
@@ -152,10 +158,10 @@ public class BlowEffectReader implements Reader<BlowEffect> {
      */
     public ParseResult<BlowEffect> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
-                BlowEffectLexer::new,
-                BlowEffectGrammar::new,
+                BlowEffect2Lexer::new,
+                BlowEffect2Grammar::new,
                 BlowEffectReader::extract,
-                new BlowEffectAssembler(),
+                new BlowEffect2Assembler(),
                 logger);
     }
 }

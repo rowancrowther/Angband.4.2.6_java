@@ -16,7 +16,7 @@
  */
 
 // Generated from ObjectPropertyGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftradesltd.backend.parser.grammars.objectproperty;
+package uk.co.jackoftradesltd.unused.objectproperty;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATN;
@@ -27,7 +27,7 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyParseRecord;
+import uk.co.jackoftradesltd.unused.ObjectPropertyParseRecord;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;

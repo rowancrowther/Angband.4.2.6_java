@@ -16,7 +16,7 @@
  */
 
 // Generated from BlowEffectLexer.g4 by ANTLR 4.13.2
-package uk.co.jackoftradesltd.backend.parser.grammars.bloweffect;
+package uk.co.jackoftradesltd.unused.bloweffect;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATN;

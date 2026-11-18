@@ -16,7 +16,7 @@
  */
 
 // Generated from BlowEffectGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftradesltd.backend.parser.grammars.bloweffect;
+package uk.co.jackoftradesltd.unused.bloweffect;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 

@@ -43,8 +43,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * End-to-end throughput tests for {@link BlowEffectReader}: file text -&gt;
- * {@code BlowEffectLexer}/{@code BlowEffectGrammar} -&gt; {@code BlowEffectParseRecord} -&gt;
- * {@code BlowEffectAssembler} -&gt; {@link BlowEffect}.
+ * {@code BlowEffect2Lexer}/{@code BlowEffect2Grammar} -&gt; {@code BlowEffect2ParseRecord} -&gt;
+ * {@code BlowEffect2Assembler} -&gt; {@link BlowEffect}.
  * <p>
  * The assembler is where the C semantics have to be reproduced by hand, and every boundary
  * is exercised here. Expected values come from the C source, not from the Java:
@@ -55,13 +55,15 @@ import static org.junit.jupiter.api.Assertions.*;
  *       {@code parse_eff_lash_type} ({@code mon-init.c}) falls back to {@code PROJ_MISSILE}.
  *       The shipped file relies on this - SHATTER says {@code SHARDS} but the projection
  *       code is {@code SHARD}. With no line, C's zeroed {@code lash_type} is
- *       {@code PROJ_ACID}.</li>
+ *       {@code PROJ_ACID}, and the port's {@code BlowEffect()} default looks up that same
+ *       projection, so the lash is the ACID projection, not null.</li>
  *   <li>{@code resist:} is polymorphic on {@code effect-type:} ([C] {@code parse_eff_resist}):
  *       {@code element} resolves against the element list ignoring case, {@code flag}
  *       against the object flags exactly, and anything else is
  *       {@code PARSE_ERROR_MISSING_BLOW_EFF_TYPE}, which ends the load.</li>
  *   <li>Records with no {@code effect-type:} at all are legal and keep C's zeroed resist,
- *       which reads as {@code ELEM_ACID} and {@code OF_NONE}.</li>
+ *       which reads as {@code ELEM_ACID} and {@code OF_NONE} in C. The port holds
+ *       {@code ELEM_NONE}, {@code PROJ_NONE} and {@code OF_NONE} instead.</li>
  *   <li>Lore colours follow [C] {@code color_text_to_attr} and {@code color_char_to_attr}
  *       ({@code z-color.c}): an unknown name or character is {@code COLOUR_WHITE}, never an
  *       error.</li>
@@ -70,7 +72,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * </ul>
  *
  * <p>Class BlowEffectReaderTest coded before 261023, commented in full on 261023, updated on
- * 261023 for the BlowEffectAssembler port.
+ * 261023 for the BlowEffectAssembler port, updated on 261118 for the move to the
+ * {@code BlowEffect2} grammar, parse record and assembler.
  *
  * @author Rowan Crowther
  */
@@ -132,9 +135,12 @@ class BlowEffectReaderTest {
     void everyLashTypeInTheRealFileResolvesToAProjection() throws IOException {
         // A null lash would mean the projection lookup silently failed; the fallback in the
         // assembler guarantees a non-null Projection for every record that names a lash.
-        // NONE names no lash-type:, and takes C's zeroed default, so it is not null either.
+        // NONE names no lash-type:. C's zeroed lash_type is projection 0, which is PROJ_ACID, and
+        // the BlowEffect() default looks that projection up, so NONE ends with the ACID projection.
         assertTrue(realFile().stream().allMatch(e -> e.getLashType() != null),
                 "every effect has a lash projection");
+        assertEquals(ProjectionEnum.PROJ_ACID, byName(realFile(), "NONE").getLashType().getProjection(),
+                "NONE names no lash-type:, so it keeps C's zeroed index 0, PROJ_ACID");
     }
 
     // ---- lash-type resolution --------------------------------------------
@@ -178,8 +184,9 @@ class BlowEffectReaderTest {
 
         assertEquals(BlowEffectType.BET_FLAG, paralyze.getEffectType());
         assertEquals(ObjectFlag.OF_FREE_ACT, paralyze.getObjectFlagResist());
-        assertEquals(ElementEnum.ELEM_ACID, paralyze.getElementEnumResist(),
-                "the element slot keeps C's zeroed resist, element 0");
+        assertEquals(ElementEnum.ELEM_NONE, paralyze.getElementEnumResist(),
+                "the element slot holds ELEM_NONE where C's zeroed resist reads as element 0 (ACID)");
+        assertEquals(ProjectionEnum.PROJ_NONE, paralyze.getProjectionResist());
     }
 
     @Test
@@ -204,7 +211,8 @@ class BlowEffectReaderTest {
         BlowEffect loseAll = byName(realFile(), "LOSE_ALL");
 
         assertEquals(BlowEffectType.BET_ALL_SUSTAINS, loseAll.getEffectType());
-        assertEquals(ElementEnum.ELEM_ACID, loseAll.getElementEnumResist());
+        assertEquals(ElementEnum.ELEM_NONE, loseAll.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_NONE, loseAll.getProjectionResist());
         assertEquals(ObjectFlag.OF_NONE, loseAll.getObjectFlagResist());
     }
 
@@ -215,10 +223,12 @@ class BlowEffectReaderTest {
         BlowEffect none = byName(realFile(), "NONE");
 
         assertNull(none.getEffectType());
-        assertEquals(ElementEnum.ELEM_ACID, none.getElementEnumResist());
+        assertEquals(ElementEnum.ELEM_NONE, none.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_NONE, none.getProjectionResist());
         assertEquals(ObjectFlag.OF_NONE, none.getObjectFlagResist());
+        assertNotNull(none.getLashType(), "no lash-type: leaves C's zeroed lash_type, projection 0");
         assertEquals(ProjectionEnum.PROJ_ACID, none.getLashType().getProjection(),
-                "no lash-type: leaves C's zeroed lash_type, projection 0");
+                "C's projection 0 is ACID, the first entry of proj_name_list");
     }
 
     // ---- scalar and colour fields ----------------------------------------
@@ -294,14 +304,16 @@ class BlowEffectReaderTest {
     }
 
     @Test
-    void aBadRecordEndsTheLoadAsInC(@TempDir Path dir) throws IOException {
-        // C stops at the first parse error, and so does the port: a resist: with no effect-type:
-        // in the middle record ends the whole load rather than being skipped.
+    void aResistWithNoEffectTypeInTheMiddleRecordEndsTheWholeLoad(@TempDir Path dir) throws IOException {
+        // C reads a NULL effect_type in parse_eff_resist (streq on NULL) and crashes; the port refuses
+        // the line instead, and the refusal ends the whole load rather than skipping the record. The
+        // message quotes the resist: line (6), not the name: line of its record (5).
         String file = write(dir, "\nname:NONE\npower:0\n\nname:HURT\nresist:POIS\n\nname:POISON\npower:20\n");
 
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> new BlowEffectReader().parseWithResults(file));
-        assertTrue(e.getMessage().contains("line: 5"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 6"), e.getMessage());
+        assertTrue(e.getMessage().contains("resist before a effect type"), e.getMessage());
     }
 
     @Test
@@ -325,15 +337,17 @@ class BlowEffectReaderTest {
     }
 
     @Test
-    void resistMayPrecedeEffectTypeUnlikeC(@TempDir Path dir) throws IOException {
+    void resistBeforeEffectTypeInTheSameRecordEndsTheLoad(@TempDir Path dir) throws IOException {
         // C resolves resist: while parsing, so effect-type: must come first (the other way round
-        // reads a null effect_type). The port resolves from the finished record, so order is free.
+        // reads a null effect_type and crashes). The port resolves directives in file order too and
+        // refuses the resist: line, even though the effect-type: follows it in the same record.
+        // Accepted deviation, decided 261117 (docs/Accepted_Deviations.md, Blow effect).
         String file = write(dir, "\nname:POISON\nresist:POIS\neffect-type:element\n");
 
-        BlowEffect poison = new BlowEffectReader().parseWithResults(file).items().get(0);
-
-        assertEquals(BlowEffectType.BET_ELEMENT, poison.getEffectType());
-        assertEquals(ElementEnum.ELEM_POIS, poison.getElementEnumResist());
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> new BlowEffectReader().parseWithResults(file));
+        assertTrue(e.getMessage().contains("line: 3"), e.getMessage());
+        assertTrue(e.getMessage().contains("resist before a effect type"), e.getMessage());
     }
 
     @Test
@@ -342,6 +356,30 @@ class BlowEffectReaderTest {
         String file = write(dir, "\nname:POISON\nresist:POIS\n");
 
         assertThrows(DataFileParseException.class, () -> new BlowEffectReader().parseWithResults(file));
+    }
+
+    @Test
+    void anUnknownEffectTypeEndsTheLoadWhereCStoresTheString(@TempDir Path dir) throws IOException {
+        // C: parse_eff_effect_type stores any string unchecked, and blow_color() in mon-lore.c falls
+        // through to the base colour for one it does not know. The port's BlowEffectType is a closed
+        // enum, so it refuses the line and quotes it. Accepted deviation, decided 261117
+        // (docs/Accepted_Deviations.md, Blow effect). The match is exact, so the case matters too.
+        for (String type : List.of("BOGUS", "Element", "FLAG", "BET_FLAG")) {
+            String file = write(dir, "\nname:X\neffect-type:" + type + "\n");
+
+            DataFileParseException e = assertThrows(DataFileParseException.class,
+                    () -> new BlowEffectReader().parseWithResults(file), type);
+            assertTrue(e.getMessage().contains("line: 3"), e.getMessage());
+            assertTrue(e.getMessage().contains("illegal effect-type value: " + type), e.getMessage());
+        }
+    }
+
+    @Test
+    void everySpellingTheRealFileUsesIsAKnownEffectType(@TempDir Path dir) throws IOException {
+        // The seven spellings blow_effects.txt uses, exactly as C's blow_color() compares them.
+        for (String type : List.of("element", "flag", "drain", "theft", "eat-food", "eat-light", "all_sustains")) {
+            assertNotNull(one(dir, "effect-type:" + type + "\n").getEffectType(), type);
+        }
     }
 
     @Test
@@ -447,13 +485,199 @@ class BlowEffectReaderTest {
     }
 
     @Test
-    void anElementResistLeavesTheFlagSlotAtZeroAndViceVersa(@TempDir Path dir) throws IOException {
-        // C's one zeroed int: element 0 is ACID, flag 0 is NONE.
+    void anElementResistLeavesTheFlagSlotEmptyAndViceVersa(@TempDir Path dir) throws IOException {
+        // C keeps one int, so only one kind of resist exists at a time. The port holds ELEM_NONE,
+        // PROJ_NONE and OF_NONE for the slots that are not in use.
         BlowEffect element = one(dir, "effect-type:element\nresist:CHAOS\n");
         assertEquals(ObjectFlag.OF_NONE, element.getObjectFlagResist());
 
         BlowEffect flag = one(dir, "effect-type:flag\nresist:HOLD_LIFE\n");
-        assertEquals(ElementEnum.ELEM_ACID, flag.getElementEnumResist());
+        assertEquals(ElementEnum.ELEM_NONE, flag.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_NONE, flag.getProjectionResist());
+    }
+
+    // ---- projectionResist: C's proj_name_to_idx result for an element resist ----
+
+    @Test
+    void anElementResistFillsTheElementAndProjectionFields(@TempDir Path dir) throws IOException {
+        // proj_name_to_idx finds POIS in the element part of the list; PROJ_POIS == ELEM_POIS.
+        BlowEffect poison = one(dir, "effect-type:element\nresist:POIS\n");
+        assertEquals(ElementEnum.ELEM_POIS, poison.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_POIS, poison.getProjectionResist());
+
+        // my_stricmp: the case does not matter.
+        BlowEffect lower = one(dir, "effect-type:element\nresist:pois\n");
+        assertEquals(ElementEnum.ELEM_POIS, lower.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_POIS, lower.getProjectionResist());
+    }
+
+    @Test
+    void missileIsAnElementSoItFillsBothFields(@TempDir Path dir) throws IOException {
+        // list-elements.h ends PLASMA, METEOR, MISSILE, MANA, HOLY_ORB, ARROW, so MISSILE is
+        // inside the element part of proj_name_list.
+        BlowEffect e = one(dir, "effect-type:element\nresist:MISSILE\n");
+
+        assertEquals(ElementEnum.ELEM_MISSILE, e.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_MISSILE, e.getProjectionResist());
+    }
+
+    @Test
+    void aProjectionOnlyNameFillsTheProjectionFieldAndLeavesTheElementNone(@TempDir Path dir)
+            throws IOException {
+        // KILL_WALL is after ARROW in proj_name_list, so C stores an index above the last element;
+        // there is no ElementEnum for it.
+        BlowEffect e = one(dir, "effect-type:element\nresist:KILL_WALL\n");
+
+        assertEquals(ProjectionEnum.PROJ_KILL_WALL, e.getProjectionResist());
+        assertEquals(ElementEnum.ELEM_NONE, e.getElementEnumResist());
+    }
+
+    @Test
+    void resistMaxStoresTheProjectionMaxIndex(@TempDir Path dir) throws IOException {
+        // proj_name_list ends with "MAX", so proj_name_to_idx("MAX") is PROJ_MAX, not -1.
+        assertEquals(ProjectionEnum.PROJ_MAX, one(dir, "effect-type:element\nresist:MAX\n").getProjectionResist());
+    }
+
+    @Test
+    void anUnknownOrNoneElementNameStoresNoProjection(@TempDir Path dir) throws IOException {
+        // proj_name_to_idx returns -1 for both (the list has no NONE); PROJ_NONE stands in for -1.
+        assertEquals(ProjectionEnum.PROJ_NONE, one(dir, "effect-type:element\nresist:BOGUS\n").getProjectionResist());
+        assertEquals(ProjectionEnum.PROJ_NONE, one(dir, "effect-type:element\nresist:NONE\n").getProjectionResist());
+    }
+
+    @Test
+    void aFlagResistLeavesTheProjectionNone(@TempDir Path dir) throws IOException {
+        assertEquals(ProjectionEnum.PROJ_NONE, one(dir, "effect-type:flag\nresist:FREE_ACT\n").getProjectionResist());
+    }
+
+    // ---- Type A, Resist 1, Type B, Resist 2, Resist 3 ---------------------------------
+
+    @Test
+    void theLastResistUnderTheLastTypeIsTheOneKept(@TempDir Path dir) throws IOException {
+        // C resolves each resist: against the type read before it, into one int that the next
+        // resist: overwrites, so only Resist 3 survives, resolved under type B.
+        BlowEffect toElement = one(dir,
+                "effect-type:flag\nresist:FREE_ACT\neffect-type:element\nresist:FIRE\nresist:POIS\n");
+        assertEquals(BlowEffectType.BET_ELEMENT, toElement.getEffectType());
+        assertEquals(ElementEnum.ELEM_POIS, toElement.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_POIS, toElement.getProjectionResist());
+        assertEquals(ObjectFlag.OF_NONE, toElement.getObjectFlagResist());
+
+        BlowEffect toFlag = one(dir,
+                "effect-type:element\nresist:FIRE\neffect-type:flag\nresist:FREE_ACT\nresist:SUST_STR\n");
+        assertEquals(BlowEffectType.BET_FLAG, toFlag.getEffectType());
+        assertEquals(ObjectFlag.OF_SUST_STR, toFlag.getObjectFlagResist());
+        assertEquals(ElementEnum.ELEM_NONE, toFlag.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_NONE, toFlag.getProjectionResist());
+    }
+
+    @Test
+    void anUnknownFlagAfterAnElementResistLeavesNoElementResistBehind(@TempDir Path dir) throws IOException {
+        // C: the second resist: stores flag_index_by_name's -1 into the same int, so the earlier
+        // FIRE is gone. The port must clear the projection field as well as the element field.
+        BlowEffect e = one(dir, "effect-type:element\nresist:FIRE\neffect-type:flag\nresist:BOGUS\n");
+
+        assertEquals(ObjectFlag.OF_NONE, e.getObjectFlagResist());
+        assertEquals(ElementEnum.ELEM_NONE, e.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_NONE, e.getProjectionResist());
+    }
+
+    // ---- effect-type: changing after a resist: (accepted deviation, decided 261117) ----------
+    // C keeps one int for the resist, and parse_eff_effect_type only replaces the type string, so
+    // the number survives a later effect-type: and is read in the new type's list. The port keeps
+    // a typed field per list, so effect-type: clears the fields that do not belong to the new type
+    // (docs/Accepted_Deviations.md, Blow effect).
+
+    /** Asserts the three resist fields all hold the port's "no resist" constants. */
+    private static void assertNoResist(BlowEffect e, String message) {
+        assertEquals(ObjectFlag.OF_NONE, e.getObjectFlagResist(), message);
+        assertEquals(ElementEnum.ELEM_NONE, e.getElementEnumResist(), message);
+        assertEquals(ProjectionEnum.PROJ_NONE, e.getProjectionResist(), message);
+    }
+
+    @Test
+    void aRepeatedElementTypeKeepsTheElementResist(@TempDir Path dir) throws IOException {
+        // C: the second effect-type:element leaves the resist int at FIRE's place in proj_name_list,
+        // which is still a valid element index under the same type. The port agrees.
+        BlowEffect e = one(dir, "effect-type:element\nresist:FIRE\neffect-type:element\n");
+
+        assertEquals(BlowEffectType.BET_ELEMENT, e.getEffectType());
+        assertEquals(ElementEnum.ELEM_FIRE, e.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_FIRE, e.getProjectionResist());
+        assertEquals(ObjectFlag.OF_NONE, e.getObjectFlagResist());
+    }
+
+    @Test
+    void aRepeatedFlagTypeKeepsTheFlagResist(@TempDir Path dir) throws IOException {
+        // C: the second effect-type:flag leaves the resist int at FREE_ACT's flag index, still a
+        // valid flag index under the same type. The port agrees.
+        BlowEffect e = one(dir, "effect-type:flag\nresist:FREE_ACT\neffect-type:flag\n");
+
+        assertEquals(BlowEffectType.BET_FLAG, e.getEffectType());
+        assertEquals(ObjectFlag.OF_FREE_ACT, e.getObjectFlagResist());
+        assertEquals(ElementEnum.ELEM_NONE, e.getElementEnumResist());
+        assertEquals(ProjectionEnum.PROJ_NONE, e.getProjectionResist());
+    }
+
+    @Test
+    void anElementToFlagSwapClearsTheElementResistWhereCReadsItsNumberAsAFlag(@TempDir Path dir)
+            throws IOException {
+        // C: resist stays 2, FIRE's place in proj_name_list (ACID, ELEC, FIRE), and under flag that
+        // is obj_flags[2], which is SUST_INT (NONE, SUST_STR, SUST_INT). The port stores no resist
+        // at all, which is the saner result and the accepted deviation.
+        BlowEffect e = one(dir, "effect-type:element\nresist:FIRE\neffect-type:flag\n");
+
+        assertEquals(BlowEffectType.BET_FLAG, e.getEffectType());
+        assertNoResist(e, "element to flag");
+    }
+
+    @Test
+    void aFlagToElementSwapClearsTheFlagResistWhereCReadsItsNumberAsAProjection(@TempDir Path dir)
+            throws IOException {
+        // C: resist stays at FREE_ACT's flag index, and under element that is read as an index into
+        // proj_name_list. The port stores no resist.
+        BlowEffect e = one(dir, "effect-type:flag\nresist:FREE_ACT\neffect-type:element\n");
+
+        assertEquals(BlowEffectType.BET_ELEMENT, e.getEffectType());
+        assertNoResist(e, "flag to element");
+    }
+
+    @Test
+    void aTypeThatTakesNoResistClearsEveryResist(@TempDir Path dir) throws IOException {
+        // C keeps the number, but blow_color() in mon-lore.c reads blow->resist only in its element
+        // and flag cases, so for these five types the number is never looked at. Clearing it in the
+        // port therefore shows no difference.
+        for (String type : List.of("drain", "theft", "eat-food", "eat-light", "all_sustains")) {
+            BlowEffect fromElement = one(dir, "effect-type:element\nresist:FIRE\neffect-type:" + type + "\n");
+            assertEquals(BlowEffectType.getFromString(type), fromElement.getEffectType(), type);
+            assertNoResist(fromElement, "element to " + type);
+
+            BlowEffect fromFlag = one(dir, "effect-type:flag\nresist:FREE_ACT\neffect-type:" + type + "\n");
+            assertEquals(BlowEffectType.getFromString(type), fromFlag.getEffectType(), type);
+            assertNoResist(fromFlag, "flag to " + type);
+        }
+    }
+
+    @Test
+    void anElementResistNamedNoneStoresNoResistWhereCStoresMinusOne(@TempDir Path dir) throws IOException {
+        // proj_name_list has no NONE entry, so C stores proj_name_to_idx's -1. The port's NONE
+        // constants are the typed form of that sentinel. Accepted deviation, decided 261117.
+        assertNoResist(one(dir, "effect-type:element\nresist:NONE\n"), "element NONE");
+    }
+
+    @Test
+    void lashTypeMaxFindsNoProjectionRecordSoTheLashIsNull(@TempDir Path dir) throws IOException {
+        // proj_name_list ends with "MAX", so proj_name_to_idx("MAX") is PROJ_MAX, not -1, and C stores
+        // PROJ_MAX as the lash type. projection.txt has no code:MAX record, so the port finds
+        // nothing. Accepted deviation, decided 261117.
+        assertNull(one(dir, "lash-type:MAX\n").getLashType());
+    }
+
+    @Test
+    void lashTypeNoneIsMissileLikeAnyOtherNameCDoesNotKnow(@TempDir Path dir) throws IOException {
+        // proj_name_list has no NONE entry, so proj_name_to_idx returns -1 and parse_eff_lash_type
+        // stores PROJ_MISSILE. The port resolves NONE to PROJ_NONE first and maps that to missile.
+        assertEquals(ProjectionEnum.PROJ_MISSILE, one(dir, "lash-type:NONE\n").getLashType().getProjection());
     }
 
     @Test
@@ -479,5 +703,66 @@ class BlowEffectReaderTest {
     void repeatedDescLinesAreJoined(@TempDir Path dir) throws IOException {
         // parse_eff_desc: string_append onto the existing desc, no separator.
         assertEquals("ab", one(dir, "desc:a\ndesc:b\n").getDesc());
+    }
+
+    /**
+     * A {@code PROJ_}-prefixed name finds its projection, where C finds no such name. C's
+     * {@code proj_name_list} holds bare names ({@code "FIRE"}), so {@code proj_name_to_idx("PROJ_FIRE")}
+     * is -1 and {@code parse_eff_lash_type} stores {@code PROJ_MISSILE}. {@code ProjectionEnum.lookup}
+     * puts {@code PROJ_} on a name that lacks it and takes one that has it, so the port stores FIRE.
+     * The prefix test is case-sensitive, so {@code proj_fire} is an unknown name and is missile in
+     * both. Accepted deviation, decided 261117.
+     *
+     * <p>Function aPrefixedLashNameFindsItsProjectionWhereCFallsBackToMissile coded on 261117,
+     * commented in full on 261117.
+     *
+     * @param dir the temporary directory the data file is written to
+     * @throws IOException if the file cannot be written or read
+     */
+    @Test
+    void aPrefixedLashNameFindsItsProjectionWhereCFallsBackToMissile(@TempDir Path dir) throws IOException {
+        assertEquals(ProjectionEnum.PROJ_FIRE, one(dir, "lash-type:PROJ_FIRE\n").getLashType().getProjection());
+        assertEquals(ProjectionEnum.PROJ_MISSILE, one(dir, "lash-type:proj_fire\n").getLashType().getProjection());
+    }
+
+    /**
+     * A {@code PROJ_}-prefixed element resist fills the projection field and leaves the element
+     * field at none. C finds no {@code "PROJ_FIRE"} in {@code proj_name_list}, so
+     * {@code parse_eff_resist} stores -1. The port's projection lookup takes the prefix, and its
+     * element lookup then searches for {@code ELEM_PROJ_FIRE}, which no element has. Accepted
+     * deviation, decided 261117.
+     *
+     * <p>Function aPrefixedElementResistFillsOnlyTheProjectionField coded on 261117, commented in
+     * full on 261117.
+     *
+     * @param dir the temporary directory the data file is written to
+     * @throws IOException if the file cannot be written or read
+     */
+    @Test
+    void aPrefixedElementResistFillsOnlyTheProjectionField(@TempDir Path dir) throws IOException {
+        BlowEffect fire = one(dir, "effect-type:element\nresist:PROJ_FIRE\n");
+
+        assertEquals(ProjectionEnum.PROJ_FIRE, fire.getProjectionResist());
+        assertEquals(ElementEnum.ELEM_NONE, fire.getElementEnumResist());
+    }
+
+    /**
+     * Text after a second colon on a colour line is part of the value in the port and is dropped
+     * in C. The three {@code lore-color-*} directives are {@code sym} fields, which {@code parser_parse}
+     * cuts with {@code strtok(sp, ":")}, so {@code Light Green:x} reads {@code Light Green} and
+     * {@code G:x} reads {@code G}. The port's lexer takes the rest of the line whole, so each is an
+     * unknown name, which is white. Accepted deviation, decided 261117.
+     *
+     * <p>Function aColourFollowedByAColonAndTextIsWhiteWhereCDropsTheText coded on 261117, commented
+     * in full on 261117.
+     *
+     * @param dir the temporary directory the data file is written to
+     * @throws IOException if the file cannot be written or read
+     */
+    @Test
+    void aColourFollowedByAColonAndTextIsWhiteWhereCDropsTheText(@TempDir Path dir) throws IOException {
+        assertEquals(ColourEnum.COLOUR_WHITE, one(dir, "lore-color-base:Light Green:x\n").getLoreAttr());
+        assertEquals(ColourEnum.COLOUR_WHITE, one(dir, "lore-color-base:G:x\n").getLoreAttr());
+        assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, one(dir, "lore-color-base:Light Green\n").getLoreAttr());
     }
 }

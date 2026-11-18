@@ -764,51 +764,85 @@ class PlayerPropertyReaderTest {
         assertEquals(0, load("type:player\ncode:ROCK\nname:A\n").items().get(0).getValue());
     }
 
-    // ---- differences from C: the grammar -------------------------------------------------------
+    // ---- directive order and repeats: the grammar matches C (Stage 7a) ---------------------------
+    // C takes the directives of a record in any order, each handler acting on the open record:
+    // code, name and value replace what is there, desc appends (string_append), bindui adds a binding.
 
     @Test
-    void aBindingAfterTheNameIsAHardErrorHereWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError("type:player\ncode:ROCK\nname:Rock\nbindui:a_b:0:1\n");
+    void aBindingAfterTheNameLoadsAsInC() throws IOException {
+        PlayerProperty p = load("type:player\ncode:ROCK\nname:Rock\nbindui:a_b:0:1\n").items().get(0);
+
+        assertEquals("Rock", p.getName());
+        assertEquals(1, p.getEntries().size());
+        assertEquals("a_b", p.getEntries().get(0).uiEntry());
     }
 
     @Test
-    void aDescBeforeTheNameIsAHardErrorHereWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError("type:player\ncode:ROCK\ndesc:x\nname:A\n");
+    void aDescBeforeTheNameLoadsAsInC() throws IOException {
+        PlayerProperty p = load("type:player\ncode:ROCK\ndesc:x\nname:A\n").items().get(0);
+
+        assertEquals("A", p.getName());
+        assertEquals("x", p.getDescription());
     }
 
     @Test
-    void aValueBeforeTheDescIsAHardErrorHereWhereCAcceptsAnyOrder() throws IOException {
-        assertHardError("type:element\nname:A\nvalue:1\ndesc:x\n");
+    void aValueBeforeTheDescLoadsAsInC() throws IOException {
+        List<PlayerProperty> items = load("type:element\nname:A\nvalue:1\ndesc:x\n").items();
+
+        assertEquals(ELEMENT_COUNT, items.size());
+        assertEquals(1, items.get(0).getValue());
+        assertEquals("x acid.", items.get(0).getDescription());
     }
 
     @Test
-    void aRecordWithNoNameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("type:player\ncode:ROCK\n");
+    void aRecordWithNoNameLoadsWithAnEmptyNameHereWhereCHasNull() throws IOException {
+        PlayerProperty p = load("type:player\ncode:ROCK\n").items().get(0);
+
+        assertEquals(PlayerFlag.PF_ROCK, p.getpCode());
+        assertEquals("", p.getName());
     }
 
     @Test
-    void aRepeatedNameIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
-        assertHardError("type:player\ncode:ROCK\nname:A\nname:B\n");
+    void aRepeatedNameKeepsTheLastAsInC() throws IOException {
+        assertEquals("B", load("type:player\ncode:ROCK\nname:A\nname:B\n").items().get(0).getName());
     }
 
     @Test
-    void aRepeatedValueIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
-        assertHardError("type:element\nname:A\ndesc:x\nvalue:1\nvalue:3\n");
+    void aRepeatedValueKeepsTheLastAsInC() throws IOException {
+        List<PlayerProperty> items = load("type:element\nname:A\ndesc:x\nvalue:1\nvalue:3\n").items();
+
+        assertEquals(3, items.get(0).getValue());
     }
 
     @Test
-    void aRepeatedCodeIsAHardErrorHereWhereCKeepsTheLast() throws IOException {
-        assertHardError("type:player\ncode:ROCK\ncode:SEE_ORE\nname:A\n");
+    void aRepeatedCodeKeepsTheLastAsInC() throws IOException {
+        assertEquals(PlayerFlag.PF_SEE_ORE,
+                load("type:player\ncode:ROCK\ncode:SEE_ORE\nname:A\n").items().get(0).getpCode());
     }
 
     @Test
-    void aDescSplitByAnotherLineIsAHardErrorHereWhereCAppendsIt() throws IOException {
-        assertHardError("type:element\nname:A\ndesc:x\nvalue:1\ndesc:y\n");
+    void aDescSplitByAnotherLineIsAppendedAsInC() throws IOException {
+        List<PlayerProperty> items = load("type:element\nname:A\ndesc:x\nvalue:1\ndesc:y\n").items();
+
+        assertEquals("xy acid.", items.get(0).getDescription());
+        assertEquals(1, items.get(0).getValue());
     }
 
     @Test
-    void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertHardError("");
+    void backToBackDescLinesAreAppendedAsInC() throws IOException {
+        assertEquals("xy", load("type:player\ncode:ROCK\nname:A\ndesc:x\ndesc:y\n").items().get(0).getDescription());
+    }
+
+    @Test
+    void bindingsSplitByAnotherLineAreBothKeptInFileOrder() throws IOException {
+        PlayerProperty p = load("type:player\ncode:ROCK\nbindui:a_b:0:1\nname:A\nbindui:c_d:1:2\n").items().get(0);
+
+        assertEquals(List.of("a_b", "c_d"), p.getEntries().stream().map(PlayerProperty.BindUI::uiEntry).toList());
+    }
+
+    @Test
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
+        assertTrue(load("").items().isEmpty());
     }
 
     @Test

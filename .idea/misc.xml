@@ -353,16 +353,6 @@
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectPropertyLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerTimedLexer.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
@@ -374,16 +364,6 @@
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowMethodLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowEffectLexer.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
@@ -583,16 +563,6 @@
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowEffectGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowMethodGrammar.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
@@ -704,16 +674,6 @@
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectBaseGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectPropertyGrammar.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
@@ -914,6 +874,16 @@
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectProperty2Lexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowEffect2Lexer.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />

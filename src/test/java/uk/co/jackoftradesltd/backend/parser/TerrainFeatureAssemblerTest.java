@@ -24,6 +24,7 @@ import uk.co.jackoftradesltd.backend.parser.terrainfeature.TerrainFeatureAssembl
 import uk.co.jackoftradesltd.backend.parser.terrainfeature.TerrainFeatureParseRecord;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
+import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.cave.Feature;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
@@ -82,6 +83,7 @@ class TerrainFeatureAssemblerTest {
         String lookIn = "";
         String resist = "";
         int line = 1;
+        int nameCount = 1;
 
         Rec(String code) {
             this.code = code;
@@ -90,7 +92,7 @@ class TerrainFeatureAssemblerTest {
 
         TerrainFeatureParseRecord build() {
             return new TerrainFeatureParseRecord(code, name, desc, mimic, priority, dig, flags, glyph,
-                    colour, walk, run, hurt, die, confused, lookPrefix, lookIn, resist, line);
+                    colour, walk, run, hurt, die, confused, lookPrefix, lookIn, resist, line, nameCount);
         }
     }
 
@@ -636,11 +638,70 @@ class TerrainFeatureAssemblerTest {
         assertEquals(0x1F600, one(r).getDisplayCharacter().getWideCharacter());
     }
 
+    /**
+     * C: a slot that never sees a {@code graphics:} line keeps the zeroed {@code d_char} and
+     * {@code d_attr}, which are NUL and {@code COLOUR_DARK}. The grammar leaves both strings empty
+     * when the line is absent.
+     *
+     * <p>Function anAbsentGraphicsLineIsNulAndDark coded on 261118, commented in full on 261118.
+     */
     @Test
-    void emptyGlyphIsFatal() {
+    void anAbsentGraphicsLineIsNulAndDark() {
         Rec r = rec("FLOOR");
         r.glyph = "";
-        assertFatal(r, "empty glyph");
+        r.colour = "";
+
+        Feature floor = one(r);
+
+        assertEquals(new AngbandDisplayCharacter('\0', ColourEnum.COLOUR_DARK), floor.getDisplayCharacter());
+    }
+
+    /**
+     * C: {@code parse_feat_graphics} is the only writer of {@code d_char} and {@code d_attr}, so a
+     * repeated code that has no graphics keeps what the slot held, and one that has them replaces it.
+     *
+     * <p>Function anAbsentGraphicsLineOnARepeatedCodeKeepsTheEarlierOne coded on 261118, commented in
+     * full on 261118.
+     */
+    @Test
+    void anAbsentGraphicsLineOnARepeatedCodeKeepsTheEarlierOne() {
+        Rec first = rec("FLOOR");
+        first.glyph = ".";
+        first.colour = "w";
+        Rec second = unnamed("FLOOR");
+        second.glyph = "";
+        second.colour = "";
+
+        Feature kept = one2(first, second);
+
+        assertEquals(new AngbandDisplayCharacter('.', ColourEnum.COLOUR_WHITE), kept.getDisplayCharacter());
+    }
+
+    @Test
+    void anAbsentGraphicsLineOnTheFirstRecordIsReplacedByALaterOne() {
+        Rec first = rec("FLOOR");
+        first.glyph = "";
+        first.colour = "";
+        Rec second = unnamed("FLOOR");
+        second.glyph = "#";
+        second.colour = "r";
+
+        Feature replaced = one2(first, second);
+
+        assertEquals(new AngbandDisplayCharacter('#', ColourEnum.COLOUR_RED), replaced.getDisplayCharacter());
+    }
+
+    /**
+     * C: {@code parse_feat_name} refuses a second {@code name:} for the same slot, so a record the
+     * grammar counted two names in is fatal.
+     *
+     * <p>Function aRecordWithMoreThanOneNameLineIsFatal coded on 261118, commented in full on 261118.
+     */
+    @Test
+    void aRecordWithMoreThanOneNameLineIsFatal() {
+        Rec r = rec("FLOOR");
+        r.nameCount = 2;
+        assertFatal(r, "more than one name");
     }
 
     // ---- Helpers ----------------------------------------------------------

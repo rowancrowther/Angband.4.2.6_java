@@ -29,6 +29,7 @@ import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.unused.ObjectPropertyAssembler;
 
 import java.util.ArrayList;
 import java.util.List;

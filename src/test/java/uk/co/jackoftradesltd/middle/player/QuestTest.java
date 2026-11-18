@@ -185,4 +185,42 @@ class QuestTest {
         assertEquals(0, twice.getCurrentNumber());
         assertEquals(1, twice.getMaxNumber());
     }
+
+    /**
+     * Each setter writes its own field and leaves the other five alone: {@code QuestAssembler} fills a
+     * quest one directive at a time, as C's {@code parse_quest_*} hooks do, so a setter that touched a
+     * neighbour would corrupt the record. {@code index} has no setter.
+     */
+    @Test
+    @DisplayName("each setter changes only its own field")
+    void settersChangeOnlyTheirOwnField() {
+        MonsterRace race = new MonsterRace();
+        MonsterRace other = new MonsterRace();
+        Quest quest = new Quest(4, "Sauron", 99, race, 2, 5);
+
+        quest.setName("Morgoth");
+        assertEquals("Morgoth", quest.getName());
+        assertEquals(99, quest.getLevel());
+
+        quest.setLevel(100);
+        assertEquals(100, quest.getLevel());
+        assertEquals(5, quest.getMaxNumber());
+
+        quest.setMaxNumber(7);
+        assertEquals(7, quest.getMaxNumber());
+        assertEquals(2, quest.getCurrentNumber());
+
+        quest.setCurrentNumber(3);
+        assertEquals(3, quest.getCurrentNumber());
+        assertSame(race, quest.getRace());
+
+        quest.setRace(other);
+        assertSame(other, quest.getRace());
+
+        assertEquals(4, quest.getIndex());
+        assertEquals("Morgoth", quest.getName());
+        assertEquals(100, quest.getLevel());
+        assertEquals(7, quest.getMaxNumber());
+        assertEquals(3, quest.getCurrentNumber());
+    }
 }

@@ -17,14 +17,25 @@
 
 package uk.co.jackoftradesltd.channel.enums;
 
+import java.util.Arrays;
+
 /**
  * The complete set of projection ("GF") types — every kind of bolt, ball, beam
  * or area effect the game can resolve, from elemental damage (acid, fire, …)
  * through terrain alteration (kill/make wall, door, trap) to monster-targeting
  * effects (teleport away, turn, dispel, sleep, polymorph, …). This is the Java
- * port of the C original's {@code PROJ_*} list ({@code src/list-projections.h});
- * the constants are self-describing by name and are documented collectively here
- * rather than individually.
+ * port of the C original's projection type list. C builds {@code proj_name_list} in
+ * {@code project.c} from {@code list-elements.h} followed by {@code list-projections.h}, so the
+ * elements ({@code ACID} to {@code ARROW}) come first and an element's value is also its projection
+ * value ({@code PROJ_ACID == ELEM_ACID}). The constants here follow that same order. The
+ * constants are self-describing by name and are documented collectively here rather than
+ * individually.
+ *
+ * <p>Two placeholders differ from C: {@link #PROJ_NONE} is a leading zero entry that C lacks, so
+ * every real projection's ordinal is one more than its C value, and {@link #PROJ_MAX} is the count
+ * sentinel (C's {@code PROJ_MAX} and the trailing {@code "MAX"} in its name list).
+ *
+ * <p>Class ProjectionEnum coded before 261116, commented in full on 261116.
  *
  * @author Rowan Crowther
  */
@@ -99,6 +110,11 @@ public enum ProjectionEnum {
      * matching {@code NONE} placeholder that C lacks, so their ordinals do still line up with each
      * other — but resolving by name means nothing breaks if that ever stops being true.
      *
+     * <p>{@link ElementEnum#ELEM_NONE} gives {@link #PROJ_NONE} and {@link ElementEnum#ELEM_MAX}
+     * gives {@link #PROJ_MAX}, since the placeholders share their suffixes.
+     *
+     * <p>Function getFromElementEnum coded before 261116, commented in full on 261116.
+     *
      * @param elementEnum the element to find the projection for
      * @return the matching projection, or {@code null} if no constant of that name exists, which
      * means the two enums have drifted apart
@@ -109,5 +125,41 @@ public enum ProjectionEnum {
         } catch (IllegalArgumentException e) {
             return null;
         }
+    }
+
+    /**
+     * Finds a projection by name — the Java counterpart of {@code proj_name_to_idx} in
+     * {@code project.c}, which scans its name list for the first entry that equals the text,
+     * ignoring ASCII case, and gives its index or -1.
+     *
+     * <p>C's names are bare ({@code "FIRE"}, {@code "HOLY_ORB"}, {@code "MAX"}). This method adds
+     * {@code PROJ_} if the text does not already start with it, then compares against each constant
+     * name ignoring case, so the bare and the whole constant name ({@code "PROJ_FIRE"}) find the
+     * same constant, as with {@link ElementEnum#lookup(String)}. The prefix test itself is
+     * case-sensitive, so {@code "proj_fire"} finds nothing. Matching is otherwise exact: no
+     * trimming and no partial names.
+     *
+     * <p>Where this differs from C: the placeholders {@code "NONE"} and {@code "PROJ_NONE"} find
+     * {@link #PROJ_NONE}, which C's name list does not hold, so the caller must refuse it; and the
+     * answer is a constant or {@code null} rather than an index or -1. {@code "MAX"} finds
+     * {@link #PROJ_MAX}, as C's trailing {@code "MAX"} entry does.
+     *
+     * <p>Function lookup coded before 261116, commented in full on 261116.
+     *
+     * @param projectionString the projection name, bare or prefixed, in any ASCII case; may be
+     *                         {@code null}
+     * @return the matching constant, or {@code null} if the text is {@code null} or names no
+     * constant
+     */
+    public static ProjectionEnum lookup(String projectionString) {
+        if (projectionString == null) return null;
+        
+        String searchString;
+        if (projectionString.startsWith("PROJ_")) 
+            searchString = projectionString;
+        else
+            searchString = "PROJ_" + projectionString;
+        
+        return Arrays.stream(ProjectionEnum.values()).filter(e -> e.name().equalsIgnoreCase(searchString)).findFirst().orElse(null);
     }
 }

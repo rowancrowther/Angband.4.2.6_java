@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.backend.parser.bloweffect;
+package uk.co.jackoftradesltd.unused;
 
 /**
  * One {@code blow_effects.txt} entry exactly as the grammar read it, before any of it has

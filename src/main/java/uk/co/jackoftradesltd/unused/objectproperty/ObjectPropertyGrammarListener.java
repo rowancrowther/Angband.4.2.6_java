@@ -16,7 +16,7 @@
  */
 
 // Generated from ObjectPropertyGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftradesltd.backend.parser.grammars.objectproperty;
+package uk.co.jackoftradesltd.unused.objectproperty;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 

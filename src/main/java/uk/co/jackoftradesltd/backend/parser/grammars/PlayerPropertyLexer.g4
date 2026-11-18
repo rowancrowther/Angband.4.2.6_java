@@ -30,29 +30,34 @@
 // -1/1/3 switch all match the file's actual content and its own header
 // documentation - no bugs found there.
 //
-// POTENTIAL PROBLEMS:
+// DIRECTIVE ORDER AND REPEATS (Stage 7a, matched to C on 261118):
 //
-//   1. The file's own header says bindui: "can appear multiple times for
-//      the same entry to bind it to multiple user interface elements", and
-//      parse_player_prop_bindui (init.c:1262) allocates a fresh
-//      player_bound_ui node every call (consistent with a list the C side
-//      can append to repeatedly) - but `property` below matches `bindui`
-//      with `?` (at most once). No current player_property.txt entry
-//      actually has two bindui: lines back to back, so this is latent
-//      rather than active.
+//   C takes the directives of a record in any order and any number of times,
+//   each handler acting on the open record: code, name and value replace what
+//   is there, desc appends (string_append) and bindui adds a binding.
+//   PlayerPropertyGrammar.g4's `property` rule does the same, so a record may
+//   carry any mix of the five directives after its `type:`, or none at all,
+//   and a file may hold no records.
 //
-//   2. Worth double-checking rather than a confirmed bug: the C parser
-//      registers bindui's first field as a single sym ("bindui sym ui int
-//      aux sym uival", init.c:1313), so the whole "resist_ui_compact_0
-//      <DARK>" text - tag included - is one string on the C side. This
-//      grammar instead lexes that into two tokens, TEXT ("resist_ui_
-//      compact_0") and TAG ("<DARK>"), and looks up the UI entry via
-//      GameConstants.getUIEntry() on the TEXT portion alone. Splitting
-//      pre-lookup matches the documented intent ("the name will be
-//      parameterized with the element name"), but I couldn't find where
-//      the C side's combined string actually gets the tag stripped/
-//      substituted (no `player_bound_ui`/`bound_ui` usage outside init.c in
-//      this checkout) to confirm the two behave the same way.
+//   1. Repeated bindui: (resolved 261118). The file's own header says bindui:
+//      "can appear multiple times for the same entry to bind it to multiple
+//      user interface elements", and parse_player_prop_bindui (init.c) adds a
+//      binding for every line. `property` now collects every binduiEntry into
+//      the record's list in file order, wherever the lines fall in the record.
+//      C prepends each line and so binds the last one first; the order is an
+//      accepted deviation, recorded in PlayerPropertyAssembler.java.
+//
+//   2. The name/tag split (resolved 261118). The C parser registers bindui's
+//      first field as a single sym ("bindui sym ui int aux sym uival"), so
+//      "resist_ui_compact_0<DARK>" is one string on the C side. This lexer
+//      splits it into two tokens, LCASE ("resist_ui_compact_0") and TAG
+//      ("<DARK>"), and PlayerPropertyAssembler.java joins them again, name
+//      followed by tag, when it builds the binding, so the string Java keeps is
+//      the one C passes to bind_player_ability_to_ui_entry_by_name. Nothing at
+//      this stage looks the name up in the UI-entry registry.
+//
+//   Not yet matched: the order of a record's bindings (above) and C's NULL for
+//   an absent name or desc, which Java holds as the empty string.
 //
 // @author Rowan Crowther
 

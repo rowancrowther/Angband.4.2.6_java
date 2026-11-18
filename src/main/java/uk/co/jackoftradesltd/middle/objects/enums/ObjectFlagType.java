@@ -109,7 +109,7 @@ public enum ObjectFlagType {
      * <p>Replaces the {@code streq} chain in C's {@code parse_object_property_subtype}
      * ({@code obj-init.c}). C writes the result straight into the record and returns
      * the error; this returns {@code null} and leaves the error to the caller
-     * ({@code ObjectPropertyAssembler}).
+     * ({@code ObjectProperty2Assembler}).
      *
      * <p>coded on 2026-10-08 / commented in full on 2026-10-08
      *

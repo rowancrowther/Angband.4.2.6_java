@@ -458,21 +458,21 @@ class WorldDataLoaderTest {
     }
 
     /**
-     * <b>A known divergence from C.</b> C's {@code finish_parse_quest} accepts a {@code quest.txt}
-     * with no quests, setting {@code z_info->quest_max} to 0 and allocating nothing. {@code QuestGrammar}
-     * requires at least one quest, so the port rejects the file as a syntax error and the load stops.
-     * This pins the port's present behaviour; if the grammar is changed to accept zero quests, as
-     * {@code HintGrammar} and {@code NamesGrammar} were, this test should instead expect an empty
-     * registry list and a {@code getQuestMax()} of 0.
+     * C's {@code finish_parse_quest} accepts a {@code quest.txt} with no quests, setting
+     * {@code z_info->quest_max} to 0 and allocating nothing. {@code QuestGrammar}'s {@code file} rule is
+     * {@code (quest)* EOF}, so the port loads it too: the registry list is replaced by an empty one and
+     * {@code getQuestMax()} is 0. (Before 261118 the grammar demanded one quest and this case was a known
+     * divergence that stopped the load.)
      */
     @Test
-    @DisplayName("an empty quest file stops the load, where C loads no quests")
+    @DisplayName("an empty quest file loads no quests, as C does")
     void emptyQuestFile() throws Exception {
         write("quest.txt", "");
 
-        assertThrows(ParseCancellationException.class, WorldDataLoader::loadQuests);
+        WorldDataLoader.loadQuests();
 
-        assertSame(savedQuests, registryList("quests"), "quests untouched");
+        assertTrue(WorldRegistry.getQuests().isEmpty(), "no quests loaded");
+        assertEquals(0, WorldRegistry.getQuestMax());
     }
 
     /**

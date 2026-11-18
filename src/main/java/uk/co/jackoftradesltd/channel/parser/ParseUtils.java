@@ -1192,7 +1192,7 @@ public class ParseUtils {
      * <p>Callers: {@code ActivationAssembler} ({@code aim:}), {@code SummonAssembler}
      * ({@code uniques:}), {@code BlowMethodAssembler} ({@code cut:}, {@code stun:}, {@code miss:},
      * {@code phys:}), {@code ChestTrapAssembler} ({@code destroy:}, {@code magic:}),
-     * {@code ObjectPropertyAssembler} and {@code PlayerPropertyAssembler} (the {@code bindui:} aux
+     * {@code ObjectProperty2Assembler} and {@code PlayerPropertyAssembler} (the {@code bindui:} aux
      * figure) and {@code PlayerTimedAssembler} (the {@code flag-synonym:} exactness).
      * {@code ParseUtilsIsTrueTest} pins the readings above. {@code RoomAssembler} does not call it:
      * C compares {@code pit:} with 1, not with 0, so it uses {@link #parseIntString} instead.

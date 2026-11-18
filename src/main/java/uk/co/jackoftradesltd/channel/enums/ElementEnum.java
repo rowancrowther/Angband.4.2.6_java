@@ -278,4 +278,82 @@ public enum ElementEnum {
         return Arrays.stream(ElementEnum.values()).filter(e -> e.name().equals(search))
                 .findFirst().orElse(null);
     }
+    
+    /**
+     * Finds the element named by {@code element}, with or without the {@code ELEM_} prefix, and
+     * lets the caller choose whether the comparison ignores case. The steps are:
+     * <ol>
+     *   <li>a {@code null} {@code element} gives {@code null}, whichever way {@code ignoreCase} is
+     *       set;</li>
+     *   <li>if {@code ignoreCase} is {@code false}, the answer is exactly that of
+     *       {@link #lookup(String)}: exact and case-sensitive;</li>
+     *   <li>if it is {@code true}, {@code ELEM_} is put on the front of a name that does not already
+     *       start with it, and the constant whose name equals the result ignoring case is returned,
+     *       or {@code null} if there is none.</li>
+     * </ol>
+     * So with {@code ignoreCase} true, {@code "FIRE"}, {@code "fire"}, {@code "Fire"},
+     * {@code "ELEM_FIRE"} and {@code "ELEM_fire"} all give {@link #ELEM_FIRE}, and
+     * {@code "holy_orb"} gives {@link #ELEM_HOLY_ORB}.
+     *
+     * <p>There are two forms because C compares element names in two different ways. The exact
+     * form stands in for the {@code streq} search of {@code element_names} in {@code obj-init.c},
+     * function {@code grab_element_flag()}, which the object data files go through. The ignore-case
+     * form stands in for {@code proj_name_to_idx()} in {@code project.c}, which compares with
+     * {@code my_stricmp} against {@code proj_name_list}. That list begins with the elements of
+     * {@code list-elements.h}, so for an element name the position it returns is the element's. It
+     * is the comparison behind the blow effect {@code resist:} line ({@code parse_eff_resist()} in
+     * {@code mon-init.c}), and {@code BlowEffect2Assembler} is the caller that asks for it. The
+     * object callers must keep using {@link #lookup(String)}, because C refuses a lower-case
+     * element there.
+     *
+     * <p>The prefix test is case-sensitive even when the comparison is not. {@code "ELEM_fire"}
+     * already starts with {@code ELEM_} and is compared as given, so it finds
+     * {@link #ELEM_FIRE}. {@code "elem_fire"} and {@code "Elem_Fire"} do not start with it, so
+     * they are searched for as {@code "ELEM_elem_fire"} and {@code "ELEM_Elem_Fire"} and find
+     * nothing. C's names carry no prefix at all, so it finds nothing for either.
+     *
+     * <p>As with {@link #lookup(String)}, the search can return the placeholders
+     * {@link #ELEM_NONE} and {@link #ELEM_MAX}, because the constants exist here:
+     * {@code "none"}, {@code "NONE"} and {@code "ELEM_none"} give {@link #ELEM_NONE}, and
+     * {@code "max"} gives {@link #ELEM_MAX}. C's list has no {@code NONE} entry, so
+     * {@code proj_name_to_idx()} returns -1 for it, and its trailing {@code "MAX"} entry gives the
+     * {@code PROJ_MAX} index, which is no element. The caller decides what to do with them;
+     * {@code BlowEffect2Assembler} treats both as no element.
+     *
+     * <p>Only elements are searched. A projection that is not an element, such as
+     * {@code "KILL_WALL"}, finds nothing here, where {@code proj_name_to_idx()} finds its index;
+     * {@link ProjectionEnum#lookup(String)} is the search for those. Nothing is trimmed and no
+     * partial name is accepted, so the empty string, a name with leading or trailing space, a
+     * truncated name and a doubled prefix ({@code "ELEM_ELEM_FIRE"}) all find nothing.
+     *
+     * <p>The case folding is {@link String#equalsIgnoreCase}, which also folds a few non-ASCII
+     * letters, where {@code my_stricmp} folds ASCII letters only. The data files are ASCII, so
+     * this is the same accepted deviation as on {@code MessageType.lookupByName} (decided
+     * 261023).
+     *
+     * <p>Method lookup(String, boolean) coded on 261117, commented in full on 261117.
+     *
+     * @param element    the element name, with or without the {@code ELEM_} prefix
+     * @param ignoreCase {@code true} to compare ignoring case, as {@code proj_name_to_idx()} does;
+     *                   {@code false} for the exact comparison of {@link #lookup(String)}
+     * @return the matching constant, or {@code null} if there is none
+     */
+    public static ElementEnum lookup(String element, boolean ignoreCase) {
+        if (element == null) return null;
+        
+        if (ignoreCase) {
+            String search;
+            
+            if (!element.startsWith("ELEM_"))
+                search = "ELEM_" + element;
+            else
+                search = element;
+            
+            return Arrays.stream(ElementEnum.values()).filter(e -> e.name().equalsIgnoreCase(search))
+                    .findFirst().orElse(null);
+        }
+        
+        else 
+            return lookup(element);
+    }
 }

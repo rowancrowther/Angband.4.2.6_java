@@ -395,26 +395,19 @@ recorded here as the summary states them; fill in the detail when you next touch
 
 ## Artifact
 
-### A special artifact's kind takes the artifact's finished level, where C's is 0
+### A special artifact's kind takes the artifact's finished level, where C's is 0 [<span style="color:#006400">**CLOSED**</span> 26-10-23]
 
-- **Java:** `ObjectKind(Artifact, String, ObjectBase)`, called from `ArtifactAssembler.assemble`. **C:**
-  `write_dummy_object_record` (`obj-init.c`), called from `parse_artifact_base_object`.
-- **Differs:** C sets `dummy->level = art->level` while the `base-object:` line is being read. At that point the
-  artifact is a zeroed record holding only its name, because `level:` has not been read yet, so the kind's level is 0.
-  In every record of `artifact.txt`, `level:` comes after `base-object:`, so all 14 special kinds (three lights, six
-  rings and five amulets) get level 0 in C. Java assembles from a finished record, so it cannot see the line order, and
-  the constructor copies the artifact's final level: the Phial's kind is level 5 in Java and 0 in C. C would copy the
-  level only if a file put `level:` before `base-object:`.
-- **Reach:** only code that reads the kind's level of a special artifact directly. C's artifact paths for activation
-  level, device failure and the activation boost in the object description all test `obj->artifact` first, so they are
-  unaffected. The one reader found is `object_learn_on_use` (`obj-knowledge.c`), whose experience gain uses
-  `obj->kind->level`, so a special light, ring or amulet learned on use gives different experience. The two
-  `obj->kind->level` reads in `effect-handler-general.c` were not traced.
-- **Revisit:** if the experience from learning a special artifact on use needs to match C exactly, or when those
-  `effect-handler-general.c` reads are ported and reach an artifact. Then the kind is built with level 0 instead of the
-  artifact's.
-- **Accepted:** 2026-10-22. The constructor Javadoc still says the level is copied "as C does", which is true of C's
-  intent but not of its value; to be corrected to point here.
+- **Closed:** the difference is gone, so this is no longer a deviation. `ArtifactGrammar.g4` now gives each
+  `base-object:` line an `ArtifactBaseObjectParseRecord` holding the `level:` text in force at that line, and
+  `ArtifactAssembler.assemble` gives a new special kind that level through `ObjectKind.setLevel`, as C's
+  `write_dummy_object_record` copies `art->level` when `parse_artifact_base_object` runs. Shipped `artifact.txt` puts
+  `level:` after `base-object:`, so all 14 special kinds are level 0 in both, the Phial's included. A file that puts
+  `level:` first gives the kind that level, in both. The `ObjectKind(Artifact, String, ObjectBase)` constructor this entry
+  named no longer exists.
+- **Pinned by:** `ArtifactKindLevelOrderTest` (nine tests across the line orders, octal and negative levels, an
+  ordinary kind and a second run) and the Phial assertion in `ArtifactReaderTest`.
+- **Originally accepted:** 2026-10-22, when the parse record could not see line order. Kept as a record of the change;
+  delete it whenever you tidy this file.
 
 ### A record with no `base-object:` line is refused, where C loads it as tval 0
 
@@ -1043,6 +1036,278 @@ The four entries below are the `shape.txt` `values:` bracket, the same four case
 - **Accepted:** 2026-11-15, during the `ObjectModifier` port pass. Pinned by `lookupAcceptsTheOptionalPrefix` in
   `ObjectModifierTest`.
 
+## Object flags
+
+### `ObjectFlag.lookup` takes the `OF_` prefix as optional, where C finds only the bare name
+
+- **Java:** `ObjectFlag.lookup(String)`, called from `ObjectProperty2Assembler` for `flag` properties. **C:**
+  `code_index_in_array(obj_flags, code)` (`datafile.c`), as called from `parse_object_property_code` (`obj-init.c`).
+  C's `obj_flags` holds `NONE`, the real flag names and `MAX`, all bare.
+- **Differs:** C finds `FREE_ACT` and refuses `OF_FREE_ACT`. Java adds `OF_` when it is missing, so both return
+  `OF_FREE_ACT`. `OF_OF_FREE_ACT`, wrong-case and partial names find nothing in both.
+  - `type:flag code:OF_FREE_ACT`    C refuses, Java accepts
+  - `type:flag code:OF_NONE` and `code:OF_MAX`    C refuses, Java accepts
+  - `type:flag code:NONE` and `code:MAX`    C accepts, Java accepts
+  - `type:flag code:FREE_ACT`    C accepts, Java accepts
+- **Why:** the port's constants carry the prefix, and one lookup serves callers that hold the constant's name as well as
+  callers that read a data file.
+- **Reach:** none from shipped data. None of the 79 `code:` lines in `lib/gamedata/object_property.txt` has a prefix
+  (checked 2026-11-16). Hand-edited files only. No C code looks these names up after loading: the only name-to-index
+  searches of `obj_flags` are parser handlers (checked 2026-11-16).
+- **Revisit:** if the data-file parsers are meant to be as strict as C about code names.
+- **Accepted:** 2026-11-15, during the `ObjectFlag` port pass; written up here 2026-11-16. Pinned by
+  `lookupAcceptsTheNameWithOrWithoutThePrefix` in `ObjectFlagTest`, and by `flagNoneLoadsAsIndexZero` and
+  `flagMaxLoadsAsTheLastIndex` in `ObjectProperty2AssemblerTest`.
+
+## Elements
+
+### `ElementEnum.lookup` takes the `ELEM_` prefix as optional, where C finds only the bare name
+
+- **Java:** `ElementEnum.lookup(String)`, called from `ObjectProperty2Assembler` for the `ignore`, `resistance`,
+  `vulnerability` and `immunity` properties, and from `ParseUtils` and `ItemObjectAssembler`. **C:**
+  `code_index_in_array(element_names, code)` (`datafile.c`), as called from `parse_object_property_code`
+  (`obj-init.c`), and the `element_names` search in `grab_element_flag` (`obj-init.c`).
+- **Differs:** C finds `FIRE` and refuses `ELEM_FIRE`. Java adds `ELEM_` when it is missing, so both return
+  `ELEM_FIRE`. The placeholders `NONE` and `MAX` are found by both forms in Java, and the caller refuses them, so an
+  element type with `code:NONE` or `code:MAX` is refused in both.
+  - `type:resistance code:ELEM_FIRE`    C refuses, Java accepts
+  - `type:resistance code:FIRE`    C accepts, Java accepts
+  - `type:resistance code:NONE` and `code:MAX`    C refuses, Java refuses
+  - `type:resistance code:ELEM_ELEM_FIRE` and `code:fire`    C refuses, Java refuses
+- **Why:** callers such as `ParseUtils.grabElementFlag` and `ItemObjectAssembler` hold or build the prefixed name.
+- **Reach:** none from shipped data. No `code:` line in `lib/gamedata/object_property.txt` has a prefix (checked
+  2026-11-16). Hand-edited files only. No C code looks these names up after loading: the only name-to-index searches of
+  `element_names` are parser handlers (checked 2026-11-16).
+- **Revisit:** if the data-file parsers are meant to be as strict as C about code names.
+- **Accepted:** 2026-11-15, during the `ElementEnum` port pass; written up here 2026-11-16. Pinned by
+  `aNameWithoutThePrefixFindsTheSameConstant` and `aBareNameIsStillMatchedExactly` in `ElementEnumLookupTest`.
+
+## Blow effect
+
+### Five directives carry a different name in the parse record from the keyword in the data file
+
+- **Java:** `BlowEffect2Grammar.g4`, which names each `Directive` it builds, and `BlowEffect2Assembler`, which switches
+  on that name. **C:** `init_parse_eff` (`mon-init.c`), which registers the keywords the data file uses.
+- **Differs:** five of the ten directive names are not C's keywords. The other five (`name`, `power`, `eval`, `desc`,
+  `resist`) are the same.
+  - `lore-color-base:`    C keyword `lore-color-base`, Java directive name `base-colour`
+  - `lore-color-resist:`    C keyword `lore-color-resist`, Java directive name `resist-colour`
+  - `lore-color-immune:`    C keyword `lore-color-immune`, Java directive name `immune-colour`
+  - `effect-type:`    C keyword `effect-type`, Java directive name `effect`
+  - `lash-type:`    C keyword `lash-type`, Java directive name `lash`
+- **Why:** the name is an internal label between the grammar and the assembler. The data file's own text is still the
+  only thing the lexer accepts, so `lore-color-base:` loads and `base-colour:` is refused. The `colour` spelling follows
+  the house Oxford spelling, and `effect` and `lash` are the shorter rule names.
+- **Reach:** none from a data file; nobody outside the parser reads the name. It only shows in an
+  `unknown directive` message from the assembler's `default` branch, and that branch cannot fire for a name the grammar
+  built.
+- **Revisit:** if a second reader of `BlowEffect2ParseRecord` is written that expects C's names, or if the
+  `BlowEffect2ParseRecord` Javadoc is read as a promise of them (it currently says the names are C's).
+- **Pinned by:** `everyDirectiveKeywordGivesItsParseRecordName`, `directivesKeepFileOrderNotCanonicalOrder` and
+  `realFilePoisonRecordKeepsEveryDirectiveInFileOrder` in `BlowEffect2GrammarTest`.
+- **Accepted:** 2026-11-16, found when the first `BlowEffect2GrammarTest` asserted C's names.
+
+### A `resist:` line before the record's `effect-type:` line is refused, where C crashes
+
+- **Java:** `BlowEffect2Assembler.assemble` and `parseResist`, which handle a record's directives in file order and
+  throw a `DataFileParseException` when a `resist:` line finds no effect type yet. **C:** `parse_eff_name` and
+  `parse_eff_resist` (`mon-init.c`).
+- **Differs:** `parse_eff_name` creates each record with `mem_zalloc`, so `effect_type` is a null pointer until an
+  `effect-type:` line is read. `parse_eff_resist` compares it with `streq` at once, and `streq` is `!strcmp` (`z-util.h`),
+  so a `resist:` line ahead of `effect-type:` calls `strcmp` on null and crashes. Java quotes the `resist:` line in its
+  message and ends the load.
+- **Agrees:** both resolve a `resist:` against the type read last before it, and each `resist:` replaces the one
+  before. Type A, Resist 1, Type B, Resist 2, Resist 3 ends as type B with Resist 3 resolved under B. A `resist:` on any
+  type other than `element` or `flag` is refused in both (`PARSE_ERROR_MISSING_BLOW_EFF_TYPE` in C). A directive ahead
+  of the first `name:` is refused in Java, and in C it asserts, or for the three colour lines returns
+  `PARSE_ERROR_MISSING_RECORD_HEADER`.
+- **Why:** C cannot handle the input at all, so refusing it with a line number is the useful behaviour. Resolving
+  `resist:` after the whole record instead would differ from C whenever the type changes after the last `resist:`.
+- **Reach:** none from shipped data. All 16 `resist:` lines in `blow_effects.txt` follow an `effect-type:` in their own
+  record (checked 2026-11-17). Hand-edited files only.
+- **Revisit:** if a data file is ever shipped with `resist:` ahead of `effect-type:`, which C could not load either.
+- **Pinned by:** `resistBeforeEffectTypeInTheSameRecordEndsTheLoad`,
+  `aResistWithNoEffectTypeInTheMiddleRecordEndsTheWholeLoad` and `resistWithNoEffectTypeEndsTheLoad` in
+  `BlowEffectReaderTest`.
+- **Accepted:** 2026-11-17. Marked in the `BlowEffect2Grammar.g4` header comment.
+
+### An unknown `effect-type:` value is refused, where C stores the string
+
+- **Java:** `BlowEffect2Assembler.parseEffect`, which resolves the value with `BlowEffectType.getFromString` and throws a
+  `DataFileParseException` when nothing matches. **C:** `parse_eff_effect_type` (`mon-init.c`) and `blow_color`
+  (`mon-lore.c`).
+- **Differs:** `parse_eff_effect_type` stores whatever string follows `effect-type:` with no check. `blow_color` is the
+  only reader, and it compares the string against `theft`, `drain`, `eat-food`, `eat-light`, `element`, `flag` and
+  `all_sustains`. A string that matches none falls out of the chain and returns the base colour, so `effect-type:BOGUS`
+  loads and recall shows the base colour. Java refuses it at the line, quoting the line number. The match is exact and
+  case-sensitive in both, so `Element`, `FLAG` and `BET_FLAG` are unknown to each.
+- **Agrees:** all seven spellings the shipped file uses resolve, and a `resist:` on a type other than `element` or
+  `flag` is refused in both (`PARSE_ERROR_MISSING_BLOW_EFF_TYPE` in C).
+- **Why:** `BlowEffectType` is a closed enum, so it cannot hold an arbitrary string. Refusing at load names the bad line,
+  where C's only trace is a base colour in recall.
+- **Reach:** none from shipped data. The 24 records of `blow_effects.txt` that have an `effect-type:` line use
+  `element` (3), `flag` (13), `theft` (2), `drain`, `eat-food`, `eat-light` and `all_sustains` (checked 2026-11-17).
+  Hand-edited files only.
+- **Revisit:** if a modded `blow_effects.txt` ever needs an effect type C does not read, which would also need
+  `blow_color` to change.
+- **Pinned by:** `anUnknownEffectTypeEndsTheLoadWhereCStoresTheString` and
+  `everySpellingTheRealFileUsesIsAKnownEffectType` in `BlowEffectReaderTest`.
+- **Accepted:** 2026-11-17.
+
+### An unknown `resist:` name is stored as "no resist", where C stores -1
+
+- **Java:** `BlowEffect2Assembler.parseResist`, which stores `ObjectFlag.OF_NONE`, or `ElementEnum.ELEM_NONE` and
+  `ProjectionEnum.PROJ_NONE`, when the name is not found. **C:** `parse_eff_resist` and `flag_index_by_name`
+  (`mon-init.c`), and `proj_name_to_idx` (`project.c`).
+- **Differs:** both C lookups return -1 for a name they do not know, and `parse_eff_resist` stores it unchecked in the
+  effect's one `resist` int. So `effect-type:element` with `resist:BOGUS`, or with `resist:NONE` (the projection name
+  list has no `NONE` entry), loads in C with -1 stored. So does `effect-type:flag` with `resist:BOGUS`, or with
+  `resist:free_act`, since the flag match is exact. Java stores the `NONE` constants, which are the typed form of
+  "nothing resists this".
+- **Agrees:** `resist:NONE` under `effect-type:flag` finds index 0 in C (`obj_flags[0]` is `"NONE"`) and `OF_NONE` in
+  Java. Element names match ignoring case in both, and flag names match exactly in both.
+- **Why:** -1 is not a valid index into either list, and `blow_color` (`mon-lore.c`), the only reader, would use it as
+  an array index or a flag number. No real data file could rely on it, so the `NONE` constants lose nothing.
+- **Reach:** none from shipped data. All 13 distinct `resist:` values in `blow_effects.txt` resolve (checked
+  2026-11-17). Hand-edited files only.
+- **Revisit:** if a lookup that tells "no match" apart from `NONE` is ever needed.
+- **Pinned by:** `anUnknownElementResistIsElemNone`, `anUnknownOrNoneElementNameStoresNoProjection`,
+  `anElementResistNamedNoneStoresNoResistWhereCStoresMinusOne`, `aFlagResistMatchesExactly` and
+  `anUnknownFlagAfterAnElementResistLeavesNoElementResistBehind` in `BlowEffectReaderTest`. The reach is pinned by
+  `everyElementAndFlagResistInTheRealFileResolves`.
+- **Accepted:** 2026-11-17.
+
+### A `MAX` name finds C's trailing name-list entry, where the port finds no record
+
+- **Java:** `BlowEffect2Assembler.parseLash` and `parseResist`, with `WorldRegistry.lookupProjectionByLash`. **C:**
+  `parse_eff_lash_type` and `parse_eff_resist` (`mon-init.c`), and `proj_name_to_idx` with `proj_name_list`
+  (`project.c`).
+- **Differs:** `proj_name_list` ends with `"MAX"` ahead of its `NULL`, so `proj_name_to_idx("MAX")` returns the
+  `PROJ_MAX` index, not -1. `lash-type:MAX` therefore stores `PROJ_MAX` as the lash type in C, and the missile fallback
+  does not fire. `effect-type:element` with `resist:MAX` stores the `PROJ_MAX` index. Java resolves `MAX` to
+  `ProjectionEnum.PROJ_MAX` too, but `projection.txt` has no `code:MAX` record, so `lookupProjectionByLash` returns null
+  and the effect's lash type is null. For the resist, the projection field holds `PROJ_MAX` and the element field is
+  `ELEM_NONE`, since there is no element called `MAX`.
+- **Agrees:** every other name C does not know falls back to `PROJ_MISSILE` for a lash in both, `lash-type:NONE`
+  included. The one exception is a `PROJ_`-prefixed name, which Java finds; see the `PROJ_` prefix entry below.
+- **Why:** `MAX` is a count marker, not a projection. The index C stores is the number of projections, so it names none
+  of them.
+- **Reach:** none from shipped data. `blow_effects.txt` has no `lash-type:MAX` or `resist:MAX` line (checked
+  2026-11-17). Hand-edited files only.
+- **Revisit:** if a data file ever names `MAX`, or if a projection record for `PROJ_MAX` is ever added.
+- **Pinned by:** `lashTypeMaxFindsNoProjectionRecordSoTheLashIsNull`, `lashTypeNoneIsMissileLikeAnyOtherNameCDoesNotKnow`
+  and `resistMaxStoresTheProjectionMaxIndex` in `BlowEffectReaderTest`.
+- **Accepted:** 2026-11-17.
+
+### Changing `effect-type:` clears the resist the new type does not use, where C keeps the number
+
+- **Java:** `BlowEffect2Assembler.parseEffect`, which clears the resist fields the new type does not use. **C:**
+  `parse_eff_effect_type` and `parse_eff_resist` (`mon-init.c`), and `blow_color` (`mon-lore.c`).
+- **Differs:** C keeps one int per effect for the resist, and `parse_eff_effect_type` only replaces the type string. An
+  `effect-type:` line after a `resist:` therefore leaves the number in place, and the new type reads it in its own list.
+  `effect-type:element`, `resist:FIRE`, `effect-type:flag` leaves 2, which is FIRE's place in the projection name list
+  and, as an object flag, `SUST_INT`. Going from `flag` to `element` reads the flag index as a projection index. Java
+  keeps a typed field per list, and the new type's field starts at `NONE`, so both swaps end with no resist. Changing
+  to `drain`, `theft`, `eat-food`, `eat-light` or `all_sustains` leaves the number in C and clears it in Java, which
+  shows no difference, because `blow_color` reads the number only for `element` and `flag`.
+- **Agrees:** repeating the same type keeps the resist in both: `element`, `resist:FIRE`, `element` ends with FIRE, and
+  likewise for `flag`. A `resist:` after the new type replaces whatever was there in both.
+- **Why:** after a swap the number C ends with names an unrelated entry in the other list, so there is nothing worth
+  reproducing. Leaving the old typed field in place would give a `flag` effect an element resist.
+- **Reach:** none from shipped data. None of the 30 records in `blow_effects.txt` has two `effect-type:` lines, so no
+  type ever follows a resist (checked 2026-11-17). Hand-edited files only.
+- **Revisit:** if a data file ever changes the type partway through a record.
+- **Pinned by:** `aRepeatedElementTypeKeepsTheElementResist`, `aRepeatedFlagTypeKeepsTheFlagResist`,
+  `anElementToFlagSwapClearsTheElementResistWhereCReadsItsNumberAsAFlag`,
+  `aFlagToElementSwapClearsTheFlagResistWhereCReadsItsNumberAsAProjection` and
+  `aTypeThatTakesNoResistClearsEveryResist` in `BlowEffectReaderTest`.
+- **Accepted:** 2026-11-17.
+
+### A `PROJ_`-prefixed projection name is found, where C finds only the bare name
+
+- **Java:** `ProjectionEnum.lookup`, which `BlowEffect2Assembler.parseLash` and `parseResist` call. **C:**
+  `proj_name_to_idx` with `proj_name_list` (`project.c`), which `parse_eff_lash_type` and `parse_eff_resist`
+  (`mon-init.c`) call.
+- **Differs:** C's name list holds bare names (`"FIRE"`), so `proj_name_to_idx("PROJ_FIRE")` is -1. `lash-type:PROJ_FIRE`
+  therefore stores `PROJ_MISSILE`, and `effect-type:element` with `resist:PROJ_FIRE` stores -1. Java puts `PROJ_` on a
+  name that lacks it and takes one that already has it, so the lash is FIRE. The resist fills the projection field with
+  `PROJ_FIRE` and leaves the element field at `ELEM_NONE`, because the element lookup then searches for `ELEM_PROJ_FIRE`,
+  which no element has.
+- **Agrees:** the match ignores case in both, and the prefix test is case-sensitive, so `proj_fire` is an unknown name
+  and a lash of `PROJ_MISSILE` in both. `NONE` and `MAX` are covered by their own entries.
+- **Why:** the port's constants carry the prefix, and `ProjectionEnum.lookup` was written to take either spelling, as
+  `ElementEnum.lookup`, `ObjectFlag.lookup` and `ObjectModifier.lookup` do. `ProjectionEnumLookupTest` checks all 56 C
+  names bare and prefixed.
+- **Reach:** none from shipped data. `blow_effects.txt` has no `PROJ_` text at all (checked 2026-11-17, and identical to
+  the upstream 4.2.6 file). Hand-edited files only.
+- **Revisit:** if the data-file parsers are meant to be as strict as C about code names.
+- **Pinned by:** `aPrefixedLashNameFindsItsProjectionWhereCFallsBackToMissile` and
+  `aPrefixedElementResistFillsOnlyTheProjectionField` in `BlowEffectReaderTest`. The lookup itself is pinned in
+  `ProjectionEnumLookupTest`.
+- **Accepted:** 2026-11-17, during the `BlowEffect2Assembler` port pass.
+
+### A colour followed by a colon and more text is an unknown colour, where C drops the text
+
+- **Java:** `BlowEffect2Lexer.g4`, where `lore-color-base:`, `lore-color-resist:` and `lore-color-immune:` push into the
+  free-text mode and `STRING` takes the rest of the line, read by `BlowEffect2Assembler.parseColour`. **C:**
+  `parse_eff_lore_color`, `parse_eff_lore_color_resist` and `parse_eff_lore_color_immune` (`mon-init.c`), registered by
+  `init_parse_eff` as `sym color`, and `parser_parse` (`parser.c`).
+- **Differs:** `parser_parse` cuts a `sym` field with `strtok(sp, ":")`, and text after the last registered field is
+  dropped without an error. `lore-color-base:Light Green:x` reads `Light Green` and `lore-color-base:G:x` reads `G`, so
+  both are Light Green in C. Java's value is the whole rest of the line, `Light Green:x` or `G:x`, which names no colour
+  and is white.
+- **Agrees:** a colour with no colon is the same in both. `effect-type:`, `resist:` and `lash-type:` are `str` fields in
+  C, which take the rest of the line whole, so a colon in those agrees.
+- **Why:** the colour directives share the lexer's free-text rule with the `str` directives, and a colon in a colour is
+  not something the data file has.
+- **Reach:** none from shipped data. No `lore-color-*` line in `blow_effects.txt` has a second colon (checked
+  2026-11-17). Hand-edited files only.
+- **Revisit:** if a data file ever carries text after a colour.
+- **Pinned by:** `aColourFollowedByAColonAndTextIsWhiteWhereCDropsTheText` in `BlowEffectReaderTest`.
+- **Accepted:** 2026-11-17, during the `BlowEffect2Assembler` port pass.
+
+### A single high-bit colour character is white, where C refuses it on a signed-`char` platform
+
+- **Java:** `BlowEffect2Assembler.parseColour`. **C:** `parse_eff_lore_color`, `parse_eff_lore_color_resist` and
+  `parse_eff_lore_color_immune` (`mon-init.c`), and `color_char_to_attr` (`z-color.c`).
+- **Differs:** a colour of one character goes to `color_char_to_attr`, which hands a negative `char` straight back, and
+  the handler then returns `PARSE_ERROR_INVALID_COLOR` for any negative result. A lone byte with the high bit set is
+  therefore a refusal where `char` is signed, and white where it is unsigned. Java works on decoded characters, so it has
+  no negative character: the single character a decoder gives for such a byte (`U+00E9` from Latin-1, `U+FFFD` from
+  UTF-8) matches no colour and is white.
+- **Agrees:** an unknown ASCII character or name is white in both, and C never refuses a name, because
+  `color_text_to_attr` cannot return a negative number.
+- **Why:** the data files are ASCII, and C's own answer depends on the platform, so there is no single behaviour to
+  copy.
+- **Reach:** none from shipped data. `blow_effects.txt` has no non-ASCII character (checked 2026-11-17). Hand-edited
+  files only.
+- **Revisit:** if a data file ever carries non-ASCII colour text.
+- **Pinned by:** `aHighBitCharacterIsWhiteWhereCRefusesOnASignedCharPlatform` in `BlowEffect2AssemblerTest`.
+- **Accepted:** 2026-11-17, during the `BlowEffect2Assembler` port pass.
+
+### Building a `BlowEffect` needs the projections loaded, where C's zeroed struct needs nothing
+
+- **Java:** the no-argument `BlowEffect` constructor, which `BlowEffect2Assembler.assemble` calls for every record, and
+  `WorldRegistry.lookupProjectionByCode`. **C:** `parse_eff_name` (`mon-init.c`), which creates the record with
+  `mem_zalloc`, and `struct blow_effect` (`mon-blows.h`).
+- **Differs:** a record with no `lash-type:` line keeps `lash_type` 0 in C, which is the `ACID` entry of `proj_name_list`
+  (`project.c`) and the first record of `projection.txt`. Java stores a `Projection` object rather than an index, so the
+  constructor looks up the ACID record to hold the same default. If the projections are not loaded,
+  `lookupProjectionByCode` throws an `IllegalStateException`, and that surfaces before the assembler has read a single
+  directive. C stores only the index, so it has no such dependency.
+- **Agrees:** a record with no `lash-type:` ends with the ACID lash in both, which is what `effect-handler-attack.c` and
+  `mon-spell.c` read through `blow[0].effect`. A `lash-type:` line replaces the default in both.
+- **Why:** the default has to be the ACID projection to match C, and the projections are Java objects held by
+  `WorldRegistry`, so the lookup is the only way to build one. The projections load ahead of the blow effects in
+  `GameConstants`, so the load order holds.
+- **Reach:** none from the game's own load order. Only a test, or a caller, that builds blow effects with the projection
+  table empty reaches it.
+- **Revisit:** if blow effects are ever loaded before projections, or built where `WorldRegistry` is not set up.
+- **Pinned by:** `aRecordBeforeTheProjectionsAreLoadedIsAnIllegalState` in `BlowEffect2AssemblerTest`, and
+  `recordWithNoEffectTypeKeepsNullTypeAndEmptyResists` and `everyLashTypeInTheRealFileResolvesToAProjection` in
+  `BlowEffectReaderTest`.
+- **Accepted:** 2026-11-18, during the `BlowEffect` port pass.
+
 ## UI entry
 
 ### A record that repeats the previous record's name is not merged into it, where C carries on editing the same embryo
@@ -1289,6 +1554,46 @@ C reads with `strtol` or `strtoul` and the lexers read with a token rule, and ab
   every file that imports `EffectBlock.g4`.
 - **Pinned by:** `anEmptyColonFieldOnAnEffectLineIsRefusedWhereCSkipsIt` in `MonsterSpellReaderTest`.
 - **Accepted:** 2026-11-12, raised while checking `EFFECT_INTEGER` and `HIT_UINT` in `MonsterSpellLexer.g4`.
+
+## Quest
+
+### A `level:`, `race:` or `number:` line before the file's first `name:` is refused, where C crashes
+
+- **Java:** `QuestGrammar.g4` (the `quest` rule starts with `name`) and `QuestReader`, which throw a
+  `ParseCancellationException` for a syntax error. **C:** `parse_quest_level`, `parse_quest_race` and
+  `parse_quest_number` (`player-quest.c`).
+- **Differs:** `init_parse_quest` starts with `parser_setpriv(p, NULL)`, and only `parse_quest_name` replaces it with a
+  new quest. The other three handlers read the quest back with `parser_priv(p)` and then `assert(q)`. So a
+  `level:` line ahead of the first `name:` fails the assert, and in a build with asserts compiled out it writes through
+  a null pointer. Java ends the load and names the offending line.
+- **Agrees:** a `level:`, `race:` or `number:` after a `name:` belongs to the record that `name:` opened, in any order and
+  any number of times, and the last of each kind wins. Comments and blank lines ahead of the first `name:` load in both.
+- **Why:** this is the standing rule for every place C crashes (see "Where C crashes, Java throws" below).
+- **Reach:** none from shipped data. `quest.txt` opens with `name:Sauron`. A hand-edited file only.
+- **Revisit:** never expected. C cannot load such a file either.
+- **Pinned by:** `aDirectiveBeforeTheFirstNameIsRefusedHereWhereCCrashes` in `QuestReaderTest`.
+- **Accepted:** 2026-11-18, found while checking `QuestGrammar.g4` against Stage 7a.
+
+## Where C crashes, Java throws
+
+### Every input that crashes C is refused in Java with a message that names the line
+
+- **Java:** the assembler or grammar for the file in question throws a `DataFileParseException` or, for a syntax error,
+  a `ParseCancellationException`. **C:** an `assert`, a `strcmp` on a null pointer or a write through one.
+- **Differs:** C has no defined behaviour for these inputs: the game aborts, or the process faults, usually with no
+  message that points at the data file. Java ends the load with an error that quotes the line and the file.
+- **Rule:** decided 2026-11-18. Wherever C crashes on a data file, Java throws. Do not try to copy the crash, and do not
+  load the record in some invented way. Each case still gets its own entry, so the list of them is findable, and its own
+  `...HereWhereCCrashes` pin.
+- **Cases so far:** a directive ahead of the first `name:` in `quest.txt` (above); a `resist:` ahead of `effect-type:` in
+  `blow_effects.txt` and a directive ahead of the first `name:` there (see "Blow effect"); a `cycle-color:` ahead of any
+  `cycle:` in `visuals.txt`, which `docs/grammar_issues.md` says dereferences a null `cycles[0]` (not re-checked in
+  Java today).
+- **Not covered:** an unresolved `fallback:` in `summon.txt`, which is "Summon" above. C's `strcmp(name, NULL)` is
+  undefined behaviour and Java keeps the record instead of throwing. That entry predates this rule; decide whether to
+  make it throw.
+- **Reach:** none from shipped data, by definition: the shipped files load in C.
+- **Accepted:** 2026-11-18.
 
 ## Put off until later, accepted for now
 

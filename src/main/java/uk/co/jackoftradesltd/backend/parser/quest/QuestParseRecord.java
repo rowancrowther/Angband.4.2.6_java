@@ -17,31 +17,35 @@
 
 package uk.co.jackoftradesltd.backend.parser.quest;
 
+import uk.co.jackoftradesltd.backend.parser.grammars.Directive;
+
+import java.util.List;
+
 /**
  * The raw, still-textual form of a single {@code quest.txt} record, produced by
  * {@code QuestGrammar} and consumed by {@link QuestAssembler}.
  *
+ * <p>A record is one {@code name:} line and the {@code level:}, {@code race:} and {@code number:} lines
+ * that follow it, up to the next {@code name:}. C has no such grouping: its four hooks fill whichever
+ * quest {@code parse_quest_name} started last, and the grammar's {@code quest} rule recreates that
+ * grouping so that the assembler gets one record per quest.
+ *
  * <p>Per the suite's "grammars extract, readers assemble" split, the grammar does no interpretation:
- * it copies each directive's value out verbatim as a {@code String} and leaves all conversion
- * (integer parsing, monster-race lookup) to the assembler. Keeping the values as raw text here means
- * a malformed field survives parsing intact and can be reported with its original spelling, rather
- * than being lost to an exception mid-parse.
+ * it copies each directive's value out verbatim as a {@code String} inside a {@link Directive} and
+ * leaves all conversion (integer parsing, monster-race lookup) to the assembler. Keeping the values as
+ * raw text here means a malformed field survives parsing intact and can be reported with its original
+ * spelling, rather than being lost to an exception mid-parse.
  *
- * <p>Record QuestParseRecord coded before 261105, updated on 261105 for the removal of the
- * soft-error path.
+ * <p>The {@code directives} are in file order. The first is always {@code name}; the rest are any mix of
+ * {@code level}, {@code race} and {@code number}, each of which may repeat or be absent, as C allows.
+ * Nothing in the record enforces that: a hand-built one can start with any directive, which is why
+ * {@link QuestAssembler} checks for a name itself.
  *
- * @param name  the quest's display name (C {@code quest.name}); starts a new record
- * @param level  the dungeon depth as raw text (C {@code quest.level}), parsed to an int downstream
- * @param race   the target monster's full name as written (C {@code quest.race}), resolved to a
- *               {@link uk.co.jackoftradesltd.middle.monsters.MonsterRace} downstream
- * @param number the required kill count as raw text (C {@code quest.max_num}), parsed downstream
- * @param line   the source line of this record's {@code name:} directive, carried so the assembler
- *               can quote it in the {@code DataFileParseException} it throws if it refuses the record
+ * <p>Record QuestParseRecord coded before 261105, commented in full on 261118 (directive list and
+ * grouping described; earlier update 261105 for the removal of the soft-error path).
+ *
+ * @param directives the record's directives in file order, each carrying its raw value and its line
  * @author Rowan Crowther
  */
-public record QuestParseRecord(String name,
-                               String level,
-                               String race,
-                               String number,
-                               int line) {
+public record QuestParseRecord(List<Directive> directives) {
 }

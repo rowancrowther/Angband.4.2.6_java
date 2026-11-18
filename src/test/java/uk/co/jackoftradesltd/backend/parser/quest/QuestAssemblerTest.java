@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.backend.parser.quest;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.backend.parser.grammars.Directive;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
@@ -56,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code GameConstants.init} chain that {@code QuestReaderTest} uses.
  *
  * <p>Class QuestAssemblerTest coded on 261014, rewritten for the fatal paths and commented in full on
- * 261029.
+ * 261029, directive-before-name, wrong-value-count and whole-name cases added on 261118.
  *
  * @author Rowan Crowther
  */
@@ -91,8 +92,40 @@ class QuestAssemblerTest {
 
     // ---- helpers ---------------------------------------------------------
 
+    /**
+     * One directive on its own line, as {@code QuestGrammar} builds it.
+     */
+    private static Directive directive(String name, String value, int line) {
+        return new Directive(name, List.of(value), line);
+    }
+
+    /**
+     * A record of {@code name:} on {@code nameLine} followed by {@code level:}, {@code race:} and
+     * {@code number:} on the next three lines, in that order.
+     */
+    private static QuestParseRecord full(String name, int nameLine, String level, String race, String number) {
+        return new QuestParseRecord(List.of(
+                directive("name", name, nameLine),
+                directive("level", level, nameLine + 1),
+                directive("race", race, nameLine + 2),
+                directive("number", number, nameLine + 3)));
+    }
+
+    /**
+     * The usual test record: {@code name:Test} on line 6, so level is on line 7, race on 8 and number on 9.
+     */
     private static QuestParseRecord record(String level, String race, String number) {
-        return new QuestParseRecord("Test", level, race, number, 7);
+        return full("Test", 6, level, race, number);
+    }
+
+    /**
+     * A record of the given directives in the given order, the name first as the grammar always has it.
+     */
+    private static QuestParseRecord ordered(Directive... directives) {
+        List<Directive> all = new ArrayList<>();
+        all.add(directive("name", "Test", 1));
+        all.addAll(List.of(directives));
+        return new QuestParseRecord(all);
     }
 
     private static List<Quest> assemble(QuestParseRecord... records) {
@@ -160,8 +193,8 @@ class QuestAssemblerTest {
     @Test
     void eachRecordKeepsItsOwnName() {
         List<Quest> quests = new QuestAssembler().assemble(List.of(
-                new QuestParseRecord("Sauron", "99", SAURON, "1", 3),
-                new QuestParseRecord("Morgoth", "100", MORGOTH, "1", 8)), "test.txt");
+                full("Sauron", 3, "99", SAURON, "1"),
+                full("Morgoth", 8, "100", MORGOTH, "1")), "test.txt");
 
         assertEquals("Sauron", quests.get(0).getName());
         assertEquals("Morgoth", quests.get(1).getName());
@@ -238,22 +271,23 @@ class QuestAssemblerTest {
     @Test
     void negativeLevelStopsTheLoad() {
         String message = stopMessage(record("-1", SAURON, "1"));
-        assertTrue(message.contains("has an illegal negative level value: -1"), message);
+        assertTrue(message.contains("negative level value"), message);
+        assertTrue(message.contains(": -1"), message);
         assertTrue(message.contains("line: 7"), message);
         assertTrue(message.contains("test.txt"), message);
 
-        assertTrue(stopMessage(record("-0", SAURON, "1")).contains("illegal negative level value: -0"));
+        assertTrue(stopMessage(record("-0", SAURON, "1")).contains("negative level value"));
         assertTrue(stopMessage(record("-2147483648", SAURON, "1")).contains("negative level"));
     }
 
     @Test
     void negativeNumberStopsTheLoad() {
         String message = stopMessage(record("99", SAURON, "-5"));
-        assertTrue(message.contains("has an illegal negative number value: -5"), message);
-        assertTrue(message.contains("line: 7"), message);
+        assertTrue(message.contains("negative number value: -5"), message);
+        assertTrue(message.contains("line: 9"), message);
         assertTrue(message.contains("test.txt"), message);
 
-        assertTrue(stopMessage(record("99", SAURON, "-0")).contains("illegal negative number value: -0"));
+        assertTrue(stopMessage(record("99", SAURON, "-0")).contains("negative number value: -0"));
     }
 
     /**
@@ -276,7 +310,7 @@ class QuestAssemblerTest {
         assertTrue(level.contains("invalid level value: abc"), level);
 
         String number = stopMessage(record("99", SAURON, "x1"));
-        assertTrue(number.contains("invalid number value: x1"), number);
+        assertTrue(number.contains("number value: x1"), number);
     }
 
     // ---- number: strtoul base 0 -> int -----------------------------------
@@ -336,8 +370,9 @@ class QuestAssemblerTest {
     void unknownRaceStopsTheLoad() {
         String message = stopMessage(record("5", NO_SUCH_RACE, "1"));
 
-        assertTrue(message.contains("has an illegal monster race value: " + NO_SUCH_RACE), message);
-        assertTrue(message.contains("line: 7"), message);
+        assertTrue(message.contains("monster race value"), message);
+        assertTrue(message.contains(": " + NO_SUCH_RACE), message);
+        assertTrue(message.contains("line: 8"), message);
         assertTrue(message.contains("test.txt"), message);
     }
 
@@ -347,7 +382,7 @@ class QuestAssemblerTest {
      */
     @Test
     void emptyRaceStopsTheLoad() {
-        assertTrue(stopMessage(record("5", "", "1")).contains("illegal monster race value: "));
+        assertTrue(stopMessage(record("5", "", "1")).contains("monster race value"));
     }
 
     // ---- ordering of the checks -------------------------------------------
@@ -389,11 +424,11 @@ class QuestAssemblerTest {
     void theFirstFaultInFileOrderWins() {
         String message = stopMessage(
                 record("99", SAURON, "1"),
-                new QuestParseRecord("Bad race", "5", NO_SUCH_RACE, "1", 20),
-                new QuestParseRecord("Bad level", "-1", SAURON, "1", 30));
+                full("Bad race", 20, "5", NO_SUCH_RACE, "1"),
+                full("Bad level", 30, "-1", SAURON, "1"));
 
         assertTrue(message.contains("monster race"), message);
-        assertTrue(message.contains("line: 20"), message);
+        assertTrue(message.contains("line: 22"), message);
     }
 
     // ---- no record is dropped ----------------------------------------------
@@ -418,5 +453,199 @@ class QuestAssemblerTest {
         assertEquals(99, quests.get(1).getLevel());
         assertEquals(255, quests.get(2).getLevel());
         assertEquals(100, quests.get(3).getLevel());
+    }
+
+    // ---- directives in the order the file gives them -----------------------
+
+    // C acts on each line as it reads it, so the order of the lines is the order of the checks and the
+    // order of the writes. These cases hand the assembler directives in orders the old fixed grammar
+    // could not produce.
+
+    @Test
+    void directivesInAnyOrderAssembleAsInC() {
+        List<Quest> quests = assemble(ordered(
+                directive("number", "3", 2),
+                directive("race", SAURON, 3),
+                directive("level", "99", 4)));
+
+        assertEquals(99, quests.getFirst().getLevel());
+        assertEquals(SAURON, quests.getFirst().getRace().getName());
+        assertEquals(3, quests.getFirst().getMaxNumber());
+    }
+
+    /**
+     * C zero-fills the quest: no {@code level:} is level 0, no {@code number:} is 0 and no {@code race:}
+     * is a null race, not an error.
+     */
+    @Test
+    void aRecordWithNoLevelRaceOrNumberLoadsZeroedAsInC() {
+        Quest quest = assemble(ordered()).getFirst();
+
+        assertEquals("Test", quest.getName());
+        assertEquals(0, quest.getLevel());
+        assertNull(quest.getRace());
+        assertEquals(0, quest.getCurrentNumber());
+        assertEquals(0, quest.getMaxNumber());
+    }
+
+    @Test
+    void aRepeatedDirectiveTakesTheLastValueAsInC() {
+        Quest quest = assemble(ordered(
+                directive("level", "5", 2),
+                directive("level", "99", 3),
+                directive("number", "1", 4),
+                directive("number", "7", 5))).getFirst();
+
+        assertEquals(99, quest.getLevel());
+        assertEquals(7, quest.getMaxNumber());
+    }
+
+    /**
+     * A bad value is refused where it stands, even when a later line of the same kind would have
+     * replaced it, because C returns the error from that line's handler.
+     */
+    @Test
+    void aBadValueTheNextLineWouldReplaceIsStillRefusedAsInC() {
+        String level = stopMessage(ordered(directive("level", "-5", 2), directive("level", "99", 3)));
+        assertTrue(level.contains("negative level value"), level);
+        assertTrue(level.contains(": -5"), level);
+        assertTrue(level.contains("line: 2"), level);
+
+        String number = stopMessage(ordered(directive("number", "-1", 2), directive("number", "1", 3)));
+        assertTrue(number.contains("negative number value: -1"), number);
+
+        String race = stopMessage(ordered(directive("race", NO_SUCH_RACE, 2), directive("race", SAURON, 3)));
+        assertTrue(race.contains("monster race value"), race);
+        assertTrue(race.contains("line: 2"), race);
+    }
+
+    /**
+     * The line that comes first in the file is the one reported: here the negative number, ahead of the
+     * negative level and the unknown race, which is the reverse of the old fixed level-race-number order.
+     */
+    @Test
+    void theFirstBadDirectiveInFileOrderIsTheOneReported() {
+        String message = stopMessage(ordered(
+                directive("number", "-1", 2),
+                directive("level", "-5", 3),
+                directive("race", NO_SUCH_RACE, 4)));
+
+        assertTrue(message.contains("negative number value"), message);
+        assertTrue(message.contains("line: 2"), message);
+    }
+
+    @Test
+    void aDirectiveNameTheAssemblerDoesNotKnowStopsTheLoad() {
+        String message = stopMessage(ordered(directive("colour", "red", 2)));
+
+        assertTrue(message.contains("illegal directive value: colour"), message);
+        assertTrue(message.contains("line: 2"), message);
+    }
+
+    /**
+     * The grammar never gives a directive more than one value, so this only guards a hand-built record.
+     */
+    @Test
+    void aDirectiveWithTwoValuesStopsTheLoad() {
+        String message = stopMessage(ordered(new Directive("level", List.of("1", "2"), 2)));
+
+        assertTrue(message.contains("incorrect number of level values"), message);
+    }
+
+    /**
+     * Same guard for {@code race:} and {@code number:}, and for a {@code name:} with two values.
+     */
+    @Test
+    void aRaceNumberOrNameWithTwoValuesStopsTheLoad() {
+        String race = stopMessage(ordered(new Directive("race", List.of(SAURON, MORGOTH), 2)));
+        assertTrue(race.contains("incorrect number of race values"), race);
+
+        String number = stopMessage(ordered(new Directive("number", List.of("1", "2"), 2)));
+        assertTrue(number.contains("incorrect number of number values"), number);
+
+        String name = stopMessage(new QuestParseRecord(List.of(new Directive("name", List.of("A", "B"), 1))));
+        assertTrue(name.contains("incorrect number of name values"), name);
+    }
+
+    // ---- a directive before the name: C asserts, the port throws -------------
+
+    // C's parse_quest_level, parse_quest_race and parse_quest_number each assert(q) on parser_priv(p),
+    // which is NULL until parse_quest_name has run, so C crashes on a file whose first quest line is not
+    // name:. The grammar refuses such a file first; these cases hand the assembler a record it would
+    // never build, to pin the second line of defence. Accepted 261118 ("Where C crashes, Java throws").
+
+    /**
+     * Each of the three directives, first in its record, stops the load with a message that names the
+     * directive and its own line.
+     */
+    @Test
+    void aLevelRaceOrNumberBeforeTheNameStopsTheLoadHereWhereCCrashes() {
+        List<Directive> firsts = List.of(
+                directive("level", "99", 4),
+                directive("race", SAURON, 5),
+                directive("number", "1", 6));
+
+        for (Directive first : firsts) {
+            String message = stopMessage(new QuestParseRecord(List.of(first)));
+
+            assertTrue(message.contains("a " + first.name() + " directive before a name directive"), message);
+            assertTrue(message.contains("line: " + first.line()), message);
+            assertTrue(message.contains("file: test.txt"), message);
+        }
+    }
+
+    /**
+     * The refusal is at the early directive, not deferred to the {@code name:} behind it: C asserts on the
+     * first line it meets.
+     */
+    @Test
+    void aNameAfterTheDirectiveDoesNotRescueIt() {
+        String message = stopMessage(new QuestParseRecord(List.of(
+                directive("level", "99", 3),
+                directive("name", "Late", 4))));
+
+        assertTrue(message.contains("a level directive before a name directive"), message);
+        assertTrue(message.contains("line: 3"), message);
+    }
+
+    /**
+     * A name given to an earlier record is not carried over: a second record that opens with
+     * {@code level:} is refused, and it is the second record's line that is reported.
+     */
+    @Test
+    void theEarlierRecordsNameDoesNotSatisfyALaterRecord() {
+        String message = stopMessage(
+                record("99", SAURON, "1"),
+                new QuestParseRecord(List.of(directive("level", "100", 12))));
+
+        assertTrue(message.contains("a level directive before a name directive"), message);
+        assertTrue(message.contains("line: 12"), message);
+    }
+
+    /**
+     * A name followed by any directive is the ordinary shape, so the guard must not fire: this is the
+     * boundary against the cases above.
+     */
+    @Test
+    void aDirectiveAfterTheNameIsNotRefused() {
+        Quest quest = assemble(ordered(directive("level", "99", 2))).getFirst();
+
+        assertEquals("Test", quest.getName());
+        assertEquals(99, quest.getLevel());
+    }
+
+    // ---- the name is the rest of the line ----------------------------------
+
+    /**
+     * C's {@code name} is a {@code str} field, which {@code parser_parse} takes to the end of the line
+     * without tokenizing on {@code :}, and {@code string_make} copies it whole: colons, commas and blanks
+     * at either end all survive.
+     */
+    @Test
+    void theNameIsKeptWhole() {
+        Quest quest = assemble(new QuestParseRecord(List.of(
+                directive("name", "  Sauron: the, Sorcerer  ", 1)))).getFirst();
+
+        assertEquals("  Sauron: the, Sorcerer  ", quest.getName());
     }
 }

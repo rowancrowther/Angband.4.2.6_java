@@ -15,164 +15,200 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from BlowEffectGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftradesltd.backend.parser.grammars.bloweffect;
+// Generated from ObjectPropertyGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftradesltd.unused.objectproperty;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link BlowEffectGrammarListener},
+ * This class provides an empty implementation of {@link ObjectPropertyGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class BlowEffectGrammarBaseListener implements BlowEffectGrammarListener {
+public class ObjectPropertyGrammarBaseListener implements ObjectPropertyGrammarListener {
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterName(BlowEffectGrammar.NameContext ctx) { }
+	@Override public void enterName(ObjectPropertyGrammar.NameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitName(BlowEffectGrammar.NameContext ctx) { }
+	@Override public void exitName(ObjectPropertyGrammar.NameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterPower(BlowEffectGrammar.PowerContext ctx) { }
+	@Override public void enterType(ObjectPropertyGrammar.TypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitPower(BlowEffectGrammar.PowerContext ctx) { }
+	@Override public void exitType(ObjectPropertyGrammar.TypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterEval(BlowEffectGrammar.EvalContext ctx) { }
+	@Override public void enterSubtype(ObjectPropertyGrammar.SubtypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitEval(BlowEffectGrammar.EvalContext ctx) { }
+	@Override public void exitSubtype(ObjectPropertyGrammar.SubtypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterDesc(BlowEffectGrammar.DescContext ctx) { }
+	@Override public void enterIdType(ObjectPropertyGrammar.IdTypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitDesc(BlowEffectGrammar.DescContext ctx) { }
+	@Override public void exitIdType(ObjectPropertyGrammar.IdTypeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLoreColourBase(BlowEffectGrammar.LoreColourBaseContext ctx) { }
+	@Override public void enterCodeVal(ObjectPropertyGrammar.CodeValContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLoreColourBase(BlowEffectGrammar.LoreColourBaseContext ctx) { }
+	@Override public void exitCodeVal(ObjectPropertyGrammar.CodeValContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLoreColourResist(BlowEffectGrammar.LoreColourResistContext ctx) { }
+	@Override public void enterPower(ObjectPropertyGrammar.PowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLoreColourResist(BlowEffectGrammar.LoreColourResistContext ctx) { }
+	@Override public void exitPower(ObjectPropertyGrammar.PowerContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLoreColourImmune(BlowEffectGrammar.LoreColourImmuneContext ctx) { }
+	@Override public void enterMult(ObjectPropertyGrammar.MultContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLoreColourImmune(BlowEffectGrammar.LoreColourImmuneContext ctx) { }
+	@Override public void exitMult(ObjectPropertyGrammar.MultContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterEffectType(BlowEffectGrammar.EffectTypeContext ctx) { }
+	@Override public void enterTypeMult(ObjectPropertyGrammar.TypeMultContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitEffectType(BlowEffectGrammar.EffectTypeContext ctx) { }
+	@Override public void exitTypeMult(ObjectPropertyGrammar.TypeMultContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterResist(BlowEffectGrammar.ResistContext ctx) { }
+	@Override public void enterAdjective(ObjectPropertyGrammar.AdjectiveContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitResist(BlowEffectGrammar.ResistContext ctx) { }
+	@Override public void exitAdjective(ObjectPropertyGrammar.AdjectiveContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLashType(BlowEffectGrammar.LashTypeContext ctx) { }
+	@Override public void enterNegAdjective(ObjectPropertyGrammar.NegAdjectiveContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLashType(BlowEffectGrammar.LashTypeContext ctx) { }
+	@Override public void exitNegAdjective(ObjectPropertyGrammar.NegAdjectiveContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBlowEffect(BlowEffectGrammar.BlowEffectContext ctx) { }
+	@Override public void enterMsg(ObjectPropertyGrammar.MsgContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBlowEffect(BlowEffectGrammar.BlowEffectContext ctx) { }
+	@Override public void exitMsg(ObjectPropertyGrammar.MsgContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterFile(BlowEffectGrammar.FileContext ctx) { }
+	@Override public void enterBindui(ObjectPropertyGrammar.BinduiContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitFile(BlowEffectGrammar.FileContext ctx) { }
+	@Override public void exitBindui(ObjectPropertyGrammar.BinduiContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterDesc(ObjectPropertyGrammar.DescContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitDesc(ObjectPropertyGrammar.DescContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterObjectProperty(ObjectPropertyGrammar.ObjectPropertyContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitObjectProperty(ObjectPropertyGrammar.ObjectPropertyContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFile(ObjectPropertyGrammar.FileContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFile(ObjectPropertyGrammar.FileContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

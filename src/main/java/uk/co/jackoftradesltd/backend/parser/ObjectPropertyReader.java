@@ -39,8 +39,8 @@ import java.util.List;
  * elemental ignore, resistance, vulnerability and immunity entries), each with the power and
  * multiplier used in object valuation, the per-tval multipliers, the adjectives, notice message and
  * description used to present it, and an optional binding to a user-interface entry. It is the thin
- * hand-written bridge between the generated {@code ObjectPropertyLexer} /
- * {@code ObjectPropertyGrammar} pair and the game, plugged into the shared {@link GrammarDriver}
+ * hand-written bridge between the generated {@code ObjectProperty2Lexer} /
+ * {@code ObjectProperty2Grammar} pair and the game, plugged into the shared {@link GrammarDriver}
  * pipeline and implementing the common {@link Reader} contract.
  * <p>
  * It stands in for {@code object_property_parser} in {@code obj-init.c}:
@@ -203,7 +203,7 @@ public class ObjectPropertyReader implements Reader<ObjectProperty> {
      * <p>
      * This is the Java counterpart of {@code run_parse_object_property} and the
      * {@code parse_object_property_*} handlers in {@code obj-init.c}: it wires
-     * {@code ObjectPropertyLexer}, {@code ObjectPropertyGrammar}, {@link #extract} and
+     * {@code ObjectProperty2Lexer}, {@code ObjectProperty2Grammar}, {@link #extract} and
      * {@link ObjectProperty2Assembler} into {@link GrammarDriver#run}. As C stops at the first error,
      * so does this: a syntax error throws a {@code ParseCancellationException}, and an unresolved
      * type, subtype, id-type or code, a {@code code:} or {@code bindui:} on a record with no type, a

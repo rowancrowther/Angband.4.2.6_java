@@ -36,7 +36,7 @@ parser grammar ObjectPropertyGrammar;
 options { tokenVocab = ObjectPropertyLexer; }
 
 @header {
-    import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyParseRecord;
+    import uk.co.jackoftradesltd.unused.ObjectPropertyParseRecord;
 
     import java.util.List;
     import java.util.ArrayList;

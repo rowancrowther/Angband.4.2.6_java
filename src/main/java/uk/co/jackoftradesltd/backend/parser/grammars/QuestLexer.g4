@@ -19,7 +19,7 @@ NUMBER
         ;
 
 INTEGER
-        :   '-'? ('0'..'9')+
+        :   ('+' | '-')? ('0'..'9')+
         ;
 
 mode REST_OF_LINE;

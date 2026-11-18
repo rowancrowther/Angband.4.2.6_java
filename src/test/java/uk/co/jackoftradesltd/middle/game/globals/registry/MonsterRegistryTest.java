@@ -419,7 +419,7 @@ class MonsterRegistryTest {
         }
 
         private BlowEffect effect(String name) {
-            return new BlowEffect(name, 0, 0, "", null, null, null, null, null, null, null);
+            return new BlowEffect(name, 0, 0, "", null, null, null, null, null, null, null, null);
         }
 
         @Test

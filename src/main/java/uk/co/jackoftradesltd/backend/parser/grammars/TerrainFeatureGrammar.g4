@@ -17,10 +17,11 @@
 
 // Parser for lib/gamedata/terrain.txt, paired with TerrainFeatureLexer. Each
 // directive rule strips its keyword and returns the raw String payload; the
-// `terrain` rule accumulates one record's directives - the mandatory
-// code/name/graphics header, then any mix of the optional directives in any
-// order and quantity - into a TerrainFeatureParseRecord, and `file` collects
-// every record. No interpretation happens here: enum
+// `terrain` rule accumulates one record's directives - the code, then any
+// mix of the other directives in any order and quantity, all optional - into a
+// TerrainFeatureParseRecord (an absent graphics: leaves glyph and colour empty,
+// and the number of name: lines is counted so the assembler can refuse a
+// repeat), and `file` collects every record, possibly none. No interpretation happens here: enum
 // resolution and number parsing are deferred to TerrainFeatureAssembler, so the
 // rules deal only in raw text. Cf. src/init.c struct file_parser feat_parser.
 //
@@ -195,8 +196,8 @@ desc
             })+
         ;
 
-// One full terrain record: code/name/graphics header, then any mix of the
-// remaining directives in any order/quantity, accumulated into a Feature.
+// One full terrain record: code, then any mix of the other directives in any
+// order and quantity, accumulated into a TerrainFeatureParseRecord.
 terrain
         returns[TerrainFeatureParseRecord feature]
 
@@ -219,6 +220,7 @@ terrain
             String resistInit = "";
             String descInit = "";
             int lineNo = 0;
+            int nameCount = 0;
         }
         @after {
             $feature = new TerrainFeatureParseRecord(
@@ -226,67 +228,66 @@ terrain
                                    priorityInit, diggingInit, tfFlags,
                                    glyph, colour, walkInit, runInit, hurtInit, dieInit,
                                    confInit, prefixInit, prepositionInit,
-                                   resistInit, lineNo);
+                                   resistInit, lineNo, nameCount);
         }
         :   code {
                 codeInit = $code.codeFlag;
                 lineNo = $code.lineNo;
             }
-            name {
+        (   name {
                 nameInit = $name.nameStr;
+                nameCount++;
             }
-            graphics {
+        |   graphics {
                 glyph = $graphics.glyph;
                 colour = $graphics.colour;
             }
-            (
-                priority {
-                    priorityInit = $priority.priorityNum;
-                }
-              | mimic {
-                    mimicInit = $mimic.mimicFlag;
-                }
-              | (flags {
-                    tfFlags.addAll($flags.flagsList);
-                })+
-              | digging {
-                    diggingInit = $digging.diggingNum;
-                }
-              | walk_message {
-                    walkInit = $walk_message.walkMsgStr;
-                }
-              | run_message {
-                    runInit = $run_message.runMsgStr;
-                }
-              | hurt_message {
-                    hurtInit = $hurt_message.hurtMsgStr;
-                }
-              | die_message {
-                    dieInit = $die_message.dieMsgStr;
-                }
-              | confused_message {
-                    confInit = $confused_message.confMsgStr;
-                }
-              | look_prefix {
-                    prefixInit = $look_prefix.prefixStr;
-                }
-              | look_in_preposition {
-                    prepositionInit = $look_in_preposition.prepositionStr;
-                }
-              | resist_flag {
-                    resistInit = $resist_flag.resistFlag;
-                }
-              | desc {
-                    descInit = descInit + $desc.descStr;
-                }
-            )*
+        |   priority {
+                priorityInit = $priority.priorityNum;
+            }
+        |   mimic {
+                mimicInit = $mimic.mimicFlag;
+            }
+        |   flags {
+                tfFlags.addAll($flags.flagsList);
+            }
+        |   digging {
+                diggingInit = $digging.diggingNum;
+            }
+        |   walk_message {
+                walkInit = $walk_message.walkMsgStr;
+            }
+        |   run_message {
+                runInit = $run_message.runMsgStr;
+            }
+        |   hurt_message {
+                hurtInit = $hurt_message.hurtMsgStr;
+            }
+        |   die_message {
+                dieInit = $die_message.dieMsgStr;
+            }
+        |   confused_message {
+                confInit = $confused_message.confMsgStr;
+            }
+        |   look_prefix {
+                prefixInit = $look_prefix.prefixStr;
+            }
+        |   look_in_preposition {
+                prepositionInit = $look_in_preposition.prepositionStr;
+            }
+        |   resist_flag {
+                resistInit = $resist_flag.resistFlag;
+            }
+        |   desc {
+                descInit = descInit + $desc.descStr;
+            })*
         ;
 
-// Top-level rule: the whole file is one or more terrain records.
+// Top-level rule: the whole file is zero or more terrain records.
 file
         returns[List<TerrainFeatureParseRecord> features]
         @init{ $features = new ArrayList<>(); }
         :   (terrain {
                 $features.add($terrain.feature);
-            })+ EOF
+            })* EOF
         ;

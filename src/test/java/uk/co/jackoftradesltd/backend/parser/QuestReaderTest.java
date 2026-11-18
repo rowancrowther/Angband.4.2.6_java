@@ -210,8 +210,8 @@ class QuestReaderTest {
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("badrace.txt",
                 quest("Impossible", "5", "Xyzzy the Nonexistent", "1")));
 
-        assertTrue(e.getMessage().contains("has an illegal monster race value: Xyzzy the Nonexistent"),
-                e.getMessage());
+        assertTrue(e.getMessage().contains("monster race value"), e.getMessage());
+        assertTrue(e.getMessage().contains("Xyzzy the Nonexistent"), e.getMessage());
     }
 
     /**
@@ -224,7 +224,8 @@ class QuestReaderTest {
         DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("neglevel.txt",
                 quest("Below", "-3", "Sauron, the Sorcerer", "1")));
 
-        assertTrue(e.getMessage().contains("has an illegal negative level value: -3"), e.getMessage());
+        assertTrue(e.getMessage().contains("negative level value"), e.getMessage());
+        assertTrue(e.getMessage().contains("-3"), e.getMessage());
     }
 
     // ---- No record is dropped ------------------------------------------
@@ -381,18 +382,21 @@ class QuestReaderTest {
     }
 
     /**
-     * A fault names the line of the {@code name:} directive that opened the record. First record
-     * on lines 1-4, a blank line, second record's {@code name:} on line 6.
+     * A fault names the line of the directive that caused it, as C does ({@code parser_parse} counts
+     * {@code lineno} per line and {@code datafile.c} prints it). First record on lines 1-4, a blank
+     * line, second record's {@code name:} on line 6 and its bad {@code number:} on line 9.
      */
     @Test
-    void aFaultNamesTheLineOfTheRecordsNameDirective() {
+    void aFaultNamesTheLineOfTheBadDirectiveAsInC() {
         String body = quest("Good", "5", "Sauron, the Sorcerer", "1") + "\n"
                 + quest("Bad", "5", "Sauron, the Sorcerer", "-1");
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> load("lines.txt", body));
 
-        assertTrue(e.getMessage().contains("line: 6"), e.getMessage());
-        assertTrue(e.getMessage().contains("illegal negative number value: -1"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 9"), e.getMessage());
+        assertFalse(e.getMessage().contains("line: 6"), e.getMessage());
+        assertTrue(e.getMessage().contains("negative number value"), e.getMessage());
+        assertTrue(e.getMessage().contains("-1"), e.getMessage());
     }
 
     /**
@@ -418,35 +422,119 @@ class QuestReaderTest {
 
     }
 
-    // ---- Where the grammar is stricter than C ----------------------------
-    // C registers four independent one-line directives; the grammar demands exactly
-    // name, level, race, number in that order, at least one record.
+    /**
+     * C's {@code strtoul} takes a leading {@code +}, and the {@code *tok == '-'} test does not refuse it,
+     * so {@code level:+5} is 5 and {@code number:+3} is 3. {@code QuestLexer}'s {@code INTEGER} takes the
+     * {@code +} (261118) and the assembler's {@code parseIntString} strips it. {@code +0} is 0.
+     */
+    @Test
+    void aLeadingPlusOnALevelOrNumberLoadsAsInC() throws IOException {
+        List<Quest> quests = load("plus.txt",
+                quest("Plus", "+5", "Sauron, the Sorcerer", "+3")
+                        + quest("Zero", "+0", "Morgoth, Lord of Darkness", "+0")).items();
+
+        assertEquals(5, quests.get(0).getLevel());
+        assertEquals(3, quests.get(0).getMaxNumber());
+        assertEquals(0, quests.get(1).getLevel());
+        assertEquals(0, quests.get(1).getMaxNumber());
+    }
+
+    /**
+     * A sign with no digit after it is not a number in C ({@code strtoul} reads nothing, so
+     * {@code PARSE_ERROR_NOT_NUMBER}), and the lexer has no rule for a lone {@code +}. A minus still
+     * refuses {@code -0} as C does, and {@code -} then {@code +} is no number at all.
+     */
+    @Test
+    void aLoneSignOrAMinusStillRefusesTheLoadAsInC() {
+        assertThrows(ParseCancellationException.class, () -> load("lone.txt",
+                quest("Lone", "+", "Sauron, the Sorcerer", "1")));
+        assertThrows(DataFileParseException.class, () -> load("minus.txt",
+                quest("Minus", "-0", "Sauron, the Sorcerer", "1")));
+        assertThrows(ParseCancellationException.class, () -> load("both.txt",
+                quest("Both", "-+5", "Sauron, the Sorcerer", "1")));
+    }
+
+    // ---- Directive order, absence and repetition ---------------------------
+    // C registers four independent one-line directives: only name: opens a record, the other three
+    // fill the current one in any order, any may be missing, and the last of a kind wins.
 
     @Test
-    void directivesInAnotherOrderAreRefusedHereWhereCAcceptsThem() throws IOException {
+    void directivesInAnotherOrderLoadAsInC() throws IOException {
         String text = "\nname:Sauron\nrace:Sauron, the Sorcerer\nlevel:99\nnumber:1\n";
-        assertThrows(ParseCancellationException.class, () -> load("order.txt", text));
+        Quest quest = load("order.txt", text).items().getFirst();
 
+        assertEquals("Sauron", quest.getName());
+        assertEquals(99, quest.getLevel());
+        assertEquals("Sauron, the Sorcerer", quest.getRace().getName());
+        assertEquals(1, quest.getMaxNumber());
+    }
+
+    /**
+     * C zero-fills the quest, so a missing {@code level:} or {@code number:} is 0 and a missing
+     * {@code race:} is a null race.
+     */
+    @Test
+    void aMissingDirectiveLoadsWithTheFieldZeroAsInC() throws IOException {
+        Quest noNumber = load("nonumber.txt",
+                "\nname:Sauron\nlevel:99\nrace:Sauron, the Sorcerer\n").items().getFirst();
+        assertEquals(0, noNumber.getMaxNumber());
+        assertEquals(99, noNumber.getLevel());
+
+        Quest noLevel = load("nolevel.txt",
+                "\nname:Sauron\nrace:Sauron, the Sorcerer\nnumber:1\n").items().getFirst();
+        assertEquals(0, noLevel.getLevel());
+
+        Quest noRace = load("norace.txt", "\nname:Sauron\nlevel:99\nnumber:1\n").items().getFirst();
+        assertNull(noRace.getRace());
+        assertEquals(99, noRace.getLevel());
+
+        Quest nameOnly = load("nameonly.txt", "name:Sauron\n").items().getFirst();
+        assertEquals("Sauron", nameOnly.getName());
+        assertEquals(0, nameOnly.getLevel());
+        assertNull(nameOnly.getRace());
+        assertEquals(0, nameOnly.getMaxNumber());
+        assertEquals(0, nameOnly.getCurrentNumber());
     }
 
     @Test
-    void aMissingDirectiveIsRefusedHereWhereCLeavesTheFieldZero() throws IOException {
-        String text = "\nname:Sauron\nlevel:99\nrace:Sauron, the Sorcerer\n";
-        assertThrows(ParseCancellationException.class, () -> load("nonumber.txt", text));
-
-    }
-
-    @Test
-    void aRepeatedDirectiveIsRefusedHereWhereCTakesTheLastOne() throws IOException {
+    void aRepeatedDirectiveTakesTheLastOneAsInC() throws IOException {
         String text = "\nname:Sauron\nlevel:5\nlevel:99\nrace:Sauron, the Sorcerer\nnumber:1\n";
-        assertThrows(ParseCancellationException.class, () -> load("dup.txt", text));
 
+        assertEquals(99, load("dup.txt", text).items().getFirst().getLevel());
+    }
+
+    /**
+     * C acts on each line as it reads it, so a bad value that a later line would have overwritten
+     * still ends the load. The directives are handed on in file order and checked one by one.
+     */
+    @Test
+    void aBadValueOverwrittenByALaterLineIsStillRefusedAsInC() {
+        String level = "\nname:Sauron\nlevel:-5\nlevel:99\nrace:Sauron, the Sorcerer\nnumber:1\n";
+        String number = "\nname:Sauron\nnumber:-1\nnumber:1\nrace:Sauron, the Sorcerer\nlevel:9\n";
+        String race = "\nname:Sauron\nrace:Xyzzy the Nonexistent\nrace:Sauron, the Sorcerer\nlevel:9\nnumber:1\n";
+
+        assertThrows(DataFileParseException.class, () -> load("badlevel.txt", level));
+        assertThrows(DataFileParseException.class, () -> load("badnumber.txt", number));
+        assertThrows(DataFileParseException.class, () -> load("badrace.txt", race));
+    }
+
+    /**
+     * With two bad lines the first in the file is the one reported, as C stops at it: here the race on
+     * line 2, ahead of the negative level on line 3.
+     */
+    @Test
+    void theFirstBadLineInTheFileIsTheOneReportedAsInC() {
+        String text = "name:Sauron\nrace:Xyzzy the Nonexistent\nlevel:-5\n";
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("two.txt", text));
+
+        assertTrue(e.getMessage().contains("monster race value"), e.getMessage());
+        assertTrue(e.getMessage().contains("line: 2"), e.getMessage());
     }
 
     @Test
-    void aFileWithNoQuestsIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""), "C finishes with z_info->quest_max 0 and no error");
-
+    void aFileWithNoQuestsLoadsAnEmptyListAsInC() throws IOException {
+        assertTrue(load("empty.txt", "").items().isEmpty());
+        assertTrue(load("comment.txt", "# nothing here\n").items().isEmpty());
     }
 
     @Test
@@ -475,5 +563,28 @@ class QuestReaderTest {
         String text = quest("Sauron", "99", "Sauron, the Sorcerer", "1") + "colour:red\n";
         assertThrows(ParseCancellationException.class, () -> load("unknown.txt", text));
 
+    }
+
+    /**
+     * C's {@code init_parse_quest} starts with a null private pointer, and {@code parse_quest_level},
+     * {@code parse_quest_race} and {@code parse_quest_number} each {@code assert(q)} on it, so a
+     * directive ahead of the first {@code name:} crashes C. Java refuses the file.
+     * Accepted deviation, "Quest" in {@code docs/Accepted_Deviations.md}.
+     */
+    @Test
+    void aDirectiveBeforeTheFirstNameIsRefusedHereWhereCCrashes() {
+        for (String directive : List.of("level:99", "race:Sauron, the Sorcerer", "number:1")) {
+            String text = directive + "\n" + quest("Sauron", "99", "Sauron, the Sorcerer", "1");
+            assertThrows(ParseCancellationException.class, () -> load("early.txt", text), directive);
+        }
+    }
+
+    /**
+     * The control for the pin above: comments and blank lines ahead of the first {@code name:} are fine.
+     */
+    @Test
+    void commentsAndBlankLinesBeforeTheFirstNameLoadAsInC() throws IOException {
+        String text = "# a comment\n\n" + quest("Sauron", "99", "Sauron, the Sorcerer", "1");
+        assertEquals(1, load("lead.txt", text).items().size());
     }
 }

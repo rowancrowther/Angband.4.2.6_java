@@ -61,12 +61,12 @@ import java.util.Map;
  * refuses a {@code bindui:} line while the type is 0, so a record with no type never carries a binding.
  *
  * <p><b>Two ways to build one.</b> The full constructor takes every field at once, and is what
- * {@code ObjectPropertyAssembler} calls (the assembler {@code ObjectPropertyReader} runs). The no-argument constructor
+ * {@code ObjectPropertyAssembler}, now retired to the {@code unused} package, called. The no-argument constructor
  * is C's {@code mem_zalloc} in {@code parse_object_property_name}: a blank record, with the setters standing in for
  * the later {@code parse_object_property_*} handlers that fill it one line at a time. {@code ObjectProperty2Assembler},
- * the line-ordered assembler, builds that way. They differ in what an absent text line leaves behind: the
- * full-constructor route holds {@code ""}, the grammar's default, and the blank record holds {@code null}, which is
- * C's {@code NULL}.
+ * the line-ordered assembler {@code ObjectPropertyReader} runs, builds that way. They differ in what an absent text
+ * line leaves behind: the full-constructor route held {@code ""}, the retired grammar's default, and the blank record
+ * holds {@code null}, which is C's {@code NULL}. Through the reader an absent text line is therefore {@code null}.
  *
  * <p>Class ObjectProperty coded before 260827, commented in full on 261115 (struct location corrected and the
  * type-less property added 261113; the blank-record route added 261115; the paragraph on matching
@@ -155,12 +155,14 @@ public class ObjectProperty {
      * property, where it words a stat gain.
      *
      * <p>Where the data file gives no {@code adjective:} line, C leaves the pointer {@code NULL}.
-     * Through {@code ObjectPropertyAssembler} the grammar's default is {@code ""} and it is passed
-     * straight through, so the "no adjective" value is the empty string; a blank record built by
-     * the no-argument constructor holds {@code null} as C does. Read through {@link #getAdjective};
-     * nothing calls it until {@code desc_stat} is ported.
+     * Through {@code ObjectProperty2Assembler} a record with no {@code adjective:} line is a blank
+     * record that never has the setter called, so the "no adjective" value is {@code null} as in C.
+     * The retired {@code ObjectPropertyAssembler} passed the grammar's default {@code ""} through
+     * instead, so the empty string can still reach the field through the full constructor. Read
+     * through {@link #getAdjective}; nothing calls it until {@code desc_stat} is ported.
      *
-     * <p>Field adjective coded before 260827, commented in full on 261115.
+     * <p>Field adjective coded before 260827, commented in full on 261115, updated on 261118 for
+     * {@code ObjectProperty2Assembler}.
      */
     private String adjective;
     /**
@@ -180,12 +182,13 @@ public class ObjectProperty {
      * {@code obj_property->msg}, with {@code {name}} as the placeholder for the object's name.
      *
      * <p>Where the data file gives no {@code msg:} line, C leaves the pointer {@code NULL} and
-     * {@code flag_message} returns silently. Through {@code ObjectPropertyAssembler} the grammar's
-     * default for an absent {@code msg:} is {@code ""}, passed straight through; a blank record built
-     * by the no-argument constructor holds {@code null} as C does. {@code ItemObject.flagMessage}
-     * treats both as "no message".
+     * {@code flag_message} returns silently. Through {@code ObjectProperty2Assembler} an absent
+     * {@code msg:} leaves a blank record's {@code null} in place, as C does; the retired
+     * {@code ObjectPropertyAssembler} passed the grammar's default {@code ""} through, which still
+     * arrives by the full constructor. {@code ItemObject.flagMessage} treats both as "no message".
      *
-     * <p>Field message coded before 260827, commented in full on 261115.
+     * <p>Field message coded before 260827, commented in full on 261115, updated on 261118 for
+     * {@code ObjectProperty2Assembler}.
      */
     private String message;
     /**
@@ -206,15 +209,14 @@ public class ObjectProperty {
      * found an entry for. See the class Javadoc for why this list lives here rather than on a
      * {@code struct ui_entry} as it does in C.
      *
-     * <p>The two assemblers fill it differently. {@code ObjectPropertyAssembler} builds from a parse
-     * record that keeps only the last {@code bindui:} line of a record, so its list holds at most one
-     * binding, where C binds every line, and it does not check the entry name.
-     * {@code ObjectProperty2Assembler} calls {@link #addBoundEntry} once per {@code bindui:} line
-     * whose name an entry has, so its list holds every such binding, in file order; a line naming
-     * no entry adds nothing, as C drops the bind.
+     * <p>{@code ObjectProperty2Assembler} calls {@link #addBoundEntry} once per {@code bindui:} line
+     * whose name an entry has, so the list holds every such binding, in file order; a line naming
+     * no entry adds nothing, as C drops the bind. The retired {@code ObjectPropertyAssembler} built
+     * from a parse record that kept only the last {@code bindui:} line, so its list held at most one
+     * binding, where C binds every line, and it did not check the entry name.
      *
      * <p>Field boundEntries coded before 260919, commented in full on 261115, updated on 261116 for
-     * the check of the entry name.
+     * the check of the entry name and on 261118 for the retirement of {@code ObjectPropertyAssembler}.
      */
     private List<UIBinding> boundEntries;
     /**
@@ -226,7 +228,8 @@ public class ObjectProperty {
      * a named {@code struct ui_entry} (see the class Javadoc).
      *
      * <p>Nothing is copied or validated: the maps and lists passed in are kept as given, so the
-     * caller (in practice {@code ObjectPropertyAssembler}) must not mutate them afterwards.
+     * caller (in practice the tests, and the retired {@code ObjectPropertyAssembler}; the live
+     * {@code ObjectProperty2Assembler} uses the no-argument constructor) must not mutate them afterwards.
      * {@code typeMults} must be non-null — pass an empty map for a property that names no
      * {@code type-mult:} lines — because {@link #getTypeMult(TValue)} reads it unguarded.
      *
@@ -473,8 +476,8 @@ public class ObjectProperty {
      *
      * <p>Function getAdjective coded before 261115, commented in full on 261115.
      *
-     * @return the adjective: {@code ""} through {@code ObjectPropertyAssembler} when the record has none,
-     * {@code null} on a blank record that was never given one
+     * @return the adjective: {@code null} through {@code ObjectProperty2Assembler} when the record has none
+     * (a blank record that was never given one), {@code ""} only from the full constructor
      */
     public String getAdjective() {
         return adjective;
@@ -486,8 +489,8 @@ public class ObjectProperty {
      *
      * <p>Function getDescription coded before 261115, commented in full on 261115.
      *
-     * @return the description: {@code ""} through {@code ObjectPropertyAssembler} when the record has none,
-     * {@code null} on a blank record that was never given one
+     * @return the description: {@code null} through {@code ObjectProperty2Assembler} when the record has none
+     * (a blank record that was never given one), {@code ""} only from the full constructor
      */
     public String getDescription() {
         return description;
@@ -499,8 +502,8 @@ public class ObjectProperty {
      *
      * <p>Function getMessage coded before 261115, commented in full on 261115.
      *
-     * @return the message with {@code {name}} unsubstituted: {@code ""} through {@code ObjectPropertyAssembler} when
-     * the record has none, {@code null} on a blank record that was never given one
+     * @return the message with {@code {name}} unsubstituted: {@code null} through {@code ObjectProperty2Assembler}
+     * when the record has none (a blank record that was never given one), {@code ""} only from the full constructor
      */
     public String getMessage() {
         return message;
@@ -525,8 +528,8 @@ public class ObjectProperty {
      *
      * <p>Function getNegAdjective coded before 261115, commented in full on 261115.
      *
-     * @return the adjective: {@code ""} through {@code ObjectPropertyAssembler} when the record has none,
-     * {@code null} on a blank record that was never given one
+     * @return the adjective: {@code null} through {@code ObjectProperty2Assembler} when the record has none
+     * (a blank record that was never given one), {@code ""} only from the full constructor
      */
     public String getNegAdjective() {
         return negAdjective;
@@ -742,8 +745,8 @@ public class ObjectProperty {
      * differ from the property's own only if a later {@code type:} or {@code code:} line changed it,
      * which C's per-line binding also survives.
      *
-     * <p>{@code ObjectProperty2Assembler} fills {@code type} and {@code code}. {@code ObjectPropertyAssembler}
-     * passes {@code null} for both, and nothing reads them yet.
+     * <p>{@code ObjectProperty2Assembler} fills {@code type} and {@code code}. The retired
+     * {@code ObjectPropertyAssembler} passed {@code null} for both, and nothing reads them yet.
      *
      * <p>Record UIBinding coded before 260919, commented in full on 261005 (the type and code
      * described 261116).
@@ -756,9 +759,9 @@ public class ObjectProperty {
      * @param aux   whether this property should be treated as an auxiliary value for the UI entry,
      *              C's {@code isaux}
      * @param code  the property's payload when the line was read, C's {@code index}; {@code null}
-     *              from {@code ObjectPropertyAssembler}
+     *              from the retired {@code ObjectPropertyAssembler}
      * @param type  the property's type when the line was read, C's {@code type}; {@code null} from
-     *              {@code ObjectPropertyAssembler}
+     *              the retired {@code ObjectPropertyAssembler}
      * @author Rowan Crowther
      */
     public record UIBinding(String entry, @Nullable Integer value, boolean aux, ObjectPropertyTypeWrapper code, ObjPropertyType type) {

@@ -31,16 +31,20 @@ import java.util.List;
  * {@code null} - the grammar's {@code @init} blocks seed those defaults - so the assembler can
  * distinguish "absent" with an {@code isEmpty()} guard rather than a null check.
  *
+ * <p>Class TerrainFeatureParseRecord coded before 261118, updated on 261118 for the name count.
+ *
  * @param code              the raw terrain code (grammar strips the {@code code:} keyword); the
  *                          assembler prefixes {@code FEAT_} to resolve it
- * @param name              the printable terrain name
+ * @param name              the printable terrain name (the last {@code name:} line), or empty if none
  * @param desc              the flavour description (concatenated across repeated {@code desc:} lines)
  * @param mimic             the raw code of the terrain this one mimics, or empty if none
  * @param priority          the mini-map display priority as text, or empty
  * @param dig               the digging-difficulty index as text, or empty
  * @param flags             the raw {@code TF_} flag names (keyword and {@code TF_} prefix stripped)
- * @param glyph             the raw display glyph from {@code graphics:}
- * @param colour            the raw display colour from {@code graphics:}
+ * @param glyph             the raw display glyph from {@code graphics:} (the last line), or empty if
+ *                          the record has none
+ * @param colour            the raw display colour from {@code graphics:} (the last line), or empty
+ *                          if the record has none; empty exactly when {@code glyph} is
  * @param walkMsg           the message shown when walking onto this terrain, or empty
  * @param runMsg            the message shown when running onto this terrain, or empty
  * @param hurtMsg           the message shown when this terrain hurts the player, or empty
@@ -50,6 +54,8 @@ import java.util.List;
  * @param lookInPreposition the preposition used when looking at this terrain, or empty
  * @param resistFlags       the raw {@code RF_} resist-flag names ({@code RF_} prefix stripped)
  * @param line              the 1-based source line the record began on, for error reporting
+ * @param nameCount         how many {@code name:} lines the record held; the assembler refuses a count
+ *                          above one, as C's {@code parse_feat_name()} refuses a repeated name
  * @author Rowan Crowther
  */
 public record TerrainFeatureParseRecord(String code, String name, String desc,
@@ -58,5 +64,5 @@ public record TerrainFeatureParseRecord(String code, String name, String desc,
                                         String colour, String walkMsg, String runMsg,
                                         String hurtMsg, String dieMsg, String confusedMsg,
                                         String lookPrefix, String lookInPreposition,
-                                        String resistFlags, int line) {
+                                        String resistFlags, int line, int nameCount) {
 }

@@ -545,7 +545,9 @@ Each pattern is one recipe applied to many grammars. Do the recipe once on the s
 
 ### 7a. Fixed record order to unordered, repeatable directives
 
-- G: ~~`BlowMethodGrammar.g4`~~, ~~`SummonGrammar.g4`~~, ~~`MonsterBaseGrammar.g4`~~, ~~`BrandGrammar.g4`~~, ~~`ObjectBaseGrammar.g4`~~, ~~`ProjectionGrammar.g4`~~, `ObjectPropertyGrammar.g4` (also needs `type:` optional), `PlayerPropertyGrammar.g4`, `TerrainFeatureGrammar.g4`, `QuestGrammar.g4`, `VaultGrammar.g4`, `RoomProfileGrammar.g4`, `ChestTrapGrammar.g4` (`code:` after `name:`), `PlayerTimedGrammar.g4`.
+- ORDERING NEEDED: ~~BlowEffect~~
+- Ordering less urgend: ~~Vault~~, PlayerClassGrammar, EffectBlock, Flavour, History, PlayerProperty
+- G: ~~`BlowMethodGrammar.g4`~~, ~~`SummonGrammar.g4`~~, ~~`MonsterBaseGrammar.g4`~~, ~~`BrandGrammar.g4`~~, ~~`ObjectBaseGrammar.g4`~~, ~~`ProjectionGrammar.g4`~~, ~~`ObjectPropertyGrammar.g4` (also needs `type:` optional)~~, ~~`PlayerPropertyGrammar.g4`~~, ~~`TerrainFeatureGrammar.g4`~~, ~~`QuestGrammar.g4`~~, ~~`VaultGrammar.g4`~~, `RoomProfileGrammar.g4`, `ChestTrapGrammar.g4` (`code:` after `name:`), `PlayerTimedGrammar.g4`.
 - Each needs its `ParseRecord` and assembler to cope with an absent field, so this is where the Stage 0 absent-value convention is applied for the second time.
 
 ### 7b. Name-only records and empty files

@@ -108,4 +108,93 @@ class VaultTest {
         }
         assertEquals(' ', v.getMapLines().charAt(1 * v.getWidth() + 2), "padding is kept");
     }
+
+    /**
+     * The holder stores {@code uint8_t}-range overflow as given. C narrows {@code rat},
+     * {@code hgt}, {@code wid}, {@code min_lev} and {@code max_lev} to 8 bits; the narrowing is the
+     * assembler's job here, so 300 must come back as 300, not 44.
+     */
+    @Test
+    void valuesPastTheUint8RangeAreNotWrapped() {
+        Vault v = new Vault("Big", RoomType.LESSER_VAULT, FLAT, ROWS,
+                new Flag<>(RoomFlags.class), 300, 300, 300, 300, 300);
+
+        assertEquals(300, v.getRating());
+        assertEquals(300, v.getHeight());
+        assertEquals(300, v.getWidth());
+        assertEquals(300, v.getMinLevel());
+        assertEquals(300, v.getMaxLevel());
+    }
+
+    /**
+     * C's {@code parse_vault_max_depth} turns {@code max-depth:0} into {@code z_info->max_depth};
+     * the holder does not, so a 0 handed to it comes back as 0.
+     */
+    @Test
+    void aZeroMaximumIsNotRewrittenByTheHolder() {
+        assertEquals(0, vault(new Flag<>(RoomFlags.class), 0, 0).getMaxLevel());
+    }
+
+    /**
+     * The constructor does no checking, so an empty vault (as the assembler begins with) holds its
+     * nulls and zeros.
+     */
+    @Test
+    void anEmptyVaultKeepsNullsAndZeros() {
+        Vault v = new Vault(null, null, null, new java.util.ArrayList<>(), null, 0, 0, 0, 0, 0);
+
+        assertNull(v.getName());
+        assertNull(v.getType());
+        assertNull(v.getMapLines());
+        assertTrue(v.getMap().isEmpty());
+        assertNull(v.getFlags());
+        assertEquals(0, v.getRating());
+        assertEquals(0, v.getHeight());
+        assertEquals(0, v.getWidth());
+        assertEquals(0, v.getMinLevel());
+        assertEquals(0, v.getMaxLevel());
+    }
+
+    /**
+     * Each setter replaces its own field and leaves the other nine alone.
+     */
+    @Test
+    void eachSetterReplacesOnlyItsOwnField() {
+        Flag<RoomFlags> flags = new Flag<>(RoomFlags.class, RoomFlags.FEW_ENTRANCES);
+        Flag<RoomFlags> otherFlags = new Flag<>(RoomFlags.class, RoomFlags.MAX);
+        List<String> otherRows = List.of("##", "##");
+
+        Vault v = vault(flags, 8, 16);
+        v.setName("Other");
+        assertEquals("Other", v.getName());
+        assertEquals(RoomType.LESSER_VAULT, v.getType());
+        assertEquals(5, v.getRating());
+
+        v.setType(RoomType.GREATER_VAULT);
+        assertEquals(RoomType.GREATER_VAULT, v.getType());
+        assertEquals(3, v.getHeight(), "no re-check against the new type");
+
+        v.setMapLines("####");
+        assertEquals("####", v.getMapLines());
+        assertEquals(ROWS, v.getMap(), "map is not kept in step with mapLines");
+
+        v.setMap(otherRows);
+        assertSame(otherRows, v.getMap());
+        assertEquals("####", v.getMapLines());
+
+        v.setFlags(otherFlags);
+        assertSame(otherFlags, v.getFlags());
+
+        v.setRating(9);
+        v.setHeight(2);
+        v.setWidth(2);
+        v.setMinLevel(1);
+        v.setMaxLevel(40);
+        assertEquals(9, v.getRating());
+        assertEquals(2, v.getHeight());
+        assertEquals(2, v.getWidth());
+        assertEquals(1, v.getMinLevel());
+        assertEquals(40, v.getMaxLevel());
+        assertEquals("Other", v.getName());
+    }
 }

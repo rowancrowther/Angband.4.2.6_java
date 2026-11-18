@@ -445,30 +445,37 @@ class VaultReaderTest {
     }
 
     /**
-     * Every directive except {@code flags:} is mandatory and the grammar fixes their order, so a
-     * record missing one is a hard error and the whole file fails closed — no partial results.
+     * Only {@code name:} is mandatory, as in C, where {@code name:} starts the struct and every
+     * other handler is optional. A record with no {@code rating:} loads with the zeroed rating C's
+     * {@code mem_zalloc} leaves, and its neighbour is untouched.
      */
     @Test
-    void aMissingMandatoryDirectiveFailsClosed() throws IOException {
+    void aMissingRatingLoadsAsZero() throws IOException {
         String noRating = GOOD_RECORD.replace("rating:5\n", "");
         String path = tempFile("no-rating.txt",
                 noRating + "\n" + GOOD_RECORD + "\n");
 
-        assertThrows(ParseCancellationException.class, () -> new VaultReader().parseWithResults(path));
+        List<Vault> vaults = new VaultReader().parseWithResults(path).items();
 
+        assertEquals(2, vaults.size());
+        assertEquals(5, vaults.getFirst().getRating(), "the second record in the file is first in C's list");
+        assertEquals(0, vaults.getLast().getRating());
     }
 
     /**
-     * Order is fixed too, not merely conventional: the same seven directives in a different
-     * sequence is a grammar error, where C's parser would accept them in any order.
+     * Order is free, as in C: {@code rows:} ahead of {@code rating:} loads, because neither needs
+     * the other. (The ones that do need an earlier directive are tested in
+     * {@code VaultAssemblerTest}.)
      */
     @Test
-    void directivesOutOfOrderFailClosed() throws IOException {
+    void directivesInADifferentOrderLoad() throws IOException {
         String swapped = GOOD_RECORD.replace("rating:5\nrows:3", "rows:3\nrating:5");
         String path = tempFile("out-of-order.txt", swapped + "\n");
 
-        assertThrows(ParseCancellationException.class, () -> new VaultReader().parseWithResults(path));
+        Vault vault = new VaultReader().parseWithResults(path).items().getFirst();
 
+        assertEquals(3, vault.getHeight());
+        assertEquals(5, vault.getRating());
     }
 
     /**
@@ -636,28 +643,26 @@ class VaultReaderTest {
     }
 
     /**
-     * C accepts the directives in any order and any may be missing; here a {@code type:} that
-     * arrives after {@code rows:} is a grammar error and the file yields nothing.
+     * The grammar takes the directives in any order, but C's {@code parse_vault_rows()} needs
+     * {@code v->typ} already set, and C has none yet, so a {@code type:} that arrives after
+     * {@code rows:} ends the load. Here the assembler refuses it.
      */
     @Test
-    void typeAfterRowsIsRefusedHereWhereCTakesItInAnyOrder() throws IOException {
+    void typeAfterRowsEndsTheLoadAsInC() throws IOException {
         String reordered = GOOD_RECORD.replace("type:Lesser vault\nrating:5\nrows:3",
                 "rating:5\nrows:3\ntype:Lesser vault");
         String path = tempFile("type-late.txt", reordered + "\n");
 
-        assertThrows(ParseCancellationException.class, () -> new VaultReader().parseWithResults(path));
-
+        assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
     }
 
     /**
-     * A header and no records. C accepts an empty vault file and leaves {@code vaults} null; the
-     * grammar wants at least one record, so the file is refused.
+     * A file with no records. C accepts an empty vault file and leaves {@code vaults} null; the
+     * grammar's {@code (profileRecord)* EOF} accepts it too and the list is empty.
      */
     @Test
-    void aFileWithNoVaultsIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> new VaultReader().parseWithResults(
-                tempFile("empty.txt", "")));
-
+    void aFileWithNoVaultsLoadsAnEmptyList() throws IOException {
+        assertTrue(new VaultReader().parseWithResults(tempFile("empty.txt", "")).items().isEmpty());
     }
 
     /**

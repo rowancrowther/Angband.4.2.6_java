@@ -19,8 +19,7 @@ package uk.co.jackoftradesltd.middle.cave.enums;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests for {@link RoomFlags}, the port of {@code list-room-flags.h} and the
@@ -51,6 +50,44 @@ class RoomFlagsTest {
         assertEquals("select alternate tunneling for a room since it can only be entered from a few "
                 + "directions or the entrances involve digging", RoomFlags.FEW_ENTRANCES.getHelpString());
         assertEquals("", RoomFlags.MAX.getHelpString());
+    }
+
+    // lookup(): C's lookup_flag over room_flags[] = {"NONE", "FEW_ENTRANCES", "MAX", NULL}, matched
+    // with streq (case-exact).
+
+    @Test
+    void lookupFindsFewEntrancesAndMax() {
+        assertEquals(RoomFlags.FEW_ENTRANCES, RoomFlags.lookup("FEW_ENTRANCES"));
+        // ROOMF(MAX, "") puts "MAX" in the table at index 2, so C accepts it.
+        assertEquals(RoomFlags.MAX, RoomFlags.lookup("MAX"));
+    }
+
+    @Test
+    void lookupReturnsNoneForNoneAsAcceptedDeviation() {
+        // C starts at FLAG_START (1) and refuses "NONE"; accepted deviation 2026-11-18.
+        assertEquals(RoomFlags.NONE, RoomFlags.lookup("NONE"));
+    }
+
+    @Test
+    void lookupIsCaseExact() {
+        assertNull(RoomFlags.lookup("few_entrances"));
+        assertNull(RoomFlags.lookup("Few_Entrances"));
+        assertNull(RoomFlags.lookup("max"));
+        assertNull(RoomFlags.lookup("none"));
+    }
+
+    @Test
+    void lookupRefusesNearMissesAndPrefixes() {
+        assertNull(RoomFlags.lookup("FEW_ENTRANCE"));
+        assertNull(RoomFlags.lookup("FEW_ENTRANCES "));
+        assertNull(RoomFlags.lookup(" FEW_ENTRANCES"));
+        assertNull(RoomFlags.lookup("ROOMF_FEW_ENTRANCES"));
+        assertNull(RoomFlags.lookup(""));
+    }
+
+    @Test
+    void lookupOfNullIsNull() {
+        assertNull(RoomFlags.lookup(null));
     }
 
     @Test

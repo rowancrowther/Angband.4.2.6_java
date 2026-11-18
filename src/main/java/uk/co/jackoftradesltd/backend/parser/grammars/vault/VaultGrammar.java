@@ -27,6 +27,7 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import uk.co.jackoftradesltd.backend.parser.grammars.Directive;
 import uk.co.jackoftradesltd.backend.parser.vault.VaultParseRecord;
 
 import java.util.ArrayList;
@@ -122,8 +123,7 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class NameContext extends ParserRuleContext {
-		public String nameStr;
-		public int line;
+		public Directive nameDirective;
 		public Token n;
 		public TerminalNode NAME() { return getToken(VaultGrammar.NAME, 0); }
 		public TerminalNode STRING() { return getToken(VaultGrammar.STRING, 0); }
@@ -156,7 +156,12 @@ public class VaultGrammar extends Parser {
 			match(NAME);
 			setState(23);
 			((NameContext)_localctx).n = match(STRING);
-			 ((NameContext)_localctx).nameStr =  ((NameContext)_localctx).n.getText(); ((NameContext)_localctx).line =  _localctx.start.getLine(); 
+
+			                String value = ((NameContext)_localctx).n.getText();
+			                List<String> values = new ArrayList<>();
+			                values.add(value);
+			                ((NameContext)_localctx).nameDirective =  new Directive("name", values, _localctx.start.getLine());
+			            
 			}
 		}
 		catch (RecognitionException re) {
@@ -172,7 +177,7 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class TypeContext extends ParserRuleContext {
-		public String typeStr;
+		public Directive typeDirective;
 		public Token t;
 		public TerminalNode TYPE() { return getToken(VaultGrammar.TYPE, 0); }
 		public TerminalNode STRING() { return getToken(VaultGrammar.STRING, 0); }
@@ -205,7 +210,12 @@ public class VaultGrammar extends Parser {
 			match(TYPE);
 			setState(27);
 			((TypeContext)_localctx).t = match(STRING);
-			 ((TypeContext)_localctx).typeStr =  ((TypeContext)_localctx).t.getText(); 
+			 
+			                String value = ((TypeContext)_localctx).t.getText();
+			                List<String> values = new ArrayList<>();
+			                values.add(value);
+			                ((TypeContext)_localctx).typeDirective =  new Directive("type", values, _localctx.start.getLine()); 
+			            
 			}
 		}
 		catch (RecognitionException re) {
@@ -221,7 +231,7 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class RatingContext extends ParserRuleContext {
-		public String ratingStr;
+		public Directive ratingDirective;
 		public Token r;
 		public TerminalNode RATING() { return getToken(VaultGrammar.RATING, 0); }
 		public TerminalNode INTEGER() { return getToken(VaultGrammar.INTEGER, 0); }
@@ -254,7 +264,12 @@ public class VaultGrammar extends Parser {
 			match(RATING);
 			setState(31);
 			((RatingContext)_localctx).r = match(INTEGER);
-			 ((RatingContext)_localctx).ratingStr =  ((RatingContext)_localctx).r.getText(); 
+
+			                String value = ((RatingContext)_localctx).r.getText();
+			                List<String> values = new ArrayList<>();
+			                values.add(value);
+			                ((RatingContext)_localctx).ratingDirective =  new Directive("rating", values, _localctx.start.getLine());
+			            
 			}
 		}
 		catch (RecognitionException re) {
@@ -270,7 +285,7 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class RowsContext extends ParserRuleContext {
-		public String rowsStr;
+		public Directive rowsDirective;
 		public Token r;
 		public TerminalNode ROWS() { return getToken(VaultGrammar.ROWS, 0); }
 		public TerminalNode INTEGER() { return getToken(VaultGrammar.INTEGER, 0); }
@@ -303,7 +318,12 @@ public class VaultGrammar extends Parser {
 			match(ROWS);
 			setState(35);
 			((RowsContext)_localctx).r = match(INTEGER);
-			 ((RowsContext)_localctx).rowsStr =  ((RowsContext)_localctx).r.getText(); 
+
+			                String value = ((RowsContext)_localctx).r.getText();
+			                List<String> values = new ArrayList<>();
+			                values.add(value);
+			                ((RowsContext)_localctx).rowsDirective =  new Directive("rows", values, _localctx.start.getLine());
+			            
 			}
 		}
 		catch (RecognitionException re) {
@@ -319,7 +339,7 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class ColumnsContext extends ParserRuleContext {
-		public String columnsStr;
+		public Directive colsDirective;
 		public Token c;
 		public TerminalNode COLUMNS() { return getToken(VaultGrammar.COLUMNS, 0); }
 		public TerminalNode INTEGER() { return getToken(VaultGrammar.INTEGER, 0); }
@@ -352,7 +372,12 @@ public class VaultGrammar extends Parser {
 			match(COLUMNS);
 			setState(39);
 			((ColumnsContext)_localctx).c = match(INTEGER);
-			 ((ColumnsContext)_localctx).columnsStr =  ((ColumnsContext)_localctx).c.getText(); 
+
+			                String value = ((ColumnsContext)_localctx).c.getText();
+			                List<String> values = new ArrayList<>();
+			                values.add(value);
+			                ((ColumnsContext)_localctx).colsDirective =  new Directive("columns", values, _localctx.start.getLine());
+			            
 			}
 		}
 		catch (RecognitionException re) {
@@ -368,7 +393,7 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class MinDepthContext extends ParserRuleContext {
-		public String minDepthStr;
+		public Directive minDepthDirective;
 		public Token m;
 		public TerminalNode MIN_DEPTH() { return getToken(VaultGrammar.MIN_DEPTH, 0); }
 		public TerminalNode INTEGER() { return getToken(VaultGrammar.INTEGER, 0); }
@@ -401,7 +426,12 @@ public class VaultGrammar extends Parser {
 			match(MIN_DEPTH);
 			setState(43);
 			((MinDepthContext)_localctx).m = match(INTEGER);
-			 ((MinDepthContext)_localctx).minDepthStr =  ((MinDepthContext)_localctx).m.getText(); 
+
+			                String value = ((MinDepthContext)_localctx).m.getText();
+			                List<String> values = new ArrayList<>();
+			                values.add(value);
+			                ((MinDepthContext)_localctx).minDepthDirective =  new Directive("min-depth", values, _localctx.start.getLine());
+			            
 			}
 		}
 		catch (RecognitionException re) {
@@ -417,7 +447,7 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class MaxDepthContext extends ParserRuleContext {
-		public String maxDepthStr;
+		public Directive maxDepthDirective;
 		public Token m;
 		public TerminalNode MAX_DEPTH() { return getToken(VaultGrammar.MAX_DEPTH, 0); }
 		public TerminalNode INTEGER() { return getToken(VaultGrammar.INTEGER, 0); }
@@ -450,7 +480,12 @@ public class VaultGrammar extends Parser {
 			match(MAX_DEPTH);
 			setState(47);
 			((MaxDepthContext)_localctx).m = match(INTEGER);
-			 ((MaxDepthContext)_localctx).maxDepthStr =  ((MaxDepthContext)_localctx).m.getText(); 
+
+			                String value = ((MaxDepthContext)_localctx).m.getText();
+			                List<String> values = new ArrayList<>();
+			                values.add(value);
+			                ((MaxDepthContext)_localctx).maxDepthDirective =  new Directive("max-depth", values, _localctx.start.getLine());        
+			            
 			}
 		}
 		catch (RecognitionException re) {
@@ -466,7 +501,7 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FlagContext extends ParserRuleContext {
-		public List<String> flags;
+		public Directive flagDirective;
 		public Token f1;
 		public Token f2;
 		public TerminalNode FLAGS() { return getToken(VaultGrammar.FLAGS, 0); }
@@ -500,7 +535,7 @@ public class VaultGrammar extends Parser {
 	public final FlagContext flag() throws RecognitionException {
 		FlagContext _localctx = new FlagContext(_ctx, getState());
 		enterRule(_localctx, 14, RULE_flag);
-		 ((FlagContext)_localctx).flags =  new ArrayList<>(); 
+		 List<String> flags = new ArrayList<>(); 
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -509,7 +544,7 @@ public class VaultGrammar extends Parser {
 			match(FLAGS);
 			setState(51);
 			((FlagContext)_localctx).f1 = match(FLAG);
-			 _localctx.flags.add(((FlagContext)_localctx).f1.getText()); 
+			 flags.add(((FlagContext)_localctx).f1.getText()); 
 			setState(58);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
@@ -520,7 +555,7 @@ public class VaultGrammar extends Parser {
 				match(OR);
 				setState(54);
 				((FlagContext)_localctx).f2 = match(FLAG);
-				 _localctx.flags.add(((FlagContext)_localctx).f2.getText()); 
+				 flags.add(((FlagContext)_localctx).f2.getText()); 
 				}
 				}
 				setState(60);
@@ -528,6 +563,10 @@ public class VaultGrammar extends Parser {
 				_la = _input.LA(1);
 			}
 			}
+			_ctx.stop = _input.LT(-1);
+
+			                ((FlagContext)_localctx).flagDirective =  new Directive("flag", flags, _localctx.start.getLine());
+			        
 		}
 		catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -542,16 +581,10 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class DContext extends ParserRuleContext {
-		public List<String> map;
+		public Directive mapDirective;
 		public Token m;
-		public List<TerminalNode> D() { return getTokens(VaultGrammar.D); }
-		public TerminalNode D(int i) {
-			return getToken(VaultGrammar.D, i);
-		}
-		public List<TerminalNode> STRING() { return getTokens(VaultGrammar.STRING); }
-		public TerminalNode STRING(int i) {
-			return getToken(VaultGrammar.STRING, i);
-		}
+		public TerminalNode D() { return getToken(VaultGrammar.D, 0); }
+		public TerminalNode STRING() { return getToken(VaultGrammar.STRING, 0); }
 		public DContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -574,28 +607,19 @@ public class VaultGrammar extends Parser {
 	public final DContext d() throws RecognitionException {
 		DContext _localctx = new DContext(_ctx, getState());
 		enterRule(_localctx, 16, RULE_d);
-		 ((DContext)_localctx).map =  new ArrayList<>(); 
-		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(64); 
-			_errHandler.sync(this);
-			_la = _input.LA(1);
-			do {
-				{
-				{
-				setState(61);
-				match(D);
-				setState(62);
-				((DContext)_localctx).m = match(STRING);
-				 _localctx.map.add(((DContext)_localctx).m.getText()); 
-				}
-				}
-				setState(66); 
-				_errHandler.sync(this);
-				_la = _input.LA(1);
-			} while ( _la==D );
+			setState(61);
+			match(D);
+			setState(62);
+			((DContext)_localctx).m = match(STRING);
+
+			                String value = ((DContext)_localctx).m.getText();
+			                List<String> values = new ArrayList<>();
+			                values.add(value);
+			                ((DContext)_localctx).mapDirective =  new Directive("map", values, _localctx.start.getLine());
+			            
 			}
 		}
 		catch (RecognitionException re) {
@@ -611,7 +635,7 @@ public class VaultGrammar extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class ProfileRecordContext extends ParserRuleContext {
-		public VaultParseRecord record;
+		public List<Directive> vault;
 		public NameContext name;
 		public TypeContext type;
 		public RatingContext rating;
@@ -624,32 +648,53 @@ public class VaultGrammar extends Parser {
 		public NameContext name() {
 			return getRuleContext(NameContext.class,0);
 		}
-		public TypeContext type() {
-			return getRuleContext(TypeContext.class,0);
+		public List<TypeContext> type() {
+			return getRuleContexts(TypeContext.class);
 		}
-		public RatingContext rating() {
-			return getRuleContext(RatingContext.class,0);
+		public TypeContext type(int i) {
+			return getRuleContext(TypeContext.class,i);
 		}
-		public RowsContext rows() {
-			return getRuleContext(RowsContext.class,0);
+		public List<RatingContext> rating() {
+			return getRuleContexts(RatingContext.class);
 		}
-		public ColumnsContext columns() {
-			return getRuleContext(ColumnsContext.class,0);
+		public RatingContext rating(int i) {
+			return getRuleContext(RatingContext.class,i);
 		}
-		public MinDepthContext minDepth() {
-			return getRuleContext(MinDepthContext.class,0);
+		public List<RowsContext> rows() {
+			return getRuleContexts(RowsContext.class);
 		}
-		public MaxDepthContext maxDepth() {
-			return getRuleContext(MaxDepthContext.class,0);
+		public RowsContext rows(int i) {
+			return getRuleContext(RowsContext.class,i);
 		}
-		public DContext d() {
-			return getRuleContext(DContext.class,0);
+		public List<ColumnsContext> columns() {
+			return getRuleContexts(ColumnsContext.class);
+		}
+		public ColumnsContext columns(int i) {
+			return getRuleContext(ColumnsContext.class,i);
+		}
+		public List<MinDepthContext> minDepth() {
+			return getRuleContexts(MinDepthContext.class);
+		}
+		public MinDepthContext minDepth(int i) {
+			return getRuleContext(MinDepthContext.class,i);
+		}
+		public List<MaxDepthContext> maxDepth() {
+			return getRuleContexts(MaxDepthContext.class);
+		}
+		public MaxDepthContext maxDepth(int i) {
+			return getRuleContext(MaxDepthContext.class,i);
 		}
 		public List<FlagContext> flag() {
 			return getRuleContexts(FlagContext.class);
 		}
 		public FlagContext flag(int i) {
 			return getRuleContext(FlagContext.class,i);
+		}
+		public List<DContext> d() {
+			return getRuleContexts(DContext.class);
+		}
+		public DContext d(int i) {
+			return getRuleContext(DContext.class,i);
 		}
 		public ProfileRecordContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -674,77 +719,88 @@ public class VaultGrammar extends Parser {
 		ProfileRecordContext _localctx = new ProfileRecordContext(_ctx, getState());
 		enterRule(_localctx, 18, RULE_profileRecord);
 
-		            String nameInit = "";
-		            String typeInit = "";
-		            String ratingInit = "";
-		            String rowsInit = "";
-		            String columnsInit = "";
-		            String minDepthInit = "";
-		            String maxDepthInit = "";
-		            List<String> flags = new ArrayList<>();
-		            String mapText = "";
-		            List<String> map = new ArrayList<>();
-		            int line = 0;
+		            ((ProfileRecordContext)_localctx).vault =  new ArrayList<Directive>();
 		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(68);
+			setState(65);
 			((ProfileRecordContext)_localctx).name = name();
-
-			                line = ((ProfileRecordContext)_localctx).name.line;
-			                nameInit = ((ProfileRecordContext)_localctx).name.nameStr;
-			            
-			setState(70);
-			((ProfileRecordContext)_localctx).type = type();
-			 typeInit = ((ProfileRecordContext)_localctx).type.typeStr; 
-			setState(72);
-			((ProfileRecordContext)_localctx).rating = rating();
-			 ratingInit = ((ProfileRecordContext)_localctx).rating.ratingStr; 
-			setState(74);
-			((ProfileRecordContext)_localctx).rows = rows();
-			 rowsInit = ((ProfileRecordContext)_localctx).rows.rowsStr; 
-			setState(76);
-			((ProfileRecordContext)_localctx).columns = columns();
-			 columnsInit = ((ProfileRecordContext)_localctx).columns.columnsStr; 
-			setState(78);
-			((ProfileRecordContext)_localctx).minDepth = minDepth();
-			 minDepthInit = ((ProfileRecordContext)_localctx).minDepth.minDepthStr; 
-			setState(80);
-			((ProfileRecordContext)_localctx).maxDepth = maxDepth();
-			 maxDepthInit = ((ProfileRecordContext)_localctx).maxDepth.maxDepthStr; 
-			setState(87);
+			 _localctx.vault.add(((ProfileRecordContext)_localctx).name.nameDirective); 
+			setState(93);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while (_la==FLAGS) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1020L) != 0)) {
 				{
-				{
-				setState(82);
-				((ProfileRecordContext)_localctx).flag = flag();
-				 flags.addAll(((ProfileRecordContext)_localctx).flag.flags); 
+				setState(91);
+				_errHandler.sync(this);
+				switch (_input.LA(1)) {
+				case TYPE:
+					{
+					setState(67);
+					((ProfileRecordContext)_localctx).type = type();
+					 _localctx.vault.add(((ProfileRecordContext)_localctx).type.typeDirective); 
+					}
+					break;
+				case RATING:
+					{
+					setState(70);
+					((ProfileRecordContext)_localctx).rating = rating();
+					 _localctx.vault.add(((ProfileRecordContext)_localctx).rating.ratingDirective); 
+					}
+					break;
+				case ROWS:
+					{
+					setState(73);
+					((ProfileRecordContext)_localctx).rows = rows();
+					 _localctx.vault.add(((ProfileRecordContext)_localctx).rows.rowsDirective); 
+					}
+					break;
+				case COLUMNS:
+					{
+					setState(76);
+					((ProfileRecordContext)_localctx).columns = columns();
+					 _localctx.vault.add(((ProfileRecordContext)_localctx).columns.colsDirective); 
+					}
+					break;
+				case MIN_DEPTH:
+					{
+					setState(79);
+					((ProfileRecordContext)_localctx).minDepth = minDepth();
+					 _localctx.vault.add(((ProfileRecordContext)_localctx).minDepth.minDepthDirective); 
+					}
+					break;
+				case MAX_DEPTH:
+					{
+					setState(82);
+					((ProfileRecordContext)_localctx).maxDepth = maxDepth();
+					 _localctx.vault.add(((ProfileRecordContext)_localctx).maxDepth.maxDepthDirective); 
+					}
+					break;
+				case FLAGS:
+					{
+					setState(85);
+					((ProfileRecordContext)_localctx).flag = flag();
+					 _localctx.vault.add(((ProfileRecordContext)_localctx).flag.flagDirective); 
+					}
+					break;
+				case D:
+					{
+					setState(88);
+					((ProfileRecordContext)_localctx).d = d();
+					 _localctx.vault.add(((ProfileRecordContext)_localctx).d.mapDirective); 
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 				}
 				}
-				setState(89);
+				setState(95);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(90);
-			((ProfileRecordContext)_localctx).d = d();
-
-			                map.addAll(((ProfileRecordContext)_localctx).d.map);
-			                StringBuilder sb = new StringBuilder();
-			                for (String mapLine : map) {
-			                    sb.append(mapLine);
-			                }
-			                mapText = sb.toString();
-			            
 			}
-			_ctx.stop = _input.LT(-1);
-
-			            ((ProfileRecordContext)_localctx).record =  new VaultParseRecord(nameInit, typeInit, mapText, map, ratingInit,
-			                rowsInit, columnsInit, minDepthInit, maxDepthInit, flags, line);
-			        
 		}
 		catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -795,22 +851,22 @@ public class VaultGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(96); 
+			setState(101);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==NAME) {
 				{
 				{
-				setState(93);
+				setState(96);
 				((FileContext)_localctx).profileRecord = profileRecord();
-				 _localctx.profiles.add(((FileContext)_localctx).profileRecord.record); 
+				 _localctx.profiles.add(new VaultParseRecord(((FileContext)_localctx).profileRecord.vault)); 
 				}
 				}
-				setState(98); 
+				setState(103);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==NAME );
-			setState(100);
+			}
+			setState(104);
 			match(EOF);
 			}
 		}
@@ -826,7 +882,7 @@ public class VaultGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0012g\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0012k\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0001\u0000\u0001\u0000\u0001"+
@@ -836,50 +892,54 @@ public class VaultGrammar extends Parser {
 		"\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001"+
 		"\u0006\u0001\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001"+
 		"\u0007\u0001\u0007\u0005\u00079\b\u0007\n\u0007\f\u0007<\t\u0007\u0001"+
-		"\b\u0001\b\u0001\b\u0004\bA\b\b\u000b\b\f\bB\u0001\t\u0001\t\u0001\t\u0001"+
+		"\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001"+
 		"\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001"+
-		"\t\u0001\t\u0001\t\u0001\t\u0001\t\u0005\tV\b\t\n\t\f\tY\t\t\u0001\t\u0001"+
-		"\t\u0001\t\u0001\n\u0001\n\u0001\n\u0004\na\b\n\u000b\n\f\nb\u0001\n\u0001"+
-		"\n\u0001\n\u0000\u0000\u000b\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010"+
-		"\u0012\u0014\u0000\u0000_\u0000\u0016\u0001\u0000\u0000\u0000\u0002\u001a"+
-		"\u0001\u0000\u0000\u0000\u0004\u001e\u0001\u0000\u0000\u0000\u0006\"\u0001"+
-		"\u0000\u0000\u0000\b&\u0001\u0000\u0000\u0000\n*\u0001\u0000\u0000\u0000"+
-		"\f.\u0001\u0000\u0000\u0000\u000e2\u0001\u0000\u0000\u0000\u0010@\u0001"+
-		"\u0000\u0000\u0000\u0012D\u0001\u0000\u0000\u0000\u0014`\u0001\u0000\u0000"+
-		"\u0000\u0016\u0017\u0005\u0001\u0000\u0000\u0017\u0018\u0005\u0011\u0000"+
-		"\u0000\u0018\u0019\u0006\u0000\uffff\uffff\u0000\u0019\u0001\u0001\u0000"+
-		"\u0000\u0000\u001a\u001b\u0005\u0002\u0000\u0000\u001b\u001c\u0005\u0011"+
-		"\u0000\u0000\u001c\u001d\u0006\u0001\uffff\uffff\u0000\u001d\u0003\u0001"+
-		"\u0000\u0000\u0000\u001e\u001f\u0005\u0003\u0000\u0000\u001f \u0005\n"+
-		"\u0000\u0000 !\u0006\u0002\uffff\uffff\u0000!\u0005\u0001\u0000\u0000"+
-		"\u0000\"#\u0005\u0004\u0000\u0000#$\u0005\n\u0000\u0000$%\u0006\u0003"+
-		"\uffff\uffff\u0000%\u0007\u0001\u0000\u0000\u0000&\'\u0005\u0005\u0000"+
-		"\u0000\'(\u0005\n\u0000\u0000()\u0006\u0004\uffff\uffff\u0000)\t\u0001"+
-		"\u0000\u0000\u0000*+\u0005\u0006\u0000\u0000+,\u0005\n\u0000\u0000,-\u0006"+
-		"\u0005\uffff\uffff\u0000-\u000b\u0001\u0000\u0000\u0000./\u0005\u0007"+
-		"\u0000\u0000/0\u0005\n\u0000\u000001\u0006\u0006\uffff\uffff\u00001\r"+
-		"\u0001\u0000\u0000\u000023\u0005\b\u0000\u000034\u0005\u000e\u0000\u0000"+
-		"4:\u0006\u0007\uffff\uffff\u000056\u0005\u000f\u0000\u000067\u0005\u000e"+
-		"\u0000\u000079\u0006\u0007\uffff\uffff\u000085\u0001\u0000\u0000\u0000"+
-		"9<\u0001\u0000\u0000\u0000:8\u0001\u0000\u0000\u0000:;\u0001\u0000\u0000"+
-		"\u0000;\u000f\u0001\u0000\u0000\u0000<:\u0001\u0000\u0000\u0000=>\u0005"+
-		"\t\u0000\u0000>?\u0005\u0011\u0000\u0000?A\u0006\b\uffff\uffff\u0000@"+
-		"=\u0001\u0000\u0000\u0000AB\u0001\u0000\u0000\u0000B@\u0001\u0000\u0000"+
-		"\u0000BC\u0001\u0000\u0000\u0000C\u0011\u0001\u0000\u0000\u0000DE\u0003"+
-		"\u0000\u0000\u0000EF\u0006\t\uffff\uffff\u0000FG\u0003\u0002\u0001\u0000"+
-		"GH\u0006\t\uffff\uffff\u0000HI\u0003\u0004\u0002\u0000IJ\u0006\t\uffff"+
-		"\uffff\u0000JK\u0003\u0006\u0003\u0000KL\u0006\t\uffff\uffff\u0000LM\u0003"+
-		"\b\u0004\u0000MN\u0006\t\uffff\uffff\u0000NO\u0003\n\u0005\u0000OP\u0006"+
-		"\t\uffff\uffff\u0000PQ\u0003\f\u0006\u0000QW\u0006\t\uffff\uffff\u0000"+
-		"RS\u0003\u000e\u0007\u0000ST\u0006\t\uffff\uffff\u0000TV\u0001\u0000\u0000"+
-		"\u0000UR\u0001\u0000\u0000\u0000VY\u0001\u0000\u0000\u0000WU\u0001\u0000"+
-		"\u0000\u0000WX\u0001\u0000\u0000\u0000XZ\u0001\u0000\u0000\u0000YW\u0001"+
-		"\u0000\u0000\u0000Z[\u0003\u0010\b\u0000[\\\u0006\t\uffff\uffff\u0000"+
-		"\\\u0013\u0001\u0000\u0000\u0000]^\u0003\u0012\t\u0000^_\u0006\n\uffff"+
-		"\uffff\u0000_a\u0001\u0000\u0000\u0000`]\u0001\u0000\u0000\u0000ab\u0001"+
-		"\u0000\u0000\u0000b`\u0001\u0000\u0000\u0000bc\u0001\u0000\u0000\u0000"+
-		"cd\u0001\u0000\u0000\u0000de\u0005\u0000\u0000\u0001e\u0015\u0001\u0000"+
-		"\u0000\u0000\u0004:BWb";
+		"\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001"+
+		"\t\u0001\t\u0001\t\u0005\t\\\b\t\n\t\f\t_\t\t\u0001\n\u0001\n\u0001\n"+
+		"\u0005\nd\b\n\n\n\f\ng\t\n\u0001\n\u0001\n\u0001\n\u0000\u0000\u000b\u0000"+
+		"\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0000\u0000i\u0000\u0016"+
+		"\u0001\u0000\u0000\u0000\u0002\u001a\u0001\u0000\u0000\u0000\u0004\u001e"+
+		"\u0001\u0000\u0000\u0000\u0006\"\u0001\u0000\u0000\u0000\b&\u0001\u0000"+
+		"\u0000\u0000\n*\u0001\u0000\u0000\u0000\f.\u0001\u0000\u0000\u0000\u000e"+
+		"2\u0001\u0000\u0000\u0000\u0010=\u0001\u0000\u0000\u0000\u0012A\u0001"+
+		"\u0000\u0000\u0000\u0014e\u0001\u0000\u0000\u0000\u0016\u0017\u0005\u0001"+
+		"\u0000\u0000\u0017\u0018\u0005\u0011\u0000\u0000\u0018\u0019\u0006\u0000"+
+		"\uffff\uffff\u0000\u0019\u0001\u0001\u0000\u0000\u0000\u001a\u001b\u0005"+
+		"\u0002\u0000\u0000\u001b\u001c\u0005\u0011\u0000\u0000\u001c\u001d\u0006"+
+		"\u0001\uffff\uffff\u0000\u001d\u0003\u0001\u0000\u0000\u0000\u001e\u001f"+
+		"\u0005\u0003\u0000\u0000\u001f \u0005\n\u0000\u0000 !\u0006\u0002\uffff"+
+		"\uffff\u0000!\u0005\u0001\u0000\u0000\u0000\"#\u0005\u0004\u0000\u0000"+
+		"#$\u0005\n\u0000\u0000$%\u0006\u0003\uffff\uffff\u0000%\u0007\u0001\u0000"+
+		"\u0000\u0000&\'\u0005\u0005\u0000\u0000\'(\u0005\n\u0000\u0000()\u0006"+
+		"\u0004\uffff\uffff\u0000)\t\u0001\u0000\u0000\u0000*+\u0005\u0006\u0000"+
+		"\u0000+,\u0005\n\u0000\u0000,-\u0006\u0005\uffff\uffff\u0000-\u000b\u0001"+
+		"\u0000\u0000\u0000./\u0005\u0007\u0000\u0000/0\u0005\n\u0000\u000001\u0006"+
+		"\u0006\uffff\uffff\u00001\r\u0001\u0000\u0000\u000023\u0005\b\u0000\u0000"+
+		"34\u0005\u000e\u0000\u00004:\u0006\u0007\uffff\uffff\u000056\u0005\u000f"+
+		"\u0000\u000067\u0005\u000e\u0000\u000079\u0006\u0007\uffff\uffff\u0000"+
+		"85\u0001\u0000\u0000\u00009<\u0001\u0000\u0000\u0000:8\u0001\u0000\u0000"+
+		"\u0000:;\u0001\u0000\u0000\u0000;\u000f\u0001\u0000\u0000\u0000<:\u0001"+
+		"\u0000\u0000\u0000=>\u0005\t\u0000\u0000>?\u0005\u0011\u0000\u0000?@\u0006"+
+		"\b\uffff\uffff\u0000@\u0011\u0001\u0000\u0000\u0000AB\u0003\u0000\u0000"+
+		"\u0000B]\u0006\t\uffff\uffff\u0000CD\u0003\u0002\u0001\u0000DE\u0006\t"+
+		"\uffff\uffff\u0000E\\\u0001\u0000\u0000\u0000FG\u0003\u0004\u0002\u0000"+
+		"GH\u0006\t\uffff\uffff\u0000H\\\u0001\u0000\u0000\u0000IJ\u0003\u0006"+
+		"\u0003\u0000JK\u0006\t\uffff\uffff\u0000K\\\u0001\u0000\u0000\u0000LM"+
+		"\u0003\b\u0004\u0000MN\u0006\t\uffff\uffff\u0000N\\\u0001\u0000\u0000"+
+		"\u0000OP\u0003\n\u0005\u0000PQ\u0006\t\uffff\uffff\u0000Q\\\u0001\u0000"+
+		"\u0000\u0000RS\u0003\f\u0006\u0000ST\u0006\t\uffff\uffff\u0000T\\\u0001"+
+		"\u0000\u0000\u0000UV\u0003\u000e\u0007\u0000VW\u0006\t\uffff\uffff\u0000"+
+		"W\\\u0001\u0000\u0000\u0000XY\u0003\u0010\b\u0000YZ\u0006\t\uffff\uffff"+
+		"\u0000Z\\\u0001\u0000\u0000\u0000[C\u0001\u0000\u0000\u0000[F\u0001\u0000"+
+		"\u0000\u0000[I\u0001\u0000\u0000\u0000[L\u0001\u0000\u0000\u0000[O\u0001"+
+		"\u0000\u0000\u0000[R\u0001\u0000\u0000\u0000[U\u0001\u0000\u0000\u0000"+
+		"[X\u0001\u0000\u0000\u0000\\_\u0001\u0000\u0000\u0000][\u0001\u0000\u0000"+
+		"\u0000]^\u0001\u0000\u0000\u0000^\u0013\u0001\u0000\u0000\u0000_]\u0001"+
+		"\u0000\u0000\u0000`a\u0003\u0012\t\u0000ab\u0006\n\uffff\uffff\u0000b"+
+		"d\u0001\u0000\u0000\u0000c`\u0001\u0000\u0000\u0000dg\u0001\u0000\u0000"+
+		"\u0000ec\u0001\u0000\u0000\u0000ef\u0001\u0000\u0000\u0000fh\u0001\u0000"+
+		"\u0000\u0000ge\u0001\u0000\u0000\u0000hi\u0005\u0000\u0000\u0001i\u0015"+
+		"\u0001\u0000\u0000\u0000\u0004:[]e";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

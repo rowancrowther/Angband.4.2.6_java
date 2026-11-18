@@ -417,17 +417,20 @@ class DungeonLoaderTest {
     }
 
     /**
-     * A vault grammar error stops the load and writes nothing: a record with no {@code rating:}
-     * line fails closed in the grammar, and the {@link ParseCancellationException} passes through
-     * the loader unwrapped.
+     * A vault grammar error stops the load and writes nothing: a file whose first directive is not
+     * {@code name:} fails closed in the grammar, because every record must open with its
+     * {@code name:}, and the {@link ParseCancellationException} passes through the loader
+     * unwrapped. (A record with no {@code rating:} no longer fails: the grammar makes every
+     * directive after {@code name:} optional.)
      *
-     * <p>Function vaultGrammarErrorStopsTheLoad coded on 261013, commented in full on 261013,
-     * renamed and rewritten on 261104 for the removal of the soft-error path.
+     * <p>Function vaultGrammarErrorStopsTheLoad coded on 261013, commented in full on 261118,
+     * renamed and rewritten on 261104 for the removal of the soft-error path, rewritten 261118
+     * once the grammar accepted a record with no {@code rating:}.
      */
     @Test
     @DisplayName("a vault grammar error stops the load before anything is written")
     void vaultGrammarErrorStopsTheLoad() throws Exception {
-        write("vault.txt", GOOD_VAULT.replace("rating:5\n", "") + "\n");
+        write("vault.txt", "rating:5\n" + GOOD_VAULT + "\n");
 
         assertThrows(ParseCancellationException.class, DungeonLoader::loadVaultTemplates);
 

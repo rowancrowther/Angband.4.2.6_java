@@ -35,4 +35,10 @@ public record FlavourKindParseRecord(String tVal,
                                      String glyph,
                                      List<FlavourParseRecord> records,
                                      int line) {
+    
+    public FlavourKindParseRecord appendFlavours(List<FlavourParseRecord> records) {
+        List<FlavourParseRecord> newList = this.records();
+        newList.addAll(records);
+        return new FlavourKindParseRecord(this.tVal(), this.glyph(), newList, this.line());
+    }
 }

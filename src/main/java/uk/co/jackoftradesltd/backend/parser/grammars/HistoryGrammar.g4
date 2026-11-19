@@ -44,12 +44,12 @@ record
                 percentInit = $chart.percent;
                 lineInit    = $chart.line;
             }
-            phrase { phraseInit = $phrase.phraseStr; }
+        (   phrase { phraseInit = $phrase.phraseStr; } )*
         ;
 
 file
         returns[List<HistoryParseRecord> records]
         : {
             { $records = new ArrayList<>(); }
-        }   ( record { $records.add($record.hist); } )+ EOF
+        }   ( record { $records.add($record.hist); } )* EOF
         ;

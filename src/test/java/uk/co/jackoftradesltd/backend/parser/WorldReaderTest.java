@@ -231,13 +231,13 @@ class WorldReaderTest {
     // ---------------------------------------------------------------- places C is more lenient
 
     @Test
-    void anEmptyFileIsHardHereWhereCLoadsAnEmptyWorld() {
-        assertThrows(ParseCancellationException.class, () -> read(""));
+    void anEmptyFileLoadsAnEmptyWorldAsInC() throws IOException {
+        assertEquals(0, read("").items().size());
     }
 
     @Test
-    void aFileOfOnlyCommentsIsHardHereWhereCLoadsAnEmptyWorld() {
-        assertThrows(ParseCancellationException.class, () -> read("# nothing but a comment\n"));
+    void aFileOfOnlyCommentsLoadsAnEmptyWorldAsInC() throws IOException {
+        assertEquals(0, read("# nothing but a comment\n").items().size());
     }
 
     @Test

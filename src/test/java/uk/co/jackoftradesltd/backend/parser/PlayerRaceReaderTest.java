@@ -615,15 +615,13 @@ class PlayerRaceReaderTest {
     // ---- Differences from C, pinned so that a change to either side shows up ----
 
     @Test
-    void aNameOnlyRaceIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:Empty\n"));
-
+    void aNameOnlyRaceLoadsAsInC() throws IOException {
+        assertEquals(1, load("name-only.txt", "name:Empty\n").items().size());
     }
 
     @Test
-    void aHeaderWithNoRacesIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("no-races.txt", ""));
-
+    void aFileWithNoRacesLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("no-races.txt", "").items().size());
     }
 
     @Test

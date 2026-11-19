@@ -520,9 +520,8 @@ class ShapeReaderTest {
     // ---- Where the grammar and assembler differ from C (docs/grammar_issues.md, docs/Assembler_Issues.md) ----
 
     @Test
-    void anEmptyFileIsAHardErrorWhereCAcceptsOne() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
-
+    void anEmptyFileLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("empty.txt", "").items().size());
     }
 
     @Test

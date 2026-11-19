@@ -137,5 +137,5 @@ file
         @init {
             $records = new ArrayList<>();
         }
-        :   (slay { $records.add($slay.record); })+ EOF
+        :   (slay { $records.add($slay.record); })* EOF
         ;

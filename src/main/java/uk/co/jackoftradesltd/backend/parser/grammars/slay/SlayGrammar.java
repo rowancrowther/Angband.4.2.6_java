@@ -803,10 +803,10 @@ public class SlayGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(92); 
+			setState(94);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==CODE) {
 				{
 				{
 				setState(89);
@@ -814,11 +814,11 @@ public class SlayGrammar extends Parser {
 				 _localctx.records.add(((FileContext)_localctx).slay.record); 
 				}
 				}
-				setState(94); 
+				setState(96);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==CODE );
-			setState(96);
+			}
+			setState(97);
 			match(EOF);
 			}
 		}
@@ -834,7 +834,7 @@ public class SlayGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000fc\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000fd\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0001\u0000\u0001\u0000\u0001"+
@@ -846,14 +846,14 @@ public class SlayGrammar extends Parser {
 		"\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001"+
 		"\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001"+
 		"\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001"+
-		"\t\u0001\t\u0001\t\u0005\tU\b\t\n\t\f\tX\t\t\u0001\n\u0001\n\u0001\n\u0004"+
-		"\n]\b\n\u000b\n\f\n^\u0001\n\u0001\n\u0001\n\u0000\u0000\u000b\u0000\u0002"+
-		"\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0000\u0000`\u0000\u0016\u0001"+
+		"\t\u0001\t\u0001\t\u0005\tU\b\t\n\t\f\tX\t\t\u0001\n\u0001\n\u0001\n\u0005"+
+		"\n]\b\n\n\n\f\n`\t\n\u0001\n\u0001\n\u0001\n\u0000\u0000\u000b\u0000\u0002"+
+		"\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0000\u0000a\u0000\u0016\u0001"+
 		"\u0000\u0000\u0000\u0002\u001a\u0001\u0000\u0000\u0000\u0004\u001e\u0001"+
 		"\u0000\u0000\u0000\u0006\"\u0001\u0000\u0000\u0000\b&\u0001\u0000\u0000"+
 		"\u0000\n*\u0001\u0000\u0000\u0000\f.\u0001\u0000\u0000\u0000\u000e2\u0001"+
 		"\u0000\u0000\u0000\u00106\u0001\u0000\u0000\u0000\u0012:\u0001\u0000\u0000"+
-		"\u0000\u0014\\\u0001\u0000\u0000\u0000\u0016\u0017\u0005\u0001\u0000\u0000"+
+		"\u0000\u0014^\u0001\u0000\u0000\u0000\u0016\u0017\u0005\u0001\u0000\u0000"+
 		"\u0017\u0018\u0005\u000f\u0000\u0000\u0018\u0019\u0006\u0000\uffff\uffff"+
 		"\u0000\u0019\u0001\u0001\u0000\u0000\u0000\u001a\u001b\u0005\u0002\u0000"+
 		"\u0000\u001b\u001c\u0005\u000f\u0000\u0000\u001c\u001d\u0006\u0001\uffff"+
@@ -884,9 +884,10 @@ public class SlayGrammar extends Parser {
 		"\u0000\u0000UX\u0001\u0000\u0000\u0000VT\u0001\u0000\u0000\u0000VW\u0001"+
 		"\u0000\u0000\u0000W\u0013\u0001\u0000\u0000\u0000XV\u0001\u0000\u0000"+
 		"\u0000YZ\u0003\u0012\t\u0000Z[\u0006\n\uffff\uffff\u0000[]\u0001\u0000"+
-		"\u0000\u0000\\Y\u0001\u0000\u0000\u0000]^\u0001\u0000\u0000\u0000^\\\u0001"+
-		"\u0000\u0000\u0000^_\u0001\u0000\u0000\u0000_`\u0001\u0000\u0000\u0000"+
-		"`a\u0005\u0000\u0000\u0001a\u0015\u0001\u0000\u0000\u0000\u0003TV^";
+		"\u0000\u0000\\Y\u0001\u0000\u0000\u0000]`\u0001\u0000\u0000\u0000^\\\u0001"+
+		"\u0000\u0000\u0000^_\u0001\u0000\u0000\u0000_a\u0001\u0000\u0000\u0000"+
+		"`^\u0001\u0000\u0000\u0000ab\u0005\u0000\u0000\u0001b\u0015\u0001\u0000"+
+		"\u0000\u0000\u0003TV^";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

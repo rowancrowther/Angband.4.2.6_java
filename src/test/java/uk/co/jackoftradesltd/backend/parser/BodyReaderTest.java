@@ -145,10 +145,14 @@ class BodyReaderTest {
     // ---- Hard errors: fail closed, nothing loads -------------------------
 
     @Test
-    void bodyWithNoSlotsIsAHardError() throws IOException {
-        // The grammar requires at least one slot per body.
-        assertThrows(ParseCancellationException.class, () -> load("no-slots.txt", "body:Empty\n"));
+    void aBodyWithNoSlotsLoadsWithACountOfZeroAsInC() throws IOException {
+        // The grammar takes a body: line alone, and PlayerBody.setSlots accepts the empty slot
+        // list, so the body loads with a count of 0 as in C.
+        List<PlayerBody> bodies = load("no-slots.txt", "body:Empty\n").items();
 
+        assertEquals(1, bodies.size());
+        assertEquals("Empty", bodies.get(0).getName());
+        assertEquals(0, bodies.get(0).getCount());
     }
 
     @Test
@@ -242,8 +246,7 @@ class BodyReaderTest {
     }
 
     @Test
-    void aHeaderWithNoBodiesIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("header-only.txt", ""));
-
+    void aFileWithNoBodiesLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("header-only.txt", "").items().size());
     }
 }

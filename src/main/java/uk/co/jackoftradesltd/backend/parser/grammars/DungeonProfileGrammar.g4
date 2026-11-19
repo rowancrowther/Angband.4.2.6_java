@@ -283,7 +283,7 @@ profile
         |   alloc { allocNum = $alloc.allocChance; }
         |   minLevel { minLevelNum = $minLevel.minLevelValue; }
         |   room { rooms.add($room.roomRecord); }
-        )+;
+        )*;
 
 /*
  * @author Rowan Crowther
@@ -299,5 +299,5 @@ file
         @init {
             $profiles = new ArrayList<>();
         }
-        :   (profile { $profiles.add($profile.record); })+ EOF
+        :   (profile { $profiles.add($profile.record); })* EOF
         ;

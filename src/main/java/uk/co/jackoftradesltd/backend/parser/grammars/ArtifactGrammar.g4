@@ -310,7 +310,7 @@ artifact
         |   slay { slayInit.add($slay.slayLine); }
         |   curse { curseInit.add($curse.curseData); }
         |   desc { descSB.append($desc.descLine); }
-        )+;
+        )*;
 
 // The whole file: one or more records, then the end of the file. An empty file is a syntax error.
 //
@@ -320,5 +320,5 @@ file
         @init {
             $records = new ArrayList<>();
         }
-        :   (artifact { $records.add($artifact.artifactRecord); })+ EOF
+        :   (artifact { $records.add($artifact.artifactRecord); })* EOF
         ;

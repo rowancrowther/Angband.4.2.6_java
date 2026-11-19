@@ -18,6 +18,12 @@
 // Generated from DungeonProfileGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.dungeonprofile;
 
+    import uk.co.jackoftradesltd.backend.parser.dungeonprofile.DungeonProfileParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.dungeonprofile.DungeonProfileParseRecord.*;
+
+    import java.util.List;
+    import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**

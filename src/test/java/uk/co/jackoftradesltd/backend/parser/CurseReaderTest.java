@@ -836,15 +836,18 @@ class CurseReaderTest {
     }
 
     @Test
-    void aRecordWithOnlyANameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+    void aRecordWithOnlyANameLoadsAsInC() throws IOException {
         // parse_curse_name builds a complete record on its own.
-        assertHardError("name-only.txt", "name:bare\n");
+        ParseResult<Curse> result = load("name-only.txt", "name:bare\n");
+
+        assertEquals(1, result.items().size());
+        assertEquals("bare", result.items().get(0).getName());
     }
 
     @Test
-    void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
         // finish_parse_curse copes with an empty chain: curse_max becomes 1, only the blank slot.
-        assertHardError("empty.txt", "");
+        assertTrue(load("empty.txt", "").items().isEmpty());
     }
 
     @Test

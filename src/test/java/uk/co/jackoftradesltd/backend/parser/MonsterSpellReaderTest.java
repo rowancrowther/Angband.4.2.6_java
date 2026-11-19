@@ -622,10 +622,9 @@ class MonsterSpellReaderTest {
     // ---- Where the grammar differs from C (docs/grammar_issues.md) --------
 
     @Test
-    void aRecordWithOnlyANameIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        // C: parse_mon_spell_name needs nothing after it. The grammar's (...)+ wants one directive.
-        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:BLINK\n"));
-
+    void aRecordWithOnlyANameLoadsAsInC() throws IOException {
+        // C: parse_mon_spell_name needs nothing after it, and the grammar now takes it.
+        assertEquals(1, load("name-only.txt", "name:BLINK\n").items().size());
     }
 
     @Test
@@ -932,15 +931,21 @@ class MonsterSpellReaderTest {
 
     /**
      * C refuses an {@code effect-yx:} with a field that holds no digit or with a field missing. The
-     * extra {@code :3} of {@code 1:2:3} is the accepted deviation: C drops it, the lexer refuses
-     * it.
+     * lexer takes {@code ff} as a number, so the assembler refuses it with a
+     * {@link DataFileParseException}, as {@code strtol} finding no digit does. A missing field
+     * is a syntax error. The extra {@code :3} of {@code 1:2:3} is the accepted deviation: C drops
+     * it, the grammar refuses it.
      *
      * <p>Function anEffectYxWithABadOrMissingFieldIsRefusedAsInC coded on 261112, commented in
-     * full on 261112.
+     * full on 261112; flipped to the assembler's exception on 261119.
      */
     @Test
     void anEffectYxWithABadOrMissingFieldIsRefusedAsInC() {
-        for (String yx : new String[]{"ff:1", "1:ff", "1:", "1", "1:2:3"}) {
+        for (String yx : new String[]{"ff:1", "1:ff"}) {
+            assertThrows(DataFileParseException.class,
+                    () -> loadWith("effect:BOLT:ARROW\neffect-yx:" + yx + "\n"), "effect-yx:" + yx);
+        }
+        for (String yx : new String[]{"1:", "1", "1:2:3"}) {
             assertThrows(ParseCancellationException.class,
                     () -> loadWith("effect:BOLT:ARROW\neffect-yx:" + yx + "\n"), "effect-yx:" + yx);
         }
@@ -966,18 +971,19 @@ class MonsterSpellReaderTest {
     }
 
     /**
-     * C refuses a radius that holds no digit. The extra {@code :9} of {@code 5:3:9} is the accepted
-     * deviation: C drops it, the lexer refuses it.
+     * C refuses a radius that holds no digit. The lexer takes {@code ff} as a number, so the
+     * assembler refuses it with a {@link DataFileParseException}. The extra {@code :9} of
+     * {@code 5:3:9} is the accepted deviation: C drops it, the grammar refuses it.
      *
      * <p>Function anEffectRadiusWithNoDigitOrAnExtraFieldIsRefused coded on 261112, commented in
-     * full on 261112.
+     * full on 261112; flipped to the assembler's exception on 261119.
      */
     @Test
     void anEffectRadiusWithNoDigitOrAnExtraFieldIsRefused() {
-        for (String tail : new String[]{"ff:3", "5:3:9"}) {
-            assertThrows(ParseCancellationException.class,
-                    () -> loadWith("effect:BOLT:ARROW:" + tail + "\n"), "effect:BOLT:ARROW:" + tail);
-        }
+        assertThrows(DataFileParseException.class,
+                () -> loadWith("effect:BOLT:ARROW:ff:3\n"), "effect:BOLT:ARROW:ff:3");
+        assertThrows(ParseCancellationException.class,
+                () -> loadWith("effect:BOLT:ARROW:5:3:9\n"), "effect:BOLT:ARROW:5:3:9");
     }
 
     /**
@@ -991,10 +997,30 @@ class MonsterSpellReaderTest {
      */
     @Test
     void anEmptyColonFieldOnAnEffectLineIsRefusedWhereCSkipsIt() {
-        for (String effect : new String[]{"BOLT:ARROW:5:", "BOLT:ARROW:", "BOLT:", "BOLT:ARROW:5::3",
-                "BOLT:ARROW::3", "BOLT::ARROW:5"}) {
-            assertThrows(ParseCancellationException.class, () -> loadWith("effect:" + effect + "\n"),
-                    "effect:" + effect);
+        // A doubled colon between the sub-type and the numbers is the one case the grammar still
+        // refuses; C reads ARROW as the sub-type and 5 as the radius.
+        assertThrows(ParseCancellationException.class, () -> loadWith("effect:BOLT::ARROW:5\n"),
+                "effect:BOLT::ARROW:5");
+    }
+
+    /**
+     * C skips an empty {@code :} field, so a trailing or doubled {@code :} just leaves an optional
+     * field absent. The grammar now does the same for these five, and the values land as C puts
+     * them. {@code effect:BOLT::ARROW:5} is still refused, pinned by
+     * {@link #anEmptyColonFieldOnAnEffectLineIsRefusedWhereCSkipsIt}.
+     *
+     * <p>Function anEmptyColonFieldOnAnEffectLineLoadsAsInC coded on 261119.
+     */
+    @Test
+    void anEmptyColonFieldOnAnEffectLineLoadsAsInC() throws Exception {
+        Object[][] cases = {{"BOLT:ARROW:5:", 5, 0}, {"BOLT:ARROW:", 0, 0}, {"BOLT:", 0, 0},
+                {"BOLT:ARROW:5::3", 5, 3}, {"BOLT:ARROW::3", 3, 0}};
+        for (Object[] c : cases) {
+            ParseResult<MonsterSpellType> result = loadWith("effect:" + c[0] + "\n");
+            List<Object> effects = effectsOf(result.items().get(0));
+            assertEquals(1, effects.size(), "effect:" + c[0] + " effects");
+            assertEquals(c[1], field(effects.getFirst(), "radius"), "effect:" + c[0] + " radius");
+            assertEquals(c[2], field(effects.getFirst(), "otherParameter"), "effect:" + c[0] + " other");
         }
     }
 

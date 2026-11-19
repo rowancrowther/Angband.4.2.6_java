@@ -1146,13 +1146,15 @@ class ArtifactReaderTest {
     // ---- Where the grammar is stricter than C ----------------------------
 
     /**
-     * {@code parse_artifact_name} builds a complete record from the name alone. The grammar wants at
-     * least one directive after it, and at least one record after the header.
+     * {@code parse_artifact_name} builds a complete record from the name alone, and a file of no
+     * records loads nothing. The grammar takes both. A name with no {@code base-object:} still ends
+     * in a {@link DataFileParseException} from the assembler, which is the accepted deviation
+     * (C loads the record with tval 0).
      */
     @Test
-    void aRecordOfOnlyANameOrAFileOfNoRecordsIsASyntaxErrorHereWhereCAcceptsThem() throws IOException {
-        assertHardError("name-only.txt", "name:X\n");
-        assertHardError("no-records.txt", "");
+    void aFileOfNoRecordsLoadsNothingAndANameWithNoBaseObjectIsRefusedByTheAssembler() throws IOException {
+        assertEquals(0, load("no-records.txt", "").items().size());
+        assertThrows(DataFileParseException.class, () -> load("name-only.txt", "name:X\n"));
     }
 
     /**

@@ -209,7 +209,7 @@ magicBlock[List<ClassEquipParseRecord> equipInit]
                     $bookBlock.noOfSpells, $bookBlock.realm, $bookBlock.glyph,
                     $bookBlock.colour, $bookBlock.cost, $bookBlock.commonness,
                     $bookBlock.min, $bookBlock.max, $bookBlock.spells,
-                    $bookBlock.line)); } )+
+                    $bookBlock.line)); } )*
         ;
 
 book
@@ -281,7 +281,7 @@ bookBlock [List<ClassEquipParseRecord> equipInit]
                                             $equip.eopts, $equip.line)); })?
             (spellBlock { $spells.add(new ClassSpellParseRecord($spellBlock.spellName,
                     $spellBlock.level, $spellBlock.mana, $spellBlock.fail, $spellBlock.spellDesc,
-                    $spellBlock.effects, $spellBlock.exper, $spellBlock.line)); })+
+                    $spellBlock.effects, $spellBlock.exper, $spellBlock.line)); })*
         ;
 
 spell
@@ -435,11 +435,11 @@ playerClass
         |   playerFlags { pFlagInit.addAll($playerFlags.pFlags); }
         |   (magicBlock[equipInit] { magicInit = new ClassMagicParseRecord($magicBlock.firstSpell,
                     $magicBlock.spellWeight, $magicBlock.noOfBooks,
-                    $magicBlock.spellBooks, $magicBlock.line); }))+
+                    $magicBlock.spellBooks, $magicBlock.line); }))*
         ;
 
 file
         returns[List<PlayerClassParseRecord> playerClasses]
         :   { $playerClasses = new ArrayList<>(); }
-            (playerClass { $playerClasses.add($playerClass.pClass); })+ EOF
+            (playerClass { $playerClasses.add($playerClass.pClass); })* EOF
         ;

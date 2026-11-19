@@ -452,11 +452,15 @@ class FlavourReaderTest {
 
     /**
      * {@code parse_flavor_kind} just sets the tval and glyph, so C accepts a {@code kind:} with no
-     * flavour under it; the {@code section} rule needs one or more.
+     * flavour under it and loads no flavour for it, and so does the port. The {@code section} rule in
+     * {@code FlavourGrammar.g4} builds its record straight after the {@code kind:} line, before the
+     * block loop, so a bare {@code kind:} gives a record with no flavours rather than {@code null}.
+     * Fixed on 26-11-19; before that the record was built only inside the block loop and the
+     * reader threw a {@link NullPointerException}.
      */
     @Test
-    void aKindWithNoFlavoursIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("emptykind.txt", "kind:ring:=\n");
+    void aKindWithNoFlavoursLoadsAsInC() {
+        assertDoesNotThrow(() -> load("emptykind.txt", "kind:ring:=\n"));
     }
 
     /**
@@ -513,12 +517,12 @@ class FlavourReaderTest {
     }
 
     /**
-     * {@code record-count:0} with no {@code kind:} line: C reads an empty file and ends with an empty
-     * {@code flavors} list; the {@code file} rule needs one or more sections.
+     * An empty file: C ends with an empty {@code flavors} list, and the {@code file} rule now takes
+     * it.
      */
     @Test
-    void anEmptyFileWithAZeroCountIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("empty.txt", "");
+    void anEmptyFileLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("empty.txt", "").items().size());
     }
 
     /**

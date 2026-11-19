@@ -470,16 +470,15 @@ class PitReaderTest {
     }
 
     /**
-     * A record with a {@code name:} and nothing else is a grammar error, and hard errors fail the
-     * whole file closed rather than costing one record.
+     * A record with a {@code name:} and nothing else is a whole pit in C, and the grammar now takes
+     * it, so the file loads both pits.
      */
     @Test
-    void aRecordWithNoDirectivesFailsClosed() throws IOException {
+    void aRecordWithNoDirectivesLoadsAsInC() throws IOException {
         String path = tempFile("name-only.txt",
                 "name:Nothing but a name\n" + GOOD_RECORD + "\n");
 
-        assertThrows(ParseCancellationException.class, () -> new PitReader().parseWithResults(path));
-
+        assertEquals(2, new PitReader().parseWithResults(path).items().size());
     }
 
     /**
@@ -963,14 +962,13 @@ class PitReaderTest {
 
     /**
      * {@code finish_parse_pit} copes with a chain of no records ({@code pit_max} becomes 1 and
-     * {@code pit_info} holds the blank slot), so an empty file loads. The grammar needs one record.
+     * {@code pit_info} holds the blank slot), so an empty file loads, and the grammar now takes it.
      */
     @Test
-    void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
         String path = tempFile("no-records.txt", "");
 
-        assertThrows(ParseCancellationException.class, () -> new PitReader().parseWithResults(path));
-
+        assertEquals(0, new PitReader().parseWithResults(path).items().size());
     }
 
     // ---- Hard errors, which C also treats as fatal -----------------------

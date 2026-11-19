@@ -498,16 +498,14 @@ class DungeonProfileReaderTest {
     }
 
     /**
-     * A {@code name:} line with no directives after it is a grammar error too — the {@code profile}
-     * rule requires at least one — so the whole file fails closed rather than yielding an empty
-     * profile.
+     * A {@code name:} line with no directives after it is a whole profile in C, and the
+     * {@code profile} rule now takes it, so it loads as one profile.
      */
     @Test
-    void aProfileWithNoDirectivesFailsClosed() throws IOException {
+    void aProfileWithNoDirectivesLoadsAsInC() throws IOException {
         String path = tempFile("empty-profile.txt", "name:town\n");
 
-        assertThrows(ParseCancellationException.class, () -> new DungeonProfileReader().parseWithResults(path));
-
+        assertEquals(1, new DungeonProfileReader().parseWithResults(path).items().size());
     }
 
     /**
@@ -742,16 +740,14 @@ class DungeonProfileReaderTest {
     }
 
     /**
-     * C: a file with no profiles is accepted ({@code profile_max} 0). The grammar's
-     * {@code (profile)+} makes it a syntax error here, so the header with nothing after it gives
-     * no profiles and an error.
+     * C: a file with no profiles is accepted ({@code profile_max} 0). The grammar's {@code file}
+     * rule takes it, so the result is an empty list.
      */
     @Test
-    void aFileWithNoProfilesIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
+    void aFileWithNoProfilesLoadsAnEmptyListAsInC() throws IOException {
         String path = tempFile("no-profiles.txt", "");
 
-        assertThrows(ParseCancellationException.class, () -> new DungeonProfileReader().parseWithResults(path));
-
+        assertEquals(0, new DungeonProfileReader().parseWithResults(path).items().size());
     }
 
     /**

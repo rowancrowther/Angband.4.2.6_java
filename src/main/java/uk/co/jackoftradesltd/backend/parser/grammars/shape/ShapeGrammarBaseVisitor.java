@@ -18,6 +18,14 @@
 // Generated from ShapeGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.shape;
 
+    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.shape.ShapeParseRecord;
+
+    import java.util.List;
+    import java.util.Map;
+    import java.util.ArrayList;
+    import java.util.HashMap;
+
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**

@@ -6,7 +6,7 @@ NAME
         :   'name:' -> pushMode(OBJ_FREE_TEXT_MODE)
         ;
 
-TYPE
+TYPE_TAG
         :   'type:' -> pushMode(OBJ_FREE_TEXT_MODE)
         ;
 

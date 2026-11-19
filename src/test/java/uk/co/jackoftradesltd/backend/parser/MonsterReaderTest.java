@@ -962,13 +962,13 @@ class MonsterReaderTest {
     // =====================================================================
 
     @Test
-    void aRecordWithOnlyANameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:Bare\n"));
+    void aRecordWithOnlyANameLoadsAsInC() throws IOException {
+        assertEquals(1, load("name-only.txt", "name:Bare\n").items().size());
     }
 
     @Test
-    void aFileOfOnlyTheHeaderIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
+    void anEmptyFileLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("empty.txt", "").items().size());
     }
 
     @Test

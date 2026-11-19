@@ -93,10 +93,10 @@ msgXtra
 effectXtra
         returns[String effectType, String effectSubtype, String radius, String parameter]
         :   { $effectSubtype = ""; $radius = ""; $parameter = ""; }
-            EFFECT_XTRA t=UCASE { $effectType = $t.getText(); }
-            (COLON s=UCASE { $effectSubtype = $s.getText(); }
-            (COLON r=EFFECT_INTEGER { $radius = $r.getText(); }
-            (COLON p=EFFECT_INTEGER { $parameter = $p.getText(); })?)?)?
+            EFFECT_XTRA t=EFFECT_XTRA_TYPE { $effectType = $t.getText(); }
+            (s=EFFECT_XTRA_SUBTYPE { $effectSubtype = $s.getText(); }
+            (r=EFFECT_XTRA_RADIUS { $radius = $r.getText(); }
+            (p=EFFECT_XTRA_PARM { $parameter = $p.getText(); })?)?)?
         ;
 
 diceXtra
@@ -252,11 +252,11 @@ trapRecord
                     EffectParseRecord updated = last.amendExpression(diceVal, chars, base, op);
                     replaceLast(xtraEffectInit, updated);            
                 }
-            })+
+            })*
         ;
 
 file
         returns[List<TrapParseRecord> traps]
         :   { $traps = new ArrayList<>(); }
-            (trapRecord { $traps.add($trapRecord.trap); })+ EOF
+            (trapRecord { $traps.add($trapRecord.trap); })* EOF
         ;

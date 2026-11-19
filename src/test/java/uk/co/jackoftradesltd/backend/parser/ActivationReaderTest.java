@@ -488,15 +488,15 @@ class ActivationReaderTest {
     }
 
     @Test
-    void aRecordWithOnlyANameIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+    void aRecordWithOnlyANameLoadsAsInC() throws IOException {
         // parse_act_name builds a complete record on its own.
-        assertHardError("name:T\n");
+        assertEquals(1, load("name-only.txt", "name:T\n").items().size());
     }
 
     @Test
-    void aFileWithNoRecordsIsAHardErrorHereWhereCLoadsNothing() throws IOException {
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
         // finish_parse_act copes with an empty chain: act_max becomes 1, only the blank slot.
-        assertHardError("");
+        assertEquals(0, load("no-records.txt", "").items().size());
     }
 
     @Test

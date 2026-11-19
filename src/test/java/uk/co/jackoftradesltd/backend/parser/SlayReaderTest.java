@@ -463,10 +463,8 @@ class SlayReaderTest {
     }
 
     @Test
-    void headerOnlyFileIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        // The file rule needs at least one slay record.
-        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
-
+    void anEmptyFileLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("empty.txt", "").items().size());
     }
 
     // ---- What the lexer lets through, and what it refuses (SlayLexer.g4) ----

@@ -566,14 +566,18 @@ class TrapReaderTest {
 
     /** C: a {@code name:} line alone allocates a zeroed kind, and nothing else is required. */
     @Test
-    void aNameOnlyRecordIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("name-only.txt", "name:a:b\n");
+    void aNameOnlyRecordLoadsAsInC() throws IOException {
+        ParseResult<TrapKind> r = load("name-only.txt", "name:a:b\n");
+
+        assertEquals(1, r.items().size());
+        assertEquals("a", r.items().getFirst().getTrapKindName());
+        assertEquals("b", r.items().getFirst().getDescription());
     }
 
     /** C: a file with no {@code name:} line leaves the list empty and loads without error. */
     @Test
-    void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertHardError("no-records.txt", "");
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
+        assertTrue(load("no-records.txt", "").items().isEmpty());
     }
 
     /** C: the second field of {@code name:} is a {@code str}, which takes the rest of the line. */

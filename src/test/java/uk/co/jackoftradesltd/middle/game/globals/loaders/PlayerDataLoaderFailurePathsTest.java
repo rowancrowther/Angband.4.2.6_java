@@ -186,9 +186,9 @@ class PlayerDataLoaderFailurePathsTest {
     }
 
     /**
-     * The shape grammar needs at least one {@code name:} record, so an empty file is a grammar
-     * error. The {@link ParseCancellationException} passes through the loader unwrapped and the
-     * registry is not touched.
+     * A line that is not a directive is a grammar error. The {@link ParseCancellationException}
+     * passes through the loader unwrapped and the registry is not touched. (An empty file used to
+     * be the example, but the shape grammar now takes one, as C does.)
      *
      * <p>Function syntaxErrorStopsTheLoad coded on 261011, commented in full on 261011, rewritten on
      * 261104 for the removal of the soft-error path.
@@ -196,7 +196,7 @@ class PlayerDataLoaderFailurePathsTest {
     @Test
     @DisplayName("a grammar error stops the load and leaves the registry alone")
     void syntaxErrorStopsTheLoad() throws IOException {
-        Files.writeString(tempDir.resolve("shape.txt"), "");
+        Files.writeString(tempDir.resolve("shape.txt"), "bogus:1\n");
 
         assertThrows(ParseCancellationException.class, PlayerDataLoader::loadPlayerShapes);
 

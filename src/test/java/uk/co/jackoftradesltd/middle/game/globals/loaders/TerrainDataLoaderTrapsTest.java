@@ -17,7 +17,6 @@
 
 package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -50,8 +49,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code finish_parse_trap()} in {@code init.c} numbers records from 0 in file order, and C quits on any bad record.
  * Java quits on a bad record too ({@code TrapAssembler} throws a {@link DataFileParseException}), so the guard now
  * only catches a file whose first record is some other kind, which would hand index 0 to a real kind that
- * {@code lookupTrap} would then skip. Its empty-list half cannot be reached through the reader:
- * {@code TrapGrammar} needs at least one record, so an empty file is a grammar error.
+ * {@code lookupTrap} would then skip. Its empty-list half is reached by an empty file:
+ * {@code TrapGrammar} takes no records as C does, so the reader returns an empty list and the guard throws.
  *
  * <p>Beyond the guard, the tests pin the rest of {@code trap_parser}: a missing file stops the load as
  * {@code parse_file_quit_not_found} quits and leaves the registry alone, a reload replaces the list rather than
@@ -154,13 +153,14 @@ class TerrainDataLoaderTrapsTest {
     }
 
     @Test
-    @DisplayName("a file with no records is a grammar error and stops the load")
+    @DisplayName("a file with no records loads as nothing and the empty-list guard stops the load")
     void emptyFileStopsTheLoad() throws IOException {
         TerrainRegistry.setTrapInfo(new ArrayList<>());
         writeTrapFile();
 
-        assertThrows(ParseCancellationException.class, TerrainDataLoader::loadTraps);
+        RuntimeException e = assertThrows(RuntimeException.class, TerrainDataLoader::loadTraps);
 
+        assertEquals("No traps found", e.getMessage());
         assertTrue(TerrainRegistry.getTrapInfo().isEmpty());
     }
 

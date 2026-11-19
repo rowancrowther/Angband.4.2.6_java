@@ -308,7 +308,7 @@ powerCutoffBlock
                   $levelDirectives.loreColourBaseStr, $levelDirectives.loreColourResistStr,
                   $levelDirectives.loreColourImmuneStr, $levelDirectives.messageVisStr,
                   $levelDirectives.messageInvisStr, $levelDirectives.messageMissStr,
-                  $levelDirectives.messageSaveStr, $levelDirectives.line)); } )+                                                                 
+                  $levelDirectives.messageSaveStr, $levelDirectives.line)); } )*                                                                 
         ;
         
 // The whole file: one or more spell records, then EOF (which forces the parser to consume every
@@ -318,5 +318,5 @@ powerCutoffBlock
 file
         returns[List<MonsterSpellParseRecord> monsterSpells]
         :   { $monsterSpells = new ArrayList<>(); }
-            (monsterSpell { $monsterSpells.add($monsterSpell.spell); } )+ EOF
+            (monsterSpell { $monsterSpells.add($monsterSpell.spell); } )* EOF
         ;

@@ -157,7 +157,7 @@ pitRecord
         |   flagsBan { bannedFlags.addAll($flagsBan.flags); }
         |   innateFreq { innateFreqInit = $innateFreq.innFreq; }
         |   spellReq { spells.addAll($spellReq.spells); }
-        |   spellBan { bannedSpells.addAll($spellBan.spells); })+
+        |   spellBan { bannedSpells.addAll($spellBan.spells); })*
         ;
 
 // The whole file: one or more records, then EOF (which
@@ -165,5 +165,5 @@ pitRecord
 file
         returns[List<PitParseRecord> pits]
         @init { $pits = new ArrayList<>(); }
-        :   (pitRecord { $pits.add($pitRecord.pit); })+ EOF
+        :   (pitRecord { $pits.add($pitRecord.pit); })* EOF
         ;

@@ -264,10 +264,11 @@ class HistoryReaderTest {
     }
 
     @Test
-    void chartWithoutAPhraseIsAHardError() throws IOException {
-        // Every chart line must be followed by its phrase line; a trailing chart is a parse error.
-        assertThrows(ParseCancellationException.class, () -> load("chart-no-phrase.txt", "chart:1:0:50\n"));
+    void aChartWithoutAPhraseLoadsAsInC() throws IOException {
+        // C makes an entry with no text; the record rule takes a chart line alone.
+        ParseResult<PlayerHistoryChart> result = load("chart-no-phrase.txt", "chart:1:0:50\n");
 
+        assertEquals(1, entriesOf(byNumber(result.items(), 1)).size());
     }
 
     // ---- Against the upstream file and C's parser ------------------------
@@ -380,17 +381,22 @@ class HistoryReaderTest {
     // ---- Where the grammar differs from C --------------------------------
 
     @Test
-    void aChartWithNoPhraseBetweenTwoRecordsIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        // C makes an entry with NULL text; the grammar needs a phrase after every chart line.
-        assertThrows(ParseCancellationException.class, () -> load("no-phrase-mid.txt", "chart:1:0:50\n" + record(1, 0, 100, "x")));
+    void aChartWithNoPhraseBetweenTwoRecordsLoadsAsInC() throws IOException {
+        // C makes an entry with no text, then the next chart line makes the next entry.
+        ParseResult<PlayerHistoryChart> result =
+                load("no-phrase-mid.txt", "chart:1:0:50\n" + record(1, 0, 100, "x"));
 
+        assertEquals(2, entriesOf(byNumber(result.items(), 1)).size());
     }
 
     @Test
-    void aSecondPhraseLineIsAHardErrorHereWhereCAppendsItToTheEntry() throws IOException {
-        // parse_history_phrase string_appends onto the newest entry, so C reads 'onetwo'.
-        assertThrows(ParseCancellationException.class, () -> load("two-phrases.txt", "chart:1:0:100\nphrase:one\nphrase:two\n"));
+    void aSecondPhraseLineKeepsTheLastHereWhereCAppendsItToTheEntry() throws IOException {
+        // parse_history_phrase string_appends onto the newest entry, so C reads 'onetwo'. The grammar
+        // now takes the second line, but the record keeps the last phrase only (Stage 7c).
+        ParseResult<PlayerHistoryChart> result =
+                load("two-phrases.txt", "chart:1:0:100\nphrase:one\nphrase:two\n");
 
+        assertEquals("two", entriesOf(byNumber(result.items(), 1)).get(0).getText());
     }
 
     @Test
@@ -470,8 +476,7 @@ class HistoryReaderTest {
     }
 
     @Test
-    void aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
-
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("empty.txt", "").items().size());
     }
 }

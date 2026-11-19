@@ -86,17 +86,18 @@ fixedOrFlavourBlock
 // reader counts and the assembler turns into a FlavourKind.
 section
         returns[FlavourKindParseRecord kinds]
-        :   kind
-            fixedOrFlavourBlock
+        :   kind {$kinds = new FlavourKindParseRecord($kind.tVal, $kind.glyph,
+                                                      new ArrayList<>(),
+                                                      $kind.start.getLine());}
+        (   fixedOrFlavourBlock
             {
-                $kinds = new FlavourKindParseRecord($kind.tVal, $kind.glyph,
-                $fixedOrFlavourBlock.flavours, $kind.start.getLine());
-            }
+                $kinds = $kinds.appendFlavours($fixedOrFlavourBlock.flavours);
+            })*
         ;
 
 // The whole file: one or more kind sections.
 file
         returns[List<FlavourKindParseRecord> sections]
         @init { $sections = new ArrayList<>(); }
-        :   (section { $sections.add($section.kinds); })+ EOF
+        :   (section { $sections.add($section.kinds); })* EOF
         ;

@@ -226,7 +226,7 @@ activation
         |   desc { if (descInit == null) 
                     descInit = $desc.descStr;
                 else
-                    descInit = descInit + $desc.descStr; })+
+                    descInit = descInit + $desc.descStr; })*
         ;
 
 /*
@@ -242,5 +242,5 @@ file
             }
             (activation {
                 $records.add($activation.activationRecord);
-            })+ EOF
+            })* EOF
         ;

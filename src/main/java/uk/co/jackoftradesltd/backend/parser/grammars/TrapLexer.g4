@@ -40,7 +40,7 @@ MSG_BAD
         ;
 
 EFFECT_XTRA
-        :   'effect-xtra:'
+        :   'effect-xtra:' -> mode(EFFECT_XTRA_MODE)
         ;
 
 EFFECT_YX_XTRA
@@ -57,6 +57,58 @@ EXPR_XTRA
 
 MSG_XTRA
         :   'msg-xtra:' -> pushMode(REST_OF_LINE)
+        ;
+
+mode EFFECT_XTRA_MODE;
+
+EFFECT_XTRA_TYPE
+        :   ('A'..'Z' | '_')+
+        ;
+
+EFFECT_XTRA_NL
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+EFFECT_XTRA_COLON
+        :   ':' -> skip, mode(EFFECT_XTRA_SUB_TYPE_MODE)
+        ;
+
+mode EFFECT_XTRA_SUB_TYPE_MODE;
+
+EFFECT_XTRA_SUBTYPE
+        :   ('A'..'Z' | '_')+
+        ;
+
+EFFECT_XTRA_SUBTYPE_NL
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+EFFECT_XTRA_SUBTYPE_COLON
+        :   ':' -> skip, mode(EFFECT_XTRA_RADIUS_MODE)
+        ;
+
+mode EFFECT_XTRA_RADIUS_MODE;
+
+EFFECT_XTRA_RADIUS
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
+        ;
+
+EFFECT_XTRA_RADIUS_NL
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+EFFECT_XTRA_RADIUS_COLON
+        :   ':' -> skip, mode(EFFECT_XTRA_PARM_MODE)
+        ;
+
+mode EFFECT_XTRA_PARM_MODE;
+
+EFFECT_XTRA_PARM
+        :   ('-' | '+')? ('0x' | '0X')? ('0'..'9' | 'a'..'f' | 'A'..'F')+ ~('\r' | '\n' | ':')*
+        ;
+
+EFFECT_XTRA_PARM_NL
+        :   NL -> skip, mode(DEFAULT_MODE)
         ;
 
 mode EXPR_XTRA_MODE;

@@ -205,7 +205,7 @@ egoItem
         |   brand { brandsInit.add($brand.brandStr); }
         |   slay { slaysInit.add($slay.slayStr); }
         |   curse { cursesInit.add($curse.curseData); }
-        |   desc { sb.append($desc.descStr); })+
+        |   desc { sb.append($desc.descStr); })*
         ;
 
 file
@@ -213,5 +213,5 @@ file
         @init {
             $items = new ArrayList<>();
         }
-        :   ( egoItem { $items.add($egoItem.record); })+ EOF
+        :   ( egoItem { $items.add($egoItem.record); })* EOF
         ;

@@ -663,17 +663,10 @@ class EgoItemReaderTest {
         }
     }
 
-    /**
-     * A syntax error is thrown from both entry points: {@code parse} no longer hides it as an
-     * empty list.
-     *
-     * <p>Function bothEntryPointsThrowOnASyntaxError coded on 261104, commented in full on 261104.
-     * It replaces parseHidesASyntaxErrorAsAnEmptyListWhereParseWithResultsReportsIt.
-     */
     @Test
     void bothEntryPointsThrowOnASyntaxError() throws IOException {
-        Path file = tempDir.resolve("name-only.txt");
-        Files.writeString(file, "name:lonely\n");
+        Path file = tempDir.resolve("bad-directive.txt");
+        Files.writeString(file, "bogus:1\n");
 
         assertThrows(ParseCancellationException.class, () -> new EgoItemReader().parse(file.toString()));
         assertThrows(ParseCancellationException.class, () -> new EgoItemReader().parseWithResults(file.toString()));
@@ -1110,19 +1103,17 @@ class EgoItemReaderTest {
     // ---- Where the grammar is stricter than C ------------------------------------
 
     /**
-     * {@code parse_ego_name} builds a complete record from the name alone. The grammar wants at least
-     * one directive after it.
+     * {@code parse_ego_name} builds a complete record from the name alone, and the grammar now takes
+     * it.
      */
     @Test
-    void aRecordOfOnlyANameIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:lonely\n"));
-
+    void aRecordOfOnlyANameLoadsAsInC() throws IOException {
+        assertEquals(1, load("name-only.txt", "name:lonely\n").items().size());
     }
 
     @Test
-    void aFileWithNoRecordsIsASyntaxErrorHereWhereCLoadsNothing() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("no-records.txt", ""));
-
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("no-records.txt", "").items().size());
     }
 
     /**

@@ -219,5 +219,5 @@ shape
 file
         returns[List<ShapeParseRecord> shapes]
         :   { $shapes = new ArrayList<>(); }
-            (shape { $shapes.add($shape.shapeInit); })+ EOF
+            (shape { $shapes.add($shape.shapeInit); })* EOF
         ;

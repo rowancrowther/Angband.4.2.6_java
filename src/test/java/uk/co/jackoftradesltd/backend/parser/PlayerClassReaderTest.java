@@ -782,16 +782,14 @@ class PlayerClassReaderTest {
 
     /** C: a {@code name:} line alone allocates a zeroed class, and nothing else is required. */
     @Test
-    void aNameOnlyClassIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:Empty\n"));
-
+    void aNameOnlyClassLoadsAsInC() throws IOException {
+        assertEquals(1, load("name-only.txt", "name:Empty\n").items().size());
     }
 
     /** C: a file with no {@code name:} line leaves {@code classes} NULL and loads without error. */
     @Test
-    void aHeaderWithNoClassesIsAHardErrorHereWhereCAcceptsAnEmptyFile() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("no-classes.txt", ""));
-
+    void aFileWithNoClassesLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("no-classes.txt", "").items().size());
     }
 
     /** C: {@code strtok(flags, " |")} splits on a space as well as a bar. */
@@ -834,16 +832,15 @@ class PlayerClassReaderTest {
 
     /** C: a class may have a {@code magic:} line declaring books and then no {@code book:} lines. */
     @Test
-    void aMagicLineWithNoBookIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("magic-no-book.txt", "name:X\nmagic:1:100:1\ntitle:Y\n"));
-
+    void aMagicLineWithNoBookLoadsAsInC() throws IOException {
+        assertEquals(1, load("magic-no-book.txt", "name:X\nmagic:1:100:1\ntitle:Y\n").items().size());
     }
 
     /** C: a book declaring {@code spells} 0 needs no {@code spell:} lines. */
     @Test
-    void aBookWithNoSpellLineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("book-no-spell.txt", "name:X\nmagic:1:100:1\nbook:magic book:town:[B]:0:arcane\n"));
-
+    void aBookWithNoSpellLineLoadsAsInC() throws IOException {
+        assertEquals(1, load("book-no-spell.txt",
+                "name:X\nmagic:1:100:1\nbook:magic book:town:[B]:0:arcane\n").items().size());
     }
 
     /**

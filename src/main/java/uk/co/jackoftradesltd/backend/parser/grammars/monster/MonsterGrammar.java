@@ -15,7 +15,6 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-
 // Generated from MonsterGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.monster;
 
@@ -2391,10 +2390,10 @@ public class MonsterGrammar extends Parser {
 			setState(268);
 			((MonsterContext)_localctx).name = name();
 			 nameInit = ((MonsterContext)_localctx).name.nameStr; line = _localctx.start.getLine(); 
-			setState(366); 
+			setState(368);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 17179869180L) != 0)) {
 				{
 				setState(366);
 				_errHandler.sync(this);
@@ -2636,10 +2635,10 @@ public class MonsterGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(368); 
+				setState(370);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 17179869180L) != 0) );
+			}
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -2704,22 +2703,22 @@ public class MonsterGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(373); 
+			setState(376);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==NAME) {
 				{
 				{
-				setState(370);
+				setState(371);
 				((FileContext)_localctx).monster = monster();
 				 _localctx.monsters.add(((FileContext)_localctx).monster.monsterRecord); 
 				}
 				}
-				setState(375); 
+				setState(378);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==NAME );
-			setState(377);
+			}
+			setState(379);
 			match(EOF);
 			}
 		}
@@ -2735,7 +2734,7 @@ public class MonsterGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001B\u017c\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001B\u017e\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002"+
@@ -2786,11 +2785,11 @@ public class MonsterGrammar extends Parser {
 		"!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001"+
 		"!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001"+
 		"!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001"+
-		"!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0004!\u016f"+
-		"\b!\u000b!\f!\u0170\u0001\"\u0001\"\u0001\"\u0004\"\u0176\b\"\u000b\""+
-		"\f\"\u0177\u0001\"\u0001\"\u0001\"\u0000\u0000#\u0000\u0002\u0004\u0006"+
-		"\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a\u001c\u001e \"$&(*,."+
-		"02468:<>@BD\u0000\u0000\u0180\u0000F\u0001\u0000\u0000\u0000\u0002J\u0001"+
+		"!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0001!\u0005!\u016f"+
+		"\b!\n!\f!\u0172\t!\u0001\"\u0001\"\u0001\"\u0005\"\u0177\b\"\n\"\f\"\u017a"+
+		"\t\"\u0001\"\u0001\"\u0001\"\u0000\u0000#\u0000\u0002\u0004\u0006\b\n"+
+		"\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a\u001c\u001e \"$&(*,.0246"+
+		"8:<>@BD\u0000\u0000\u0182\u0000F\u0001\u0000\u0000\u0000\u0002J\u0001"+
 		"\u0000\u0000\u0000\u0004N\u0001\u0000\u0000\u0000\u0006R\u0001\u0000\u0000"+
 		"\u0000\bV\u0001\u0000\u0000\u0000\nZ\u0001\u0000\u0000\u0000\f^\u0001"+
 		"\u0000\u0000\u0000\u000eb\u0001\u0000\u0000\u0000\u0010f\u0001\u0000\u0000"+
@@ -2805,7 +2804,7 @@ public class MonsterGrammar extends Parser {
 		"6\u00db\u0001\u0000\u0000\u00008\u00df\u0001\u0000\u0000\u0000:\u00e7"+
 		"\u0001\u0000\u0000\u0000<\u00ee\u0001\u0000\u0000\u0000>\u00f4\u0001\u0000"+
 		"\u0000\u0000@\u0100\u0001\u0000\u0000\u0000B\u010c\u0001\u0000\u0000\u0000"+
-		"D\u0175\u0001\u0000\u0000\u0000FG\u0005\u0001\u0000\u0000GH\u0005(\u0000"+
+		"D\u0178\u0001\u0000\u0000\u0000FG\u0005\u0001\u0000\u0000GH\u0005(\u0000"+
 		"\u0000HI\u0006\u0000\uffff\uffff\u0000I\u0001\u0001\u0000\u0000\u0000"+
 		"JK\u0005\u0002\u0000\u0000KL\u0005(\u0000\u0000LM\u0006\u0001\uffff\uffff"+
 		"\u0000M\u0003\u0001\u0000\u0000\u0000NO\u0005\u0003\u0000\u0000OP\u0005"+
@@ -2897,7 +2896,7 @@ public class MonsterGrammar extends Parser {
 		" \uffff\uffff\u0000\u0107\u0108\u00056\u0000\u0000\u0108\u0109\u00057"+
 		"\u0000\u0000\u0109\u010b\u0006 \uffff\uffff\u0000\u010a\u0107\u0001\u0000"+
 		"\u0000\u0000\u010a\u010b\u0001\u0000\u0000\u0000\u010bA\u0001\u0000\u0000"+
-		"\u0000\u010c\u010d\u0003\u0000\u0000\u0000\u010d\u016e\u0006!\uffff\uffff"+
+		"\u0000\u010c\u010d\u0003\u0000\u0000\u0000\u010d\u0170\u0006!\uffff\uffff"+
 		"\u0000\u010e\u010f\u0003\u0002\u0001\u0000\u010f\u0110\u0006!\uffff\uffff"+
 		"\u0000\u0110\u016f\u0001\u0000\u0000\u0000\u0111\u0112\u0003\u0004\u0002"+
 		"\u0000\u0112\u0113\u0006!\uffff\uffff\u0000\u0113\u016f\u0001\u0000\u0000"+
@@ -2960,14 +2959,15 @@ public class MonsterGrammar extends Parser {
 		"\u0001\u0000\u0000\u0000\u016e\u015c\u0001\u0000\u0000\u0000\u016e\u015f"+
 		"\u0001\u0000\u0000\u0000\u016e\u0162\u0001\u0000\u0000\u0000\u016e\u0165"+
 		"\u0001\u0000\u0000\u0000\u016e\u0168\u0001\u0000\u0000\u0000\u016e\u016b"+
-		"\u0001\u0000\u0000\u0000\u016f\u0170\u0001\u0000\u0000\u0000\u0170\u016e"+
+		"\u0001\u0000\u0000\u0000\u016f\u0172\u0001\u0000\u0000\u0000\u0170\u016e"+
 		"\u0001\u0000\u0000\u0000\u0170\u0171\u0001\u0000\u0000\u0000\u0171C\u0001"+
-		"\u0000\u0000\u0000\u0172\u0173\u0003B!\u0000\u0173\u0174\u0006\"\uffff"+
-		"\uffff\u0000\u0174\u0176\u0001\u0000\u0000\u0000\u0175\u0172\u0001\u0000"+
-		"\u0000\u0000\u0176\u0177\u0001\u0000\u0000\u0000\u0177\u0175\u0001\u0000"+
-		"\u0000\u0000\u0177\u0178\u0001\u0000\u0000\u0000\u0178\u0179\u0001\u0000"+
-		"\u0000\u0000\u0179\u017a\u0005\u0000\u0000\u0001\u017aE\u0001\u0000\u0000"+
-		"\u0000\n\u0095\u0097\u00a1\u00ac\u00c3\u00fe\u010a\u016e\u0170\u0177";
+		"\u0000\u0000\u0000\u0172\u0170\u0001\u0000\u0000\u0000\u0173\u0174\u0003"+
+		"B!\u0000\u0174\u0175\u0006\"\uffff\uffff\u0000\u0175\u0177\u0001\u0000"+
+		"\u0000\u0000\u0176\u0173\u0001\u0000\u0000\u0000\u0177\u017a\u0001\u0000"+
+		"\u0000\u0000\u0178\u0176\u0001\u0000\u0000\u0000\u0178\u0179\u0001\u0000"+
+		"\u0000\u0000\u0179\u017b\u0001\u0000\u0000\u0000\u017a\u0178\u0001\u0000"+
+		"\u0000\u0000\u017b\u017c\u0005\u0000\u0000\u0001\u017cE\u0001\u0000\u0000"+
+		"\u0000\n\u0095\u0097\u00a1\u00ac\u00c3\u00fe\u010a\u016e\u0170\u0178";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

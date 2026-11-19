@@ -14,6 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+
 // Generated from ArtifactGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.artifact;
 
@@ -1394,10 +1395,10 @@ public class ArtifactGrammar extends Parser {
 			setState(150);
 			((ArtifactContext)_localctx).name = name();
 			 line = ((ArtifactContext)_localctx).name.line; nameInit = ((ArtifactContext)_localctx).name.nameStr; 
-			setState(203); 
+			setState(205);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 2359292L) != 0)) {
 				{
 				setState(203);
 				_errHandler.sync(this);
@@ -1533,10 +1534,10 @@ public class ArtifactGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(205); 
+				setState(207);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 2359292L) != 0) );
+			}
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -1600,22 +1601,22 @@ public class ArtifactGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(210); 
+			setState(213);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==NAME) {
 				{
 				{
-				setState(207);
+				setState(208);
 				((FileContext)_localctx).artifact = artifact();
 				 _localctx.records.add(((FileContext)_localctx).artifact.artifactRecord); 
 				}
 				}
-				setState(212); 
+				setState(215);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==NAME );
-			setState(214);
+			}
+			setState(216);
 			match(EOF);
 			}
 		}
@@ -1631,7 +1632,7 @@ public class ArtifactGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u00018\u00d9\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u00018\u00db\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002"+
@@ -1661,11 +1662,11 @@ public class ArtifactGrammar extends Parser {
 		"\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001"+
 		"\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001"+
 		"\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001"+
-		"\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0004\u0012\u00cc"+
-		"\b\u0012\u000b\u0012\f\u0012\u00cd\u0001\u0013\u0001\u0013\u0001\u0013"+
-		"\u0004\u0013\u00d3\b\u0013\u000b\u0013\f\u0013\u00d4\u0001\u0013\u0001"+
+		"\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0005\u0012\u00cc"+
+		"\b\u0012\n\u0012\f\u0012\u00cf\t\u0012\u0001\u0013\u0001\u0013\u0001\u0013"+
+		"\u0005\u0013\u00d4\b\u0013\n\u0013\f\u0013\u00d7\t\u0013\u0001\u0013\u0001"+
 		"\u0013\u0001\u0013\u0000\u0000\u0014\u0000\u0002\u0004\u0006\b\n\f\u000e"+
-		"\u0010\u0012\u0014\u0016\u0018\u001a\u001c\u001e \"$&\u0000\u0000\u00da"+
+		"\u0010\u0012\u0014\u0016\u0018\u001a\u001c\u001e \"$&\u0000\u0000\u00dc"+
 		"\u0000(\u0001\u0000\u0000\u0000\u0002,\u0001\u0000\u0000\u0000\u00042"+
 		"\u0001\u0000\u0000\u0000\u00068\u0001\u0000\u0000\u0000\b<\u0001\u0000"+
 		"\u0000\u0000\n@\u0001\u0000\u0000\u0000\fD\u0001\u0000\u0000\u0000\u000e"+
@@ -1674,7 +1675,7 @@ public class ArtifactGrammar extends Parser {
 		"\u0000\u0018p\u0001\u0000\u0000\u0000\u001at\u0001\u0000\u0000\u0000\u001c"+
 		"\u0084\u0001\u0000\u0000\u0000\u001e\u0088\u0001\u0000\u0000\u0000 \u008c"+
 		"\u0001\u0000\u0000\u0000\"\u0092\u0001\u0000\u0000\u0000$\u0096\u0001"+
-		"\u0000\u0000\u0000&\u00d2\u0001\u0000\u0000\u0000()\u0005\u0001\u0000"+
+		"\u0000\u0000\u0000&\u00d5\u0001\u0000\u0000\u0000()\u0005\u0001\u0000"+
 		"\u0000)*\u0005$\u0000\u0000*+\u0006\u0000\uffff\uffff\u0000+\u0001\u0001"+
 		"\u0000\u0000\u0000,-\u0005\u0002\u0000\u0000-.\u0005\'\u0000\u0000./\u0005"+
 		"(\u0000\u0000/0\u0005\'\u0000\u000001\u0006\u0001\uffff\uffff\u00001\u0003"+
@@ -1719,7 +1720,7 @@ public class ArtifactGrammar extends Parser {
 		"\u0005&\u0000\u0000\u0090\u0091\u0006\u0010\uffff\uffff\u0000\u0091!\u0001"+
 		"\u0000\u0000\u0000\u0092\u0093\u0005\u0011\u0000\u0000\u0093\u0094\u0005"+
 		"$\u0000\u0000\u0094\u0095\u0006\u0011\uffff\uffff\u0000\u0095#\u0001\u0000"+
-		"\u0000\u0000\u0096\u0097\u0003\u0000\u0000\u0000\u0097\u00cb\u0006\u0012"+
+		"\u0000\u0000\u0096\u0097\u0003\u0000\u0000\u0000\u0097\u00cd\u0006\u0012"+
 		"\uffff\uffff\u0000\u0098\u0099\u0003\u0002\u0001\u0000\u0099\u009a\u0006"+
 		"\u0012\uffff\uffff\u0000\u009a\u00cc\u0001\u0000\u0000\u0000\u009b\u009c"+
 		"\u0003\u0004\u0002\u0000\u009c\u009d\u0006\u0012\uffff\uffff\u0000\u009d"+
@@ -1754,15 +1755,16 @@ public class ArtifactGrammar extends Parser {
 		"\u0001\u0000\u0000\u0000\u00cb\u00b6\u0001\u0000\u0000\u0000\u00cb\u00b9"+
 		"\u0001\u0000\u0000\u0000\u00cb\u00bc\u0001\u0000\u0000\u0000\u00cb\u00bf"+
 		"\u0001\u0000\u0000\u0000\u00cb\u00c2\u0001\u0000\u0000\u0000\u00cb\u00c5"+
-		"\u0001\u0000\u0000\u0000\u00cb\u00c8\u0001\u0000\u0000\u0000\u00cc\u00cd"+
+		"\u0001\u0000\u0000\u0000\u00cb\u00c8\u0001\u0000\u0000\u0000\u00cc\u00cf"+
 		"\u0001\u0000\u0000\u0000\u00cd\u00cb\u0001\u0000\u0000\u0000\u00cd\u00ce"+
-		"\u0001\u0000\u0000\u0000\u00ce%\u0001\u0000\u0000\u0000\u00cf\u00d0\u0003"+
-		"$\u0012\u0000\u00d0\u00d1\u0006\u0013\uffff\uffff\u0000\u00d1\u00d3\u0001"+
-		"\u0000\u0000\u0000\u00d2\u00cf\u0001\u0000\u0000\u0000\u00d3\u00d4\u0001"+
-		"\u0000\u0000\u0000\u00d4\u00d2\u0001\u0000\u0000\u0000\u00d4\u00d5\u0001"+
-		"\u0000\u0000\u0000\u00d5\u00d6\u0001\u0000\u0000\u0000\u00d6\u00d7\u0005"+
-		"\u0000\u0000\u0001\u00d7\'\u0001\u0000\u0000\u0000\u0007bf~\u0082\u00cb"+
-		"\u00cd\u00d4";
+		"\u0001\u0000\u0000\u0000\u00ce%\u0001\u0000\u0000\u0000\u00cf\u00cd\u0001"+
+		"\u0000\u0000\u0000\u00d0\u00d1\u0003$\u0012\u0000\u00d1\u00d2\u0006\u0013"+
+		"\uffff\uffff\u0000\u00d2\u00d4\u0001\u0000\u0000\u0000\u00d3\u00d0\u0001"+
+		"\u0000\u0000\u0000\u00d4\u00d7\u0001\u0000\u0000\u0000\u00d5\u00d3\u0001"+
+		"\u0000\u0000\u0000\u00d5\u00d6\u0001\u0000\u0000\u0000\u00d6\u00d8\u0001"+
+		"\u0000\u0000\u0000\u00d7\u00d5\u0001\u0000\u0000\u0000\u00d8\u00d9\u0005"+
+		"\u0000\u0000\u0001\u00d9\'\u0001\u0000\u0000\u0000\u0007bf~\u0082\u00cb"+
+		"\u00cd\u00d5";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

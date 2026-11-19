@@ -975,10 +975,10 @@ public class PitGrammar extends Parser {
 			setState(106);
 			((PitRecordContext)_localctx).name = name();
 			 nameInit = ((PitRecordContext)_localctx).name.nameStr; line = ((PitRecordContext)_localctx).name.line; 
-			setState(141); 
+			setState(143);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 12284L) != 0)) {
 				{
 				setState(141);
 				_errHandler.sync(this);
@@ -1065,10 +1065,10 @@ public class PitGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(143); 
+				setState(145);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 12284L) != 0) );
+			}
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -1127,22 +1127,22 @@ public class PitGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(148); 
+			setState(151);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==NAME) {
 				{
 				{
-				setState(145);
+				setState(146);
 				((FileContext)_localctx).pitRecord = pitRecord();
 				 _localctx.pits.add(((FileContext)_localctx).pitRecord.pit); 
 				}
 				}
-				setState(150); 
+				setState(153);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==NAME );
-			setState(152);
+			}
+			setState(154);
 			match(EOF);
 			}
 		}
@@ -1158,7 +1158,7 @@ public class PitGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u001e\u009b\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u001e\u009d\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1177,15 +1177,15 @@ public class PitGrammar extends Parser {
 		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
 		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
 		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
-		"\f\u0001\f\u0004\f\u008e\b\f\u000b\f\f\f\u008f\u0001\r\u0001\r\u0001\r"+
-		"\u0004\r\u0095\b\r\u000b\r\f\r\u0096\u0001\r\u0001\r\u0001\r\u0000\u0000"+
+		"\f\u0001\f\u0005\f\u008e\b\f\n\f\f\f\u0091\t\f\u0001\r\u0001\r\u0001\r"+
+		"\u0005\r\u0096\b\r\n\r\f\r\u0099\t\r\u0001\r\u0001\r\u0001\r\u0000\u0000"+
 		"\u000e\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018"+
-		"\u001a\u0000\u0000\u009c\u0000\u001c\u0001\u0000\u0000\u0000\u0002 \u0001"+
+		"\u001a\u0000\u0000\u009e\u0000\u001c\u0001\u0000\u0000\u0000\u0002 \u0001"+
 		"\u0000\u0000\u0000\u0004$\u0001\u0000\u0000\u0000\u0006*\u0001\u0000\u0000"+
 		"\u0000\b.\u0001\u0000\u0000\u0000\n2\u0001\u0000\u0000\u0000\f6\u0001"+
 		"\u0000\u0000\u0000\u000eA\u0001\u0000\u0000\u0000\u0010L\u0001\u0000\u0000"+
 		"\u0000\u0012P\u0001\u0000\u0000\u0000\u0014[\u0001\u0000\u0000\u0000\u0016"+
-		"f\u0001\u0000\u0000\u0000\u0018j\u0001\u0000\u0000\u0000\u001a\u0094\u0001"+
+		"f\u0001\u0000\u0000\u0000\u0018j\u0001\u0000\u0000\u0000\u001a\u0097\u0001"+
 		"\u0000\u0000\u0000\u001c\u001d\u0005\u0001\u0000\u0000\u001d\u001e\u0005"+
 		"\u0016\u0000\u0000\u001e\u001f\u0006\u0000\uffff\uffff\u0000\u001f\u0001"+
 		"\u0001\u0000\u0000\u0000 !\u0005\u0002\u0000\u0000!\"\u0005\f\u0000\u0000"+
@@ -1218,7 +1218,7 @@ public class PitGrammar extends Parser {
 		"\u0000ca\u0001\u0000\u0000\u0000cd\u0001\u0000\u0000\u0000d\u0015\u0001"+
 		"\u0000\u0000\u0000ec\u0001\u0000\u0000\u0000fg\u0005\r\u0000\u0000gh\u0005"+
 		"\u0016\u0000\u0000hi\u0006\u000b\uffff\uffff\u0000i\u0017\u0001\u0000"+
-		"\u0000\u0000jk\u0003\u0000\u0000\u0000k\u008d\u0006\f\uffff\uffff\u0000"+
+		"\u0000\u0000jk\u0003\u0000\u0000\u0000k\u008f\u0006\f\uffff\uffff\u0000"+
 		"lm\u0003\u0002\u0001\u0000mn\u0006\f\uffff\uffff\u0000n\u008e\u0001\u0000"+
 		"\u0000\u0000op\u0003\u0004\u0002\u0000pq\u0006\f\uffff\uffff\u0000q\u008e"+
 		"\u0001\u0000\u0000\u0000rs\u0003\u0006\u0003\u0000st\u0006\f\uffff\uffff"+
@@ -1238,14 +1238,15 @@ public class PitGrammar extends Parser {
 		"\u008dx\u0001\u0000\u0000\u0000\u008d{\u0001\u0000\u0000\u0000\u008d~"+
 		"\u0001\u0000\u0000\u0000\u008d\u0081\u0001\u0000\u0000\u0000\u008d\u0084"+
 		"\u0001\u0000\u0000\u0000\u008d\u0087\u0001\u0000\u0000\u0000\u008d\u008a"+
-		"\u0001\u0000\u0000\u0000\u008e\u008f\u0001\u0000\u0000\u0000\u008f\u008d"+
+		"\u0001\u0000\u0000\u0000\u008e\u0091\u0001\u0000\u0000\u0000\u008f\u008d"+
 		"\u0001\u0000\u0000\u0000\u008f\u0090\u0001\u0000\u0000\u0000\u0090\u0019"+
-		"\u0001\u0000\u0000\u0000\u0091\u0092\u0003\u0018\f\u0000\u0092\u0093\u0006"+
-		"\r\uffff\uffff\u0000\u0093\u0095\u0001\u0000\u0000\u0000\u0094\u0091\u0001"+
-		"\u0000\u0000\u0000\u0095\u0096\u0001\u0000\u0000\u0000\u0096\u0094\u0001"+
-		"\u0000\u0000\u0000\u0096\u0097\u0001\u0000\u0000\u0000\u0097\u0098\u0001"+
-		"\u0000\u0000\u0000\u0098\u0099\u0005\u0000\u0000\u0001\u0099\u001b\u0001"+
-		"\u0000\u0000\u0000\u0007>IXc\u008d\u008f\u0096";
+		"\u0001\u0000\u0000\u0000\u0091\u008f\u0001\u0000\u0000\u0000\u0092\u0093"+
+		"\u0003\u0018\f\u0000\u0093\u0094\u0006\r\uffff\uffff\u0000\u0094\u0096"+
+		"\u0001\u0000\u0000\u0000\u0095\u0092\u0001\u0000\u0000\u0000\u0096\u0099"+
+		"\u0001\u0000\u0000\u0000\u0097\u0095\u0001\u0000\u0000\u0000\u0097\u0098"+
+		"\u0001\u0000\u0000\u0000\u0098\u009a\u0001\u0000\u0000\u0000\u0099\u0097"+
+		"\u0001\u0000\u0000\u0000\u009a\u009b\u0005\u0000\u0000\u0001\u009b\u001b"+
+		"\u0001\u0000\u0000\u0000\u0007>IXc\u008d\u008f\u0097";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

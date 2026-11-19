@@ -1274,12 +1274,23 @@ class ItemObjectReaderTest {
 
     /**
      * {@code parse_object_name} needs nothing after it, so C accepts a record of a name alone. The
-     * grammar wants at least one directive, so it is a syntax error here: no items.
+     * grammar takes {@code *} on the directive loop, so one kind named {@code bare} loads.
      */
     @Test
-    void aRecordWithOnlyANameLineIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:bare\n"));
+    void aRecordWithOnlyANameLoadsAsInC() throws IOException {
+        ParseResult<ObjectKind> result = load("name-only.txt", "name:bare\n");
 
+        assertEquals(1, result.items().size());
+        assertEquals("bare", result.items().get(0).getName());
+    }
+
+    /**
+     * C loads a file with no records and reports nothing, so the file's record loop takes {@code *}
+     * and an empty file gives no kinds.
+     */
+    @Test
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
+        assertTrue(load("empty.txt", "").items().isEmpty());
     }
 
     /**

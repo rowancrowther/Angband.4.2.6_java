@@ -234,8 +234,11 @@ public class HistoryGrammar extends Parser {
 		public ChartContext chart() {
 			return getRuleContext(ChartContext.class,0);
 		}
-		public PhraseContext phrase() {
-			return getRuleContext(PhraseContext.class,0);
+		public List<PhraseContext> phrase() {
+			return getRuleContexts(PhraseContext.class);
+		}
+		public PhraseContext phrase(int i) {
+			return getRuleContext(PhraseContext.class,i);
 		}
 		public RecordContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -261,6 +264,7 @@ public class HistoryGrammar extends Parser {
 		            String phraseInit = "";
 		            int lineInit = 0;
 		        
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
@@ -272,9 +276,21 @@ public class HistoryGrammar extends Parser {
 			                percentInit = ((RecordContext)_localctx).chart.percent;
 			                lineInit    = ((RecordContext)_localctx).chart.line;
 			            
-			setState(22);
-			((RecordContext)_localctx).phrase = phrase();
-			 phraseInit = ((RecordContext)_localctx).phrase.phraseStr; 
+			setState(27);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while (_la==PHRASE) {
+				{
+				{
+				setState(22);
+				((RecordContext)_localctx).phrase = phrase();
+				 phraseInit = ((RecordContext)_localctx).phrase.phraseStr; 
+				}
+				}
+				setState(29);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -329,22 +345,22 @@ public class HistoryGrammar extends Parser {
 
 			            { ((FileContext)_localctx).records =  new ArrayList<>(); }
 			        
-			setState(29); 
+			setState(36);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==CHART) {
 				{
 				{
-				setState(26);
+				setState(31);
 				((FileContext)_localctx).record = record();
 				 _localctx.records.add(((FileContext)_localctx).record.hist); 
 				}
 				}
-				setState(31); 
+				setState(38);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==CHART );
-			setState(33);
+			}
+			setState(39);
 			match(EOF);
 			}
 		}
@@ -360,29 +376,33 @@ public class HistoryGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\t$\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\t*\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
 		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001"+
-		"\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001"+
-		"\u0003\u0004\u0003\u001e\b\u0003\u000b\u0003\f\u0003\u001f\u0001\u0003"+
-		"\u0001\u0003\u0001\u0003\u0000\u0000\u0004\u0000\u0002\u0004\u0006\u0000"+
-		"\u0000 \u0000\b\u0001\u0000\u0000\u0000\u0002\u0010\u0001\u0000\u0000"+
-		"\u0000\u0004\u0014\u0001\u0000\u0000\u0000\u0006\u0019\u0001\u0000\u0000"+
-		"\u0000\b\t\u0005\u0001\u0000\u0000\t\n\u0005\u0003\u0000\u0000\n\u000b"+
-		"\u0005\u0004\u0000\u0000\u000b\f\u0005\u0003\u0000\u0000\f\r\u0005\u0004"+
-		"\u0000\u0000\r\u000e\u0005\u0003\u0000\u0000\u000e\u000f\u0006\u0000\uffff"+
-		"\uffff\u0000\u000f\u0001\u0001\u0000\u0000\u0000\u0010\u0011\u0005\u0002"+
-		"\u0000\u0000\u0011\u0012\u0005\b\u0000\u0000\u0012\u0013\u0006\u0001\uffff"+
-		"\uffff\u0000\u0013\u0003\u0001\u0000\u0000\u0000\u0014\u0015\u0003\u0000"+
-		"\u0000\u0000\u0015\u0016\u0006\u0002\uffff\uffff\u0000\u0016\u0017\u0003"+
-		"\u0002\u0001\u0000\u0017\u0018\u0006\u0002\uffff\uffff\u0000\u0018\u0005"+
-		"\u0001\u0000\u0000\u0000\u0019\u001d\u0006\u0003\uffff\uffff\u0000\u001a"+
-		"\u001b\u0003\u0004\u0002\u0000\u001b\u001c\u0006\u0003\uffff\uffff\u0000"+
-		"\u001c\u001e\u0001\u0000\u0000\u0000\u001d\u001a\u0001\u0000\u0000\u0000"+
-		"\u001e\u001f\u0001\u0000\u0000\u0000\u001f\u001d\u0001\u0000\u0000\u0000"+
-		"\u001f \u0001\u0000\u0000\u0000 !\u0001\u0000\u0000\u0000!\"\u0005\u0000"+
-		"\u0000\u0001\"\u0007\u0001\u0000\u0000\u0000\u0001\u001f";
+		"\u0002\u0001\u0002\u0001\u0002\u0005\u0002\u001a\b\u0002\n\u0002\f\u0002"+
+		"\u001d\t\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0005\u0003"+
+		"#\b\u0003\n\u0003\f\u0003&\t\u0003\u0001\u0003\u0001\u0003\u0001\u0003"+
+		"\u0000\u0000\u0004\u0000\u0002\u0004\u0006\u0000\u0000\'\u0000\b\u0001"+
+		"\u0000\u0000\u0000\u0002\u0010\u0001\u0000\u0000\u0000\u0004\u0014\u0001"+
+		"\u0000\u0000\u0000\u0006\u001e\u0001\u0000\u0000\u0000\b\t\u0005\u0001"+
+		"\u0000\u0000\t\n\u0005\u0003\u0000\u0000\n\u000b\u0005\u0004\u0000\u0000"+
+		"\u000b\f\u0005\u0003\u0000\u0000\f\r\u0005\u0004\u0000\u0000\r\u000e\u0005"+
+		"\u0003\u0000\u0000\u000e\u000f\u0006\u0000\uffff\uffff\u0000\u000f\u0001"+
+		"\u0001\u0000\u0000\u0000\u0010\u0011\u0005\u0002\u0000\u0000\u0011\u0012"+
+		"\u0005\b\u0000\u0000\u0012\u0013\u0006\u0001\uffff\uffff\u0000\u0013\u0003"+
+		"\u0001\u0000\u0000\u0000\u0014\u0015\u0003\u0000\u0000\u0000\u0015\u001b"+
+		"\u0006\u0002\uffff\uffff\u0000\u0016\u0017\u0003\u0002\u0001\u0000\u0017"+
+		"\u0018\u0006\u0002\uffff\uffff\u0000\u0018\u001a\u0001\u0000\u0000\u0000"+
+		"\u0019\u0016\u0001\u0000\u0000\u0000\u001a\u001d\u0001\u0000\u0000\u0000"+
+		"\u001b\u0019\u0001\u0000\u0000\u0000\u001b\u001c\u0001\u0000\u0000\u0000"+
+		"\u001c\u0005\u0001\u0000\u0000\u0000\u001d\u001b\u0001\u0000\u0000\u0000"+
+		"\u001e$\u0006\u0003\uffff\uffff\u0000\u001f \u0003\u0004\u0002\u0000 "+
+		"!\u0006\u0003\uffff\uffff\u0000!#\u0001\u0000\u0000\u0000\"\u001f\u0001"+
+		"\u0000\u0000\u0000#&\u0001\u0000\u0000\u0000$\"\u0001\u0000\u0000\u0000"+
+		"$%\u0001\u0000\u0000\u0000%\'\u0001\u0000\u0000\u0000&$\u0001\u0000\u0000"+
+		"\u0000\'(\u0005\u0000\u0000\u0001(\u0007\u0001\u0000\u0000\u0000\u0002"+
+		"\u001b$";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

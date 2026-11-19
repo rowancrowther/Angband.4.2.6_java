@@ -30,7 +30,7 @@ name
 
 curseType
         returns[String typeStr]
-        :   TYPE FREE_TEXT { $typeStr = $FREE_TEXT.getText(); }
+        :   TYPE_TAG FREE_TEXT { $typeStr = $FREE_TEXT.getText(); }
         ;
 
 weight
@@ -181,11 +181,11 @@ curseRecord
         |   desc { descInit.add($desc.description); }
         |   conflict { conflictInit.add($conflict.conflictingCurses); }
         |   conflictFlags { cFlagsInit.addAll($conflictFlags.cFlags); }
-        |   time { timeInit = $time.timeStr; })+
+        |   time { timeInit = $time.timeStr; })*
         ;
 
 file
         returns[List<CurseParseRecord> records]
         :   { $records = new ArrayList<>(); }
-            (curseRecord { $records.add($curseRecord.record); })+ EOF
+            (curseRecord { $records.add($curseRecord.record); })* EOF
         ;

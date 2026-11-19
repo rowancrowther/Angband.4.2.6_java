@@ -6,7 +6,7 @@ NAME
         :   'name:' -> pushMode(FREE_TEXT_MODE)
         ;
 
-TYPE
+TYPE_TAG
         :   'type:' -> pushMode(FREE_TEXT_MODE)
         ;
 

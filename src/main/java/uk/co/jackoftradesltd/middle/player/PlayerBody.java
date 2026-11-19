@@ -125,13 +125,8 @@ public class PlayerBody {
      * @throws IllegalArgumentException if {@code slots} is {@code null} or empty
      */
     public void setSlots(List<EquipSlot> slots) {
-        if (slots == null || slots.isEmpty()) {
-            logger.fatal("Invalid slot list. Slot list is null or empty.");
-            throw new IllegalArgumentException("Invalid slot list. Slot list is null or empty.");
-        } else {
-            this.slots = new ArrayList<>(slots);
-            PlayerEventStatusUpdate.updatePlayerCharSheetBodyCount(slots.size());
-        } 
+        this.slots = new ArrayList<>(slots);
+        PlayerEventStatusUpdate.updatePlayerCharSheetBodyCount(slots.size());
     }
     
     /**

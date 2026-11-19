@@ -31,7 +31,7 @@ name
 
 tval
         returns[String tvalStr]
-        :   TYPE OBJECT_STRING { $tvalStr = $OBJECT_STRING.getText(); }
+        :   TYPE_TAG OBJECT_STRING { $tvalStr = $OBJECT_STRING.getText(); }
         ;
 
 graphics
@@ -289,11 +289,11 @@ itemObject
         |   pval { pValInit = $pval.pvalInt; }
         |   desc { dsb.append($desc.descStr); }
         |   time { timeInit = $time.timeStr; }
-        )+
+        )*
         ;
 
 file
         returns[List<ItemObjectParseRecord> itemObjects]
         :   { $itemObjects = new ArrayList<>(); }
-            (itemObject { $itemObjects.add($itemObject.object); } )+ EOF
+            (itemObject { $itemObjects.add($itemObject.object); } )* EOF
         ;

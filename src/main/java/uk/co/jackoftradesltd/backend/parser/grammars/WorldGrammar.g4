@@ -107,5 +107,5 @@ file    returns[List<List<String>> levels]
             (line
             {
                 $levels.add($line.world);
-            })+ EOF
+            })* EOF
         ;

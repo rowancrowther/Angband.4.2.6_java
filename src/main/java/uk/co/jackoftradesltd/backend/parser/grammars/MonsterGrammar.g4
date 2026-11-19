@@ -322,12 +322,12 @@ monster
                 $friends.number, $friends.nameStr, $friends.role)); }
         |   friendsBase { friendsBaseList.addFirst(new MonsterFriendsParseRecord($friendsBase.chance,
                 $friendsBase.number, $friendsBase.nameStr, $friendsBase.role)); }
-        )+;
+        )*;
 
 file
         returns[List<MonsterParseRecord> monsters]
         @init {
             $monsters = new ArrayList<>();
         }
-        :   (monster { $monsters.add($monster.monsterRecord); })+ EOF
+        :   (monster { $monsters.add($monster.monsterRecord); })* EOF
         ;

@@ -78,7 +78,7 @@ realm
         (   stat { statInit = $stat.statStr; }
         |   verb { verbInit = $verb.verbStr; }
         |   spellNoun { spellNounInit = $spellNoun.spellNounStr; }
-        |   bookNoun { bookNounInit = $bookNoun.bookNounStr; } )+
+        |   bookNoun { bookNounInit = $bookNoun.bookNounStr; } )*
         ;
 
 // The whole file: one or more realm records to end of input.
@@ -87,5 +87,5 @@ file
         @init {
             $realms = new ArrayList<>();
         }
-        :   (realm { $realms.add($realm.record); })+ EOF
+        :   (realm { $realms.add($realm.record); })* EOF
         ;

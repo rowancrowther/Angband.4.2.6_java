@@ -186,16 +186,24 @@ class PlayerSlotLookupTest {
         }
 
         /**
-         * The degenerate case — a body with no slots at all — cannot arise: {@link PlayerBody}
-         * refuses an empty slot list at construction. Worth pinning here rather than in the body's
-         * own tests, because it is what makes {@code slotByType}'s counter arithmetic safe: the loop
-         * always runs at least once, so the counter is never read at its starting value.
+         * The degenerate case — a body with no slots at all — builds, as C's {@code body.txt} parser
+         * allows, and {@code slotByType} answers its count of 0 for any type, which is C's
+         * "one past the end" with nothing before it. Worth pinning here because the loop runs no
+         * times, so the counter is read at its starting value.
+         *
+         * <p>Flipped on 261119 from {@code emptyBodyIsRefused}, which expected an
+         * {@link IllegalArgumentException}.
+         *
+         * @throws Exception if the body cannot be installed
          */
         @Test
-        @DisplayName("a body with no slots cannot be built in the first place")
-        void emptyBodyIsRefused() {
-            assertThrows(IllegalArgumentException.class,
-                    () -> Bodies.of("Nothing", new ArrayList<>()));
+        @DisplayName("a body with no slots answers 0, its count, for any type")
+        void emptyBodyAnswersZero() throws Exception {
+            setBody(Bodies.of("Nothing", new ArrayList<>()));
+
+            assertEquals(0, player.getPlayerBody().getCount());
+            assertEquals(0, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_RING, false));
+            assertEquals(0, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_RING, true));
         }
     }
 

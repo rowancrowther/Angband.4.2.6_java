@@ -44,15 +44,20 @@ public class TrapGrammar extends Parser {
 		NAME=1, APPEAR=2, VISIBILITY=3, DESC=4, FLAGS=5, MSG=6, SAVE=7, MSG_GOOD=8, 
 		MSG_BAD=9, EFFECT_XTRA=10, EFFECT_YX_XTRA=11, DICE_XTRA=12, EXPR_XTRA=13, 
 		MSG_XTRA=14, COMMENT=15, INDENT=16, EOL=17, EFFECT=18, EFFECT_MESSAGE=19, 
-		DICE=20, TIME=21, EFFECT_YX=22, EXPR=23, COLON=24, UCASE=25, EFFECT_INTEGER=26, 
-		SIMPLE_DICE_STRING=27, COMPLEX_DICE_STRING=28, GRAPHICS=29, COLOUR_ONLY=30, 
-		GLYPH_ONLY=31, EXPR_XTRA_CHAR=32, EXPR_XTRA_COLON=33, EXPR_XTRA_UCASE=34, 
-		EXPR_XTRA_OP=35, EXPR_XTRA_EOL=36, DELIMITER_COLON=37, DELIMITED_INTEGER=38, 
-		DELIMITED_STRING=39, DELIMITED_EOL=40, STRING=41, REST_OF_LINE_EOL=42, 
-		FLAG=43, FLAG_OR=44, FLAG_EOL=45, FREE_TEXT=46, DICE_SIMPLE_VALUE=47, 
-		DICE_COMPLEX_VALUE=48, EXPR_CHAR=49, EXPR_COLON=50, EXPR_UCASE=51, EXPR_OP=52, 
-		EXPR_EOL=53, COLOUR_VALUES=54, GLYPH_VALUES=55, GLYPH_COLON_SWITCH=56, 
-		GLYPH_EOL=57;
+		DICE=20, TIME=21, EFFECT_YX=22, EXPR=23, COLON=24, EFFECT_INTEGER=25, 
+		SIMPLE_DICE_STRING=26, COMPLEX_DICE_STRING=27, GRAPHICS=28, COLOUR_ONLY=29, 
+		GLYPH_ONLY=30, EFFECT_XTRA_TYPE=31, EFFECT_XTRA_NL=32, EFFECT_XTRA_COLON=33, 
+		EFFECT_XTRA_SUBTYPE=34, EFFECT_XTRA_SUBTYPE_NL=35, EFFECT_XTRA_SUBTYPE_COLON=36, 
+		EFFECT_XTRA_RADIUS=37, EFFECT_XTRA_RADIUS_NL=38, EFFECT_XTRA_RADIUS_COLON=39, 
+		EFFECT_XTRA_PARM=40, EFFECT_XTRA_PARM_NL=41, EXPR_XTRA_CHAR=42, EXPR_XTRA_COLON=43, 
+		EXPR_XTRA_UCASE=44, EXPR_XTRA_OP=45, EXPR_XTRA_EOL=46, DELIMITER_COLON=47, 
+		DELIMITED_INTEGER=48, DELIMITED_STRING=49, DELIMITED_EOL=50, STRING=51, 
+		REST_OF_LINE_EOL=52, FLAG=53, FLAG_OR=54, FLAG_EOL=55, YX_INTEGER=56, 
+		YX_COLON=57, YX_EOL=58, TYPE=59, TYPE_MODE_COLON=60, TYPE_EOL=61, SUBTYPE=62, 
+		SUBTYPETYPE_MODE_COLON=63, SUBTYPE_EOL=64, R_P_EFFECT_INTEGER=65, R_P_COLON=66, 
+		R_P_EOL=67, FREE_TEXT=68, DICE_SIMPLE_VALUE=69, DICE_COMPLEX_VALUE=70, 
+		EXPR_CHAR=71, EXPR_COLON=72, EXPR_UCASE=73, EXPR_OP=74, EXPR_EOL=75, COLOUR_VALUES=76, 
+		GLYPH_VALUES=77, GLYPH_COLON_SWITCH=78, GLYPH_EOL=79;
 	public static final int
 		RULE_name = 0, RULE_graphics = 1, RULE_appear = 2, RULE_visibility = 3, 
 		RULE_desc = 4, RULE_flags = 5, RULE_msg = 6, RULE_save = 7, RULE_msgGood = 8, 
@@ -77,7 +82,7 @@ public class TrapGrammar extends Parser {
 			"'msg:'", "'save:'", "'msg-good:'", "'msg-bad:'", "'effect-xtra:'", "'effect-yx-xtra:'", 
 			"'dice-xtra:'", "'expr-xtra:'", "'msg-xtra:'", null, null, null, "'effect:'", 
 			"'effect-msg:'", "'dice:'", "'time:'", "'effect-yx:'", "'expr:'", null, 
-			null, null, null, null, "'graphics:'", "'color:'", "'glyph:'"
+			null, null, null, "'graphics:'", "'color:'", "'glyph:'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -86,12 +91,17 @@ public class TrapGrammar extends Parser {
 			null, "NAME", "APPEAR", "VISIBILITY", "DESC", "FLAGS", "MSG", "SAVE", 
 			"MSG_GOOD", "MSG_BAD", "EFFECT_XTRA", "EFFECT_YX_XTRA", "DICE_XTRA", 
 			"EXPR_XTRA", "MSG_XTRA", "COMMENT", "INDENT", "EOL", "EFFECT", "EFFECT_MESSAGE", 
-			"DICE", "TIME", "EFFECT_YX", "EXPR", "COLON", "UCASE", "EFFECT_INTEGER", 
-			"SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", "GRAPHICS", "COLOUR_ONLY", 
-			"GLYPH_ONLY", "EXPR_XTRA_CHAR", "EXPR_XTRA_COLON", "EXPR_XTRA_UCASE", 
-			"EXPR_XTRA_OP", "EXPR_XTRA_EOL", "DELIMITER_COLON", "DELIMITED_INTEGER", 
-			"DELIMITED_STRING", "DELIMITED_EOL", "STRING", "REST_OF_LINE_EOL", "FLAG", 
-			"FLAG_OR", "FLAG_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", 
+			"DICE", "TIME", "EFFECT_YX", "EXPR", "COLON", "EFFECT_INTEGER", "SIMPLE_DICE_STRING", 
+			"COMPLEX_DICE_STRING", "GRAPHICS", "COLOUR_ONLY", "GLYPH_ONLY", "EFFECT_XTRA_TYPE", 
+			"EFFECT_XTRA_NL", "EFFECT_XTRA_COLON", "EFFECT_XTRA_SUBTYPE", "EFFECT_XTRA_SUBTYPE_NL", 
+			"EFFECT_XTRA_SUBTYPE_COLON", "EFFECT_XTRA_RADIUS", "EFFECT_XTRA_RADIUS_NL", 
+			"EFFECT_XTRA_RADIUS_COLON", "EFFECT_XTRA_PARM", "EFFECT_XTRA_PARM_NL", 
+			"EXPR_XTRA_CHAR", "EXPR_XTRA_COLON", "EXPR_XTRA_UCASE", "EXPR_XTRA_OP", 
+			"EXPR_XTRA_EOL", "DELIMITER_COLON", "DELIMITED_INTEGER", "DELIMITED_STRING", 
+			"DELIMITED_EOL", "STRING", "REST_OF_LINE_EOL", "FLAG", "FLAG_OR", "FLAG_EOL", 
+			"YX_INTEGER", "YX_COLON", "YX_EOL", "TYPE", "TYPE_MODE_COLON", "TYPE_EOL", 
+			"SUBTYPE", "SUBTYPETYPE_MODE_COLON", "SUBTYPE_EOL", "R_P_EFFECT_INTEGER", 
+			"R_P_COLON", "R_P_EOL", "FREE_TEXT", "DICE_SIMPLE_VALUE", "DICE_COMPLEX_VALUE", 
 			"EXPR_CHAR", "EXPR_COLON", "EXPR_UCASE", "EXPR_OP", "EXPR_EOL", "COLOUR_VALUES", 
 			"GLYPH_VALUES", "GLYPH_COLON_SWITCH", "GLYPH_EOL"
 		};
@@ -812,18 +822,10 @@ public class TrapGrammar extends Parser {
 		public Token r;
 		public Token p;
 		public TerminalNode EFFECT_XTRA() { return getToken(TrapGrammar.EFFECT_XTRA, 0); }
-		public List<TerminalNode> UCASE() { return getTokens(TrapGrammar.UCASE); }
-		public TerminalNode UCASE(int i) {
-			return getToken(TrapGrammar.UCASE, i);
-		}
-		public List<TerminalNode> COLON() { return getTokens(TrapGrammar.COLON); }
-		public TerminalNode COLON(int i) {
-			return getToken(TrapGrammar.COLON, i);
-		}
-		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(TrapGrammar.EFFECT_INTEGER); }
-		public TerminalNode EFFECT_INTEGER(int i) {
-			return getToken(TrapGrammar.EFFECT_INTEGER, i);
-		}
+		public TerminalNode EFFECT_XTRA_TYPE() { return getToken(TrapGrammar.EFFECT_XTRA_TYPE, 0); }
+		public TerminalNode EFFECT_XTRA_SUBTYPE() { return getToken(TrapGrammar.EFFECT_XTRA_SUBTYPE, 0); }
+		public TerminalNode EFFECT_XTRA_RADIUS() { return getToken(TrapGrammar.EFFECT_XTRA_RADIUS, 0); }
+		public TerminalNode EFFECT_XTRA_PARM() { return getToken(TrapGrammar.EFFECT_XTRA_PARM, 0); }
 		public EffectXtraContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -854,37 +856,31 @@ public class TrapGrammar extends Parser {
 			setState(121);
 			match(EFFECT_XTRA);
 			setState(122);
-			((EffectXtraContext)_localctx).t = match(UCASE);
+			((EffectXtraContext)_localctx).t = match(EFFECT_XTRA_TYPE);
 			 ((EffectXtraContext)_localctx).effectType =  ((EffectXtraContext)_localctx).t.getText(); 
-			setState(137);
+			setState(134);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==COLON) {
+			if (_la==EFFECT_XTRA_SUBTYPE) {
 				{
 				setState(124);
-				match(COLON);
-				setState(125);
-				((EffectXtraContext)_localctx).s = match(UCASE);
+				((EffectXtraContext)_localctx).s = match(EFFECT_XTRA_SUBTYPE);
 				 ((EffectXtraContext)_localctx).effectSubtype =  ((EffectXtraContext)_localctx).s.getText(); 
-				setState(135);
+				setState(132);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (_la==COLON) {
+				if (_la==EFFECT_XTRA_RADIUS) {
 					{
-					setState(127);
-					match(COLON);
-					setState(128);
-					((EffectXtraContext)_localctx).r = match(EFFECT_INTEGER);
+					setState(126);
+					((EffectXtraContext)_localctx).r = match(EFFECT_XTRA_RADIUS);
 					 ((EffectXtraContext)_localctx).radius =  ((EffectXtraContext)_localctx).r.getText(); 
-					setState(133);
+					setState(130);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
-					if (_la==COLON) {
+					if (_la==EFFECT_XTRA_PARM) {
 						{
-						setState(130);
-						match(COLON);
-						setState(131);
-						((EffectXtraContext)_localctx).p = match(EFFECT_INTEGER);
+						setState(128);
+						((EffectXtraContext)_localctx).p = match(EFFECT_XTRA_PARM);
 						 ((EffectXtraContext)_localctx).parameter =  ((EffectXtraContext)_localctx).p.getText(); 
 						}
 					}
@@ -941,9 +937,9 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(139);
+			setState(136);
 			match(DICE_XTRA);
-			setState(140);
+			setState(137);
 			((DiceXtraContext)_localctx).d = _input.LT(1);
 			_la = _input.LA(1);
 			if ( !(_la==DICE_SIMPLE_VALUE || _la==DICE_COMPLEX_VALUE) ) {
@@ -1009,17 +1005,17 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(143);
+			setState(140);
 			match(EXPR_XTRA);
-			setState(144);
+			setState(141);
 			((ExprXtraContext)_localctx).EXPR_XTRA_CHAR = match(EXPR_XTRA_CHAR);
-			setState(145);
+			setState(142);
 			match(EXPR_XTRA_COLON);
-			setState(146);
+			setState(143);
 			((ExprXtraContext)_localctx).EXPR_XTRA_UCASE = match(EXPR_XTRA_UCASE);
-			setState(147);
+			setState(144);
 			match(EXPR_XTRA_COLON);
-			setState(148);
+			setState(145);
 			((ExprXtraContext)_localctx).EXPR_XTRA_OP = match(EXPR_XTRA_OP);
 
 			                ((ExprXtraContext)_localctx).exprChar =  ((ExprXtraContext)_localctx).EXPR_XTRA_CHAR.getText();
@@ -1076,13 +1072,13 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(151);
+			setState(148);
 			match(EFFECT_YX_XTRA);
-			setState(152);
+			setState(149);
 			((EffectYxXtraContext)_localctx).yVal = match(EFFECT_INTEGER);
-			setState(153);
+			setState(150);
 			match(COLON);
-			setState(154);
+			setState(151);
 			((EffectYxXtraContext)_localctx).xVal = match(EFFECT_INTEGER);
 			 ((EffectYxXtraContext)_localctx).y =  ((EffectYxXtraContext)_localctx).yVal.getText(); ((EffectYxXtraContext)_localctx).x =  ((EffectYxXtraContext)_localctx).xVal.getText(); 
 			}
@@ -1142,7 +1138,7 @@ public class TrapGrammar extends Parser {
 			{
 			 ((EffectXtraBlockContext)_localctx).complexDiceValue =  ""; ((EffectXtraBlockContext)_localctx).exprChar =  ""; ((EffectXtraBlockContext)_localctx).baseName =  ""; ((EffectXtraBlockContext)_localctx).op =  ""; ((EffectXtraBlockContext)_localctx).msgExtra =  "";
 			              ((EffectXtraBlockContext)_localctx).yVal =  ""; ((EffectXtraBlockContext)_localctx).xVal =  ""; 
-			setState(158);
+			setState(155);
 			((EffectXtraBlockContext)_localctx).effectXtra = effectXtra();
 			 ((EffectXtraBlockContext)_localctx).effectType =  ((EffectXtraBlockContext)_localctx).effectXtra.effectType;
 			                          ((EffectXtraBlockContext)_localctx).effectSubtype =  ((EffectXtraBlockContext)_localctx).effectXtra.effectSubtype;
@@ -1340,27 +1336,27 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(161);
+			setState(158);
 			((TrapRecordContext)_localctx).name = name();
 			 line = ((TrapRecordContext)_localctx).name.line; nameInit = ((TrapRecordContext)_localctx).name.nameStr; descInit = ((TrapRecordContext)_localctx).name.textStr; 
-			setState(217); 
+			setState(216);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 282361852L) != 0)) {
 				{
-				setState(217);
+				setState(214);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case GRAPHICS:
 					{
-					setState(163);
+					setState(160);
 					((TrapRecordContext)_localctx).graphics = graphics();
 					 glyphInit = ((TrapRecordContext)_localctx).graphics.glyph; colourInit = ((TrapRecordContext)_localctx).graphics.colour; 
 					}
 					break;
 				case APPEAR:
 					{
-					setState(166);
+					setState(163);
 					((TrapRecordContext)_localctx).appear = appear();
 					 rarityInit = ((TrapRecordContext)_localctx).appear.rarity;
 					                     minDepthInit = ((TrapRecordContext)_localctx).appear.minDepth;
@@ -1369,63 +1365,63 @@ public class TrapGrammar extends Parser {
 					break;
 				case VISIBILITY:
 					{
-					setState(169);
+					setState(166);
 					((TrapRecordContext)_localctx).visibility = visibility();
 					 powerInit = ((TrapRecordContext)_localctx).visibility.vis; 
 					}
 					break;
 				case FLAGS:
 					{
-					setState(172);
+					setState(169);
 					((TrapRecordContext)_localctx).flags = flags();
 					 flagsInit.addAll(((TrapRecordContext)_localctx).flags.flagList); 
 					}
 					break;
 				case SAVE:
 					{
-					setState(175);
+					setState(172);
 					((TrapRecordContext)_localctx).save = save();
 					 saveFlagsInit.addAll(((TrapRecordContext)_localctx).save.saveFlags); 
 					}
 					break;
 				case DESC:
 					{
-					setState(178);
+					setState(175);
 					((TrapRecordContext)_localctx).desc = desc();
 					 descSB.append(((TrapRecordContext)_localctx).desc.line); 
 					}
 					break;
 				case MSG:
 					{
-					setState(181);
+					setState(178);
 					((TrapRecordContext)_localctx).msg = msg();
 					 messageSB.append(((TrapRecordContext)_localctx).msg.msgStr); 
 					}
 					break;
 				case MSG_GOOD:
 					{
-					setState(184);
+					setState(181);
 					((TrapRecordContext)_localctx).msgGood = msgGood();
 					 saveMessageSB.append(((TrapRecordContext)_localctx).msgGood.goodMsg); 
 					}
 					break;
 				case MSG_BAD:
 					{
-					setState(187);
+					setState(184);
 					((TrapRecordContext)_localctx).msgBad = msgBad();
 					 failMessageSB.append(((TrapRecordContext)_localctx).msgBad.badMsg); 
 					}
 					break;
 				case MSG_XTRA:
 					{
-					setState(190);
+					setState(187);
 					((TrapRecordContext)_localctx).msgXtra = msgXtra();
 					 xtraMessageSB.append(((TrapRecordContext)_localctx).msgXtra.msgExtra); 
 					}
 					break;
 				case EFFECT:
 					{
-					setState(193);
+					setState(190);
 					((TrapRecordContext)_localctx).effectBlock = effectBlock();
 					 effectInit.add(new EffectParseRecord(((TrapRecordContext)_localctx).effectBlock.typeInit,
 					                                        ((TrapRecordContext)_localctx).effectBlock.subtypeWrapperInit, ((TrapRecordContext)_localctx).effectBlock.radius, ((TrapRecordContext)_localctx).effectBlock.other,
@@ -1437,7 +1433,7 @@ public class TrapGrammar extends Parser {
 					break;
 				case EFFECT_YX:
 					{
-					setState(196);
+					setState(193);
 					((TrapRecordContext)_localctx).effectYX = effectYX();
 					 if (!effectInit.isEmpty()) {
 					                           EffectParseRecord last = effectInit.getLast();
@@ -1449,7 +1445,7 @@ public class TrapGrammar extends Parser {
 					break;
 				case DICE:
 					{
-					setState(199);
+					setState(196);
 					((TrapRecordContext)_localctx).dice = dice();
 
 					                if (!effectInit.isEmpty()) {
@@ -1465,7 +1461,7 @@ public class TrapGrammar extends Parser {
 					break;
 				case EXPR:
 					{
-					setState(202);
+					setState(199);
 					((TrapRecordContext)_localctx).expr = expr();
 
 					                if (!effectInit.isEmpty() && (!effectInit.getLast().diceString().isEmpty())) {
@@ -1488,7 +1484,7 @@ public class TrapGrammar extends Parser {
 					break;
 				case EFFECT_XTRA:
 					{
-					setState(205);
+					setState(202);
 					((TrapRecordContext)_localctx).effectXtraBlock = effectXtraBlock();
 					 xtraEffectInit.add(new EffectParseRecord(
 					                                        ((TrapRecordContext)_localctx).effectXtraBlock.effectType, ((TrapRecordContext)_localctx).effectXtraBlock.effectSubtype,
@@ -1502,7 +1498,7 @@ public class TrapGrammar extends Parser {
 					break;
 				case EFFECT_YX_XTRA:
 					{
-					setState(208);
+					setState(205);
 					((TrapRecordContext)_localctx).effectYxXtra = effectYxXtra();
 					 
 					                if (!xtraEffectInit.isEmpty()) {
@@ -1515,7 +1511,7 @@ public class TrapGrammar extends Parser {
 					break;
 				case DICE_XTRA:
 					{
-					setState(211);
+					setState(208);
 					((TrapRecordContext)_localctx).diceXtra = diceXtra();
 
 					                if (!xtraEffectInit.isEmpty()) {
@@ -1532,7 +1528,7 @@ public class TrapGrammar extends Parser {
 					break;
 				case EXPR_XTRA:
 					{
-					setState(214);
+					setState(211);
 					((TrapRecordContext)_localctx).exprXtra = exprXtra();
 
 					                if (!xtraEffectInit.isEmpty() && (!xtraEffectInit.getLast().diceString().isEmpty())) {
@@ -1551,10 +1547,10 @@ public class TrapGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(219); 
+				setState(218);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( (((_la) & ~0x3f) == 0 && ((1L << _la) & 550797308L) != 0) );
+			}
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -1615,22 +1611,22 @@ public class TrapGrammar extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			 ((FileContext)_localctx).traps =  new ArrayList<>(); 
-			setState(225); 
+			setState(225);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==NAME) {
 				{
 				{
-				setState(222);
+				setState(220);
 				((FileContext)_localctx).trapRecord = trapRecord();
 				 _localctx.traps.add(((FileContext)_localctx).trapRecord.trap); 
 				}
 				}
-				setState(227); 
+				setState(227);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==NAME );
-			setState(229);
+			}
+			setState(228);
 			match(EOF);
 			}
 		}
@@ -1656,17 +1652,11 @@ public class TrapGrammar extends Parser {
 		public Token rad;
 		public Token oth;
 		public TerminalNode EFFECT() { return getToken(TrapGrammar.EFFECT, 0); }
-		public List<TerminalNode> UCASE() { return getTokens(TrapGrammar.UCASE); }
-		public TerminalNode UCASE(int i) {
-			return getToken(TrapGrammar.UCASE, i);
-		}
-		public List<TerminalNode> COLON() { return getTokens(TrapGrammar.COLON); }
-		public TerminalNode COLON(int i) {
-			return getToken(TrapGrammar.COLON, i);
-		}
-		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(TrapGrammar.EFFECT_INTEGER); }
-		public TerminalNode EFFECT_INTEGER(int i) {
-			return getToken(TrapGrammar.EFFECT_INTEGER, i);
+		public TerminalNode TYPE() { return getToken(TrapGrammar.TYPE, 0); }
+		public TerminalNode SUBTYPE() { return getToken(TrapGrammar.SUBTYPE, 0); }
+		public List<TerminalNode> R_P_EFFECT_INTEGER() { return getTokens(TrapGrammar.R_P_EFFECT_INTEGER); }
+		public TerminalNode R_P_EFFECT_INTEGER(int i) {
+			return getToken(TrapGrammar.R_P_EFFECT_INTEGER, i);
 		}
 		public EffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1699,46 +1689,40 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(231);
+			setState(230);
 			match(EFFECT);
-			setState(232);
-			((EffectContext)_localctx).t = match(UCASE);
+			setState(231);
+			((EffectContext)_localctx).t = match(TYPE);
 
 			                ((EffectContext)_localctx).type =  ((EffectContext)_localctx).t.getText();
 			            
-			setState(247);
+			setState(243);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==COLON) {
+			if (_la==SUBTYPE) {
 				{
-				setState(234);
-				match(COLON);
-				setState(235);
-				((EffectContext)_localctx).st = match(UCASE);
+				setState(233);
+				((EffectContext)_localctx).st = match(SUBTYPE);
 
 				                ((EffectContext)_localctx).wrapper =  ((EffectContext)_localctx).st.getText();
 				            
-				setState(245);
+				setState(241);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-				if (_la==COLON) {
+				if (_la==R_P_EFFECT_INTEGER) {
 					{
-					setState(237);
-					match(COLON);
-					setState(238);
-					((EffectContext)_localctx).rad = match(EFFECT_INTEGER);
+					setState(235);
+					((EffectContext)_localctx).rad = match(R_P_EFFECT_INTEGER);
 
 					                ((EffectContext)_localctx).radius =  ((EffectContext)_localctx).rad.getText();
 					            
-					setState(243);
+					setState(239);
 					_errHandler.sync(this);
 					_la = _input.LA(1);
-					if (_la==COLON) {
+					if (_la==R_P_EFFECT_INTEGER) {
 						{
-						setState(240);
-						match(COLON);
-						setState(241);
-						((EffectContext)_localctx).oth = match(EFFECT_INTEGER);
+						setState(237);
+						((EffectContext)_localctx).oth = match(R_P_EFFECT_INTEGER);
 
 						                ((EffectContext)_localctx).other =  ((EffectContext)_localctx).oth.getText();
 						            
@@ -1771,10 +1755,9 @@ public class TrapGrammar extends Parser {
 		public Token yVal;
 		public Token xVal;
 		public TerminalNode EFFECT_YX() { return getToken(TrapGrammar.EFFECT_YX, 0); }
-		public TerminalNode COLON() { return getToken(TrapGrammar.COLON, 0); }
-		public List<TerminalNode> EFFECT_INTEGER() { return getTokens(TrapGrammar.EFFECT_INTEGER); }
-		public TerminalNode EFFECT_INTEGER(int i) {
-			return getToken(TrapGrammar.EFFECT_INTEGER, i);
+		public List<TerminalNode> YX_INTEGER() { return getTokens(TrapGrammar.YX_INTEGER); }
+		public TerminalNode YX_INTEGER(int i) {
+			return getToken(TrapGrammar.YX_INTEGER, i);
 		}
 		public EffectYXContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -1801,14 +1784,12 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(249);
+			setState(245);
 			match(EFFECT_YX);
-			setState(250);
-			((EffectYXContext)_localctx).yVal = match(EFFECT_INTEGER);
-			setState(251);
-			match(COLON);
-			setState(252);
-			((EffectYXContext)_localctx).xVal = match(EFFECT_INTEGER);
+			setState(246);
+			((EffectYXContext)_localctx).yVal = match(YX_INTEGER);
+			setState(247);
+			((EffectYXContext)_localctx).xVal = match(YX_INTEGER);
 
 			                ((EffectYXContext)_localctx).y =  ((EffectYXContext)_localctx).yVal.getText();
 			                ((EffectYXContext)_localctx).x =  ((EffectYXContext)_localctx).xVal.getText();
@@ -1878,27 +1859,27 @@ public class TrapGrammar extends Parser {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(255);
+			setState(250);
 			match(DICE);
-			setState(268);
+			setState(263);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case DICE_COMPLEX_VALUE:
 				{
 				{
-				setState(256);
+				setState(251);
 				((DiceContext)_localctx).val = match(DICE_COMPLEX_VALUE);
 
 				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
 				            
-				setState(263);
+				setState(258);
 				_errHandler.sync(this);
 				_alt = getInterpreter().adaptivePredict(_input,11,_ctx);
 				while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER ) {
 					if ( _alt==1 ) {
 						{
 						{
-						setState(258);
+						setState(253);
 						((DiceContext)_localctx).expr = expr();
 
 						                if (charHolder.isEmpty()) {
@@ -1914,7 +1895,7 @@ public class TrapGrammar extends Parser {
 						}
 						} 
 					}
-					setState(265);
+					setState(260);
 					_errHandler.sync(this);
 					_alt = getInterpreter().adaptivePredict(_input,11,_ctx);
 				}
@@ -1923,7 +1904,7 @@ public class TrapGrammar extends Parser {
 				break;
 			case DICE_SIMPLE_VALUE:
 				{
-				setState(266);
+				setState(261);
 				((DiceContext)_localctx).val = match(DICE_SIMPLE_VALUE);
 
 				                ((DiceContext)_localctx).diceString =  ((DiceContext)_localctx).val.getText();
@@ -1993,17 +1974,17 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(270);
+			setState(265);
 			match(EXPR);
-			setState(271);
+			setState(266);
 			((ExprContext)_localctx).ch = match(EXPR_CHAR);
-			setState(272);
+			setState(267);
 			match(EXPR_COLON);
-			setState(273);
+			setState(268);
 			((ExprContext)_localctx).base = match(EXPR_UCASE);
-			setState(274);
+			setState(269);
 			match(EXPR_COLON);
-			setState(275);
+			setState(270);
 			((ExprContext)_localctx).op = match(EXPR_OP);
 
 			                ((ExprContext)_localctx).exprChar =  ((ExprContext)_localctx).ch.getText();
@@ -2054,9 +2035,9 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(278);
+			setState(273);
 			match(EFFECT_MESSAGE);
-			setState(279);
+			setState(274);
 			((EffectMsgContext)_localctx).FREE_TEXT = match(FREE_TEXT);
 			 ((EffectMsgContext)_localctx).message =  ((EffectMsgContext)_localctx).FREE_TEXT.getText(); 
 			}
@@ -2103,9 +2084,9 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(282);
+			setState(277);
 			match(TIME);
-			setState(283);
+			setState(278);
 			((TimeContext)_localctx).DICE_SIMPLE_VALUE = match(DICE_SIMPLE_VALUE);
 			 ((TimeContext)_localctx).timeStr =  ((TimeContext)_localctx).DICE_SIMPLE_VALUE.getText(); 
 			}
@@ -2155,27 +2136,27 @@ public class TrapGrammar extends Parser {
 		StrayEffectLineContext _localctx = new StrayEffectLineContext(_ctx, getState());
 		enterRule(_localctx, 48, RULE_strayEffectLine);
 		try {
-			setState(289);
+			setState(284);
 			_errHandler.sync(this);
 			switch (_input.LA(1)) {
 			case EFFECT_YX:
 				enterOuterAlt(_localctx, 1);
 				{
-				setState(286);
+				setState(281);
 				effectYX();
 				}
 				break;
 			case DICE:
 				enterOuterAlt(_localctx, 2);
 				{
-				setState(287);
+				setState(282);
 				dice();
 				}
 				break;
 			case EXPR:
 				enterOuterAlt(_localctx, 3);
 				{
-				setState(288);
+				setState(283);
 				expr();
 				}
 				break;
@@ -2252,7 +2233,7 @@ public class TrapGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(291);
+			setState(286);
 			((EffectBlockContext)_localctx).effect = effect();
 
 			                ((EffectBlockContext)_localctx).lineNo =  _localctx.start.getLine();
@@ -2261,19 +2242,19 @@ public class TrapGrammar extends Parser {
 			                ((EffectBlockContext)_localctx).radius =  ((EffectBlockContext)_localctx).effect.radius;
 			                ((EffectBlockContext)_localctx).other =  ((EffectBlockContext)_localctx).effect.other;
 			            
-			setState(309);
+			setState(304);
 			_errHandler.sync(this);
 			switch ( getInterpreter().adaptivePredict(_input,14,_ctx) ) {
 			case 1:
 				{
 				{
-				setState(293);
+				setState(288);
 				((EffectBlockContext)_localctx).effectYX = effectYX();
 
 				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
 				                ((EffectBlockContext)_localctx).xVal =  ((EffectBlockContext)_localctx).effectYX.x;
 				            
-				setState(295);
+				setState(290);
 				((EffectBlockContext)_localctx).dice = dice();
 
 				                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
@@ -2287,7 +2268,7 @@ public class TrapGrammar extends Parser {
 			case 2:
 				{
 				{
-				setState(298);
+				setState(293);
 				((EffectBlockContext)_localctx).dice = dice();
 
 				                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
@@ -2295,7 +2276,7 @@ public class TrapGrammar extends Parser {
 				                baseString = ((EffectBlockContext)_localctx).dice.baseName;
 				                opString = ((EffectBlockContext)_localctx).dice.operation;
 				            
-				setState(300);
+				setState(295);
 				((EffectBlockContext)_localctx).effectYX = effectYX();
 
 				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
@@ -2306,7 +2287,7 @@ public class TrapGrammar extends Parser {
 				break;
 			case 3:
 				{
-				setState(303);
+				setState(298);
 				((EffectBlockContext)_localctx).dice = dice();
 
 				                ((EffectBlockContext)_localctx).diceString =  ((EffectBlockContext)_localctx).dice.diceString;
@@ -2318,7 +2299,7 @@ public class TrapGrammar extends Parser {
 				break;
 			case 4:
 				{
-				setState(306);
+				setState(301);
 				((EffectBlockContext)_localctx).effectYX = effectYX();
 
 				                ((EffectBlockContext)_localctx).yVal =  ((EffectBlockContext)_localctx).effectYX.y;
@@ -2347,7 +2328,7 @@ public class TrapGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u00019\u0138\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001O\u0133\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002"+
@@ -2367,188 +2348,184 @@ public class TrapGrammar extends Parser {
 		"\n\u0007\f\u0007k\t\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001"+
 		"\t\u0001\t\u0001\t\u0001\n\u0001\n\u0001\n\u0001\n\u0001\u000b\u0001\u000b"+
 		"\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b"+
-		"\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0003\u000b"+
-		"\u0086\b\u000b\u0003\u000b\u0088\b\u000b\u0003\u000b\u008a\b\u000b\u0001"+
-		"\f\u0001\f\u0001\f\u0001\f\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001"+
-		"\r\u0001\r\u0001\r\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001"+
-		"\u000e\u0001\u000e\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u000f\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001"+
-		"\u0010\u0001\u0010\u0004\u0010\u00da\b\u0010\u000b\u0010\f\u0010\u00db"+
-		"\u0001\u0011\u0001\u0011\u0001\u0011\u0001\u0011\u0004\u0011\u00e2\b\u0011"+
-		"\u000b\u0011\f\u0011\u00e3\u0001\u0011\u0001\u0011\u0001\u0012\u0001\u0012"+
-		"\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012"+
-		"\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0003\u0012\u00f4\b\u0012"+
-		"\u0003\u0012\u00f6\b\u0012\u0003\u0012\u00f8\b\u0012\u0001\u0013\u0001"+
+		"\u0001\u000b\u0001\u000b\u0003\u000b\u0083\b\u000b\u0003\u000b\u0085\b"+
+		"\u000b\u0003\u000b\u0087\b\u000b\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
+		"\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\r\u0001\u000e"+
+		"\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000e\u0001\u000f"+
+		"\u0001\u000f\u0001\u000f\u0001\u000f\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010"+
+		"\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0001\u0010\u0005\u0010"+
+		"\u00d7\b\u0010\n\u0010\f\u0010\u00da\t\u0010\u0001\u0011\u0001\u0011\u0001"+
+		"\u0011\u0001\u0011\u0005\u0011\u00e0\b\u0011\n\u0011\f\u0011\u00e3\t\u0011"+
+		"\u0001\u0011\u0001\u0011\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012"+
+		"\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0001\u0012\u0003\u0012"+
+		"\u00f0\b\u0012\u0003\u0012\u00f2\b\u0012\u0003\u0012\u00f4\b\u0012\u0001"+
 		"\u0013\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0013\u0001\u0014\u0001"+
-		"\u0014\u0001\u0014\u0001\u0014\u0001\u0014\u0001\u0014\u0005\u0014\u0106"+
-		"\b\u0014\n\u0014\f\u0014\u0109\t\u0014\u0001\u0014\u0001\u0014\u0003\u0014"+
-		"\u010d\b\u0014\u0001\u0015\u0001\u0015\u0001\u0015\u0001\u0015\u0001\u0015"+
+		"\u0014\u0001\u0014\u0001\u0014\u0001\u0014\u0001\u0014\u0005\u0014\u0101"+
+		"\b\u0014\n\u0014\f\u0014\u0104\t\u0014\u0001\u0014\u0001\u0014\u0003\u0014"+
+		"\u0108\b\u0014\u0001\u0015\u0001\u0015\u0001\u0015\u0001\u0015\u0001\u0015"+
 		"\u0001\u0015\u0001\u0015\u0001\u0015\u0001\u0016\u0001\u0016\u0001\u0016"+
 		"\u0001\u0016\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0017\u0001\u0018"+
-		"\u0001\u0018\u0001\u0018\u0003\u0018\u0122\b\u0018\u0001\u0019\u0001\u0019"+
+		"\u0001\u0018\u0001\u0018\u0003\u0018\u011d\b\u0018\u0001\u0019\u0001\u0019"+
 		"\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019"+
 		"\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019"+
-		"\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0003\u0019\u0136\b\u0019"+
+		"\u0001\u0019\u0001\u0019\u0001\u0019\u0001\u0019\u0003\u0019\u0131\b\u0019"+
 		"\u0001\u0019\u0000\u0000\u001a\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010"+
 		"\u0012\u0014\u0016\u0018\u001a\u001c\u001e \"$&(*,.02\u0000\u0001\u0001"+
-		"\u0000/0\u0140\u00004\u0001\u0000\u0000\u0000\u0002:\u0001\u0000\u0000"+
+		"\u0000EF\u013b\u00004\u0001\u0000\u0000\u0000\u0002:\u0001\u0000\u0000"+
 		"\u0000\u0004@\u0001\u0000\u0000\u0000\u0006H\u0001\u0000\u0000\u0000\b"+
 		"L\u0001\u0000\u0000\u0000\nP\u0001\u0000\u0000\u0000\f\\\u0001\u0000\u0000"+
 		"\u0000\u000e`\u0001\u0000\u0000\u0000\u0010l\u0001\u0000\u0000\u0000\u0012"+
 		"p\u0001\u0000\u0000\u0000\u0014t\u0001\u0000\u0000\u0000\u0016x\u0001"+
-		"\u0000\u0000\u0000\u0018\u008b\u0001\u0000\u0000\u0000\u001a\u008f\u0001"+
-		"\u0000\u0000\u0000\u001c\u0097\u0001\u0000\u0000\u0000\u001e\u009d\u0001"+
-		"\u0000\u0000\u0000 \u00a1\u0001\u0000\u0000\u0000\"\u00dd\u0001\u0000"+
-		"\u0000\u0000$\u00e7\u0001\u0000\u0000\u0000&\u00f9\u0001\u0000\u0000\u0000"+
-		"(\u00ff\u0001\u0000\u0000\u0000*\u010e\u0001\u0000\u0000\u0000,\u0116"+
-		"\u0001\u0000\u0000\u0000.\u011a\u0001\u0000\u0000\u00000\u0121\u0001\u0000"+
-		"\u0000\u00002\u0123\u0001\u0000\u0000\u000045\u0005\u0001\u0000\u0000"+
-		"56\u0005\'\u0000\u000067\u0005%\u0000\u000078\u0005\'\u0000\u000089\u0006"+
-		"\u0000\uffff\uffff\u00009\u0001\u0001\u0000\u0000\u0000:;\u0005\u001d"+
-		"\u0000\u0000;<\u00057\u0000\u0000<=\u00058\u0000\u0000=>\u00056\u0000"+
+		"\u0000\u0000\u0000\u0018\u0088\u0001\u0000\u0000\u0000\u001a\u008c\u0001"+
+		"\u0000\u0000\u0000\u001c\u0094\u0001\u0000\u0000\u0000\u001e\u009a\u0001"+
+		"\u0000\u0000\u0000 \u009e\u0001\u0000\u0000\u0000\"\u00db\u0001\u0000"+
+		"\u0000\u0000$\u00e6\u0001\u0000\u0000\u0000&\u00f5\u0001\u0000\u0000\u0000"+
+		"(\u00fa\u0001\u0000\u0000\u0000*\u0109\u0001\u0000\u0000\u0000,\u0111"+
+		"\u0001\u0000\u0000\u0000.\u0115\u0001\u0000\u0000\u00000\u011c\u0001\u0000"+
+		"\u0000\u00002\u011e\u0001\u0000\u0000\u000045\u0005\u0001\u0000\u0000"+
+		"56\u00051\u0000\u000067\u0005/\u0000\u000078\u00051\u0000\u000089\u0006"+
+		"\u0000\uffff\uffff\u00009\u0001\u0001\u0000\u0000\u0000:;\u0005\u001c"+
+		"\u0000\u0000;<\u0005M\u0000\u0000<=\u0005N\u0000\u0000=>\u0005L\u0000"+
 		"\u0000>?\u0006\u0001\uffff\uffff\u0000?\u0003\u0001\u0000\u0000\u0000"+
-		"@A\u0005\u0002\u0000\u0000AB\u0005&\u0000\u0000BC\u0005%\u0000\u0000C"+
-		"D\u0005&\u0000\u0000DE\u0005%\u0000\u0000EF\u0005&\u0000\u0000FG\u0006"+
+		"@A\u0005\u0002\u0000\u0000AB\u00050\u0000\u0000BC\u0005/\u0000\u0000C"+
+		"D\u00050\u0000\u0000DE\u0005/\u0000\u0000EF\u00050\u0000\u0000FG\u0006"+
 		"\u0002\uffff\uffff\u0000G\u0005\u0001\u0000\u0000\u0000HI\u0005\u0003"+
 		"\u0000\u0000IJ\u0007\u0000\u0000\u0000JK\u0006\u0003\uffff\uffff\u0000"+
-		"K\u0007\u0001\u0000\u0000\u0000LM\u0005\u0004\u0000\u0000MN\u0005)\u0000"+
+		"K\u0007\u0001\u0000\u0000\u0000LM\u0005\u0004\u0000\u0000MN\u00053\u0000"+
 		"\u0000NO\u0006\u0004\uffff\uffff\u0000O\t\u0001\u0000\u0000\u0000PQ\u0006"+
-		"\u0005\uffff\uffff\u0000QR\u0005\u0005\u0000\u0000RS\u0005+\u0000\u0000"+
-		"SY\u0006\u0005\uffff\uffff\u0000TU\u0005,\u0000\u0000UV\u0005+\u0000\u0000"+
+		"\u0005\uffff\uffff\u0000QR\u0005\u0005\u0000\u0000RS\u00055\u0000\u0000"+
+		"SY\u0006\u0005\uffff\uffff\u0000TU\u00056\u0000\u0000UV\u00055\u0000\u0000"+
 		"VX\u0006\u0005\uffff\uffff\u0000WT\u0001\u0000\u0000\u0000X[\u0001\u0000"+
 		"\u0000\u0000YW\u0001\u0000\u0000\u0000YZ\u0001\u0000\u0000\u0000Z\u000b"+
 		"\u0001\u0000\u0000\u0000[Y\u0001\u0000\u0000\u0000\\]\u0005\u0006\u0000"+
-		"\u0000]^\u0005)\u0000\u0000^_\u0006\u0006\uffff\uffff\u0000_\r\u0001\u0000"+
+		"\u0000]^\u00053\u0000\u0000^_\u0006\u0006\uffff\uffff\u0000_\r\u0001\u0000"+
 		"\u0000\u0000`a\u0006\u0007\uffff\uffff\u0000ab\u0005\u0007\u0000\u0000"+
-		"bc\u0005+\u0000\u0000ci\u0006\u0007\uffff\uffff\u0000de\u0005,\u0000\u0000"+
-		"ef\u0005+\u0000\u0000fh\u0006\u0007\uffff\uffff\u0000gd\u0001\u0000\u0000"+
+		"bc\u00055\u0000\u0000ci\u0006\u0007\uffff\uffff\u0000de\u00056\u0000\u0000"+
+		"ef\u00055\u0000\u0000fh\u0006\u0007\uffff\uffff\u0000gd\u0001\u0000\u0000"+
 		"\u0000hk\u0001\u0000\u0000\u0000ig\u0001\u0000\u0000\u0000ij\u0001\u0000"+
 		"\u0000\u0000j\u000f\u0001\u0000\u0000\u0000ki\u0001\u0000\u0000\u0000"+
-		"lm\u0005\b\u0000\u0000mn\u0005)\u0000\u0000no\u0006\b\uffff\uffff\u0000"+
-		"o\u0011\u0001\u0000\u0000\u0000pq\u0005\t\u0000\u0000qr\u0005)\u0000\u0000"+
+		"lm\u0005\b\u0000\u0000mn\u00053\u0000\u0000no\u0006\b\uffff\uffff\u0000"+
+		"o\u0011\u0001\u0000\u0000\u0000pq\u0005\t\u0000\u0000qr\u00053\u0000\u0000"+
 		"rs\u0006\t\uffff\uffff\u0000s\u0013\u0001\u0000\u0000\u0000tu\u0005\u000e"+
-		"\u0000\u0000uv\u0005)\u0000\u0000vw\u0006\n\uffff\uffff\u0000w\u0015\u0001"+
+		"\u0000\u0000uv\u00053\u0000\u0000vw\u0006\n\uffff\uffff\u0000w\u0015\u0001"+
 		"\u0000\u0000\u0000xy\u0006\u000b\uffff\uffff\u0000yz\u0005\n\u0000\u0000"+
-		"z{\u0005\u0019\u0000\u0000{\u0089\u0006\u000b\uffff\uffff\u0000|}\u0005"+
-		"\u0018\u0000\u0000}~\u0005\u0019\u0000\u0000~\u0087\u0006\u000b\uffff"+
-		"\uffff\u0000\u007f\u0080\u0005\u0018\u0000\u0000\u0080\u0081\u0005\u001a"+
-		"\u0000\u0000\u0081\u0085\u0006\u000b\uffff\uffff\u0000\u0082\u0083\u0005"+
-		"\u0018\u0000\u0000\u0083\u0084\u0005\u001a\u0000\u0000\u0084\u0086\u0006"+
-		"\u000b\uffff\uffff\u0000\u0085\u0082\u0001\u0000\u0000\u0000\u0085\u0086"+
-		"\u0001\u0000\u0000\u0000\u0086\u0088\u0001\u0000\u0000\u0000\u0087\u007f"+
-		"\u0001\u0000\u0000\u0000\u0087\u0088\u0001\u0000\u0000\u0000\u0088\u008a"+
-		"\u0001\u0000\u0000\u0000\u0089|\u0001\u0000\u0000\u0000\u0089\u008a\u0001"+
-		"\u0000\u0000\u0000\u008a\u0017\u0001\u0000\u0000\u0000\u008b\u008c\u0005"+
-		"\f\u0000\u0000\u008c\u008d\u0007\u0000\u0000\u0000\u008d\u008e\u0006\f"+
-		"\uffff\uffff\u0000\u008e\u0019\u0001\u0000\u0000\u0000\u008f\u0090\u0005"+
-		"\r\u0000\u0000\u0090\u0091\u0005 \u0000\u0000\u0091\u0092\u0005!\u0000"+
-		"\u0000\u0092\u0093\u0005\"\u0000\u0000\u0093\u0094\u0005!\u0000\u0000"+
-		"\u0094\u0095\u0005#\u0000\u0000\u0095\u0096\u0006\r\uffff\uffff\u0000"+
-		"\u0096\u001b\u0001\u0000\u0000\u0000\u0097\u0098\u0005\u000b\u0000\u0000"+
-		"\u0098\u0099\u0005\u001a\u0000\u0000\u0099\u009a\u0005\u0018\u0000\u0000"+
-		"\u009a\u009b\u0005\u001a\u0000\u0000\u009b\u009c\u0006\u000e\uffff\uffff"+
-		"\u0000\u009c\u001d\u0001\u0000\u0000\u0000\u009d\u009e\u0006\u000f\uffff"+
-		"\uffff\u0000\u009e\u009f\u0003\u0016\u000b\u0000\u009f\u00a0\u0006\u000f"+
-		"\uffff\uffff\u0000\u00a0\u001f\u0001\u0000\u0000\u0000\u00a1\u00a2\u0003"+
-		"\u0000\u0000\u0000\u00a2\u00d9\u0006\u0010\uffff\uffff\u0000\u00a3\u00a4"+
-		"\u0003\u0002\u0001\u0000\u00a4\u00a5\u0006\u0010\uffff\uffff\u0000\u00a5"+
-		"\u00da\u0001\u0000\u0000\u0000\u00a6\u00a7\u0003\u0004\u0002\u0000\u00a7"+
-		"\u00a8\u0006\u0010\uffff\uffff\u0000\u00a8\u00da\u0001\u0000\u0000\u0000"+
-		"\u00a9\u00aa\u0003\u0006\u0003\u0000\u00aa\u00ab\u0006\u0010\uffff\uffff"+
-		"\u0000\u00ab\u00da\u0001\u0000\u0000\u0000\u00ac\u00ad\u0003\n\u0005\u0000"+
-		"\u00ad\u00ae\u0006\u0010\uffff\uffff\u0000\u00ae\u00da\u0001\u0000\u0000"+
-		"\u0000\u00af\u00b0\u0003\u000e\u0007\u0000\u00b0\u00b1\u0006\u0010\uffff"+
-		"\uffff\u0000\u00b1\u00da\u0001\u0000\u0000\u0000\u00b2\u00b3\u0003\b\u0004"+
-		"\u0000\u00b3\u00b4\u0006\u0010\uffff\uffff\u0000\u00b4\u00da\u0001\u0000"+
-		"\u0000\u0000\u00b5\u00b6\u0003\f\u0006\u0000\u00b6\u00b7\u0006\u0010\uffff"+
-		"\uffff\u0000\u00b7\u00da\u0001\u0000\u0000\u0000\u00b8\u00b9\u0003\u0010"+
-		"\b\u0000\u00b9\u00ba\u0006\u0010\uffff\uffff\u0000\u00ba\u00da\u0001\u0000"+
-		"\u0000\u0000\u00bb\u00bc\u0003\u0012\t\u0000\u00bc\u00bd\u0006\u0010\uffff"+
-		"\uffff\u0000\u00bd\u00da\u0001\u0000\u0000\u0000\u00be\u00bf\u0003\u0014"+
-		"\n\u0000\u00bf\u00c0\u0006\u0010\uffff\uffff\u0000\u00c0\u00da\u0001\u0000"+
-		"\u0000\u0000\u00c1\u00c2\u00032\u0019\u0000\u00c2\u00c3\u0006\u0010\uffff"+
-		"\uffff\u0000\u00c3\u00da\u0001\u0000\u0000\u0000\u00c4\u00c5\u0003&\u0013"+
-		"\u0000\u00c5\u00c6\u0006\u0010\uffff\uffff\u0000\u00c6\u00da\u0001\u0000"+
-		"\u0000\u0000\u00c7\u00c8\u0003(\u0014\u0000\u00c8\u00c9\u0006\u0010\uffff"+
-		"\uffff\u0000\u00c9\u00da\u0001\u0000\u0000\u0000\u00ca\u00cb\u0003*\u0015"+
-		"\u0000\u00cb\u00cc\u0006\u0010\uffff\uffff\u0000\u00cc\u00da\u0001\u0000"+
-		"\u0000\u0000\u00cd\u00ce\u0003\u001e\u000f\u0000\u00ce\u00cf\u0006\u0010"+
-		"\uffff\uffff\u0000\u00cf\u00da\u0001\u0000\u0000\u0000\u00d0\u00d1\u0003"+
-		"\u001c\u000e\u0000\u00d1\u00d2\u0006\u0010\uffff\uffff\u0000\u00d2\u00da"+
-		"\u0001\u0000\u0000\u0000\u00d3\u00d4\u0003\u0018\f\u0000\u00d4\u00d5\u0006"+
-		"\u0010\uffff\uffff\u0000\u00d5\u00da\u0001\u0000\u0000\u0000\u00d6\u00d7"+
-		"\u0003\u001a\r\u0000\u00d7\u00d8\u0006\u0010\uffff\uffff\u0000\u00d8\u00da"+
-		"\u0001\u0000\u0000\u0000\u00d9\u00a3\u0001\u0000\u0000\u0000\u00d9\u00a6"+
-		"\u0001\u0000\u0000\u0000\u00d9\u00a9\u0001\u0000\u0000\u0000\u00d9\u00ac"+
-		"\u0001\u0000\u0000\u0000\u00d9\u00af\u0001\u0000\u0000\u0000\u00d9\u00b2"+
-		"\u0001\u0000\u0000\u0000\u00d9\u00b5\u0001\u0000\u0000\u0000\u00d9\u00b8"+
-		"\u0001\u0000\u0000\u0000\u00d9\u00bb\u0001\u0000\u0000\u0000\u00d9\u00be"+
-		"\u0001\u0000\u0000\u0000\u00d9\u00c1\u0001\u0000\u0000\u0000\u00d9\u00c4"+
-		"\u0001\u0000\u0000\u0000\u00d9\u00c7\u0001\u0000\u0000\u0000\u00d9\u00ca"+
-		"\u0001\u0000\u0000\u0000\u00d9\u00cd\u0001\u0000\u0000\u0000\u00d9\u00d0"+
-		"\u0001\u0000\u0000\u0000\u00d9\u00d3\u0001\u0000\u0000\u0000\u00d9\u00d6"+
-		"\u0001\u0000\u0000\u0000\u00da\u00db\u0001\u0000\u0000\u0000\u00db\u00d9"+
-		"\u0001\u0000\u0000\u0000\u00db\u00dc\u0001\u0000\u0000\u0000\u00dc!\u0001"+
-		"\u0000\u0000\u0000\u00dd\u00e1\u0006\u0011\uffff\uffff\u0000\u00de\u00df"+
-		"\u0003 \u0010\u0000\u00df\u00e0\u0006\u0011\uffff\uffff\u0000\u00e0\u00e2"+
-		"\u0001\u0000\u0000\u0000\u00e1\u00de\u0001\u0000\u0000\u0000\u00e2\u00e3"+
-		"\u0001\u0000\u0000\u0000\u00e3\u00e1\u0001\u0000\u0000\u0000\u00e3\u00e4"+
-		"\u0001\u0000\u0000\u0000\u00e4\u00e5\u0001\u0000\u0000\u0000\u00e5\u00e6"+
-		"\u0005\u0000\u0000\u0001\u00e6#\u0001\u0000\u0000\u0000\u00e7\u00e8\u0005"+
-		"\u0012\u0000\u0000\u00e8\u00e9\u0005\u0019\u0000\u0000\u00e9\u00f7\u0006"+
-		"\u0012\uffff\uffff\u0000\u00ea\u00eb\u0005\u0018\u0000\u0000\u00eb\u00ec"+
-		"\u0005\u0019\u0000\u0000\u00ec\u00f5\u0006\u0012\uffff\uffff\u0000\u00ed"+
-		"\u00ee\u0005\u0018\u0000\u0000\u00ee\u00ef\u0005\u001a\u0000\u0000\u00ef"+
-		"\u00f3\u0006\u0012\uffff\uffff\u0000\u00f0\u00f1\u0005\u0018\u0000\u0000"+
-		"\u00f1\u00f2\u0005\u001a\u0000\u0000\u00f2\u00f4\u0006\u0012\uffff\uffff"+
-		"\u0000\u00f3\u00f0\u0001\u0000\u0000\u0000\u00f3\u00f4\u0001\u0000\u0000"+
-		"\u0000\u00f4\u00f6\u0001\u0000\u0000\u0000\u00f5\u00ed\u0001\u0000\u0000"+
-		"\u0000\u00f5\u00f6\u0001\u0000\u0000\u0000\u00f6\u00f8\u0001\u0000\u0000"+
-		"\u0000\u00f7\u00ea\u0001\u0000\u0000\u0000\u00f7\u00f8\u0001\u0000\u0000"+
-		"\u0000\u00f8%\u0001\u0000\u0000\u0000\u00f9\u00fa\u0005\u0016\u0000\u0000"+
-		"\u00fa\u00fb\u0005\u001a\u0000\u0000\u00fb\u00fc\u0005\u0018\u0000\u0000"+
-		"\u00fc\u00fd\u0005\u001a\u0000\u0000\u00fd\u00fe\u0006\u0013\uffff\uffff"+
-		"\u0000\u00fe\'\u0001\u0000\u0000\u0000\u00ff\u010c\u0005\u0014\u0000\u0000"+
-		"\u0100\u0101\u00050\u0000\u0000\u0101\u0107\u0006\u0014\uffff\uffff\u0000"+
-		"\u0102\u0103\u0003*\u0015\u0000\u0103\u0104\u0006\u0014\uffff\uffff\u0000"+
-		"\u0104\u0106\u0001\u0000\u0000\u0000\u0105\u0102\u0001\u0000\u0000\u0000"+
-		"\u0106\u0109\u0001\u0000\u0000\u0000\u0107\u0105\u0001\u0000\u0000\u0000"+
-		"\u0107\u0108\u0001\u0000\u0000\u0000\u0108\u010d\u0001\u0000\u0000\u0000"+
-		"\u0109\u0107\u0001\u0000\u0000\u0000\u010a\u010b\u0005/\u0000\u0000\u010b"+
-		"\u010d\u0006\u0014\uffff\uffff\u0000\u010c\u0100\u0001\u0000\u0000\u0000"+
-		"\u010c\u010a\u0001\u0000\u0000\u0000\u010d)\u0001\u0000\u0000\u0000\u010e"+
-		"\u010f\u0005\u0017\u0000\u0000\u010f\u0110\u00051\u0000\u0000\u0110\u0111"+
-		"\u00052\u0000\u0000\u0111\u0112\u00053\u0000\u0000\u0112\u0113\u00052"+
-		"\u0000\u0000\u0113\u0114\u00054\u0000\u0000\u0114\u0115\u0006\u0015\uffff"+
-		"\uffff\u0000\u0115+\u0001\u0000\u0000\u0000\u0116\u0117\u0005\u0013\u0000"+
-		"\u0000\u0117\u0118\u0005.\u0000\u0000\u0118\u0119\u0006\u0016\uffff\uffff"+
-		"\u0000\u0119-\u0001\u0000\u0000\u0000\u011a\u011b\u0005\u0015\u0000\u0000"+
-		"\u011b\u011c\u0005/\u0000\u0000\u011c\u011d\u0006\u0017\uffff\uffff\u0000"+
-		"\u011d/\u0001\u0000\u0000\u0000\u011e\u0122\u0003&\u0013\u0000\u011f\u0122"+
-		"\u0003(\u0014\u0000\u0120\u0122\u0003*\u0015\u0000\u0121\u011e\u0001\u0000"+
-		"\u0000\u0000\u0121\u011f\u0001\u0000\u0000\u0000\u0121\u0120\u0001\u0000"+
-		"\u0000\u0000\u01221\u0001\u0000\u0000\u0000\u0123\u0124\u0003$\u0012\u0000"+
-		"\u0124\u0135\u0006\u0019\uffff\uffff\u0000\u0125\u0126\u0003&\u0013\u0000"+
-		"\u0126\u0127\u0006\u0019\uffff\uffff\u0000\u0127\u0128\u0003(\u0014\u0000"+
-		"\u0128\u0129\u0006\u0019\uffff\uffff\u0000\u0129\u0136\u0001\u0000\u0000"+
-		"\u0000\u012a\u012b\u0003(\u0014\u0000\u012b\u012c\u0006\u0019\uffff\uffff"+
-		"\u0000\u012c\u012d\u0003&\u0013\u0000\u012d\u012e\u0006\u0019\uffff\uffff"+
-		"\u0000\u012e\u0136\u0001\u0000\u0000\u0000\u012f\u0130\u0003(\u0014\u0000"+
-		"\u0130\u0131\u0006\u0019\uffff\uffff\u0000\u0131\u0136\u0001\u0000\u0000"+
-		"\u0000\u0132\u0133\u0003&\u0013\u0000\u0133\u0134\u0006\u0019\uffff\uffff"+
-		"\u0000\u0134\u0136\u0001\u0000\u0000\u0000\u0135\u0125\u0001\u0000\u0000"+
-		"\u0000\u0135\u012a\u0001\u0000\u0000\u0000\u0135\u012f\u0001\u0000\u0000"+
-		"\u0000\u0135\u0132\u0001\u0000\u0000\u0000\u0135\u0136\u0001\u0000\u0000"+
-		"\u0000\u01363\u0001\u0000\u0000\u0000\u000fYi\u0085\u0087\u0089\u00d9"+
-		"\u00db\u00e3\u00f3\u00f5\u00f7\u0107\u010c\u0121\u0135";
+		"z{\u0005\u001f\u0000\u0000{\u0086\u0006\u000b\uffff\uffff\u0000|}\u0005"+
+		"\"\u0000\u0000}\u0084\u0006\u000b\uffff\uffff\u0000~\u007f\u0005%\u0000"+
+		"\u0000\u007f\u0082\u0006\u000b\uffff\uffff\u0000\u0080\u0081\u0005(\u0000"+
+		"\u0000\u0081\u0083\u0006\u000b\uffff\uffff\u0000\u0082\u0080\u0001\u0000"+
+		"\u0000\u0000\u0082\u0083\u0001\u0000\u0000\u0000\u0083\u0085\u0001\u0000"+
+		"\u0000\u0000\u0084~\u0001\u0000\u0000\u0000\u0084\u0085\u0001\u0000\u0000"+
+		"\u0000\u0085\u0087\u0001\u0000\u0000\u0000\u0086|\u0001\u0000\u0000\u0000"+
+		"\u0086\u0087\u0001\u0000\u0000\u0000\u0087\u0017\u0001\u0000\u0000\u0000"+
+		"\u0088\u0089\u0005\f\u0000\u0000\u0089\u008a\u0007\u0000\u0000\u0000\u008a"+
+		"\u008b\u0006\f\uffff\uffff\u0000\u008b\u0019\u0001\u0000\u0000\u0000\u008c"+
+		"\u008d\u0005\r\u0000\u0000\u008d\u008e\u0005*\u0000\u0000\u008e\u008f"+
+		"\u0005+\u0000\u0000\u008f\u0090\u0005,\u0000\u0000\u0090\u0091\u0005+"+
+		"\u0000\u0000\u0091\u0092\u0005-\u0000\u0000\u0092\u0093\u0006\r\uffff"+
+		"\uffff\u0000\u0093\u001b\u0001\u0000\u0000\u0000\u0094\u0095\u0005\u000b"+
+		"\u0000\u0000\u0095\u0096\u0005\u0019\u0000\u0000\u0096\u0097\u0005\u0018"+
+		"\u0000\u0000\u0097\u0098\u0005\u0019\u0000\u0000\u0098\u0099\u0006\u000e"+
+		"\uffff\uffff\u0000\u0099\u001d\u0001\u0000\u0000\u0000\u009a\u009b\u0006"+
+		"\u000f\uffff\uffff\u0000\u009b\u009c\u0003\u0016\u000b\u0000\u009c\u009d"+
+		"\u0006\u000f\uffff\uffff\u0000\u009d\u001f\u0001\u0000\u0000\u0000\u009e"+
+		"\u009f\u0003\u0000\u0000\u0000\u009f\u00d8\u0006\u0010\uffff\uffff\u0000"+
+		"\u00a0\u00a1\u0003\u0002\u0001\u0000\u00a1\u00a2\u0006\u0010\uffff\uffff"+
+		"\u0000\u00a2\u00d7\u0001\u0000\u0000\u0000\u00a3\u00a4\u0003\u0004\u0002"+
+		"\u0000\u00a4\u00a5\u0006\u0010\uffff\uffff\u0000\u00a5\u00d7\u0001\u0000"+
+		"\u0000\u0000\u00a6\u00a7\u0003\u0006\u0003\u0000\u00a7\u00a8\u0006\u0010"+
+		"\uffff\uffff\u0000\u00a8\u00d7\u0001\u0000\u0000\u0000\u00a9\u00aa\u0003"+
+		"\n\u0005\u0000\u00aa\u00ab\u0006\u0010\uffff\uffff\u0000\u00ab\u00d7\u0001"+
+		"\u0000\u0000\u0000\u00ac\u00ad\u0003\u000e\u0007\u0000\u00ad\u00ae\u0006"+
+		"\u0010\uffff\uffff\u0000\u00ae\u00d7\u0001\u0000\u0000\u0000\u00af\u00b0"+
+		"\u0003\b\u0004\u0000\u00b0\u00b1\u0006\u0010\uffff\uffff\u0000\u00b1\u00d7"+
+		"\u0001\u0000\u0000\u0000\u00b2\u00b3\u0003\f\u0006\u0000\u00b3\u00b4\u0006"+
+		"\u0010\uffff\uffff\u0000\u00b4\u00d7\u0001\u0000\u0000\u0000\u00b5\u00b6"+
+		"\u0003\u0010\b\u0000\u00b6\u00b7\u0006\u0010\uffff\uffff\u0000\u00b7\u00d7"+
+		"\u0001\u0000\u0000\u0000\u00b8\u00b9\u0003\u0012\t\u0000\u00b9\u00ba\u0006"+
+		"\u0010\uffff\uffff\u0000\u00ba\u00d7\u0001\u0000\u0000\u0000\u00bb\u00bc"+
+		"\u0003\u0014\n\u0000\u00bc\u00bd\u0006\u0010\uffff\uffff\u0000\u00bd\u00d7"+
+		"\u0001\u0000\u0000\u0000\u00be\u00bf\u00032\u0019\u0000\u00bf\u00c0\u0006"+
+		"\u0010\uffff\uffff\u0000\u00c0\u00d7\u0001\u0000\u0000\u0000\u00c1\u00c2"+
+		"\u0003&\u0013\u0000\u00c2\u00c3\u0006\u0010\uffff\uffff\u0000\u00c3\u00d7"+
+		"\u0001\u0000\u0000\u0000\u00c4\u00c5\u0003(\u0014\u0000\u00c5\u00c6\u0006"+
+		"\u0010\uffff\uffff\u0000\u00c6\u00d7\u0001\u0000\u0000\u0000\u00c7\u00c8"+
+		"\u0003*\u0015\u0000\u00c8\u00c9\u0006\u0010\uffff\uffff\u0000\u00c9\u00d7"+
+		"\u0001\u0000\u0000\u0000\u00ca\u00cb\u0003\u001e\u000f\u0000\u00cb\u00cc"+
+		"\u0006\u0010\uffff\uffff\u0000\u00cc\u00d7\u0001\u0000\u0000\u0000\u00cd"+
+		"\u00ce\u0003\u001c\u000e\u0000\u00ce\u00cf\u0006\u0010\uffff\uffff\u0000"+
+		"\u00cf\u00d7\u0001\u0000\u0000\u0000\u00d0\u00d1\u0003\u0018\f\u0000\u00d1"+
+		"\u00d2\u0006\u0010\uffff\uffff\u0000\u00d2\u00d7\u0001\u0000\u0000\u0000"+
+		"\u00d3\u00d4\u0003\u001a\r\u0000\u00d4\u00d5\u0006\u0010\uffff\uffff\u0000"+
+		"\u00d5\u00d7\u0001\u0000\u0000\u0000\u00d6\u00a0\u0001\u0000\u0000\u0000"+
+		"\u00d6\u00a3\u0001\u0000\u0000\u0000\u00d6\u00a6\u0001\u0000\u0000\u0000"+
+		"\u00d6\u00a9\u0001\u0000\u0000\u0000\u00d6\u00ac\u0001\u0000\u0000\u0000"+
+		"\u00d6\u00af\u0001\u0000\u0000\u0000\u00d6\u00b2\u0001\u0000\u0000\u0000"+
+		"\u00d6\u00b5\u0001\u0000\u0000\u0000\u00d6\u00b8\u0001\u0000\u0000\u0000"+
+		"\u00d6\u00bb\u0001\u0000\u0000\u0000\u00d6\u00be\u0001\u0000\u0000\u0000"+
+		"\u00d6\u00c1\u0001\u0000\u0000\u0000\u00d6\u00c4\u0001\u0000\u0000\u0000"+
+		"\u00d6\u00c7\u0001\u0000\u0000\u0000\u00d6\u00ca\u0001\u0000\u0000\u0000"+
+		"\u00d6\u00cd\u0001\u0000\u0000\u0000\u00d6\u00d0\u0001\u0000\u0000\u0000"+
+		"\u00d6\u00d3\u0001\u0000\u0000\u0000\u00d7\u00da\u0001\u0000\u0000\u0000"+
+		"\u00d8\u00d6\u0001\u0000\u0000\u0000\u00d8\u00d9\u0001\u0000\u0000\u0000"+
+		"\u00d9!\u0001\u0000\u0000\u0000\u00da\u00d8\u0001\u0000\u0000\u0000\u00db"+
+		"\u00e1\u0006\u0011\uffff\uffff\u0000\u00dc\u00dd\u0003 \u0010\u0000\u00dd"+
+		"\u00de\u0006\u0011\uffff\uffff\u0000\u00de\u00e0\u0001\u0000\u0000\u0000"+
+		"\u00df\u00dc\u0001\u0000\u0000\u0000\u00e0\u00e3\u0001\u0000\u0000\u0000"+
+		"\u00e1\u00df\u0001\u0000\u0000\u0000\u00e1\u00e2\u0001\u0000\u0000\u0000"+
+		"\u00e2\u00e4\u0001\u0000\u0000\u0000\u00e3\u00e1\u0001\u0000\u0000\u0000"+
+		"\u00e4\u00e5\u0005\u0000\u0000\u0001\u00e5#\u0001\u0000\u0000\u0000\u00e6"+
+		"\u00e7\u0005\u0012\u0000\u0000\u00e7\u00e8\u0005;\u0000\u0000\u00e8\u00f3"+
+		"\u0006\u0012\uffff\uffff\u0000\u00e9\u00ea\u0005>\u0000\u0000\u00ea\u00f1"+
+		"\u0006\u0012\uffff\uffff\u0000\u00eb\u00ec\u0005A\u0000\u0000\u00ec\u00ef"+
+		"\u0006\u0012\uffff\uffff\u0000\u00ed\u00ee\u0005A\u0000\u0000\u00ee\u00f0"+
+		"\u0006\u0012\uffff\uffff\u0000\u00ef\u00ed\u0001\u0000\u0000\u0000\u00ef"+
+		"\u00f0\u0001\u0000\u0000\u0000\u00f0\u00f2\u0001\u0000\u0000\u0000\u00f1"+
+		"\u00eb\u0001\u0000\u0000\u0000\u00f1\u00f2\u0001\u0000\u0000\u0000\u00f2"+
+		"\u00f4\u0001\u0000\u0000\u0000\u00f3\u00e9\u0001\u0000\u0000\u0000\u00f3"+
+		"\u00f4\u0001\u0000\u0000\u0000\u00f4%\u0001\u0000\u0000\u0000\u00f5\u00f6"+
+		"\u0005\u0016\u0000\u0000\u00f6\u00f7\u00058\u0000\u0000\u00f7\u00f8\u0005"+
+		"8\u0000\u0000\u00f8\u00f9\u0006\u0013\uffff\uffff\u0000\u00f9\'\u0001"+
+		"\u0000\u0000\u0000\u00fa\u0107\u0005\u0014\u0000\u0000\u00fb\u00fc\u0005"+
+		"F\u0000\u0000\u00fc\u0102\u0006\u0014\uffff\uffff\u0000\u00fd\u00fe\u0003"+
+		"*\u0015\u0000\u00fe\u00ff\u0006\u0014\uffff\uffff\u0000\u00ff\u0101\u0001"+
+		"\u0000\u0000\u0000\u0100\u00fd\u0001\u0000\u0000\u0000\u0101\u0104\u0001"+
+		"\u0000\u0000\u0000\u0102\u0100\u0001\u0000\u0000\u0000\u0102\u0103\u0001"+
+		"\u0000\u0000\u0000\u0103\u0108\u0001\u0000\u0000\u0000\u0104\u0102\u0001"+
+		"\u0000\u0000\u0000\u0105\u0106\u0005E\u0000\u0000\u0106\u0108\u0006\u0014"+
+		"\uffff\uffff\u0000\u0107\u00fb\u0001\u0000\u0000\u0000\u0107\u0105\u0001"+
+		"\u0000\u0000\u0000\u0108)\u0001\u0000\u0000\u0000\u0109\u010a\u0005\u0017"+
+		"\u0000\u0000\u010a\u010b\u0005G\u0000\u0000\u010b\u010c\u0005H\u0000\u0000"+
+		"\u010c\u010d\u0005I\u0000\u0000\u010d\u010e\u0005H\u0000\u0000\u010e\u010f"+
+		"\u0005J\u0000\u0000\u010f\u0110\u0006\u0015\uffff\uffff\u0000\u0110+\u0001"+
+		"\u0000\u0000\u0000\u0111\u0112\u0005\u0013\u0000\u0000\u0112\u0113\u0005"+
+		"D\u0000\u0000\u0113\u0114\u0006\u0016\uffff\uffff\u0000\u0114-\u0001\u0000"+
+		"\u0000\u0000\u0115\u0116\u0005\u0015\u0000\u0000\u0116\u0117\u0005E\u0000"+
+		"\u0000\u0117\u0118\u0006\u0017\uffff\uffff\u0000\u0118/\u0001\u0000\u0000"+
+		"\u0000\u0119\u011d\u0003&\u0013\u0000\u011a\u011d\u0003(\u0014\u0000\u011b"+
+		"\u011d\u0003*\u0015\u0000\u011c\u0119\u0001\u0000\u0000\u0000\u011c\u011a"+
+		"\u0001\u0000\u0000\u0000\u011c\u011b\u0001\u0000\u0000\u0000\u011d1\u0001"+
+		"\u0000\u0000\u0000\u011e\u011f\u0003$\u0012\u0000\u011f\u0130\u0006\u0019"+
+		"\uffff\uffff\u0000\u0120\u0121\u0003&\u0013\u0000\u0121\u0122\u0006\u0019"+
+		"\uffff\uffff\u0000\u0122\u0123\u0003(\u0014\u0000\u0123\u0124\u0006\u0019"+
+		"\uffff\uffff\u0000\u0124\u0131\u0001\u0000\u0000\u0000\u0125\u0126\u0003"+
+		"(\u0014\u0000\u0126\u0127\u0006\u0019\uffff\uffff\u0000\u0127\u0128\u0003"+
+		"&\u0013\u0000\u0128\u0129\u0006\u0019\uffff\uffff\u0000\u0129\u0131\u0001"+
+		"\u0000\u0000\u0000\u012a\u012b\u0003(\u0014\u0000\u012b\u012c\u0006\u0019"+
+		"\uffff\uffff\u0000\u012c\u0131\u0001\u0000\u0000\u0000\u012d\u012e\u0003"+
+		"&\u0013\u0000\u012e\u012f\u0006\u0019\uffff\uffff\u0000\u012f\u0131\u0001"+
+		"\u0000\u0000\u0000\u0130\u0120\u0001\u0000\u0000\u0000\u0130\u0125\u0001"+
+		"\u0000\u0000\u0000\u0130\u012a\u0001\u0000\u0000\u0000\u0130\u012d\u0001"+
+		"\u0000\u0000\u0000\u0130\u0131\u0001\u0000\u0000\u0000\u01313\u0001\u0000"+
+		"\u0000\u0000\u000fYi\u0082\u0084\u0086\u00d6\u00d8\u00e1\u00ef\u00f1\u00f3"+
+		"\u0102\u0107\u011c\u0130";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

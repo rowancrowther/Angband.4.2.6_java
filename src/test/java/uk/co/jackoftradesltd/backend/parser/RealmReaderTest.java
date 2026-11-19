@@ -164,11 +164,9 @@ class RealmReaderTest {
     }
 
     @Test
-    void aRecordWithOnlyANameIsAHardError() throws IOException {
-        // The realm rule is name followed by one-or-more flavour directives, so a bare name: with
-        // no stat/verb/spell-noun/book-noun cannot complete the record.
-        assertThrows(ParseCancellationException.class, () -> load("name-only.txt", "name:weird\n"));
-
+    void aRecordWithOnlyANameLoadsAsInC() throws IOException {
+        // The realm rule takes a name: with no stat/verb/spell-noun/book-noun after it.
+        assertEquals(1, load("name-only.txt", "name:weird\n").items().size());
     }
 
     // ---- Grammar/lexer architecture --------------------------------------
@@ -319,10 +317,9 @@ class RealmReaderTest {
     }
 
     @Test
-    void aHeaderWithNoRealmsIsAHardErrorWhereCAcceptsAnEmptyFile() throws IOException {
-        // C would end with an empty realms list; the grammar's file rule needs at least one realm.
-        assertThrows(ParseCancellationException.class, () -> load("empty.txt", ""));
-
+    void aFileWithNoRealmsLoadsNothingAsInC() throws IOException {
+        // C ends with an empty realms list, and the file rule now takes it.
+        assertEquals(0, load("empty.txt", "").items().size());
     }
 
     @Test

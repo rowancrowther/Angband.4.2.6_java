@@ -42,7 +42,7 @@ bodyType
                 String slotType = $slot.slotType;
                 String slotName = $slot.slotName;
                 slots.add(new BodySlotRecord(slotType, slotName));
-            })+
+            })*
         ;
 
 file
@@ -50,5 +50,5 @@ file
         @init {
             $bodies = new ArrayList<>();
         }
-        :   (bodyType { $bodies.addFirst($bodyType.record); })+ EOF
+        :   (bodyType { $bodies.addFirst($bodyType.record); })* EOF
         ;

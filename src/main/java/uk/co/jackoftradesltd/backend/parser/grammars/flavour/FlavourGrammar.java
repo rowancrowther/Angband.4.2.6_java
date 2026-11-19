@@ -371,44 +371,50 @@ public class FlavourGrammar extends Parser {
 		FixedOrFlavourBlockContext _localctx = new FixedOrFlavourBlockContext(_ctx, getState());
 		enterRule(_localctx, 6, RULE_fixedOrFlavourBlock);
 		 ((FixedOrFlavourBlockContext)_localctx).flavours =  new ArrayList<>(); 
-		int _la;
 		try {
+			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(44); 
 			_errHandler.sync(this);
-			_la = _input.LA(1);
+			_alt = 1;
 			do {
-				{
-				setState(44);
-				_errHandler.sync(this);
-				switch (_input.LA(1)) {
-				case FIXED:
+				switch (_alt) {
+				case 1:
 					{
-					setState(38);
-					((FixedOrFlavourBlockContext)_localctx).fixed = fixed();
-					 _localctx.flavours.add(new FlavourParseRecord(((FixedOrFlavourBlockContext)_localctx).fixed.index,
-					                    ((FixedOrFlavourBlockContext)_localctx).fixed.sval, ((FixedOrFlavourBlockContext)_localctx).fixed.colour, ((FixedOrFlavourBlockContext)_localctx).fixed.text,
-					                    (((FixedOrFlavourBlockContext)_localctx).fixed!=null?(((FixedOrFlavourBlockContext)_localctx).fixed.start):null).getLine())); 
+					setState(44);
+					_errHandler.sync(this);
+					switch (_input.LA(1)) {
+					case FIXED:
+						{
+						setState(38);
+						((FixedOrFlavourBlockContext)_localctx).fixed = fixed();
+						 _localctx.flavours.add(new FlavourParseRecord(((FixedOrFlavourBlockContext)_localctx).fixed.index,
+						                    ((FixedOrFlavourBlockContext)_localctx).fixed.sval, ((FixedOrFlavourBlockContext)_localctx).fixed.colour, ((FixedOrFlavourBlockContext)_localctx).fixed.text,
+						                    (((FixedOrFlavourBlockContext)_localctx).fixed!=null?(((FixedOrFlavourBlockContext)_localctx).fixed.start):null).getLine())); 
+						}
+						break;
+					case FLAVOUR:
+						{
+						setState(41);
+						((FixedOrFlavourBlockContext)_localctx).flavour = flavour();
+						 _localctx.flavours.add(new FlavourParseRecord(((FixedOrFlavourBlockContext)_localctx).flavour.index,
+						                    null, ((FixedOrFlavourBlockContext)_localctx).flavour.colour, ((FixedOrFlavourBlockContext)_localctx).flavour.text,
+						                    (((FixedOrFlavourBlockContext)_localctx).flavour!=null?(((FixedOrFlavourBlockContext)_localctx).flavour.start):null).getLine())); 
+						}
+						break;
+					default:
+						throw new NoViableAltException(this);
 					}
-					break;
-				case FLAVOUR:
-					{
-					setState(41);
-					((FixedOrFlavourBlockContext)_localctx).flavour = flavour();
-					 _localctx.flavours.add(new FlavourParseRecord(((FixedOrFlavourBlockContext)_localctx).flavour.index,
-					                    null, ((FixedOrFlavourBlockContext)_localctx).flavour.colour, ((FixedOrFlavourBlockContext)_localctx).flavour.text,
-					                    (((FixedOrFlavourBlockContext)_localctx).flavour!=null?(((FixedOrFlavourBlockContext)_localctx).flavour.start):null).getLine())); 
 					}
 					break;
 				default:
 					throw new NoViableAltException(this);
 				}
-				}
 				setState(46); 
 				_errHandler.sync(this);
-				_la = _input.LA(1);
-			} while ( _la==FIXED || _la==FLAVOUR );
+				_alt = getInterpreter().adaptivePredict(_input,2,_ctx);
+			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
 			}
 		}
 		catch (RecognitionException re) {
@@ -430,8 +436,11 @@ public class FlavourGrammar extends Parser {
 		public KindContext kind() {
 			return getRuleContext(KindContext.class,0);
 		}
-		public FixedOrFlavourBlockContext fixedOrFlavourBlock() {
-			return getRuleContext(FixedOrFlavourBlockContext.class,0);
+		public List<FixedOrFlavourBlockContext> fixedOrFlavourBlock() {
+			return getRuleContexts(FixedOrFlavourBlockContext.class);
+		}
+		public FixedOrFlavourBlockContext fixedOrFlavourBlock(int i) {
+			return getRuleContext(FixedOrFlavourBlockContext.class,i);
 		}
 		public SectionContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -455,17 +464,32 @@ public class FlavourGrammar extends Parser {
 	public final SectionContext section() throws RecognitionException {
 		SectionContext _localctx = new SectionContext(_ctx, getState());
 		enterRule(_localctx, 8, RULE_section);
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(48);
 			((SectionContext)_localctx).kind = kind();
-			setState(49);
-			((SectionContext)_localctx).fixedOrFlavourBlock = fixedOrFlavourBlock();
+			((SectionContext)_localctx).kinds =  new FlavourKindParseRecord(((SectionContext)_localctx).kind.tVal, ((SectionContext)_localctx).kind.glyph,
+			                                                      new ArrayList<>(),
+			                                                      (((SectionContext)_localctx).kind!=null?(((SectionContext)_localctx).kind.start):null).getLine());
+			setState(55);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while (_la==FIXED || _la==FLAVOUR) {
+				{
+				{
+				setState(50);
+				((SectionContext)_localctx).fixedOrFlavourBlock = fixedOrFlavourBlock();
 
-			                ((SectionContext)_localctx).kinds =  new FlavourKindParseRecord(((SectionContext)_localctx).kind.tVal, ((SectionContext)_localctx).kind.glyph,
-			                ((SectionContext)_localctx).fixedOrFlavourBlock.flavours, (((SectionContext)_localctx).kind!=null?(((SectionContext)_localctx).kind.start):null).getLine());
-			            
+				                ((SectionContext)_localctx).kinds =  _localctx.kinds.appendFlavours(((SectionContext)_localctx).fixedOrFlavourBlock.flavours);
+				            
+				}
+				}
+				setState(57);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
 			}
 		}
 		catch (RecognitionException re) {
@@ -517,22 +541,22 @@ public class FlavourGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(55); 
+			setState(63);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==KIND) {
 				{
 				{
-				setState(52);
+				setState(58);
 				((FileContext)_localctx).section = section();
 				 _localctx.sections.add(((FileContext)_localctx).section.kinds); 
 				}
 				}
-				setState(57); 
+				setState(65);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==KIND );
-			setState(59);
+			}
+			setState(66);
 			match(EOF);
 			}
 		}
@@ -548,7 +572,7 @@ public class FlavourGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\n>\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\nE\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
@@ -557,34 +581,37 @@ public class FlavourGrammar extends Parser {
 		"\u0002\u0001\u0002\u0003\u0002%\b\u0002\u0001\u0003\u0001\u0003\u0001"+
 		"\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0004\u0003-\b\u0003\u000b"+
 		"\u0003\f\u0003.\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001"+
-		"\u0005\u0001\u0005\u0001\u0005\u0004\u00058\b\u0005\u000b\u0005\f\u0005"+
-		"9\u0001\u0005\u0001\u0005\u0001\u0005\u0000\u0000\u0006\u0000\u0002\u0004"+
-		"\u0006\b\n\u0000\u0000;\u0000\f\u0001\u0000\u0000\u0000\u0002\u0012\u0001"+
-		"\u0000\u0000\u0000\u0004\u001c\u0001\u0000\u0000\u0000\u0006,\u0001\u0000"+
-		"\u0000\u0000\b0\u0001\u0000\u0000\u0000\n7\u0001\u0000\u0000\u0000\f\r"+
-		"\u0005\u0001\u0000\u0000\r\u000e\u0005\b\u0000\u0000\u000e\u000f\u0005"+
-		"\t\u0000\u0000\u000f\u0010\u0005\b\u0000\u0000\u0010\u0011\u0006\u0000"+
-		"\uffff\uffff\u0000\u0011\u0001\u0001\u0000\u0000\u0000\u0012\u0013\u0005"+
-		"\u0002\u0000\u0000\u0013\u0014\u0005\b\u0000\u0000\u0014\u0015\u0005\t"+
-		"\u0000\u0000\u0015\u0016\u0005\b\u0000\u0000\u0016\u0017\u0005\t\u0000"+
-		"\u0000\u0017\u0018\u0005\b\u0000\u0000\u0018\u0019\u0005\t\u0000\u0000"+
-		"\u0019\u001a\u0005\b\u0000\u0000\u001a\u001b\u0006\u0001\uffff\uffff\u0000"+
-		"\u001b\u0003\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0003\u0000\u0000"+
-		"\u001d\u001e\u0005\b\u0000\u0000\u001e\u001f\u0005\t\u0000\u0000\u001f"+
-		" \u0005\b\u0000\u0000 $\u0006\u0002\uffff\uffff\u0000!\"\u0005\t\u0000"+
-		"\u0000\"#\u0005\b\u0000\u0000#%\u0006\u0002\uffff\uffff\u0000$!\u0001"+
-		"\u0000\u0000\u0000$%\u0001\u0000\u0000\u0000%\u0005\u0001\u0000\u0000"+
-		"\u0000&\'\u0003\u0002\u0001\u0000\'(\u0006\u0003\uffff\uffff\u0000(-\u0001"+
-		"\u0000\u0000\u0000)*\u0003\u0004\u0002\u0000*+\u0006\u0003\uffff\uffff"+
-		"\u0000+-\u0001\u0000\u0000\u0000,&\u0001\u0000\u0000\u0000,)\u0001\u0000"+
-		"\u0000\u0000-.\u0001\u0000\u0000\u0000.,\u0001\u0000\u0000\u0000./\u0001"+
-		"\u0000\u0000\u0000/\u0007\u0001\u0000\u0000\u000001\u0003\u0000\u0000"+
-		"\u000012\u0003\u0006\u0003\u000023\u0006\u0004\uffff\uffff\u00003\t\u0001"+
-		"\u0000\u0000\u000045\u0003\b\u0004\u000056\u0006\u0005\uffff\uffff\u0000"+
-		"68\u0001\u0000\u0000\u000074\u0001\u0000\u0000\u000089\u0001\u0000\u0000"+
-		"\u000097\u0001\u0000\u0000\u00009:\u0001\u0000\u0000\u0000:;\u0001\u0000"+
-		"\u0000\u0000;<\u0005\u0000\u0000\u0001<\u000b\u0001\u0000\u0000\u0000"+
-		"\u0004$,.9";
+		"\u0004\u0005\u00046\b\u0004\n\u0004\f\u00049\t\u0004\u0001\u0005\u0001"+
+		"\u0005\u0001\u0005\u0005\u0005>\b\u0005\n\u0005\f\u0005A\t\u0005\u0001"+
+		"\u0005\u0001\u0005\u0001\u0005\u0000\u0000\u0006\u0000\u0002\u0004\u0006"+
+		"\b\n\u0000\u0000C\u0000\f\u0001\u0000\u0000\u0000\u0002\u0012\u0001\u0000"+
+		"\u0000\u0000\u0004\u001c\u0001\u0000\u0000\u0000\u0006,\u0001\u0000\u0000"+
+		"\u0000\b0\u0001\u0000\u0000\u0000\n?\u0001\u0000\u0000\u0000\f\r\u0005"+
+		"\u0001\u0000\u0000\r\u000e\u0005\b\u0000\u0000\u000e\u000f\u0005\t\u0000"+
+		"\u0000\u000f\u0010\u0005\b\u0000\u0000\u0010\u0011\u0006\u0000\uffff\uffff"+
+		"\u0000\u0011\u0001\u0001\u0000\u0000\u0000\u0012\u0013\u0005\u0002\u0000"+
+		"\u0000\u0013\u0014\u0005\b\u0000\u0000\u0014\u0015\u0005\t\u0000\u0000"+
+		"\u0015\u0016\u0005\b\u0000\u0000\u0016\u0017\u0005\t\u0000\u0000\u0017"+
+		"\u0018\u0005\b\u0000\u0000\u0018\u0019\u0005\t\u0000\u0000\u0019\u001a"+
+		"\u0005\b\u0000\u0000\u001a\u001b\u0006\u0001\uffff\uffff\u0000\u001b\u0003"+
+		"\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0003\u0000\u0000\u001d\u001e"+
+		"\u0005\b\u0000\u0000\u001e\u001f\u0005\t\u0000\u0000\u001f \u0005\b\u0000"+
+		"\u0000 $\u0006\u0002\uffff\uffff\u0000!\"\u0005\t\u0000\u0000\"#\u0005"+
+		"\b\u0000\u0000#%\u0006\u0002\uffff\uffff\u0000$!\u0001\u0000\u0000\u0000"+
+		"$%\u0001\u0000\u0000\u0000%\u0005\u0001\u0000\u0000\u0000&\'\u0003\u0002"+
+		"\u0001\u0000\'(\u0006\u0003\uffff\uffff\u0000(-\u0001\u0000\u0000\u0000"+
+		")*\u0003\u0004\u0002\u0000*+\u0006\u0003\uffff\uffff\u0000+-\u0001\u0000"+
+		"\u0000\u0000,&\u0001\u0000\u0000\u0000,)\u0001\u0000\u0000\u0000-.\u0001"+
+		"\u0000\u0000\u0000.,\u0001\u0000\u0000\u0000./\u0001\u0000\u0000\u0000"+
+		"/\u0007\u0001\u0000\u0000\u000001\u0003\u0000\u0000\u000017\u0006\u0004"+
+		"\uffff\uffff\u000023\u0003\u0006\u0003\u000034\u0006\u0004\uffff\uffff"+
+		"\u000046\u0001\u0000\u0000\u000052\u0001\u0000\u0000\u000069\u0001\u0000"+
+		"\u0000\u000075\u0001\u0000\u0000\u000078\u0001\u0000\u0000\u00008\t\u0001"+
+		"\u0000\u0000\u000097\u0001\u0000\u0000\u0000:;\u0003\b\u0004\u0000;<\u0006"+
+		"\u0005\uffff\uffff\u0000<>\u0001\u0000\u0000\u0000=:\u0001\u0000\u0000"+
+		"\u0000>A\u0001\u0000\u0000\u0000?=\u0001\u0000\u0000\u0000?@\u0001\u0000"+
+		"\u0000\u0000@B\u0001\u0000\u0000\u0000A?\u0001\u0000\u0000\u0000BC\u0005"+
+		"\u0000\u0000\u0001C\u000b\u0001\u0000\u0000\u0000\u0005$,.7?";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

@@ -213,7 +213,7 @@ playerRace
         |   weight { weightBaseInit = $weight.weightBase; weightModifierInit = $weight.weightMod; }
         |   objFlags { oFlagsInit.addAll($objFlags.oFlags); }
         |   playerFlags { pFlagsInit.addAll($playerFlags.pFlags); }
-        |   values { valuesInit.putAll($values.valueMap); })+
+        |   values { valuesInit.putAll($values.valueMap); })*
         ;
 
 file
@@ -221,5 +221,5 @@ file
         @init {
             $races = new ArrayList<>();
         }
-        :   (playerRace { $races.add($playerRace.race); })+ EOF
+        :   (playerRace { $races.add($playerRace.race); })* EOF
         ;

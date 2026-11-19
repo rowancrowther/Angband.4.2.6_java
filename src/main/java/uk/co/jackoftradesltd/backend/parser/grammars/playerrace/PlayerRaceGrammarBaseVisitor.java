@@ -18,6 +18,13 @@
 // Generated from PlayerRaceGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playerrace;
 
+    import java.util.List;
+    import java.util.ArrayList;
+    import java.util.Map;
+    import java.util.HashMap;
+
+    import uk.co.jackoftradesltd.backend.parser.playerrace.PlayerRaceParseRecord;
+
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**

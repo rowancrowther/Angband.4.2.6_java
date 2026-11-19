@@ -120,17 +120,23 @@ class PlayerBodyEquippedTest {
     }
 
     /**
-     * A body with no slots at all is refused at construction rather than answering anything.
+     * A body with no slots at all builds, with a count of 0, and nothing is equipped in it. C's
+     * {@code body.txt} parser loads a {@code body:} line with no {@code slot:} lines, so a slotless
+     * body is a state the game can reach, and {@link PlayerBody#setSlots} accepts the empty list.
+     * The slot loop is the degenerate case: it runs no times, and neither an item nor
+     * {@code null} is found.
      *
-     * <p>It was once the loop's degenerate case, and free to check; the constructor now rejects an
-     * empty slot list outright, which is the stronger guarantee — C's bodies come from a parser
-     * that has already rejected a malformed {@code body.txt}, so a slotless body is not a state the
-     * game can reach.
+     * <p>Flipped on 261119 from {@code slotlessBodyIsRefused}, which expected an
+     * {@link IllegalArgumentException}.
      */
     @Test
-    @DisplayName("a body with no slots cannot be built")
-    void slotlessBodyIsRefused() {
-        assertThrows(IllegalArgumentException.class, PlayerBodyEquippedTest::bodyOf);
+    @DisplayName("a body with no slots builds with a count of 0 and nothing equipped")
+    void slotlessBodyBuildsAndHoldsNothing() {
+        PlayerBody body = bodyOf();
+
+        assertEquals(0, body.getCount());
+        assertFalse(body.itemIsEquipped(new ItemObject()));
+        assertFalse(body.itemIsEquipped(null));
     }
 
     /**

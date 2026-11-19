@@ -466,25 +466,41 @@ class PlayerTimedReaderTest {
 
     // ---- Fields: what C accepts and the grammar does not ------------------
 
+    /**
+     * A second {@code desc:} line in one record is joined to the first with no separator, as C's
+     * {@code parse_player_timed_desc} does with {@code string_append}, so the description is
+     * {@code FirstSecond}.
+     *
+     * <p>Function aRepeatedDescLineIsJoinedAsInC coded on 261119, commented in full on 261119
+     * (flipped from {@code aRepeatedDescLineKeepsTheLastHereWhereCConcatenatesThem}).
+     */
     @Test
-    void aRepeatedDescLineKeepsTheLastHereWhereCConcatenatesThem() throws IOException {
-        // parse_player_timed_desc uses string_append, so C would hold "FirstSecond".
+    void aRepeatedDescLineIsJoinedAsInC() throws IOException {
         ParseResult<PlayerTimedEffect> result = load("two-desc.txt", "name:FAST\ndesc:First\ndesc:Second\ngrade:G:100:Test:Message\n");
 
-        assertEquals("Second", result.items().get(0).getDescription());
+        assertEquals("FirstSecond", result.items().get(0).getDescription());
     }
 
+    /**
+     * A repeated {@code on-end:}, {@code on-increase:} or {@code on-decrease:} line in one record is
+     * joined to the one before it with no separator, as C's matching {@code parse_player_timed_*}
+     * handlers do with {@code string_append}, so each field is {@code OneTwo}.
+     *
+     * <p>Function aRepeatedEndIncreaseOrDecreaseLineIsJoinedAsInC coded on 261119, commented in full
+     * on 261119 (flipped from
+     * {@code aRepeatedEndIncreaseOrDecreaseLineKeepsTheLastHereWhereCConcatenatesThem}).
+     */
     @Test
-    void aRepeatedEndIncreaseOrDecreaseLineKeepsTheLastHereWhereCConcatenatesThem() throws IOException {
+    void aRepeatedEndIncreaseOrDecreaseLineIsJoinedAsInC() throws IOException {
         ParseResult<PlayerTimedEffect> result = load("two-messages.txt", "name:FAST\ngrade:G:100:Test:Message\n"
                         + "on-end:One\non-end:Two\n"
                         + "on-increase:One\non-increase:Two\n"
                         + "on-decrease:One\non-decrease:Two\n");
 
         PlayerTimedEffect fast = result.items().get(0);
-        assertEquals("Two", fast.getOnEnd());
-        assertEquals("Two", fast.getOnIncrease());
-        assertEquals("Two", fast.getOnDecrease());
+        assertEquals("OneTwo", fast.getOnEnd());
+        assertEquals("OneTwo", fast.getOnIncrease());
+        assertEquals("OneTwo", fast.getOnDecrease());
     }
 
     @Test

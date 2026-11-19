@@ -381,6 +381,34 @@ class TerrainReaderTest {
                         + " hold traps or items.'"), r.items().get(0)::toString);
     }
 
+    /** C: {@code string_append} on a {@code walk-msg:} line that already has text, so the lines join with no separator. */
+    @Test
+    void repeatedMessageLinesAreJoinedAsInC() throws IOException {
+        String[][] directives = {
+                {"walk-msg", "walkMsg"}, {"run-msg", "runMsg"}, {"hurt-msg", "hurtMsg"},
+                {"die-msg", "dieMsg"}, {"confused-msg", "confusedMsg"}
+        };
+        for (String[] d : directives) {
+            ParseResult<Feature> r = load(d[0] + ".txt", VALID_RECORD
+                    + d[0] + ":first\n" + d[0] + ":second\n");
+
+            String text = r.items().get(0).toString();
+            assertTrue(text.contains(d[1] + "='firstsecond'"), d[0] + ": " + text);
+        }
+    }
+
+    /** C: the same append on {@code look-prefix:} and {@code look-in-preposition:}, then {@code finish_parse_feat} adds one trailing space. */
+    @Test
+    void repeatedLookLinesAreJoinedAsInC() throws IOException {
+        ParseResult<Feature> r = load("look.txt", VALID_RECORD
+                + "look-prefix:first\nlook-prefix:second\n"
+                + "look-in-preposition:in\nlook-in-preposition:to\n");
+
+        String text = r.items().get(0).toString();
+        assertTrue(text.contains("lookPrefix='firstsecond '"), text);
+        assertTrue(text.contains("lookInPreposition='into '"), text);
+    }
+
     /** C: {@code name} is a {@code str}, which takes the rest of the line, colons included. */
     @Test
     void aColonInTheNameIsKept() throws IOException {
@@ -563,34 +591,6 @@ class TerrainReaderTest {
     // =====================================================================
     // Where the grammar is stricter than C (docs/grammar_issues.md)
     // =====================================================================
-
-    /** C: {@code string_append} on a {@code walk-msg:} line that already has text, so the lines join. */
-    @Test
-    void repeatedMessageLinesReplaceEachOtherHereWhereCAppendsThem() throws IOException {
-        String[][] directives = {
-                {"walk-msg", "walkMsg"}, {"run-msg", "runMsg"}, {"hurt-msg", "hurtMsg"},
-                {"die-msg", "dieMsg"}, {"confused-msg", "confusedMsg"}
-        };
-        for (String[] d : directives) {
-            ParseResult<Feature> r = load(d[0] + ".txt", VALID_RECORD
-                    + d[0] + ":first\n" + d[0] + ":second\n");
-
-            String text = r.items().get(0).toString();
-            assertTrue(text.contains(d[1] + "='second'"), d[0] + ": " + text);
-        }
-    }
-
-    /** C: the same append, then {@code finish_parse_feat} adds one trailing space. */
-    @Test
-    void repeatedLookLinesReplaceEachOtherHereWhereCAppendsThem() throws IOException {
-        ParseResult<Feature> r = load("look.txt", VALID_RECORD
-                + "look-prefix:first\nlook-prefix:second\n"
-                + "look-in-preposition:in\nlook-in-preposition:to\n");
-
-        String text = r.items().get(0).toString();
-        assertTrue(text.contains("lookPrefix='second '"), text);
-        assertTrue(text.contains("lookInPreposition='to '"), text);
-    }
 
     /** C: {@code strtok(flags, " |")}, so a space alone separates two flags. */
     @Test

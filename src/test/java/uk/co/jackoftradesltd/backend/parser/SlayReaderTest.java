@@ -382,26 +382,28 @@ class SlayReaderTest {
     // ---- Known differences from C (see docs/grammar_issues.md and docs/Assembler_Issues.md) ----
 
     @Test
-    void secondRaceFlagInOneRecordKeepsTheLastHereWhereCRejects() throws IOException {
+    void secondRaceFlagInOneRecordIsRefusedAsInC() {
         // C: parse_slay_race_flag returns PARSE_ERROR_INVALID_SLAY when race_flag is already set
-        // ("not both nor multiple race flags") and the load stops. Here the grammar keeps the last.
+        // ("not both nor multiple race flags") and the load stops. A repeated flag, even the same
+        // one, is refused the same way.
         String body = "code:EVIL_2\nname:evil creatures\nrace-flag:ORC\nrace-flag:EVIL\nmultiplier:2\n"
                 + "o-multiplier:18\npower:200\nmelee-verb:smite\nrange-verb:pierces\n";
-        ParseResult<Slay> result = load("two-flags.txt", body);
 
-        assertTrue(result.items().get(0).toString().contains("raceFlag=RF_EVIL"));
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("two-flags.txt", body));
+        assertTrue(e.getMessage().contains("Multiple race flags"), e::getMessage);
     }
 
     @Test
-    void secondBaseInOneRecordKeepsTheLastHereWhereCRejects() {
-        String body = "code:DRAGON_5\nname:dragons\nbase:" + KNOWN_BASE + "\nbase:no such base\n"
+    void secondBaseInOneRecordIsRefusedAsInC() {
+        // C: parse_slay_base returns PARSE_ERROR_INVALID_SLAY when base is already set
+        // ("not both nor multiple bases") and the load stops.
+        String body = "code:DRAGON_5\nname:dragons\nbase:" + KNOWN_BASE + "\nbase:" + KNOWN_BASE + "\n"
                 + "multiplier:5\no-multiplier:35\npower:110\nmelee-verb:smite\nrange-verb:pierces\n";
 
-        // The last base: wins, and it is the unknown one, so the load stops for that reason and
-        // not because there were two of them.
         DataFileParseException e = assertThrows(DataFileParseException.class,
                 () -> load("two-bases.txt", body));
-        assertTrue(e.getMessage().contains("no such base"), e::getMessage);
+        assertTrue(e.getMessage().contains("Multiple monster bases"), e::getMessage);
     }
 
     @Test

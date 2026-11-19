@@ -255,25 +255,25 @@ terrain
                 diggingInit = $digging.diggingNum;
             }
         |   walk_message {
-                walkInit = $walk_message.walkMsgStr;
+                walkInit = walkInit + $walk_message.walkMsgStr;
             }
         |   run_message {
-                runInit = $run_message.runMsgStr;
+                runInit = runInit + $run_message.runMsgStr;
             }
         |   hurt_message {
-                hurtInit = $hurt_message.hurtMsgStr;
+                hurtInit = hurtInit + $hurt_message.hurtMsgStr;
             }
         |   die_message {
-                dieInit = $die_message.dieMsgStr;
+                dieInit = dieInit + $die_message.dieMsgStr;
             }
         |   confused_message {
-                confInit = $confused_message.confMsgStr;
+                confInit = confInit + $confused_message.confMsgStr;
             }
         |   look_prefix {
-                prefixInit = $look_prefix.prefixStr;
+                prefixInit = prefixInit + $look_prefix.prefixStr;
             }
         |   look_in_preposition {
-                prepositionInit = $look_in_preposition.prepositionStr;
+                prepositionInit = prepositionInit + $look_in_preposition.prepositionStr;
             }
         |   resist_flag {
                 resistInit = $resist_flag.resistFlag;

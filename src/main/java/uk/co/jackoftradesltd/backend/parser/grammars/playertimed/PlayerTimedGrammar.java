@@ -1305,7 +1305,7 @@ public class PlayerTimedGrammar extends Parser {
 					{
 					setState(143);
 					((PlayerTimedContext)_localctx).desc = desc();
-					 descInit = ((PlayerTimedContext)_localctx).desc.descStr; 
+					 descInit = descInit + ((PlayerTimedContext)_localctx).desc.descStr; 
 					}
 					break;
 				case GRADE:
@@ -1327,21 +1327,21 @@ public class PlayerTimedGrammar extends Parser {
 					{
 					setState(149);
 					((PlayerTimedContext)_localctx).onEnd = onEnd();
-					 onEndInit = ((PlayerTimedContext)_localctx).onEnd.message; 
+					 onEndInit = onEndInit + ((PlayerTimedContext)_localctx).onEnd.message; 
 					}
 					break;
 				case ON_INCREASE:
 					{
 					setState(152);
 					((PlayerTimedContext)_localctx).onIncrease = onIncrease();
-					 onIncreaseInit = ((PlayerTimedContext)_localctx).onIncrease.message; 
+					 onIncreaseInit = onIncreaseInit + ((PlayerTimedContext)_localctx).onIncrease.message; 
 					}
 					break;
 				case ON_DECREASE:
 					{
 					setState(155);
 					((PlayerTimedContext)_localctx).onDecrease = onDecrease();
-					 onDecreaseInit = ((PlayerTimedContext)_localctx).onDecrease.message; 
+					 onDecreaseInit = onDecreaseInit + ((PlayerTimedContext)_localctx).onDecrease.message; 
 					}
 					break;
 				case MSGT:

@@ -691,14 +691,24 @@ public class SlayGrammar extends Parser {
 					{
 					setState(63);
 					((SlayContext)_localctx).raceFlag = raceFlag();
-					 raceFlagInit = ((SlayContext)_localctx).raceFlag.rFlag; 
+					 
+					                if (raceFlagInit.isEmpty())
+					                    raceFlagInit = ((SlayContext)_localctx).raceFlag.rFlag;
+					                else
+					                    raceFlagInit = "ERROR";
+					            
 					}
 					break;
 				case BASE:
 					{
 					setState(66);
 					((SlayContext)_localctx).base = base();
-					 baseInit = ((SlayContext)_localctx).base.baseStr; 
+
+					                if (baseInit.isEmpty())
+					                    baseInit = ((SlayContext)_localctx).base.baseStr;
+					                else
+					                    baseInit = "ERROR"; 
+					            
 					}
 					break;
 				case MULTIPLIER:
@@ -747,10 +757,10 @@ public class SlayGrammar extends Parser {
 			}
 			_ctx.stop = _input.LT(-1);
 
-			            ((SlayContext)_localctx).record =  new SlayParseRecord(codeInit, nameInit,
-			            raceFlagInit, baseInit, multInit, oMultInit,
-			            powerInit, mVerbInit, rVerbInit, line);
-			        
+			                ((SlayContext)_localctx).record =  new SlayParseRecord(codeInit, nameInit,
+			                raceFlagInit, baseInit, multInit, oMultInit,
+			                powerInit, mVerbInit, rVerbInit, line);
+			            
 		}
 		catch (RecognitionException re) {
 			_localctx.exception = re;

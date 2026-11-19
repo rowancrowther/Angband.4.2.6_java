@@ -166,10 +166,12 @@ msgDeath
  *
  * Everything else is a repetition rather than a sequence, so a record may
  * omit any of them: "locked" has no effect and no messages, only one trap
- * sets destroy:, only one sets magic:. Repeating a directive overwrites the
- * previous value - except effectBlock, which accumulates. No current data
- * file repeats one, though note that C would concatenate a repeated msg:
- * rather than overwrite it.
+ * sets destroy:, only one sets magic:. Repeating level:, destroy: or magic:
+ * overwrites the previous value, as in C. effectBlock accumulates, and so do
+ * msg: and msg-death: - C's parse_chest_trap_msg and _msg_death use
+ * string_append, so a repeated line is joined onto the text so far with no
+ * separator ("a" then "b" leaves "ab"). No current data file repeats any of
+ * them.
  *
  * @init seeds every field with an empty value, so a directive that is simply
  * absent arrives at the assembler as "" rather than null - except msg: and
@@ -246,8 +248,18 @@ chestTrap
             }
         |   destroy { destroyInit = $destroy.destroyStr; }
         |   magic { magicInit = $magic.magicStr; }
-        |   msg { msgInit = $msg.msgStr; }
-        |   msgDeath { msgDeathInit = $msgDeath.msgDeathStr; } )*
+        |   msg {
+                if (msgInit == null)
+                    msgInit = $msg.msgStr;
+                else
+                    msgInit = msgInit + $msg.msgStr; 
+            }
+        |   msgDeath {
+                if (msgDeathInit == null)
+                    msgDeathInit = $msgDeath.msgDeathStr;
+                else
+                    msgDeathInit = msgDeathInit + $msgDeath.msgDeathStr;
+            } )*
         ;
 
 /*

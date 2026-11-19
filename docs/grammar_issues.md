@@ -48,7 +48,7 @@ Found 2026-10-17 during `/port backend/parser/BlowEffectReader.java`. [<span sty
 ### Other grammars to check
 
 - Any other grammar whose rule for a free-text directive assigns where its C handler calls `string_append` has the
-  same fault. Not yet searched for.
+  same fault. [<span style="color:#006400">**CLOSED**</span> 26-11-19: searched. Every `string_append` handler in the C parsers was matched to its grammar, and the faults found are all closed in Stage 7c of `docs/Issue_Approach_Order.md`. The `D:` map rows in `VaultGrammar.g4` were not checked.]
 
 ## `PainLexer.g4`: a negative `type:` serial is accepted, C rejects it
 
@@ -624,7 +624,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style=
 
 ## `SlayGrammar.g4`: a second `race-flag:` or `base:` in one record overwrites, C rejects it
 
-Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-19: `SlayGrammar.g4` marks a second `race-flag:` or `base:` `"ERROR"` and `SlayAssembler.java` throws, so the load stops as in C. `SlayReaderTest.secondRaceFlagInOneRecordIsRefusedAsInC` and `secondBaseInOneRecordIsRefusedAsInC` pin it. The bullets below describe the state before the fix.]
 
 - `parse_slay_race_flag` and `parse_slay_base` in `obj-init.c` both return `PARSE_ERROR_INVALID_SLAY` when the slay
   already has a race flag or a base ("Flag or base, not both nor multiple race flags"), and the load stops.
@@ -634,7 +634,8 @@ Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
 - The grammar comment says a repeated directive keeps the last value "as in C". That holds for `name:`, the three
   numbers and both verbs, and not for these two.
 - `SlayReaderTest.secondRaceFlagInOneRecordKeepsTheLastHereWhereCRejects` and
-  `secondBaseInOneRecordKeepsTheLastHereWhereCRejects` pin the Java result.
+  `secondBaseInOneRecordKeepsTheLastHereWhereCRejects` pinned the Java result; they are now the two
+  `...IsRefusedAsInC` tests named above.
 - None on the shipped data, where every record has exactly one `race-flag:` and no `base:`.
 
 ## `SlayLexer.g4`: `INTEGER` accepts a leading minus and decimal only, and the comment says the assembler checks the range
@@ -1773,7 +1774,7 @@ the required `name:`, the repeats, the split `desc:`, the record count and the h
 - Indentation is the shared `CommentsAndEol.g4` gap;
   `PlayerPropertyReaderTest.anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pins it for `PlayerPropertyLexer`.
 
-## `TerrainFeatureGrammar.g4` and `TerrainFeatureLexer.g4`: replaced message lines, space-only and empty flags, base-10 numbers with nothing after them, a second field after `resist-flag:` and an unknown colour name differ from C
+## `TerrainFeatureGrammar.g4` and `TerrainFeatureLexer.g4`: space-only and empty flags, base-10 numbers with nothing after them, a second field after `resist-flag:` and an unknown colour name differ from C
 
 Found 2026-10-19 during `/port TerrainReader.java`. Updated 2026-11-18: the record order, the absent `name:` and `graphics:`, the repeated
 `graphics:`, the empty file and the repeated `name:` are closed (Stage 7a of `docs/Issue_Approach_Order.md`); the rest is not fixed.
@@ -1812,9 +1813,10 @@ Found 2026-10-19 during `/port TerrainReader.java`. Updated 2026-11-18: the reco
   `aSecondNameLineInOneRecordIsRefusedAsInC` and `aNameOnARepeatedCodeFollowsTheSlotAsInC`, and in `TerrainFeatureAssemblerTest` by
   `anAbsentGraphicsLineIsNulAndDark`, `anAbsentGraphicsLineOnARepeatedCodeKeepsTheEarlierOne`,
   `anAbsentGraphicsLineOnTheFirstRecordIsReplacedByALaterOne` and `aRecordWithMoreThanOneNameLineIsFatal`.]
-- `TerrainFeatureGrammar.g4`: `walk_message`, `run_message`, `hurt_message`, `die_message`, `confused_message`, `look_prefix` and
-  `look_in_preposition` assign into the record, so the last line wins. `desc` is the one that adds (`descInit + $desc.descStr`), as C does.
-  `priority`, `digging`, `mimic` and `resist_flag` assign, as C does.
+- `TerrainFeatureGrammar.g4`: `priority`, `digging`, `mimic` and `resist_flag` assign, as C does. [<span style="color:#006400">**CLOSED**</span> 26-11-19: `walk_message`, `run_message`,
+  `hurt_message`, `die_message`, `confused_message`, `look_prefix` and `look_in_preposition` now add to the record (`walkInit + ...`), as `desc`
+  already did and as C's `string_append` does, so repeated lines join with nothing between them and the look strings then get their one
+  trailing space. Pinned by `TerrainReaderTest.repeatedMessageLinesAreJoinedAsInC` and `repeatedLookLinesAreJoinedAsInC`.]
 - `TerrainFeatureLexer.g4`: `FLAG_OR` is an optional space, a `|` and an optional space, so two flags with only a space between them are a
   lexer error, and `FLAG_MODE` needs a `FLAG`, so an empty `flags:` is a syntax error.
 - `TerrainFeatureLexer.g4`: `INTEGER` is `'-'? ('0'..'9')+`, so `priority:0x3` and `priority:3x` are lexer errors. `digging:2:junk` and
@@ -1822,9 +1824,8 @@ Found 2026-10-19 during `/port TerrainReader.java`. Updated 2026-11-18: the reco
 - `AngbandDisplayCharacter.g4`: `COLOUR_VALUES` is built from C's colour characters and names, so `graphics:.:nonsense` is a lexer error.
   C loads it and draws white.
 - Indentation is the shared `CommentsAndEol.g4` gap under "Leading whitespace on a line" above.
-- The ones still open are hard errors except the replaced message lines: nothing loads and the messages come back.
-- `TerrainReaderTest.repeatedMessageLinesReplaceEachOtherHereWhereCAppendsThem`,
-  `repeatedLookLinesReplaceEachOtherHereWhereCAppendsThem`, `flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo`,
+- The ones still open are hard errors: nothing loads and the messages come back.
+- `TerrainReaderTest.flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo`,
   `anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt`, `aHexadecimalPriorityIsAHardErrorHereWhereCReadsBaseZero`, `textAfterThePriorityNumberIsAHardErrorHereWhereCIgnoresIt`,
   `aSecondFieldAfterTheDiggingNumberIsAHardErrorHereWhereCIgnoresIt`, `aSecondFieldAfterTheResistFlagIsAHardErrorHereWhereCIgnoresIt`,
   `anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite` and `anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pin them.

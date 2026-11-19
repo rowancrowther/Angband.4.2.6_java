@@ -34,6 +34,7 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.testsupport.Bodies;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
+import uk.co.jackoftradesltd.testsupport.SeededFoodGrades;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
@@ -84,7 +85,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author Rowan Crowther
  */
-@ExtendWith(SeededPlayerRegistry.class)
+@ExtendWith({SeededPlayerRegistry.class, SeededFoodGrades.class})
 class PlayerBirthDoBirthResetTest {
 
     /**

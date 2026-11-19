@@ -390,13 +390,13 @@ class HistoryReaderTest {
     }
 
     @Test
-    void aSecondPhraseLineKeepsTheLastHereWhereCAppendsItToTheEntry() throws IOException {
-        // parse_history_phrase string_appends onto the newest entry, so C reads 'onetwo'. The grammar
-        // now takes the second line, but the record keeps the last phrase only (Stage 7c).
+    void aSecondPhraseLineIsJoinedAsInC() throws IOException {
+        // parse_history_phrase string_appends onto the newest entry, so C reads 'onetwo', and so does
+        // the record: the phrase action appends to what the record already holds (Stage 7c).
         ParseResult<PlayerHistoryChart> result =
                 load("two-phrases.txt", "chart:1:0:100\nphrase:one\nphrase:two\n");
 
-        assertEquals("two", entriesOf(byNumber(result.items(), 1)).get(0).getText());
+        assertEquals("onetwo", entriesOf(byNumber(result.items(), 1)).get(0).getText());
     }
 
     @Test

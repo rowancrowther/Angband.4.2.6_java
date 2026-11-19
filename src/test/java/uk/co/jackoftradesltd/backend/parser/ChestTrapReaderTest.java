@@ -526,25 +526,36 @@ class ChestTrapReaderTest {
         assertFalse(byCode(result.items(), ChestTrapCode.SUMMON).isMagic());
     }
 
+    /**
+     * {@code parse_chest_trap_msg} does {@code t->msg = string_append(t->msg, text)}, so a second
+     * {@code msg:} line is joined onto the first with no separator, in C and here.
+     *
+     * <p>Function aRepeatedMsgLineIsJoinedAsInC coded on 261119, commented in full on 261119.
+     */
     @Test
-    void aRepeatedMsgLineKeepsTheLastHereWhereCConcatenatesThem() throws IOException {
-        // parse_chest_trap_msg does t->msg = string_append(t->msg, text), so C would hold
-        // "A puff of green gas surrounds you!Twice." Here the later line overwrites the earlier.
+    void aRepeatedMsgLineIsJoinedAsInC() throws IOException {
         ParseResult<ChestTrap> result = parse("two-msg.txt",
                 FULL_FILE.replace("msg:A puff of green gas surrounds you!",
                         "msg:A puff of green gas surrounds you!\nmsg:Twice."));
 
-        assertEquals("Twice.", byCode(result.items(), ChestTrapCode.POISON).getMessage());
+        assertEquals("A puff of green gas surrounds you!Twice.",
+                byCode(result.items(), ChestTrapCode.POISON).getMessage());
     }
 
+    /**
+     * {@code parse_chest_trap_msg_death} uses the same {@code string_append}, so a second
+     * {@code msg-death:} line is joined onto the first with no separator, in C and here.
+     *
+     * <p>Function aRepeatedMsgDeathLineIsJoinedAsInC coded on 261119, commented in full on 261119.
+     */
     @Test
-    void aRepeatedMsgDeathLineKeepsTheLastHereWhereCConcatenatesThem() throws IOException {
-        // Same string_append in parse_chest_trap_msg_death: C would hold "a poison needlenow".
+    void aRepeatedMsgDeathLineIsJoinedAsInC() throws IOException {
         ParseResult<ChestTrap> result = parse("two-death.txt",
                 FULL_FILE.replaceFirst("msg-death:a poison needle",
                         "msg-death:a poison needle\nmsg-death:now"));
 
-        assertEquals("now", byCode(result.items(), ChestTrapCode.LOSE_STR).getMessageDeath());
+        assertEquals("a poison needlenow",
+                byCode(result.items(), ChestTrapCode.LOSE_STR).getMessageDeath());
     }
 
     @Test

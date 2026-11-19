@@ -136,6 +136,21 @@ public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
             String name = record.name().isEmpty() ? null : record.name();
             String rawRaceFlag = record.raceFlag();
             String rawBase = record.base();
+
+            if (rawRaceFlag.equals("ERROR")) {
+                String message = "Slay starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal state. Multiple race flags found.";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
+
+            if (rawBase.equals("ERROR")) {
+                String message = "Slay starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal state. Multiple monster bases found.";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
+            
             // A second target on one slay is invalid; a race flag and a base together is the second.
             if (!rawRaceFlag.isEmpty() && !rawBase.isEmpty()) {
                 String message = "Slay starting at line: " + line + " of file: " + filename + " has " +

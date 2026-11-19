@@ -113,17 +113,27 @@ slay
             int line = 0;
         }
         @after {
-            $record = new SlayParseRecord(codeInit, nameInit,
-            raceFlagInit, baseInit, multInit, oMultInit,
-            powerInit, mVerbInit, rVerbInit, line);
-        }
+                $record = new SlayParseRecord(codeInit, nameInit,
+                raceFlagInit, baseInit, multInit, oMultInit,
+                powerInit, mVerbInit, rVerbInit, line);
+            }
         :   code {
                 codeInit = $code.codeStr;
                 line = $code.lineNo;
             }
         (   name { nameInit = $name.nameStr; }
-        |   raceFlag { raceFlagInit = $raceFlag.rFlag; }
-        |   base { baseInit = $base.baseStr; }
+        |   raceFlag { 
+                if (raceFlagInit.isEmpty())
+                    raceFlagInit = $raceFlag.rFlag;
+                else
+                    raceFlagInit = "ERROR";
+            }
+        |   base {
+                if (baseInit.isEmpty())
+                    baseInit = $base.baseStr;
+                else
+                    baseInit = "ERROR"; 
+            }
         |   multiplier { multInit = $multiplier.mult; }
         |   oMultiplier { oMultInit = $oMultiplier.oMult; }
         |   power { powerInit = $power.powerInt; }

@@ -1265,7 +1265,7 @@ public class TerrainFeatureGrammar extends Parser {
 					setState(137);
 					((TerrainContext)_localctx).walk_message = walk_message();
 
-					                walkInit = ((TerrainContext)_localctx).walk_message.walkMsgStr;
+					                walkInit = walkInit + ((TerrainContext)_localctx).walk_message.walkMsgStr;
 					            
 					}
 					break;
@@ -1274,7 +1274,7 @@ public class TerrainFeatureGrammar extends Parser {
 					setState(140);
 					((TerrainContext)_localctx).run_message = run_message();
 
-					                runInit = ((TerrainContext)_localctx).run_message.runMsgStr;
+					                runInit = runInit + ((TerrainContext)_localctx).run_message.runMsgStr;
 					            
 					}
 					break;
@@ -1283,7 +1283,7 @@ public class TerrainFeatureGrammar extends Parser {
 					setState(143);
 					((TerrainContext)_localctx).hurt_message = hurt_message();
 
-					                hurtInit = ((TerrainContext)_localctx).hurt_message.hurtMsgStr;
+					                hurtInit = hurtInit + ((TerrainContext)_localctx).hurt_message.hurtMsgStr;
 					            
 					}
 					break;
@@ -1292,7 +1292,7 @@ public class TerrainFeatureGrammar extends Parser {
 					setState(146);
 					((TerrainContext)_localctx).die_message = die_message();
 
-					                dieInit = ((TerrainContext)_localctx).die_message.dieMsgStr;
+					                dieInit = dieInit + ((TerrainContext)_localctx).die_message.dieMsgStr;
 					            
 					}
 					break;
@@ -1301,7 +1301,7 @@ public class TerrainFeatureGrammar extends Parser {
 					setState(149);
 					((TerrainContext)_localctx).confused_message = confused_message();
 
-					                confInit = ((TerrainContext)_localctx).confused_message.confMsgStr;
+					                confInit = confInit + ((TerrainContext)_localctx).confused_message.confMsgStr;
 					            
 					}
 					break;
@@ -1310,7 +1310,7 @@ public class TerrainFeatureGrammar extends Parser {
 					setState(152);
 					((TerrainContext)_localctx).look_prefix = look_prefix();
 
-					                prefixInit = ((TerrainContext)_localctx).look_prefix.prefixStr;
+					                prefixInit = prefixInit + ((TerrainContext)_localctx).look_prefix.prefixStr;
 					            
 					}
 					break;
@@ -1319,7 +1319,7 @@ public class TerrainFeatureGrammar extends Parser {
 					setState(155);
 					((TerrainContext)_localctx).look_in_preposition = look_in_preposition();
 
-					                prepositionInit = ((TerrainContext)_localctx).look_in_preposition.prepositionStr;
+					                prepositionInit = prepositionInit + ((TerrainContext)_localctx).look_in_preposition.prepositionStr;
 					            
 					}
 					break;

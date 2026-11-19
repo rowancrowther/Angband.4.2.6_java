@@ -284,7 +284,7 @@ public class HistoryGrammar extends Parser {
 				{
 				setState(22);
 				((RecordContext)_localctx).phrase = phrase();
-				 phraseInit = ((RecordContext)_localctx).phrase.phraseStr; 
+				 phraseInit = phraseInit + ((RecordContext)_localctx).phrase.phraseStr; 
 				}
 				}
 				setState(29);

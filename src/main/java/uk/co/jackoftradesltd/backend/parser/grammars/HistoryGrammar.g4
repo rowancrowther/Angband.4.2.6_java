@@ -44,7 +44,7 @@ record
                 percentInit = $chart.percent;
                 lineInit    = $chart.line;
             }
-        (   phrase { phraseInit = $phrase.phraseStr; } )*
+        (   phrase { phraseInit = phraseInit + $phrase.phraseStr; } )*
         ;
 
 file

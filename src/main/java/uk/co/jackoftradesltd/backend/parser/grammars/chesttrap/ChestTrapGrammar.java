@@ -707,14 +707,24 @@ public class ChestTrapGrammar extends Parser {
 					{
 					setState(87);
 					((ChestTrapContext)_localctx).msg = msg();
-					 msgInit = ((ChestTrapContext)_localctx).msg.msgStr; 
+
+					                if (msgInit == null)
+					                    msgInit = ((ChestTrapContext)_localctx).msg.msgStr;
+					                else
+					                    msgInit = msgInit + ((ChestTrapContext)_localctx).msg.msgStr; 
+					            
 					}
 					break;
 				case MSG_DEATH:
 					{
 					setState(90);
 					((ChestTrapContext)_localctx).msgDeath = msgDeath();
-					 msgDeathInit = ((ChestTrapContext)_localctx).msgDeath.msgDeathStr; 
+
+					                if (msgDeathInit == null)
+					                    msgDeathInit = ((ChestTrapContext)_localctx).msgDeath.msgDeathStr;
+					                else
+					                    msgDeathInit = msgDeathInit + ((ChestTrapContext)_localctx).msgDeath.msgDeathStr;
+					            
 					}
 					break;
 				default:

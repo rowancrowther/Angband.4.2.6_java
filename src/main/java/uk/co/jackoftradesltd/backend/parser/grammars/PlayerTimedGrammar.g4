@@ -177,7 +177,7 @@ playerTimed
                     flagSynonymValueInit, lowerBoundInit, flags, line);
         }
         :   name { nameInit = $name.nameStr; line = $name.lineNo; }
-        (   desc { descInit = $desc.descStr; }
+        (   desc { descInit = descInit + $desc.descStr; }
         |   grade { String colour       = $grade.colour;
                     String max          = $grade.max;
                     String status       = $grade.status;
@@ -187,9 +187,9 @@ playerTimed
                         new PlayerTimedGradeParseRecord(colour, max, status, messageDown, messageUp);
                     grades.add(gradeRecord);
                 }
-        |   onEnd { onEndInit = $onEnd.message; }
-        |   onIncrease { onIncreaseInit = $onIncrease.message; }
-        |   onDecrease { onDecreaseInit = $onDecrease.message; }
+        |   onEnd { onEndInit = onEndInit + $onEnd.message; }
+        |   onIncrease { onIncreaseInit = onIncreaseInit + $onIncrease.message; }
+        |   onDecrease { onDecreaseInit = onDecreaseInit + $onDecrease.message; }
         |   msgt { msgtInit = $msgt.msgType; }
         |   fail { String failTypeInit = $fail.type;
                    String failValueInit = $fail.value;

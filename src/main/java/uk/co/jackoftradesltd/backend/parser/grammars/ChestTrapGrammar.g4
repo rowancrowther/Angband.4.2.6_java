@@ -261,5 +261,5 @@ chestTrap
 file
         returns[List<ChestTrapParseRecord> chestTraps]
         :   { $chestTraps = new ArrayList<>(); }
-            (chestTrap { $chestTraps.add($chestTrap.trap); })+ EOF
+            (chestTrap { $chestTraps.add($chestTrap.trap); })* EOF
         ;

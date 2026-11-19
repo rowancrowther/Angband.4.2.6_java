@@ -80,10 +80,15 @@ import java.util.List;
  * <ul>
  *   <li>C takes the directives in any order, leaves any of them out and lets a repeated one
  *       overwrite, and accepts any number of {@code default:} lines anywhere, each affecting only
- *       the records that follow it. The grammar insists on at least one {@code default:} line before
- *       the first record, then {@code name:}, {@code graphics:}, an optional {@code break:}, an
- *       optional {@code max-stack:} and any number of {@code flags:} lines in that order, so any
- *       other shape is a syntax error and costs the whole file; see {@code docs/grammar_issues.md}.</li>
+ *       the records that follow it. The grammar does the same for the record directives: after
+ *       {@code name:}, any of {@code graphics:}, {@code break:}, {@code max-stack:} and
+ *       {@code flags:} may come in any order, each optional and repeatable, a repeated one
+ *       overwriting and {@code flags:} lines accumulating. It takes any number of {@code default:}
+ *       lines, or none, but only before the first {@code name:}; a {@code default:} line after
+ *       that is a syntax error and costs the whole file (accepted deviation, parked; see "Object
+ *       base" in {@code docs/Accepted_Deviations.md}). A {@code name:} or {@code flags:} line also
+ *       needs its newline, so one that is the last line of the file with no final newline is a
+ *       syntax error where C accepts it.</li>
  *   <li>The assembler agrees with C where it once did not: an unknown colour is white, an
  *       {@code IGNORE_} element flag sets the ignore bit, a default the file left out is 0 and the
  *       synthetic {@code TV_NONE} base, like a record with no plural part, has a {@code null} name.
@@ -94,7 +99,8 @@ import java.util.List;
  * </ul>
  *
  * <p>Class ObjectBaseReader coded before 260915, commented in full on 261028, updated on 261105
- * for the removal of the soft-error path.
+ * for the removal of the soft-error path and on 261119 for the grammar taking its directives in
+ * any order.
  *
  * @author Rowan Crowther
  */

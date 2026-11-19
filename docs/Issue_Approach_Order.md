@@ -543,12 +543,24 @@ One edit, many lexers. Regenerate once at the end of the stage.
 
 Each pattern is one recipe applied to many grammars. Do the recipe once on the simplest grammar, then repeat. Regenerate after each pattern.
 
-### 7a. Fixed record order to unordered, repeatable directives
+### 7a. Fixed record order to unordered, repeatable directives [<span style="color:#006400">**CLOSED**</span> 26-11-19: the twelve grammars in the list below are each closed. `PlayerClassGrammar`, `EffectBlock`, `Flavour` and `History`, named on the "less urgent" line, have no entry in that list and were not checked.]
 
 - ORDERING NEEDED: ~~BlowEffect~~
-- Ordering less urgend: ~~Vault~~, PlayerClassGrammar, EffectBlock, Flavour, History, PlayerProperty
+- Ordering less urgend: ~~Vault~~, PlayerClassGrammar, EffectBlock, Flavour, History, ~~PlayerProperty~~
 - G: ~~`BlowMethodGrammar.g4`~~, ~~`SummonGrammar.g4`~~, ~~`MonsterBaseGrammar.g4`~~, ~~`BrandGrammar.g4`~~, ~~`ObjectBaseGrammar.g4`~~, ~~`ProjectionGrammar.g4`~~, ~~`ObjectPropertyGrammar.g4` (also needs `type:` optional)~~, ~~`PlayerPropertyGrammar.g4`~~, ~~`TerrainFeatureGrammar.g4`~~, ~~`QuestGrammar.g4`~~, ~~`VaultGrammar.g4`~~, ~~`RoomProfileGrammar.g4`~~, ~~`ChestTrapGrammar.g4` (`code:` after `name:`)~~, ~~`PlayerTimedGrammar.g4`~~.
 - Each needs its `ParseRecord` and assembler to cope with an absent field, so this is where the Stage 0 absent-value convention is applied for the second time.
+  - BlowEffectGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - BlowMethodGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - BrandGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - ChestTrapGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - MonsterBaseGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - ObjectBaseGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - PlayerPropertyGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - PlayerTimedGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - QuestGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - RoomProfileGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - SummonGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
+  - VaultGrammar [<span style="color:#006400">**CLOSED**</span> 26-11-19]
 
 ### 7b. Name-only records and empty files
 
@@ -560,6 +572,7 @@ Each pattern is one recipe applied to many grammars. Do the recipe once on the s
 ### 7c. Free text that appends in one language and replaces in the other
 
 - Java replaces, C appends: G: `BlowEffectGrammar.g4` `desc:`, `CurseGrammar.g4` `msg:` ([<span style="color:#006400">**CLOSED**</span> 26-10-20: now appends, as `string_append` does]), `ChestTrapGrammar.g4` `msg:` and `msg-death:`, `PlayerTimedGrammar.g4` text lines and repeated effects, `TerrainFeatureGrammar.g4` message lines.
+- `PlayerTimedGrammar.g4` text lines inside one record: C appends each `desc:`, `on-end:`, `on-increase:` and `on-decrease:` line to what the effect already holds with `string_append`, so `desc:First` then `desc:Second` leaves `FirstSecond`. Java's `playerTimed` rule assigns (`descInit`, `onEndInit`, `onIncreaseInit`, `onDecreaseInit`), so the last line wins and the result is `Second`. A second record for the same name already appends in `PlayerTimedAssembler.java`, so the same two lines give `FirstSecond` with a `name:` between them and `Second` without one. The shipped `player_timed.txt` has one `desc:` per effect, so it does not hit this. Pinned by `PlayerTimedReaderTest.aRepeatedDescLineKeepsTheLastHereWhereCConcatenatesThem` and `PlayerTimedReaderTest.aRepeatedEndIncreaseOrDecreaseLineKeepsTheLastHereWhereCConcatenatesThem`; both flip to expect the joined text when the grammar appends.
 - Java appends, C replaces: G: `ObjectPropertyGrammar.g4` `msg:` and `desc:`.
 - Last wins in Java, C joins or keeps all: G: `ObjectPropertyGrammar.g4` `bindui:`, `PlayerPropertyGrammar.g4` split `desc:`, `HistoryGrammar.g4` second `phrase:`.
 - Overwrites where C rejects: G: `SlayGrammar.g4` second `race-flag:` or `base:`.

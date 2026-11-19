@@ -203,13 +203,17 @@ lashType
  * One complete record: a mandatory name: followed by one or more directives in
  * any order.
  *
- * The locals are seeded with empty strings so that a directive the record omits
- * arrives at the assembler as "" rather than null, letting it test absence with
- * isEmpty() throughout. The loop terminates naturally at the next record, since
- * name is outside it and so cannot be matched twice.
+ * Every directive is added to a list as a Directive, in file order, and the list
+ * becomes the record's BlowEffect2ParseRecord. A directive the record omits is
+ * simply not in the list; the assembler starts each effect from its defaults and
+ * applies only the directives it is given. The loop terminates naturally at the
+ * next record, since name is outside it and so cannot be matched twice.
  *
- * A repeated directive silently keeps the last value seen, which is what the C
- * original does too - its parse handlers simply overwrite the field.
+ * A repeated directive is kept, not collapsed: nothing is overwritten here, and
+ * BlowEffect2Assembler applies each one in turn, as C's parse handlers do. A
+ * repeated desc: therefore joins onto the earlier text (parse_eff_desc uses
+ * string_append), and a repeated power:, eval:, colour, effect-type: or lash-type:
+ * keeps the last value.
  */
 blowEffect
         returns[BlowEffect2ParseRecord effect]

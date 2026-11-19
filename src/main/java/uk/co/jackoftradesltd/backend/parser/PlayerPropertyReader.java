@@ -69,17 +69,23 @@ import java.util.List;
  * no properties are returned. A file that cannot be opened is an {@link IOException}, where C
  * quits.
  *
- * <p>The grammar is stricter than C in several places: the lines of a record must come in the order
- * {@code type}, {@code code}, {@code bindui}, {@code name}, {@code desc}, {@code value}, a record needs
- * a {@code name:}, and a repeated {@code code:}, {@code name:} or {@code value:}, or a {@code desc:}
- * that is not next to the other {@code desc:} lines, is a hard error where C takes the last (or
- * appends). The assembler is looser in one: a {@code value:} on a {@code player} or {@code object}
- * record is kept where C drops it. They are written up in {@code docs/grammar_issues.md} and
+ * <p>The grammar takes the lines of a record as C does. After its {@code type:}, a record may carry
+ * any mix of {@code code}, {@code bindui}, {@code name}, {@code desc} and {@code value}, in any
+ * order and any number of times, or none of them. A repeated {@code code:}, {@code name:} or
+ * {@code value:} keeps the last, the {@code desc:} lines are joined end to end wherever they sit, and
+ * every {@code bindui:} is kept, in file order. A file with no records loads nothing. The grammar is
+ * still stricter than C on a {@code type:} other than {@code player}, {@code object} or
+ * {@code element}, on a {@code bindui:} symbol or tag outside the shapes the lexer knows, and on a
+ * {@code value:} written in hex or followed by text; each is a hard error where C reads it.
+ * The assembler is looser in one: a {@code value:} on a {@code player} or {@code object} record is
+ * kept where C drops it. A record with no {@code name:} or {@code desc:} gets the empty string where C
+ * has {@code NULL}. These are written up in {@code docs/grammar_issues.md} and
  * {@code docs/Assembler_Issues.md}.
  *
  * <p>Class PlayerPropertyReader coded before 260915, commented in full on 261018, updated on 261105
  * for the removal of the soft-error path and the {@code record-count:} header, and for the
- * assembler now refusing a sentinel {@code code:} and reading {@code aux} as C does.
+ * assembler now refusing a sentinel {@code code:} and reading {@code aux} as C does, and on 261119
+ * for the grammar taking a record's lines in any order and any number of times.
  *
  * @author Rowan Crowther
  */
@@ -120,13 +126,14 @@ public class PlayerPropertyReader implements Reader<PlayerProperty> {
      * with no separator.
      *
      * <p>The ordering is deliberate: {@code throwIfAny} fires straight after the parse, so a hard
-     * grammar error (a record with no {@code name:}, a directive out of order, a line the lexer does
-     * not know) fails closed before any row is used. The rule needs at least one record, where C
-     * accepts a file with none. The rows are copied into a new list so the assembler cannot alter
-     * the parser's own.
+     * grammar error (a line the lexer does not know, or a line that is not a directive of the
+     * record) fails closed before any row is used. A file with no records gives an empty list, as C
+     * accepts one. The rows are copied into a new list so the assembler cannot alter the parser's
+     * own.
      *
      * <p>Function extract coded before 260915, commented in full on 261018, updated on 261105 for
-     * the removal of the soft-error path and the {@code record-count:} header.
+     * the removal of the soft-error path and the {@code record-count:} header, and on 261119 for
+     * the grammar taking an empty file and the directives in any order.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used

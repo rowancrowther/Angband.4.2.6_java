@@ -479,6 +479,135 @@ class VaultReaderTest {
     }
 
     /**
+     * Every directive after {@code name:} in a scrambled order, with each dependency still ahead of
+     * what needs it ({@code type:} before {@code columns:}, {@code columns:} before the first
+     * {@code D:}). All eight kinds are present and every field comes out right.
+     *
+     * <p>Function aShuffledRecordLoadsEveryField coded on 261119, commented in full on 261119.
+     */
+    @Test
+    void aShuffledRecordLoadsEveryField() throws IOException {
+        String path = tempFile("shuffled.txt", String.join("\n",
+                "name:Shuffled", "max-depth:9", "flags:FEW_ENTRANCES", "min-depth:2",
+                "type:Lesser vault", "rating:5", "columns:3", "D:###", "rows:3", "D:#.#", "D:###") + "\n");
+
+        Vault vault = new VaultReader().parseWithResults(path).items().getFirst();
+
+        assertEquals(RoomType.LESSER_VAULT, vault.getType());
+        assertEquals(5, vault.getRating());
+        assertEquals(3, vault.getHeight());
+        assertEquals(3, vault.getWidth());
+        assertEquals(2, vault.getMinLevel());
+        assertEquals(9, vault.getMaxLevel());
+        assertTrue(vault.getFlags().has(RoomFlags.FEW_ENTRANCES));
+        assertEquals(List.of("###", "#.#", "###"), vault.getMap());
+    }
+
+    /**
+     * A directive that repeats keeps its last line, as C's handlers overwrite the field each time.
+     * Checked for the five numeric directives, with {@code columns:} repeated at the same width so
+     * the {@code D:} line still fits.
+     *
+     * <p>Function aRepeatedNumericDirectiveLastLineWins coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void aRepeatedNumericDirectiveLastLineWins() throws IOException {
+        String path = tempFile("repeats.txt", String.join("\n",
+                "name:Repeats", "type:Lesser vault", "rating:1", "rating:7", "rows:2", "rows:3",
+                "columns:3", "columns:3", "min-depth:1", "min-depth:4", "max-depth:5", "max-depth:6",
+                "D:###") + "\n");
+
+        Vault vault = new VaultReader().parseWithResults(path).items().getFirst();
+
+        assertEquals(7, vault.getRating());
+        assertEquals(3, vault.getHeight());
+        assertEquals(3, vault.getWidth());
+        assertEquals(4, vault.getMinLevel());
+        assertEquals(6, vault.getMaxLevel());
+    }
+
+    /**
+     * Several {@code flags:} lines in one record all land in the one flag set, the second naming
+     * {@code MAX} (accepted, as in C) so it shows that the first line's flag was kept as well.
+     *
+     * <p>Function severalFlagsLinesInOneRecordAreAllKept coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void severalFlagsLinesInOneRecordAreAllKept() throws IOException {
+        String path = tempFile("two-flag-lines.txt", String.join("\n",
+                "name:Flags", "flags:FEW_ENTRANCES", "type:Lesser vault", "flags:MAX") + "\n");
+
+        Vault vault = new VaultReader().parseWithResults(path).items().getFirst();
+
+        assertTrue(vault.getFlags().has(RoomFlags.FEW_ENTRANCES));
+        assertTrue(vault.getFlags().has(RoomFlags.MAX));
+    }
+
+    /**
+     * {@code D:} lines separated by other directives are still one layout, in file order, and are
+     * also joined into the flat text C keeps in {@code v->text}.
+     *
+     * <p>Function interleavedMapLinesStayOneLayoutInOrder coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void interleavedMapLinesStayOneLayoutInOrder() throws IOException {
+        String path = tempFile("interleaved.txt", String.join("\n",
+                "name:Interleaved", "type:Lesser vault", "columns:3", "D:###", "flags:FEW_ENTRANCES",
+                "D:#.#", "rows:2", "D:###", "max-depth:3") + "\n");
+
+        Vault vault = new VaultReader().parseWithResults(path).items().getFirst();
+
+        assertEquals(List.of("###", "#.#", "###"), vault.getMap());
+        assertEquals("###" + "#.#" + "###", vault.getMapLines());
+        assertEquals(2, vault.getHeight(), "rows: is never compared with the number of D: lines");
+        assertEquals(3, vault.getMaxLevel());
+    }
+
+    /**
+     * Each record in a file has its own order, and nothing from one leaks into the next: the
+     * second record has no {@code type:} at all, and the third only a {@code rating:}.
+     *
+     * <p>Function eachRecordKeepsItsOwnOrderAndValues coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void eachRecordKeepsItsOwnOrderAndValues() throws IOException {
+        String path = tempFile("three-records.txt", String.join("\n",
+                "name:A", "max-depth:3", "type:Lesser vault", "columns:3", "D:###",
+                "name:B", "type:Lesser vault", "columns:1", "D:#",
+                "name:C", "rating:2") + "\n");
+
+        List<Vault> vaults = new VaultReader().parseWithResults(path).items();
+
+        assertEquals(List.of("C", "B", "A"), vaults.stream().map(Vault::getName).toList());
+        Vault c = vaults.get(0), b = vaults.get(1), a = vaults.get(2);
+        assertEquals(2, c.getRating());
+        assertNull(c.getType());
+        assertEquals(List.of("#"), b.getMap());
+        assertEquals(0, b.getMaxLevel());
+        assertEquals(List.of("###"), a.getMap());
+        assertEquals(3, a.getMaxLevel());
+    }
+
+    /**
+     * Order is free in the grammar but not in C: a {@code D:} line ahead of {@code columns:} is
+     * measured against a width of 0, so the load ends, however late {@code columns:} arrives.
+     *
+     * <p>Function aMapLineAheadOfColumnsEndsTheLoadThroughTheReader coded on 261119, commented in
+     * full on 261119.
+     */
+    @Test
+    void aMapLineAheadOfColumnsEndsTheLoadThroughTheReader() throws IOException {
+        String path = tempFile("d-first.txt", String.join("\n",
+                "name:Early", "D:###", "type:Lesser vault", "columns:3") + "\n");
+
+        assertThrows(DataFileParseException.class, () -> new VaultReader().parseWithResults(path));
+    }
+
+    /**
      * Inside a {@code D:} line a leading {@code #} is granite, not a comment — the imported
      * {@code CommentsAndEol} rules apply only in the default lexer mode, never inside
      * {@code REST_OF_LINE}. Trailing spaces survive for the same reason: they are what pads a short

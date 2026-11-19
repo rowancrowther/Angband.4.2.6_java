@@ -781,4 +781,102 @@ class MonsterBaseReaderTest {
 
         assertEquals('o', result.items().get(0).getDefaultMonsterChar());
     }
+
+    /**
+     * {@code parse_mon_base_flags} ORs each {@code flags:} line into the base's flag set, whatever
+     * other directive sits between them, so three {@code flags:} lines split by {@code glyph:} and
+     * {@code pain:} give one union of all four codes.
+     *
+     * <p>Function flagsLinesSplitByOtherDirectivesAccumulateAsInC coded on 261119, commented in
+     * full on 261119.
+     */
+    @Test
+    void flagsLinesSplitByOtherDirectivesAccumulateAsInC() throws Exception {
+        ParseResult<MonsterBase> result = load("split-flags.txt",
+                "name:orc\nflags:EVIL\nglyph:o\nflags:ANIMAL | UNDEAD\npain:2\nflags:SMART\ndesc:Orc\n");
+
+        MonsterBase base = result.items().get(0);
+        assertEquals(List.of("RF_ANIMAL", "RF_EVIL", "RF_SMART", "RF_UNDEAD"), flagNamesOf(base));
+        assertEquals('o', base.getDefaultMonsterChar());
+        assertEquals(2, painIndexOf(base));
+        assertEquals("Orc", descOf(base));
+    }
+
+    /**
+     * Three {@code desc:} lines, each separated from the next by a different directive, still join
+     * end to end in file order, as {@code string_append} does. {@code aDescSplitByAnotherDirective
+     * IsJoinedEndToEndAsInC} pins the two-line case; this one pins a run of three with two kinds of
+     * directive between them.
+     *
+     * <p>Function aDescSplitThreeWaysByDifferentDirectivesIsJoinedInFileOrderAsInC coded on
+     * 261119, commented in full on 261119.
+     */
+    @Test
+    void aDescSplitThreeWaysByDifferentDirectivesIsJoinedInFileOrderAsInC() throws Exception {
+        ParseResult<MonsterBase> result = load("three-desc.txt",
+                "name:orc\ndesc:ab\nglyph:o\ndesc:cd\nflags:EVIL\ndesc:ef\npain:1\n");
+
+        MonsterBase base = result.items().get(0);
+        assertEquals("abcdef", descOf(base));
+        assertEquals(List.of("RF_EVIL"), flagNamesOf(base));
+        assertEquals('o', base.getDefaultMonsterChar());
+        assertEquals(1, painIndexOf(base));
+    }
+
+    /**
+     * The last {@code glyph:} and the last {@code pain:} win even when other directives sit between
+     * the repeats; {@code aRepeatedGlyphOrPainKeepsTheLastAsInC} only pins repeats written side by
+     * side.
+     *
+     * <p>Function aRepeatedGlyphOrPainSplitByOtherDirectivesKeepsTheLastAsInC coded on 261119,
+     * commented in full on 261119.
+     */
+    @Test
+    void aRepeatedGlyphOrPainSplitByOtherDirectivesKeepsTheLastAsInC() throws Exception {
+        ParseResult<MonsterBase> result = load("split-repeats.txt",
+                "name:orc\nglyph:o\npain:1\nglyph:p\ndesc:Orc\npain:2\nflags:EVIL\nglyph:q\n");
+
+        MonsterBase base = result.items().get(0);
+        assertEquals('q', base.getDefaultMonsterChar());
+        assertEquals(2, painIndexOf(base));
+        assertEquals("Orc", descOf(base));
+        assertEquals(List.of("RF_EVIL"), flagNamesOf(base));
+    }
+
+    /**
+     * Each record is read on its own: directives in a different order in each of two records, and
+     * a record that leaves directives out, give each its own values with nothing carried over from
+     * the record before. The list is in C's chain order, last record first.
+     *
+     * <p>Function everyRecordTakesItsDirectivesInItsOwnOrderAsInC coded on 261119, commented in
+     * full on 261119.
+     */
+    @Test
+    void everyRecordTakesItsDirectivesInItsOwnOrderAsInC() throws Exception {
+        ParseResult<MonsterBase> result = load("two-orders.txt",
+                "name:a\nglyph:a\npain:1\nflags:EVIL\ndesc:A\n"
+                        + "name:b\ndesc:B\nflags:ANIMAL\nglyph:b\npain:2\n"
+                        + "name:c\nglyph:c\n");
+
+        List<MonsterBase> bases = result.items();
+        assertEquals(List.of("c", "b", "a"),
+                bases.stream().map(MonsterBase::getCodeName).toList());
+
+        MonsterBase a = bases.get(2);
+        assertEquals('a', a.getDefaultMonsterChar());
+        assertEquals(1, painIndexOf(a));
+        assertEquals("A", descOf(a));
+        assertEquals(List.of("RF_EVIL"), flagNamesOf(a));
+
+        MonsterBase b = bases.get(1);
+        assertEquals('b', b.getDefaultMonsterChar());
+        assertEquals(2, painIndexOf(b));
+        assertEquals("B", descOf(b));
+        assertEquals(List.of("RF_ANIMAL"), flagNamesOf(b));
+
+        MonsterBase c = bases.get(0);
+        assertEquals('c', c.getDefaultMonsterChar());
+        assertTrue(c.getFlags().isEmpty());
+        assertNull(descOf(c));
+    }
 }

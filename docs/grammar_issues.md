@@ -5,7 +5,7 @@ Differences between the ANTLR grammars and the C data-file parsers they replace.
 
 ## `desc:` appends in C, overwrites in `BlowEffectGrammar.g4`
 
-Found 2026-10-17 during `/port backend/parser/BlowEffectReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BlowEffectReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-19: the live grammar is now `BlowEffect2Grammar.g4`, which keeps every directive as a `Directive` in file order, and `BlowEffect2Assembler.parseDesc` appends each `desc:` to the text already held, as `string_append` does. The same pass made the record unordered and its directives repeatable (Stage 7a). Pinned by `repeatedDescLinesAreJoined` in `BlowEffectReaderTest` and `repeatedDescLinesJoinEvenWhenAnotherDirectiveSitsBetweenThem` in `BlowEffect2AssemblerTest`; the order and repeat cases are in `BlowEffect2GrammarTest` (`directivesKeepFileOrderNotCanonicalOrder`, `repeatedDirectiveIsKeptWholeNotCollapsed`) and `BlowEffect2AssemblerTest` (`repeatedSingleValueDirectivesKeepTheLastValue`, `directivesThatDoNotDependOnEachOtherLoadInAnyOrder`, `aResistNeedsAnEffectTypeAboveItInTheRecord`, `aRepeatedResistKeepsTheLastAndATypeChangeFollowsFileOrder`). The text below is the state of 2026-10-17 and describes the old `BlowEffectGrammar.g4`, now under `unused/`.]
 
 ### What C does
 
@@ -128,7 +128,7 @@ Found 2026-10-17 during `/port backend/parser/PainReader.java`. Not fixed.
 
 ## `BlowMethodGrammar.g4`: a record is a fixed sequence with one `desc:`, C takes any directives in any order
 
-Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-19: the `blow` rule in `BlowMethodGrammar.g4` is now `name (cut | stun | miss | phys | msg | act | desc)*`. Directives after `name:` come in any order and any may be missing. A repeated `cut:`, `stun:`, `miss:`, `phys:` or `msg:` overwrites, and `act:` and `desc:` accumulate (`desc:` joined end to end). The parse record carries `null` for an absent flag and the assembler reads it as false. Pinned by `directivesAfterNameLoadInAnyOrderAsCReadsThem`, `missingDescLoadsAsCAcceptsIt`, `nameOnlyRecordLoadsWithEveryFlagFalseAsInC`, `aFlagLineLeftOutDoesNotDisturbTheOthers`, `aLaterLineOfTheSameFlagWinsAsInC` and `repeatedDescLinesAreJoinedAsCStringAppendDoes` in `BlowMethodReaderTest`. The sections below describe the state before the fix.]
 
 ### What C does
 
@@ -1713,7 +1713,16 @@ Found 2026-10-18 during `/port backend/parser/TrapReader.java`. Not fixed.
 
 ## `PlayerPropertyGrammar.g4` and `PlayerPropertyLexer.g4`: a fixed line order, a required `name:`, repeated and split lines, an unknown `type:`, narrow `bindui:` symbols and base-10 numbers differ from C
 
-Found 2026-10-18 during `/port PlayerPropertyReader.java`. Not fixed.
+Found 2026-10-18 during `/port PlayerPropertyReader.java`. Updated 2026-11-19: the fixed line order, the required `name:`, the
+repeated `code:`, `name:` and `value:`, the split `desc:`, the empty file and indentation are <span style="color:#006400">**CLOSED**</span>
+(Stage 7a of `docs/Issue_Approach_Order.md`): `property` in `PlayerPropertyGrammar.g4` is now `type (code | bindUI | name | desc | value)*`
+and `file` is `property* EOF`. Pinned by `aBindingAfterTheNameLoadsAsInC`, `aDescBeforeTheNameLoadsAsInC`,
+`aValueBeforeTheDescLoadsAsInC`, `aRecordWithNoNameLoadsWithAnEmptyNameHereWhereCHasNull`, `aRepeatedNameKeepsTheLastAsInC`,
+`aRepeatedValueKeepsTheLastAsInC`, `aRepeatedCodeKeepsTheLastAsInC`, `aDescSplitByAnotherLineIsAppendedAsInC`,
+`backToBackDescLinesAreAppendedAsInC`, `bindingsSplitByAnotherLineAreBothKeptInFileOrder`, `aFileWithNoRecordsLoadsNothingAsInC` and
+`anIndentedDirectiveLoadsAsInC` in `PlayerPropertyReaderTest`. The unknown `type:`, the narrow `bindui:` symbols and tags, and the
+base-10 numbers are not fixed. The stale header note is also fixed. The "What Java does" bullets below that describe the old order,
+the required `name:`, the repeats, the split `desc:`, the record count and the header note are the state of 2026-10-18.
 
 ### What C does
 

@@ -454,18 +454,21 @@ class DungeonLoaderTest {
     }
 
     /**
-     * A room-template grammar error stops the load and writes nothing: a record with no
-     * {@code doors:} line fails closed in the grammar.
+     * A room-template grammar error stops the load and writes nothing: a directive ahead of the
+     * first {@code name:} line fails closed in the grammar. C answers the same input with
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}. A missing {@code doors:} line is not an error,
+     * since only {@code name:} is required and C leaves the doors at zero.
      *
      * <p>Function roomGrammarErrorStopsTheLoad coded on 261013, commented in full on 261013,
-     * renamed and rewritten on 261104 for the removal of the soft-error path.
+     * renamed and rewritten on 261104 for the removal of the soft-error path, rewritten on
+     * 261119 because RoomProfileGrammar made every directive but name: optional.
      */
     @Test
     @DisplayName("a room-template grammar error stops the load before anything is written")
     void roomGrammarErrorStopsTheLoad() throws Exception {
         write("room_template.txt", String.join("\n",
-                "name:Bad", "type:1", "rating:1", "rows:3", "columns:3",
-                "tval:0", "D:###", "D:#.#", "D:###", ""));
+                "type:1", "name:Bad", "rating:1", "rows:3", "columns:3",
+                "doors:0", "tval:0", "D:###", "D:#.#", "D:###", ""));
 
         assertThrows(ParseCancellationException.class, DungeonLoader::loadRoomTemplates);
 

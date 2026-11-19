@@ -470,11 +470,60 @@ class ChestTrapReaderTest {
         assertEquals(new ChestTrapReader().parseWithResults(REAL_FILE).items().size(), upstream);
     }
 
+    /**
+     * C's {@code run_parse_chest_trap} accepts a file with no {@code name:} lines and leaves
+     * {@code chest_traps} NULL. The grammar's {@code file} rule is {@code (chestTrap)* EOF}, so an
+     * empty file parses; {@code ChestTrapAssembler} then refuses it for holding 0 traps where
+     * {@code ChestTrapCode} has 7, which is the accepted "must match {@code ChestTrapCode} record
+     * for record" deviation in {@code docs/Accepted_Deviations.md}.
+     *
+     * <p>Function aFileWithNoTrapsIsRefusedByTheAssemblerHereWhereCLoadsAnEmptyList coded on 261119,
+     * commented in full on 261119; replaces the older pin that expected a syntax error.
+     */
     @Test
-    void aFileWithAHeaderAndNoTrapsIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
-        // C's run_parse_chest_trap accepts a file with no name: lines and leaves chest_traps NULL.
-        assertThrows(ParseCancellationException.class, () -> parse("empty.txt", ""));
+    void aFileWithNoTrapsIsRefusedByTheAssemblerHereWhereCLoadsAnEmptyList() {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> parse("empty.txt", ""));
 
+        assertTrue(e.getMessage().contains("Expected: 7 received: 0"), e.getMessage());
+    }
+
+    /**
+     * {@code parse_chest_trap_level} overwrites {@code t->level} each time, so the last
+     * {@code level:} line wins in C and here.
+     *
+     * <p>Function aRepeatedLevelLineKeepsTheLastAsInC coded on 261119, commented in full on 261119.
+     */
+    @Test
+    void aRepeatedLevelLineKeepsTheLastAsInC() throws IOException {
+        ParseResult<ChestTrap> result = parse("two-level.txt", FULL_FILE.replace("level:25", "level:20\nlevel:25"));
+
+        assertEquals(25, byCode(result.items(), ChestTrapCode.EXPLODE).getLevel());
+    }
+
+    /**
+     * {@code parse_chest_trap_destroy} sets the flag from each line in turn, so a later
+     * {@code destroy:0} undoes an earlier {@code destroy:1} in C and here.
+     *
+     * <p>Function aRepeatedDestroyLineKeepsTheLastAsInC coded on 261119, commented in full on 261119.
+     */
+    @Test
+    void aRepeatedDestroyLineKeepsTheLastAsInC() throws IOException {
+        ParseResult<ChestTrap> result = parse("two-destroy.txt", FULL_FILE.replace("destroy:1", "destroy:1\ndestroy:0"));
+
+        assertFalse(byCode(result.items(), ChestTrapCode.EXPLODE).isDestroy());
+    }
+
+    /**
+     * {@code parse_chest_trap_magic} sets the flag from each line in turn, so a later
+     * {@code magic:0} undoes an earlier {@code magic:1} in C and here.
+     *
+     * <p>Function aRepeatedMagicLineKeepsTheLastAsInC coded on 261119, commented in full on 261119.
+     */
+    @Test
+    void aRepeatedMagicLineKeepsTheLastAsInC() throws IOException {
+        ParseResult<ChestTrap> result = parse("two-magic.txt", FULL_FILE.replace("magic:1", "magic:1\nmagic:0"));
+
+        assertFalse(byCode(result.items(), ChestTrapCode.SUMMON).isMagic());
     }
 
     @Test

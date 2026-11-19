@@ -69,19 +69,26 @@ import java.util.List;
  * <p>
  * As in C, the first error stops the load and nothing is returned: a syntax error is thrown from
  * {@link #extract} as a {@code ParseCancellationException}, and a record the assembler refuses (an
- * unknown resist or vulnerability flag, a number too large for an int) is thrown as a
+ * unknown, {@code NONE} or {@code MAX} resist or vulnerability flag, a number with a leading
+ * {@code -}, a 255th brand) is thrown as a
  * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
+ * <p>
+ * Directives. As in C, only {@code code:} is required: the other seven may come in any order, be
+ * left out, or be repeated. The grammar reads them as independent optional lines after
+ * {@code code:}, a second {@code code:} opens the next record, and a directive before any
+ * {@code code:} is a syntax error (C's {@code PARSE_ERROR_MISSING_RECORD_HEADER}). A repeated
+ * {@code name:} or {@code verb:} keeps the last line. The five numeric and flag directives reach
+ * {@link BrandAssembler} line by line, so a bad earlier line ends the load even when a good one
+ * follows, and the last line is the value kept.
  * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>C takes the directives in any order, leaves any of them out, and lets a repeated one
- *       overwrite. The grammar insists on {@code code:}, {@code name:}, {@code verb:},
- *       {@code multiplier:}, {@code o-multiplier:}, {@code power:} and {@code resist-flag:} in that
- *       order with an optional {@code vuln-flag:} last, so any other shape is a syntax error and
- *       costs the whole file; see {@code docs/grammar_issues.md}.</li>
  *   <li>A brand with no {@code vuln-flag:} line carries {@code RF_NONE}, as C's zero-filled record
- *       carries flag 0. {@code resist-flag:NONE} and {@code vuln-flag:NONE} are accepted here and
- *       rejected by C's {@code lookup_flag}; see {@code docs/Assembler_Issues.md}.</li>
+ *       carries flag 0, and the same holds for a missing {@code resist-flag:}. A written
+ *       {@code resist-flag:NONE} or {@code vuln-flag:NONE} ends the load, as C's {@code lookup_flag}
+ *       refuses it, and so does {@code MAX}.</li>
+ *   <li>A number too big for an int is clamped to {@link Integer#MAX_VALUE} where C wraps it, the
+ *       accepted deviation recorded in {@code ParseUtils}.</li>
  *   <li>The list is base 0 and holds only real records: no blank slot 0. This is the accepted
  *       deviation recorded in the registry's class block, so {@code brand_max} is the plain record
  *       count, one lower than C's.</li>
@@ -90,7 +97,7 @@ import java.util.List;
  * </ul>
  *
  * <p>Class BrandReader coded before 260915, commented in full on 261017, updated on 261105 for the
- * removal of the soft-error path.
+ * removal of the soft-error path, and on 261119 for the unordered and repeatable directives.
  *
  * @author Rowan Crowther
  */

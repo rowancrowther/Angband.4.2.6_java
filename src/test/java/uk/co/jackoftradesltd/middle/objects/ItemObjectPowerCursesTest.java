@@ -24,10 +24,6 @@ import org.junit.jupiter.params.provider.CsvSource;
 import uk.co.jackoftradesltd.backend.parser.ObjectPropertyReader;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
-import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
-import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -38,6 +34,7 @@ import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.testsupport.CurseFixture;
 import uk.co.jackoftradesltd.testsupport.ItemFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
+import uk.co.jackoftradesltd.testsupport.UIRegistryFixture;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -78,8 +75,7 @@ import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 @ExtendWith(SeededPlayerRegistry.class)
 class ItemObjectPowerCursesTest {
 
-    private static Object savedRenderers;
-    private static Object savedUiEntries;
+    private static UIRegistryFixture.Saved savedUIEntries;
     private static Object savedProperties;
     private static Object savedFlagSets;
     private static Object savedElementSets;
@@ -100,13 +96,7 @@ class ItemObjectPowerCursesTest {
      */
     @BeforeAll
     static void seedRegistries() throws Exception {
-        savedRenderers = ItemFixture.setStatic(UIRegistry.class, "uiEntryRenderers",
-                new UIEntryRendererReader().parseWithResults("lib/gamedata/ui_entry_renderer.txt").items());
-        // The base entries must be registered for UIEntryReader below to seed from.
-        UIRegistry.setUIEntries(
-                new UIEntryBaseReader().parseWithResults("lib/gamedata/ui_entry_base.txt").items());
-        savedUiEntries = ItemFixture.setStatic(UIRegistry.class, "uiEntries",
-                new UIEntryReader().parseWithResults("lib/gamedata/ui_entry.txt").items());
+        savedUIEntries = UIRegistryFixture.loadReal();
         savedProperties = ItemFixture.setStatic(ObjectRegistry.class, "objectProperties",
                 new ObjectPropertyReader().parseWithResults("lib/gamedata/object_property.txt").items());
 
@@ -130,8 +120,7 @@ class ItemObjectPowerCursesTest {
      */
     @AfterAll
     static void restoreRegistries() {
-        ItemFixture.setStatic(UIRegistry.class, "uiEntryRenderers", savedRenderers);
-        ItemFixture.setStatic(UIRegistry.class, "uiEntries", savedUiEntries);
+        UIRegistryFixture.restore(savedUIEntries);
         ItemFixture.setStatic(ObjectRegistry.class, "objectProperties", savedProperties);
         ItemFixture.setStatic(ObjectRegistry.class, "flagSets", savedFlagSets);
         ItemFixture.setStatic(ObjectRegistry.class, "elementSets", savedElementSets);

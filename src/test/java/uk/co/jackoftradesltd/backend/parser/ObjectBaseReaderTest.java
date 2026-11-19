@@ -692,6 +692,104 @@ class ObjectBaseReaderTest {
         assertEquals(40, base.getMaxStack(), "max stack was not given, so it keeps the file default");
     }
 
+    /**
+     * C: the directives come in any order, so {@code flags:} and {@code break:} may precede
+     * {@code graphics:}. Each lands on its own field.
+     */
+    @Test
+    void flagsAndBreakBeforeGraphicsLoadAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("flags-first.txt",
+                DEFAULTS + "name:sword:S~\nflags:HATES_ACID\nbreak:3\ngraphics:white\n");
+
+        assertEquals(1, declared(result).size());
+        ObjectBase base = declared(result).get(0);
+        assertEquals(ColourEnum.COLOUR_WHITE, base.getAttr());
+        assertEquals(3, base.getBreakPerc());
+        assertEquals(40, base.getMaxStack(), "max stack was not given, so it keeps the file default");
+        assertEquals(Set.of("ACID"), hatedElementNames(base));
+    }
+
+    /** C: a repeated {@code graphics:} overwrites the first, so the last colour wins. */
+    @Test
+    void aRepeatedGraphicsLineOverwritesAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("repeat-graphics.txt",
+                DEFAULTS + "name:sword:S~\ngraphics:white\ngraphics:red\n");
+
+        assertEquals(ColourEnum.COLOUR_RED, declared(result).get(0).getAttr());
+        assertEquals(10, declared(result).get(0).getBreakPerc(), "break was not given, so it keeps the file default");
+    }
+
+    /** C: a repeated {@code max-stack:} overwrites the first, so the last value wins. */
+    @Test
+    void aRepeatedMaxStackLineOverwritesAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("repeat-max-stack.txt",
+                DEFAULTS + "name:sword:S~\nmax-stack:5\nmax-stack:6\n");
+
+        assertEquals(6, declared(result).get(0).getMaxStack());
+        assertEquals(10, declared(result).get(0).getBreakPerc(), "break was not given, so it keeps the file default");
+    }
+
+    /**
+     * C: {@code flags:} lines accumulate wherever they sit, even with other directives between
+     * them, and the other directives still land on their own fields.
+     */
+    @Test
+    void flagsLinesSeparatedByOtherDirectivesStillAccumulateAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("interleaved.txt", DEFAULTS
+                + "name:sword:S~\nflags:HATES_ACID\nbreak:3\nflags:SHOW_DICE\ngraphics:red\nflags:EASY_KNOW\n");
+
+        ObjectBase base = declared(result).get(0);
+        assertEquals(Set.of("SHOW_DICE", "EASY_KNOW"), kindFlagNames(base));
+        assertEquals(Set.of("ACID"), hatedElementNames(base));
+        assertEquals(3, base.getBreakPerc());
+        assertEquals(ColourEnum.COLOUR_RED, base.getAttr());
+    }
+
+    /** C: a record may be a {@code name:} line and nothing else, several in a row. */
+    @Test
+    void consecutiveNameOnlyRecordsLoadWithTheDefaultsAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("names-only.txt",
+                DEFAULTS + "name:sword:S~\nname:shot:T~\n");
+
+        assertEquals(2, declared(result).size());
+        for (ObjectBase base : declared(result)) {
+            assertEquals(ColourEnum.COLOUR_DARK, base.getAttr());
+            assertEquals(10, base.getBreakPerc());
+            assertEquals(40, base.getMaxStack());
+        }
+    }
+
+    /** A {@code graphics:} line as the last line, with no final newline, loads in C and here. */
+    @Test
+    void aGraphicsLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        ParseResult<ObjectBase> result = load("graphics-eof.txt",
+                DEFAULTS + "name:sword:S~\ngraphics:red");
+
+        assertEquals(ColourEnum.COLOUR_RED, declared(result).get(0).getAttr());
+    }
+
+    /**
+     * C: a {@code flags:} line as the last line of the file, with no final newline, is read like
+     * any other. {@code FLAG_EOL} needs the newline and the {@code flags} rule has no
+     * {@code EOF} alternative, so this ends the load. When the rule takes the {@code EOF}, this
+     * goes red: flip it to expect the {@code SHOW_DICE} kind flag.
+     */
+    @Test
+    void aFlagsLineWithNoFinalNewlineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError("flags-eof.txt", DEFAULTS + "name:sword:S~\nflags:SHOW_DICE");
+    }
+
+    /**
+     * C: a {@code name:} line with no plural part as the last line, with no final newline, is read
+     * like any other. {@code NAME_EOL} needs the newline, so the second {@code name} alternative
+     * cannot match and this ends the load. When it can, this goes red: flip it to expect a
+     * {@code TV_GOLD} base with a {@code null} name.
+     */
+    @Test
+    void aNameLineWithNoFinalNewlineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
+        assertHardError("name-eof.txt", DEFAULTS + "name:gold");
+    }
+
     /** C: flag names are separated by any run of spaces and pipes. The grammar needs a pipe. */
     @Test
     void flagsSeparatedBySpacesAloneAreAHardErrorWhereCAcceptsThem() throws IOException {

@@ -58,9 +58,21 @@ import java.util.List;
  *
  * <p><b>Where the Java differs from C</b> (the grammar half is recorded in
  * {@code docs/grammar_issues.md}, the assembler half in {@code docs/Assembler_Issues.md}): C
- * registers nine independent one-line directives and so accepts them in any order, missing,
- * repeated or indented; {@code RoomProfileGrammar} demands one or more records in the fixed order
- * {@code name:} to {@code tval:}, at most one {@code flags:} line, then the {@code D:} lines.
+ * registers nine independent one-line directives, so after {@code name:} the other eight come in
+ * any order, each optional and repeatable. {@code RoomProfileGrammar} does the same: a record is a
+ * {@code name:} followed by any mix of the other eight, and a file is any number of records,
+ * including none. A directive left out is C's zero, a repeated {@code flags:} line adds to the
+ * earlier ones, {@code D:} lines append in file order whatever lies between them, and a repeated
+ * number or {@code tval:} keeps its last text.
+ *
+ * <p>The differences that remain are these. C checks {@code type:}, {@code rows:},
+ * {@code columns:}, {@code doors:} and {@code tval:} as each line is read, so a bad value stops the
+ * load even when a good one follows; the grammar hands the assembler only the last text of each, so
+ * that case loads (parked in {@code docs/Parked.md}, pinned by
+ * {@code aBadFirstValueOfARepeatedDirectiveIsLostHereWhereCRefusesIt}). C splits a {@code flags:}
+ * line on {@code strtok(" |")}, so a space alone separates flags; the lexer needs the {@code |}.
+ * A hexadecimal row count and a field after a value are refused here where C reads or ignores
+ * them.
  *
  * <p><b>Errors:</b> as in C, where every {@code PARSE_ERROR_*} result stops the load, the first
  * error stops it here and nothing is returned. A syntax error is thrown from {@link #extract} as a
@@ -68,7 +80,8 @@ import java.util.List;
  * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
  *
  * <p>Class RoomProfileReader coded before 260915, commented in full on 261019, updated on 261105
- * for the removal of the soft-error path and the {@code record-count:} header.
+ * for the removal of the soft-error path and the {@code record-count:} header, comments updated on
+ * 261119 for the optional, repeatable directives.
  *
  * @author Rowan Crowther
  */

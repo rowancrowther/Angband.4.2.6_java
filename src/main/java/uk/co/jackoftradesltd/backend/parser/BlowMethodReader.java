@@ -71,11 +71,14 @@ import java.util.List;
  * unresolved {@code msg:} name) is thrown as a
  * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
  * <p>
+ * <strong>Directive order.</strong> As in C, each record is a {@code name:} followed by any
+ * directives in any order. Any of them may be left out, a repeated {@code cut:}, {@code stun:},
+ * {@code miss:}, {@code phys:} or {@code msg:} line overwrites the earlier one, and repeated
+ * {@code act:} and {@code desc:} lines accumulate. A directive before the first {@code name:} is a
+ * syntax error, where C asserts or returns {@code PARSE_ERROR_MISSING_RECORD_HEADER}.
+ * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>C takes the directives in any order, leaves any of them out, and appends repeated
- *       {@code desc:} lines. The grammar demands one fixed sequence with exactly one {@code desc:};
- *       see {@code docs/grammar_issues.md}.</li>
  *   <li>The list is base 0 and holds only real records: no blank slot 0. This is the accepted
  *       deviation recorded in the registry's class block, so {@code blow_methods_max} is the plain
  *       record count, one lower than C's.</li>
@@ -86,7 +89,7 @@ import java.util.List;
  * @author Rowan Crowther
  *
  * <p>Class BlowMethodReader coded before 260915, commented in full on 261017, updated on 261105 for
- * the removal of the soft-error path.
+ * the removal of the soft-error path and on 261119 for the free directive order.
  */
 public class BlowMethodReader implements Reader<BlowMethod> {
     /**

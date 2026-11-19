@@ -28,9 +28,12 @@ import uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffect2Assembler;
 import uk.co.jackoftradesltd.backend.parser.bloweffect.BlowEffect2ParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.Directive;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 import uk.co.jackoftradesltd.middle.monsters.BlowEffect;
+import uk.co.jackoftradesltd.middle.monsters.enums.BlowEffectType;
 
 import java.lang.reflect.Field;
 import java.util.List;
@@ -423,6 +426,150 @@ class BlowEffect2AssemblerTest {
         assertEquals(1, effects.size());
         assertEquals("B", effects.get(0).getName());
         assertEquals(7, effects.get(0).getPower());
+    }
+
+    /**
+     * Repeated {@code desc:} lines join end to end with nothing between them, wherever they sit in
+     * the record, as {@code parse_eff_desc} does with {@code string_append}. A line of another
+     * directive between the two does not break the join, because C holds one {@code desc} string for
+     * the record and each handler works on it alone.
+     *
+     * <p>Function repeatedDescLinesJoinEvenWhenAnotherDirectiveSitsBetweenThem coded on 261119,
+     * commented in full on 261119.
+     */
+    @Test
+    @DisplayName("repeated desc lines join, with another directive between them")
+    void repeatedDescLinesJoinEvenWhenAnotherDirectiveSitsBetweenThem() {
+        List<BlowEffect> effects = assemble(List.of(
+                new Directive("name", List.of("X"), 1),
+                new Directive("desc", List.of("one "), 2),
+                new Directive("power", List.of("5"), 3),
+                new Directive("desc", List.of("two"), 4)));
+
+        assertEquals("one two", effects.get(0).getDesc());
+        assertEquals(5, effects.get(0).getPower());
+    }
+
+    /**
+     * Every single-value directive other than {@code desc:} overwrites its field on a repeat, so the
+     * last line wins, as the {@code parse_eff_power}, {@code parse_eff_eval}, three
+     * {@code parse_eff_lore_color*} and {@code parse_eff_lash_type} handlers do. Each pair here puts
+     * a different value second, so a first-wins reading would show.
+     *
+     * <p>Function repeatedSingleValueDirectivesKeepTheLastValue coded on 261119, commented in full
+     * on 261119.
+     */
+    @Test
+    @DisplayName("a repeated power, eval, colour or lash keeps the last value")
+    void repeatedSingleValueDirectivesKeepTheLastValue() {
+        List<BlowEffect> effects = assemble(List.of(
+                new Directive("name", List.of("X"), 1),
+                new Directive("power", List.of("1"), 2),
+                new Directive("eval", List.of("3"), 3),
+                new Directive("base-colour", List.of("r"), 4),
+                new Directive("lash", List.of("FIRE"), 5),
+                new Directive("power", List.of("2"), 6),
+                new Directive("eval", List.of("4"), 7),
+                new Directive("base-colour", List.of("w"), 8),
+                new Directive("lash", List.of("COLD"), 9)));
+
+        BlowEffect effect = effects.get(0);
+        assertEquals(2, effect.getPower());
+        assertEquals(4, effect.getEval());
+        assertEquals(ColourEnum.COLOUR_WHITE, effect.getLoreAttr());
+        assertEquals(ProjectionEnum.PROJ_COLD, effect.getLashType().getProjection());
+    }
+
+    /**
+     * The directives that do not depend on each other give the same effect in any order. The second
+     * record is the first reversed apart from its {@code name:}, which has to open the record
+     * because the assembler refuses anything before it. This is what C does too: each of those
+     * handlers writes only its own field.
+     *
+     * <p>Function directivesThatDoNotDependOnEachOtherLoadInAnyOrder coded on 261119, commented in
+     * full on 261119.
+     */
+    @Test
+    @DisplayName("independent directives give the same effect in either order")
+    void directivesThatDoNotDependOnEachOtherLoadInAnyOrder() {
+        Directive name = new Directive("name", List.of("X"), 1);
+        Directive power = new Directive("power", List.of("7"), 2);
+        Directive eval = new Directive("eval", List.of("9"), 3);
+        Directive desc = new Directive("desc", List.of("text"), 4);
+        Directive immune = new Directive("immune-colour", List.of("b"), 5);
+        Directive lash = new Directive("lash", List.of("FIRE"), 6);
+
+        BlowEffect forward = assemble(List.of(name, power, eval, desc, immune, lash)).get(0);
+        BlowEffect backward = assemble(List.of(name, lash, immune, desc, eval, power)).get(0);
+
+        assertEquals(forward.getName(), backward.getName());
+        assertEquals(forward.getPower(), backward.getPower());
+        assertEquals(forward.getEval(), backward.getEval());
+        assertEquals(forward.getDesc(), backward.getDesc());
+        assertEquals(forward.getLoreAttrImmune(), backward.getLoreAttrImmune());
+        assertEquals(forward.getLashType().getProjection(), backward.getLashType().getProjection());
+        assertEquals(7, backward.getPower());
+        assertEquals(ProjectionEnum.PROJ_FIRE, backward.getLashType().getProjection());
+    }
+
+    /**
+     * A {@code resist:} is resolved against the {@code effect-type:} read so far, so the two are the
+     * one pair whose order matters. After its type it loads; ahead of any type it is refused with
+     * the {@code resist:} line quoted, where C reads a null pointer and crashes (accepted deviation,
+     * decided 261117).
+     *
+     * <p>Function aResistNeedsAnEffectTypeAboveItInTheRecord coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    @DisplayName("a resist loads below its effect-type and is refused above it")
+    void aResistNeedsAnEffectTypeAboveItInTheRecord() {
+        Directive name = new Directive("name", List.of("X"), 1);
+
+        BlowEffect loaded = assemble(List.of(name,
+                new Directive("effect", List.of("element"), 2),
+                new Directive("resist", List.of("FIRE"), 3))).get(0);
+        assertEquals(ProjectionEnum.PROJ_FIRE, loaded.getProjectionResist());
+
+        DataFileParseException thrown = assertThrows(DataFileParseException.class, () -> assemble(List.of(name,
+                new Directive("resist", List.of("FIRE"), 2),
+                new Directive("effect", List.of("element"), 3))));
+        assertEquals("Blow Effect at line: 2 of file: " + FILE
+                + " has a resist before a effect type has been found", thrown.getMessage());
+    }
+
+    /**
+     * A repeated {@code resist:} under the same type keeps the last, because each line replaces the
+     * one resist C holds. A repeated {@code effect-type:} of the same type, set between them, leaves
+     * that resist in place, while a different type clears the fields the new type does not use
+     * (accepted deviation, decided 261117), so the order of the lines decides what is kept.
+     *
+     * <p>Function aRepeatedResistKeepsTheLastAndATypeChangeFollowsFileOrder coded on 261119,
+     * commented in full on 261119.
+     */
+    @Test
+    @DisplayName("a repeated resist keeps the last, and a type change clears by file order")
+    void aRepeatedResistKeepsTheLastAndATypeChangeFollowsFileOrder() {
+        Directive name = new Directive("name", List.of("X"), 1);
+        Directive element = new Directive("effect", List.of("element"), 2);
+
+        BlowEffect last = assemble(List.of(name, element,
+                new Directive("resist", List.of("FIRE"), 3),
+                new Directive("resist", List.of("COLD"), 4))).get(0);
+        assertEquals(ProjectionEnum.PROJ_COLD, last.getProjectionResist());
+        assertEquals(ElementEnum.ELEM_COLD, last.getElementEnumResist());
+
+        BlowEffect sameType = assemble(List.of(name, element,
+                new Directive("resist", List.of("FIRE"), 3),
+                new Directive("effect", List.of("element"), 4))).get(0);
+        assertEquals(ProjectionEnum.PROJ_FIRE, sameType.getProjectionResist());
+
+        BlowEffect changed = assemble(List.of(name, element,
+                new Directive("resist", List.of("FIRE"), 3),
+                new Directive("effect", List.of("flag"), 4))).get(0);
+        assertEquals(BlowEffectType.BET_FLAG, changed.getEffectType());
+        assertEquals(ProjectionEnum.PROJ_NONE, changed.getProjectionResist());
+        assertEquals(ElementEnum.ELEM_NONE, changed.getElementEnumResist());
     }
 
     /**

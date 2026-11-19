@@ -82,9 +82,14 @@ import java.util.List;
  * <p>
  * Differences from C worth knowing about:
  * <ul>
- *   <li>C takes the directives in any order and leaves any but {@code name:} out. The grammar
- *       demands one fixed sequence; see {@code docs/grammar_issues.md}. The assembler's reading of
- *       {@code uniques:} and {@code msgt:} differs too; see {@code docs/Assembler_Issues.md}.</li>
+ *   <li>The directives after {@code name:} are read as C reads them: in any order, repeated, or
+ *       left out. A repeated {@code fallback:} or {@code desc:} keeps the last, the {@code base:}
+ *       lines of a record all accumulate, and every {@code msgt:}, {@code base:} and
+ *       {@code race-flag:} line is resolved, so a bad one stops the load even when a later line
+ *       would replace it. What still differs is in the lexer: a {@code msgt:} or {@code race-flag:}
+ *       value must be an upper-case identifier, so a lower-case or numeric {@code msgt:} is a
+ *       syntax error where C resolves it, and {@code uniques:} reads decimal digits only, where C
+ *       reads any base 0 number. See {@code docs/grammar_issues.md}.</li>
  *   <li>The list is base 0 and holds only real records: no blank slot at the end. This is the
  *       accepted deviation recorded in the registry's class block, so C's {@code summon_max}, one
  *       higher than the record count, has no counterpart: {@code MonsterRegistry} keeps no count.</li>
@@ -95,7 +100,7 @@ import java.util.List;
  * @author Rowan Crowther
  *
  * <p>Class SummonReader coded before 260915, commented in full on 261017, updated on 261105 for the
- * removal of the soft-error path.
+ * removal of the soft-error path, and on 261119 for the grammar taking its directives in any order.
  */
 public class SummonReader implements Reader<Summon> {
     /**

@@ -57,12 +57,19 @@ import java.util.List;
  * {@link VaultAssembler} prepends each vault, as {@code parse_vault_name} does by pointing the new
  * record's {@code next} at the previous head. {@link #extract} itself keeps file order.
  *
+ * <p><b>Directive order:</b> as in C, which registers nine independent one-line directives,
+ * every record opens with {@code name:} and the other eight ({@code type:}, {@code rating:},
+ * {@code rows:}, {@code columns:}, {@code min-depth:}, {@code max-depth:}, {@code flags:} and
+ * {@code D:}) may follow in any order, be missing, or repeat. The order matters only where it
+ * does in C, and {@link VaultAssembler} enforces that: {@code rows:} and {@code columns:} need
+ * a {@code type:} before them, and each {@code D:} line is measured against the
+ * {@code columns:} seen so far.
+ *
  * <p><b>Where the Java differs from C</b> (the grammar half is recorded in
  * {@code docs/grammar_issues.md}, the assembler half in {@code docs/Assembler_Issues.md}): C
- * registers nine independent one-line directives and so accepts them in any order, missing,
- * repeated or indented; {@code VaultGrammar} demands one or more records in the fixed order
- * {@code name:} to {@code max-depth:}, any number of {@code flags:} lines, then the {@code D:}
- * lines.
+ * accepts a directive ahead of the first {@code name:} only to refuse it with
+ * {@code PARSE_ERROR_MISSING_RECORD_HEADER}; {@code VaultGrammar} refuses it as a syntax error,
+ * so it surfaces as a {@code ParseCancellationException}.
  *
  * <p><b>Errors:</b> as in C, where every {@code PARSE_ERROR_*} result stops the load, the first
  * error stops it here and nothing is returned. A syntax error is thrown from {@link #extract} as a

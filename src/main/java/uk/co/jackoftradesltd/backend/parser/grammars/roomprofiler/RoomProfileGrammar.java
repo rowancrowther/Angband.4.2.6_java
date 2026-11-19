@@ -633,29 +633,35 @@ public class RoomProfileGrammar extends Parser {
 		            ((RoomMapContext)_localctx).roomMapList =  new ArrayList<>();
 		            ((RoomMapContext)_localctx).firstLine =  -1;
 		        
-		int _la;
 		try {
+			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(70); 
 			_errHandler.sync(this);
-			_la = _input.LA(1);
+			_alt = 1;
 			do {
-				{
-				{
-				setState(67);
-				((RoomMapContext)_localctx).dLine = dLine();
+				switch (_alt) {
+				case 1:
+					{
+					{
+					setState(67);
+					((RoomMapContext)_localctx).dLine = dLine();
 
-				                if (_localctx.firstLine == -1) ((RoomMapContext)_localctx).firstLine =  ((RoomMapContext)_localctx).dLine.lineNo;
-				                if (((RoomMapContext)_localctx).dLine.lineNo < _localctx.firstLine) ((RoomMapContext)_localctx).firstLine =  ((RoomMapContext)_localctx).dLine.lineNo;
-				                _localctx.roomMapList.add(((RoomMapContext)_localctx).dLine.roomMapLine);
-				            
-				}
+					                if (_localctx.firstLine == -1) ((RoomMapContext)_localctx).firstLine =  ((RoomMapContext)_localctx).dLine.lineNo;
+					                if (((RoomMapContext)_localctx).dLine.lineNo < _localctx.firstLine) ((RoomMapContext)_localctx).firstLine =  ((RoomMapContext)_localctx).dLine.lineNo;
+					                _localctx.roomMapList.add(((RoomMapContext)_localctx).dLine.roomMapLine);
+					            
+					}
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 				}
 				setState(72); 
 				_errHandler.sync(this);
-				_la = _input.LA(1);
-			} while ( _la==DLINE );
+				_alt = getInterpreter().adaptivePredict(_input,1,_ctx);
+			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
 			}
 		}
 		catch (RecognitionException re) {
@@ -684,29 +690,53 @@ public class RoomProfileGrammar extends Parser {
 		public NameContext name() {
 			return getRuleContext(NameContext.class,0);
 		}
-		public TypeContext type() {
-			return getRuleContext(TypeContext.class,0);
+		public List<TypeContext> type() {
+			return getRuleContexts(TypeContext.class);
 		}
-		public RatingContext rating() {
-			return getRuleContext(RatingContext.class,0);
+		public TypeContext type(int i) {
+			return getRuleContext(TypeContext.class,i);
 		}
-		public RowsContext rows() {
-			return getRuleContext(RowsContext.class,0);
+		public List<RatingContext> rating() {
+			return getRuleContexts(RatingContext.class);
 		}
-		public ColumnsContext columns() {
-			return getRuleContext(ColumnsContext.class,0);
+		public RatingContext rating(int i) {
+			return getRuleContext(RatingContext.class,i);
 		}
-		public DoorsContext doors() {
-			return getRuleContext(DoorsContext.class,0);
+		public List<RowsContext> rows() {
+			return getRuleContexts(RowsContext.class);
 		}
-		public TvalContext tval() {
-			return getRuleContext(TvalContext.class,0);
+		public RowsContext rows(int i) {
+			return getRuleContext(RowsContext.class,i);
 		}
-		public RoomMapContext roomMap() {
-			return getRuleContext(RoomMapContext.class,0);
+		public List<ColumnsContext> columns() {
+			return getRuleContexts(ColumnsContext.class);
 		}
-		public FlagsContext flags() {
-			return getRuleContext(FlagsContext.class,0);
+		public ColumnsContext columns(int i) {
+			return getRuleContext(ColumnsContext.class,i);
+		}
+		public List<DoorsContext> doors() {
+			return getRuleContexts(DoorsContext.class);
+		}
+		public DoorsContext doors(int i) {
+			return getRuleContext(DoorsContext.class,i);
+		}
+		public List<TvalContext> tval() {
+			return getRuleContexts(TvalContext.class);
+		}
+		public TvalContext tval(int i) {
+			return getRuleContext(TvalContext.class,i);
+		}
+		public List<FlagsContext> flags() {
+			return getRuleContexts(FlagsContext.class);
+		}
+		public FlagsContext flags(int i) {
+			return getRuleContext(FlagsContext.class,i);
+		}
+		public List<RoomMapContext> roomMap() {
+			return getRuleContexts(RoomMapContext.class);
+		}
+		public RoomMapContext roomMap(int i) {
+			return getRuleContext(RoomMapContext.class,i);
 		}
 		public RoomProfileContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -732,16 +762,16 @@ public class RoomProfileGrammar extends Parser {
 		enterRule(_localctx, 20, RULE_roomProfile);
 
 		            String nameInit = "";
-		            String typeInit = "";
-		            String ratingInit = "";
-		            String rowsInit = "";
-		            String columnsInit = "";
-		            String doorsInit = "";
-		            String tvalInit = "";
+		            String typeInit = null;
+		            String ratingInit = null;
+		            String rowsInit = null;
+		            String columnsInit = null;
+		            String doorsInit = null;
+		            String tvalInit = null;
 		            List<String> flagsInit = new ArrayList<>();
 		            List<String> roomInit = new ArrayList<>();
 		            int profileLineNo = 0;
-		            int roomMapLineNo = 0;
+		            int roomMapLineNo = -1;
 		        
 		int _la;
 		try {
@@ -750,38 +780,82 @@ public class RoomProfileGrammar extends Parser {
 			setState(74);
 			((RoomProfileContext)_localctx).name = name();
 			 nameInit = ((RoomProfileContext)_localctx).name.nameStr; profileLineNo = ((RoomProfileContext)_localctx).name.line; 
-			setState(76);
-			((RoomProfileContext)_localctx).type = type();
-			 typeInit = ((RoomProfileContext)_localctx).type.typeInt; 
-			setState(78);
-			((RoomProfileContext)_localctx).rating = rating();
-			 ratingInit = ((RoomProfileContext)_localctx).rating.ratingInt; 
-			setState(80);
-			((RoomProfileContext)_localctx).rows = rows();
-			 rowsInit = ((RoomProfileContext)_localctx).rows.rowsInt; 
-			setState(82);
-			((RoomProfileContext)_localctx).columns = columns();
-			 columnsInit = ((RoomProfileContext)_localctx).columns.columnsInt; 
-			setState(84);
-			((RoomProfileContext)_localctx).doors = doors();
-			 doorsInit = ((RoomProfileContext)_localctx).doors.doorsInt; 
-			setState(86);
-			((RoomProfileContext)_localctx).tval = tval();
-			 tvalInit = ((RoomProfileContext)_localctx).tval.tvalStr; 
-			setState(91);
+			setState(102);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==FLAGS) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1020L) != 0)) {
 				{
-				setState(88);
-				((RoomProfileContext)_localctx).flags = flags();
-				 flagsInit.addAll(((RoomProfileContext)_localctx).flags.flagList); 
+				setState(100);
+				_errHandler.sync(this);
+				switch (_input.LA(1)) {
+				case TYPE:
+					{
+					setState(76);
+					((RoomProfileContext)_localctx).type = type();
+					 typeInit = ((RoomProfileContext)_localctx).type.typeInt; 
+					}
+					break;
+				case RATING:
+					{
+					setState(79);
+					((RoomProfileContext)_localctx).rating = rating();
+					 ratingInit = ((RoomProfileContext)_localctx).rating.ratingInt; 
+					}
+					break;
+				case ROWS:
+					{
+					setState(82);
+					((RoomProfileContext)_localctx).rows = rows();
+					 rowsInit = ((RoomProfileContext)_localctx).rows.rowsInt; 
+					}
+					break;
+				case COLUMNS:
+					{
+					setState(85);
+					((RoomProfileContext)_localctx).columns = columns();
+					 columnsInit = ((RoomProfileContext)_localctx).columns.columnsInt; 
+					}
+					break;
+				case DOORS:
+					{
+					setState(88);
+					((RoomProfileContext)_localctx).doors = doors();
+					 doorsInit = ((RoomProfileContext)_localctx).doors.doorsInt; 
+					}
+					break;
+				case TVAL:
+					{
+					setState(91);
+					((RoomProfileContext)_localctx).tval = tval();
+					 tvalInit = ((RoomProfileContext)_localctx).tval.tvalStr; 
+					}
+					break;
+				case FLAGS:
+					{
+					setState(94);
+					((RoomProfileContext)_localctx).flags = flags();
+					 flagsInit.addAll(((RoomProfileContext)_localctx).flags.flagList); 
+					}
+					break;
+				case DLINE:
+					{
+					setState(97);
+					((RoomProfileContext)_localctx).roomMap = roomMap();
+					 
+					                roomInit.addAll(((RoomProfileContext)_localctx).roomMap.roomMapList);
+					                if (roomMapLineNo == -1)
+					                    roomMapLineNo = ((RoomProfileContext)_localctx).roomMap.firstLine; 
+					            
+					}
+					break;
+				default:
+					throw new NoViableAltException(this);
 				}
+				}
+				setState(104);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
 			}
-
-			setState(93);
-			((RoomProfileContext)_localctx).roomMap = roomMap();
-			 roomInit.addAll(((RoomProfileContext)_localctx).roomMap.roomMapList); roomMapLineNo = ((RoomProfileContext)_localctx).roomMap.firstLine; 
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -841,22 +915,22 @@ public class RoomProfileGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(99); 
+			setState(110);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==NAME) {
 				{
 				{
-				setState(96);
+				setState(105);
 				((FileContext)_localctx).roomProfile = roomProfile();
 				 _localctx.records.add(((FileContext)_localctx).roomProfile.profile); 
 				}
 				}
-				setState(101); 
+				setState(112);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==NAME );
-			setState(103);
+			}
+			setState(113);
 			match(EOF);
 			}
 		}
@@ -872,7 +946,7 @@ public class RoomProfileGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0012j\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0012t\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0001"+
@@ -885,49 +959,56 @@ public class RoomProfileGrammar extends Parser {
 		"\f\u0007>\t\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001\t\u0001"+
 		"\t\u0004\tG\b\t\u000b\t\f\tH\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001"+
 		"\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001"+
-		"\n\u0001\n\u0001\n\u0003\n\\\b\n\u0001\n\u0001\n\u0001\n\u0001\u000b\u0001"+
-		"\u000b\u0001\u000b\u0004\u000bd\b\u000b\u000b\u000b\f\u000be\u0001\u000b"+
-		"\u0001\u000b\u0001\u000b\u0000\u0000\f\u0000\u0002\u0004\u0006\b\n\f\u000e"+
-		"\u0010\u0012\u0014\u0016\u0000\u0000a\u0000\u0018\u0001\u0000\u0000\u0000"+
-		"\u0002\u001c\u0001\u0000\u0000\u0000\u0004 \u0001\u0000\u0000\u0000\u0006"+
-		"$\u0001\u0000\u0000\u0000\b(\u0001\u0000\u0000\u0000\n,\u0001\u0000\u0000"+
-		"\u0000\f0\u0001\u0000\u0000\u0000\u000e4\u0001\u0000\u0000\u0000\u0010"+
-		"?\u0001\u0000\u0000\u0000\u0012F\u0001\u0000\u0000\u0000\u0014J\u0001"+
-		"\u0000\u0000\u0000\u0016c\u0001\u0000\u0000\u0000\u0018\u0019\u0005\u0001"+
-		"\u0000\u0000\u0019\u001a\u0005\u0011\u0000\u0000\u001a\u001b\u0006\u0000"+
-		"\uffff\uffff\u0000\u001b\u0001\u0001\u0000\u0000\u0000\u001c\u001d\u0005"+
-		"\u0002\u0000\u0000\u001d\u001e\u0005\n\u0000\u0000\u001e\u001f\u0006\u0001"+
-		"\uffff\uffff\u0000\u001f\u0003\u0001\u0000\u0000\u0000 !\u0005\u0003\u0000"+
-		"\u0000!\"\u0005\n\u0000\u0000\"#\u0006\u0002\uffff\uffff\u0000#\u0005"+
-		"\u0001\u0000\u0000\u0000$%\u0005\u0004\u0000\u0000%&\u0005\n\u0000\u0000"+
-		"&\'\u0006\u0003\uffff\uffff\u0000\'\u0007\u0001\u0000\u0000\u0000()\u0005"+
-		"\u0005\u0000\u0000)*\u0005\n\u0000\u0000*+\u0006\u0004\uffff\uffff\u0000"+
-		"+\t\u0001\u0000\u0000\u0000,-\u0005\u0006\u0000\u0000-.\u0005\n\u0000"+
-		"\u0000./\u0006\u0005\uffff\uffff\u0000/\u000b\u0001\u0000\u0000\u0000"+
-		"01\u0005\u0007\u0000\u000012\u0005\u0011\u0000\u000023\u0006\u0006\uffff"+
-		"\uffff\u00003\r\u0001\u0000\u0000\u000045\u0005\b\u0000\u000056\u0005"+
-		"\u000e\u0000\u00006<\u0006\u0007\uffff\uffff\u000078\u0005\u000f\u0000"+
-		"\u000089\u0005\u000e\u0000\u00009;\u0006\u0007\uffff\uffff\u0000:7\u0001"+
-		"\u0000\u0000\u0000;>\u0001\u0000\u0000\u0000<:\u0001\u0000\u0000\u0000"+
-		"<=\u0001\u0000\u0000\u0000=\u000f\u0001\u0000\u0000\u0000><\u0001\u0000"+
-		"\u0000\u0000?@\u0005\t\u0000\u0000@A\u0005\u0011\u0000\u0000AB\u0006\b"+
-		"\uffff\uffff\u0000B\u0011\u0001\u0000\u0000\u0000CD\u0003\u0010\b\u0000"+
-		"DE\u0006\t\uffff\uffff\u0000EG\u0001\u0000\u0000\u0000FC\u0001\u0000\u0000"+
-		"\u0000GH\u0001\u0000\u0000\u0000HF\u0001\u0000\u0000\u0000HI\u0001\u0000"+
-		"\u0000\u0000I\u0013\u0001\u0000\u0000\u0000JK\u0003\u0000\u0000\u0000"+
-		"KL\u0006\n\uffff\uffff\u0000LM\u0003\u0002\u0001\u0000MN\u0006\n\uffff"+
-		"\uffff\u0000NO\u0003\u0004\u0002\u0000OP\u0006\n\uffff\uffff\u0000PQ\u0003"+
-		"\u0006\u0003\u0000QR\u0006\n\uffff\uffff\u0000RS\u0003\b\u0004\u0000S"+
-		"T\u0006\n\uffff\uffff\u0000TU\u0003\n\u0005\u0000UV\u0006\n\uffff\uffff"+
-		"\u0000VW\u0003\f\u0006\u0000W[\u0006\n\uffff\uffff\u0000XY\u0003\u000e"+
-		"\u0007\u0000YZ\u0006\n\uffff\uffff\u0000Z\\\u0001\u0000\u0000\u0000[X"+
-		"\u0001\u0000\u0000\u0000[\\\u0001\u0000\u0000\u0000\\]\u0001\u0000\u0000"+
-		"\u0000]^\u0003\u0012\t\u0000^_\u0006\n\uffff\uffff\u0000_\u0015\u0001"+
-		"\u0000\u0000\u0000`a\u0003\u0014\n\u0000ab\u0006\u000b\uffff\uffff\u0000"+
-		"bd\u0001\u0000\u0000\u0000c`\u0001\u0000\u0000\u0000de\u0001\u0000\u0000"+
-		"\u0000ec\u0001\u0000\u0000\u0000ef\u0001\u0000\u0000\u0000fg\u0001\u0000"+
-		"\u0000\u0000gh\u0005\u0000\u0000\u0001h\u0017\u0001\u0000\u0000\u0000"+
-		"\u0004<H[e";
+		"\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001\n\u0001"+
+		"\n\u0001\n\u0001\n\u0005\ne\b\n\n\n\f\nh\t\n\u0001\u000b\u0001\u000b\u0001"+
+		"\u000b\u0005\u000bm\b\u000b\n\u000b\f\u000bp\t\u000b\u0001\u000b\u0001"+
+		"\u000b\u0001\u000b\u0000\u0000\f\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010"+
+		"\u0012\u0014\u0016\u0000\u0000r\u0000\u0018\u0001\u0000\u0000\u0000\u0002"+
+		"\u001c\u0001\u0000\u0000\u0000\u0004 \u0001\u0000\u0000\u0000\u0006$\u0001"+
+		"\u0000\u0000\u0000\b(\u0001\u0000\u0000\u0000\n,\u0001\u0000\u0000\u0000"+
+		"\f0\u0001\u0000\u0000\u0000\u000e4\u0001\u0000\u0000\u0000\u0010?\u0001"+
+		"\u0000\u0000\u0000\u0012F\u0001\u0000\u0000\u0000\u0014J\u0001\u0000\u0000"+
+		"\u0000\u0016n\u0001\u0000\u0000\u0000\u0018\u0019\u0005\u0001\u0000\u0000"+
+		"\u0019\u001a\u0005\u0011\u0000\u0000\u001a\u001b\u0006\u0000\uffff\uffff"+
+		"\u0000\u001b\u0001\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0002\u0000"+
+		"\u0000\u001d\u001e\u0005\n\u0000\u0000\u001e\u001f\u0006\u0001\uffff\uffff"+
+		"\u0000\u001f\u0003\u0001\u0000\u0000\u0000 !\u0005\u0003\u0000\u0000!"+
+		"\"\u0005\n\u0000\u0000\"#\u0006\u0002\uffff\uffff\u0000#\u0005\u0001\u0000"+
+		"\u0000\u0000$%\u0005\u0004\u0000\u0000%&\u0005\n\u0000\u0000&\'\u0006"+
+		"\u0003\uffff\uffff\u0000\'\u0007\u0001\u0000\u0000\u0000()\u0005\u0005"+
+		"\u0000\u0000)*\u0005\n\u0000\u0000*+\u0006\u0004\uffff\uffff\u0000+\t"+
+		"\u0001\u0000\u0000\u0000,-\u0005\u0006\u0000\u0000-.\u0005\n\u0000\u0000"+
+		"./\u0006\u0005\uffff\uffff\u0000/\u000b\u0001\u0000\u0000\u000001\u0005"+
+		"\u0007\u0000\u000012\u0005\u0011\u0000\u000023\u0006\u0006\uffff\uffff"+
+		"\u00003\r\u0001\u0000\u0000\u000045\u0005\b\u0000\u000056\u0005\u000e"+
+		"\u0000\u00006<\u0006\u0007\uffff\uffff\u000078\u0005\u000f\u0000\u0000"+
+		"89\u0005\u000e\u0000\u00009;\u0006\u0007\uffff\uffff\u0000:7\u0001\u0000"+
+		"\u0000\u0000;>\u0001\u0000\u0000\u0000<:\u0001\u0000\u0000\u0000<=\u0001"+
+		"\u0000\u0000\u0000=\u000f\u0001\u0000\u0000\u0000><\u0001\u0000\u0000"+
+		"\u0000?@\u0005\t\u0000\u0000@A\u0005\u0011\u0000\u0000AB\u0006\b\uffff"+
+		"\uffff\u0000B\u0011\u0001\u0000\u0000\u0000CD\u0003\u0010\b\u0000DE\u0006"+
+		"\t\uffff\uffff\u0000EG\u0001\u0000\u0000\u0000FC\u0001\u0000\u0000\u0000"+
+		"GH\u0001\u0000\u0000\u0000HF\u0001\u0000\u0000\u0000HI\u0001\u0000\u0000"+
+		"\u0000I\u0013\u0001\u0000\u0000\u0000JK\u0003\u0000\u0000\u0000Kf\u0006"+
+		"\n\uffff\uffff\u0000LM\u0003\u0002\u0001\u0000MN\u0006\n\uffff\uffff\u0000"+
+		"Ne\u0001\u0000\u0000\u0000OP\u0003\u0004\u0002\u0000PQ\u0006\n\uffff\uffff"+
+		"\u0000Qe\u0001\u0000\u0000\u0000RS\u0003\u0006\u0003\u0000ST\u0006\n\uffff"+
+		"\uffff\u0000Te\u0001\u0000\u0000\u0000UV\u0003\b\u0004\u0000VW\u0006\n"+
+		"\uffff\uffff\u0000We\u0001\u0000\u0000\u0000XY\u0003\n\u0005\u0000YZ\u0006"+
+		"\n\uffff\uffff\u0000Ze\u0001\u0000\u0000\u0000[\\\u0003\f\u0006\u0000"+
+		"\\]\u0006\n\uffff\uffff\u0000]e\u0001\u0000\u0000\u0000^_\u0003\u000e"+
+		"\u0007\u0000_`\u0006\n\uffff\uffff\u0000`e\u0001\u0000\u0000\u0000ab\u0003"+
+		"\u0012\t\u0000bc\u0006\n\uffff\uffff\u0000ce\u0001\u0000\u0000\u0000d"+
+		"L\u0001\u0000\u0000\u0000dO\u0001\u0000\u0000\u0000dR\u0001\u0000\u0000"+
+		"\u0000dU\u0001\u0000\u0000\u0000dX\u0001\u0000\u0000\u0000d[\u0001\u0000"+
+		"\u0000\u0000d^\u0001\u0000\u0000\u0000da\u0001\u0000\u0000\u0000eh\u0001"+
+		"\u0000\u0000\u0000fd\u0001\u0000\u0000\u0000fg\u0001\u0000\u0000\u0000"+
+		"g\u0015\u0001\u0000\u0000\u0000hf\u0001\u0000\u0000\u0000ij\u0003\u0014"+
+		"\n\u0000jk\u0006\u000b\uffff\uffff\u0000km\u0001\u0000\u0000\u0000li\u0001"+
+		"\u0000\u0000\u0000mp\u0001\u0000\u0000\u0000nl\u0001\u0000\u0000\u0000"+
+		"no\u0001\u0000\u0000\u0000oq\u0001\u0000\u0000\u0000pn\u0001\u0000\u0000"+
+		"\u0000qr\u0005\u0000\u0000\u0001r\u0017\u0001\u0000\u0000\u0000\u0005"+
+		"<Hdfn";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

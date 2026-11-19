@@ -89,12 +89,19 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
      *     first bad name is the fault, as C stops at the first name {@code grab_flag} rejects.</li>
      * </ul>
      *
+     * <p>A directive left out of a record takes C's zeroed value: 0 for {@code type:},
+     * {@code rating:}, {@code rows:}, {@code columns:} and {@code doors:}, {@code TV_NONE} for
+     * {@code tval:}, no flags and no map. A repeated directive reaches this method as its last
+     * text only, so an earlier value that C would have refused is not seen; that is parked in
+     * {@code docs/Parked.md}.
+     *
      * <p>The result is in reverse file order. C's {@code parse_room_name} points each new template
      * at the previous head, so {@code room_templates} runs from the last template in the file to
      * the first, and {@code addFirst} gives the same order here.
      *
      * <p>Function assemble coded before 260915, updated on 261029 for the fatal contract and the
-     * {@code uint8_t} wrap, commented in full on 261029.
+     * {@code uint8_t} wrap, commented in full on 261029, comments updated on 261119 for the
+     * optional directives.
      *
      * @param records  the raw parse records to assemble, in file order
      * @param filename the file the records came from, named in each failure message
@@ -110,11 +117,11 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
         for (RoomProfileParseRecord record : records) {
             int line = record.profileLineNo();
             String name = record.profileName();
-            // type/rating/rows/columns/doors are mandatory in the grammar, so the isEmpty()
-            // guards below can't actually be hit by any record that reaches this loop; they're
-            // defensive rather than reachable, and the defaults they leave behind are never seen.
+            // Every directive after name: is optional in the grammar, so each null guard below is
+            // reachable, and the default it leaves is C's zeroed template (parse_room_name uses
+            // mem_zalloc): 0 for every number, rating included, and TV_NONE for the tval.
             int type = 0;
-            if (!record.type().isEmpty()) {
+            if (record.type() != null) {
                 if (ParseUtils.minusFound(record.type())) {
                     String message = "Room profile starting at line: " + line + " of file: " + filename + " has " +
                             "an illegal negative type value: " + record.type();
@@ -124,13 +131,13 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
                 type = ParseUtils.parseIntString("Room profile", record.type(), line, filename, "type");
             }
             type = Math.floorMod(type, 256);
-            int rating = -1;
-            if (!record.rating().isEmpty()) {
+            int rating = 0;
+            if (record.rating() != null) {
                 rating = ParseUtils.parseIntString("Room profile", record.rating(), line, filename, "rating");
             }
             rating = Math.floorMod(rating, 256);
-            int rows = -1;
-            if (!record.rows().isEmpty()) {
+            int rows = 0;
+            if (record.rows() != null) {
                 if (ParseUtils.minusFound(record.rows())) {
                     String message = "Room profile starting at line: " + line + " of file: " + filename + " has " +
                             "an illegal negative row value: " + record.rows();
@@ -150,8 +157,8 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
                     throw new DataFileParseException(message);
                 }
             }
-            int columns = -1;
-            if (!record.columns().isEmpty()) {
+            int columns = 0;
+            if (record.columns() != null) {
                 columns = ParseUtils.parseIntString("Room profile", record.columns(), line, filename, "columns");
                 if (ParseUtils.minusFound(record.columns())) {
                     String message = "Room profile starting at line: " + line + " of file: " + filename + " has " +
@@ -169,7 +176,7 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
                 }
             }
             int doors = 0;
-            if (!record.doors().isEmpty()) {
+            if (record.doors() != null) {
                 if (ParseUtils.minusFound(record.doors())) {
                     String message = "Room profile starting at line: " + line + " of file: " + filename + " has " +
                             "an illegal negative doors value: " + record.doors();
@@ -184,7 +191,7 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
             // C's tval_find_idx checks them in.
             TValue tValue = TValue.TV_NONE;
             String tValStr = record.tval();
-            if (!tValStr.isEmpty()) {
+            if (tValStr != null) {
                 if (ParseUtils.onlyDigits(tValStr)) {
                     int tValInt = ParseUtils.parseIntString("Room profile", record.tval(), line, filename, "tValue");
                     if (tValInt < 0) {
@@ -204,8 +211,9 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
                     throw new DataFileParseException(message);
                 }
             }
-            // flags: is optional in the data (many records have none), so record.flags() is
-            // simply empty rather than absent when there's nothing to set. The first bad flag
+            // flags: is optional (many records have none) and repeatable, so record.flags() is
+            // empty rather than null when there's nothing to set, and holds every flags: line's
+            // names in file order when there are several. The first bad flag
             // name ends the load, as in C, where parse_room_flags stops at the first name
             // grab_flag rejects. The match is case-sensitive, as C's streq is.
             Flag<RoomFlags> roomFlags = new Flag<>(RoomFlags.class);

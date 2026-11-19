@@ -349,30 +349,84 @@ class RoomProfileReaderTest {
     }
 
     /**
-     * The directives other than {@code flags:} are mandatory and ordered in the grammar, so a record
-     * missing one is a hard error and the whole file fails closed.
+     * C: every directive after {@code name:} is optional, because {@code parse_room_name} makes a
+     * zeroed template and the other eight handlers fill in what they are given. A record with no
+     * {@code doors:} loads with 0 doors, and the record after it is untouched.
+     *
+     * <p>Function aMissingDirectiveLoadsAsInC coded on 261119, commented in full on 261119. It
+     * replaces aMissingMandatoryDirectiveFailsClosed.
      */
     @Test
-    void aMissingMandatoryDirectiveFailsClosed() throws IOException {
+    void aMissingDirectiveLoadsAsInC() throws IOException {
         String noDoors = GOOD_RECORD.replace("doors:1\n", "");
         String path = tempFile("no-doors.txt", noDoors + "\n" + GOOD_RECORD + "\n");
 
-        assertThrows(ParseCancellationException.class, () -> new RoomProfileReader().parseWithResults(path));
+        List<RoomTemplate> items = new RoomProfileReader().parseWithResults(path).items();
 
+        assertEquals(2, items.size());
+        // The list runs in reverse file order, so the record without doors: is last.
+        assertEquals(1, items.get(0).getDoors());
+        assertEquals(0, items.get(1).getDoors());
+        assertEquals("%%%%.%%%%", items.get(1).getMapText());
     }
 
     /**
-     * A record with no {@code D:} lines at all is likewise a grammar error — {@code roomMap} needs
-     * at least one.
+     * C: a record with no {@code D:} lines has a null {@code text} and loads. Here the template
+     * loads with an empty map list and an empty map text.
+     *
+     * <p>Function aRecordWithNoMapLoadsAsInC coded on 261119, commented in full on 261119. It
+     * replaces aRecordWithNoMapFailsClosed.
      */
     @Test
-    void aRecordWithNoMapFailsClosed() throws IOException {
+    void aRecordWithNoMapLoadsAsInC() throws IOException {
         String noMap = String.join("\n",
                 "name:No map", "type:1", "rating:1", "rows:3", "columns:3", "doors:1", "tval:0");
         String path = tempFile("no-map.txt", noMap + "\n");
 
-        assertThrows(ParseCancellationException.class, () -> new RoomProfileReader().parseWithResults(path));
+        RoomTemplate template = new RoomProfileReader().parseWithResults(path).items().getFirst();
 
+        assertEquals("No map", template.getName());
+        assertEquals(List.of(), template.getMap());
+        assertEquals("", template.getMapText());
+    }
+
+    /**
+     * C: a record that is only a {@code name:} line is a zeroed template. Every number is 0, the
+     * tval is {@code TV_NONE} and there are no flags and no map. In particular an absent
+     * {@code rating:} is 0, not 255.
+     *
+     * <p>Function aNameOnlyRecordIsAZeroedTemplateAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void aNameOnlyRecordIsAZeroedTemplateAsInC() throws IOException {
+        RoomTemplate template = new RoomProfileReader()
+                .parseWithResults(tempFile("bare.txt", "name:Bare\n")).items().getFirst();
+
+        assertEquals("Bare", template.getName());
+        assertEquals(0, template.getType());
+        assertEquals(0, template.getRating());
+        assertEquals(0, template.getHeight());
+        assertEquals(0, template.getWidth());
+        assertEquals(0, template.getDoors());
+        assertEquals(TValue.TV_NONE, template.getTval());
+        assertFalse(template.getFlags().has(RoomFlags.FEW_ENTRANCES));
+        assertEquals(List.of(), template.getMap());
+    }
+
+    /**
+     * C: {@code rating:} left out leaves the zeroed template's 0, while the other fields of the
+     * record are read as written.
+     *
+     * <p>Function anAbsentRatingIsZeroAsInC coded on 261119, commented in full on 261119.
+     */
+    @Test
+    void anAbsentRatingIsZeroAsInC() throws IOException {
+        RoomTemplate template = new RoomProfileReader()
+                .parseWithResults(tempFile("no-rating.txt", "name:R\ntype:2\n")).items().getFirst();
+
+        assertEquals(2, template.getType());
+        assertEquals(0, template.getRating());
     }
 
     /**
@@ -418,13 +472,15 @@ class RoomProfileReaderTest {
                 viaParse.stream().map(RoomTemplate::getName).toList());
     }
 
-    // ---- Where the grammar is stricter than C's parser --------------------
+    // ---- Directive order and count, and where Java still differs from C ----
     //
     // C registers nine independent one-line directives in init_parse_room, so after a name:
     // they may come in any order, repeat, or be left out, and parser.c skips leading
     // whitespace, ignores anything after a numeric value, and reads a uint with strtoul in base
-    // zero. RoomProfileGrammar fixes the order and count, so each case below is a whole-file
-    // failure here (no items, one hard error) where C loads the record.
+    // zero. RoomProfileGrammar now takes the eight directives after name: in any order, each
+    // optional and repeatable (Stage 7a), and the file may hold no records. The cases below that
+    // still end in a whole-file failure (no items, one hard error) are the flag separator, the
+    // hexadecimal number and the field after a value, which are lexer work in later stages.
 
     /**
      * Runs {@code content} through the reader and asserts the whole file was refused: hard errors
@@ -437,24 +493,105 @@ class RoomProfileReaderTest {
 
     /**
      * C: {@code parse_room_type} and {@code parse_room_rating} are independent handlers, so
-     * {@code rating:} before {@code type:} is fine. Here the directive order is fixed.
+     * {@code rating:} before {@code type:} is fine, and so is {@code rows:} ahead of both, with
+     * the {@code D:} line before the rest.
+     *
+     * <p>Function directivesInAnotherOrderLoadAsInC coded on 261119, commented in full on 261119.
+     * It replaces directivesInAnotherOrderAreRefusedHereWhereCAcceptsThem.
      */
     @Test
-    void directivesInAnotherOrderAreRefusedHereWhereCAcceptsThem() throws IOException {
-        String swapped = GOOD_RECORD.replace("type:1\nrating:1", "rating:1\ntype:1");
+    void directivesInAnotherOrderLoadAsInC() throws IOException {
+        String shuffled = String.join("\n",
+                "name:Shuffled", "D:abc", "rows:1", "doors:4", "rating:5", "type:2", "columns:3", "tval:rod");
 
-        assertWholeFileRefused("swapped.txt", swapped + "\n");
+        RoomTemplate template = new RoomProfileReader()
+                .parseWithResults(tempFile("shuffled.txt", shuffled + "\n")).items().getFirst();
+
+        assertEquals(2, template.getType());
+        assertEquals(5, template.getRating());
+        assertEquals(1, template.getHeight());
+        assertEquals(3, template.getWidth());
+        assertEquals(4, template.getDoors());
+        assertEquals(TValue.TV_ROD, template.getTval());
+        assertEquals(List.of("abc"), template.getMap());
+    }
+
+    /**
+     * C: a directive before the first {@code name:} has no template to fill in, which is
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER}. The grammar needs {@code name:} first, so the file
+     * is refused as well.
+     *
+     * <p>Function aDirectiveBeforeAnyNameIsRefusedAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void aDirectiveBeforeAnyNameIsRefusedAsInC() throws IOException {
+        assertWholeFileRefused("no-header.txt", "type:2\n" + GOOD_RECORD + "\n");
     }
 
     /**
      * C: {@code parse_room_flags} ORs into {@code t->flags}, so a second {@code flags:} line adds to
-     * the first. The grammar takes at most one.
+     * the first. Two lines with different flags leave both set.
+     *
+     * <p>Function aRepeatedFlagsLineAccumulatesAsInC coded on 261119, commented in full on 261119.
+     * It replaces aRepeatedFlagsLineIsRefusedHereWhereCAccumulatesIt.
      */
     @Test
-    void aRepeatedFlagsLineIsRefusedHereWhereCAccumulatesIt() throws IOException {
-        String twice = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES\nflags:FEW_ENTRANCES");
+    void aRepeatedFlagsLineAccumulatesAsInC() throws IOException {
+        String twice = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES\nflags:MAX");
 
-        assertWholeFileRefused("two-flags.txt", twice + "\n");
+        RoomTemplate template = new RoomProfileReader()
+                .parseWithResults(tempFile("two-flags.txt", twice + "\n")).items().getFirst();
+
+        assertTrue(template.getFlags().has(RoomFlags.FEW_ENTRANCES));
+        assertTrue(template.getFlags().has(RoomFlags.MAX));
+    }
+
+    /**
+     * C: {@code parse_room_d} appends each {@code D:} line to the one buffer whatever comes between
+     * them, and a repeated {@code type:} is a plain assignment, so the last one stays.
+     *
+     * <p>Function dLinesSplitByOtherDirectivesStillAppendAsInC coded on 261119, commented in full
+     * on 261119.
+     */
+    @Test
+    void dLinesSplitByOtherDirectivesStillAppendAsInC() throws IOException {
+        String split = "name:Split\nD:aa\ntype:3\nD:bb\ntype:7\n";
+
+        RoomTemplate template = new RoomProfileReader()
+                .parseWithResults(tempFile("split.txt", split)).items().getFirst();
+
+        assertEquals(List.of("aa", "bb"), template.getMap());
+        assertEquals("aabb", template.getMapText());
+        assertEquals(7, template.getType());
+    }
+
+    /**
+     * C: {@code parse_room_height}, {@code parse_room_type} and {@code parse_room_tval} test each
+     * line as it is read, so a bad first value of a repeated directive stops the load even when a
+     * good one follows. {@code RoomProfileGrammar} keeps only the last text of each directive, so
+     * the assembler never sees the bad one and all three load here. Parked: the fix is one
+     * {@code Directive} per line, as {@code VaultGrammar} does (see {@code docs/Parked.md}).
+     * The control, a bad value last, stops the load as in C.
+     *
+     * <p>Function aBadFirstValueOfARepeatedDirectiveIsLostHereWhereCRefusesIt coded on 261119,
+     * commented in full on 261119.
+     */
+    @Test
+    void aBadFirstValueOfARepeatedDirectiveIsLostHereWhereCRefusesIt() throws IOException {
+        RoomTemplate tooTall = new RoomProfileReader()
+                .parseWithResults(tempFile("tall-then-ok.txt", "name:R\nrows:99\nrows:5\n")).items().getFirst();
+        assertEquals(5, tooTall.getHeight());
+
+        RoomTemplate negative = new RoomProfileReader()
+                .parseWithResults(tempFile("neg-then-ok.txt", "name:R\ntype:-1\ntype:1\n")).items().getFirst();
+        assertEquals(1, negative.getType());
+
+        RoomTemplate unknown = new RoomProfileReader()
+                .parseWithResults(tempFile("bogus-then-rod.txt", "name:R\ntval:bogus\ntval:rod\n")).items().getFirst();
+        assertEquals(TValue.TV_ROD, unknown.getTval());
+
+        assertStopsTheLoad("ok-then-tall.txt", "name:R\nrows:5\nrows:99\n", "illegal row count value");
     }
 
     /**
@@ -476,11 +613,16 @@ class RoomProfileReaderTest {
 
     /**
      * C: {@code finish_parse_room} hands {@code room_templates} whatever the file produced, so a
-     * file with no {@code name:} loads an empty list. The grammar wants one or more records.
+     * file with no {@code name:} loads an empty list. The grammar takes any number of records,
+     * none included.
+     *
+     * <p>Function aFileWithNoTemplatesLoadsAnEmptyListAsInC coded on 261119, commented in full on
+     * 261119. It replaces aFileWithNoTemplatesIsRefusedHereWhereCLoadsAnEmptyList.
      */
     @Test
-    void aFileWithNoTemplatesIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
-        assertWholeFileRefused("empty.txt", "");
+    void aFileWithNoTemplatesLoadsAnEmptyListAsInC() throws IOException {
+        assertEquals(List.of(),
+                new RoomProfileReader().parseWithResults(tempFile("empty.txt", "")).items());
     }
 
     /**

@@ -7,6 +7,11 @@
  * repeats that for the whole document. Every field stays text here (no int/enum parsing) —
  * that happens downstream in RoomProfileAssembler, which is also where flags:/tval:/rows:/
  * columns: get validated against C's parse_room_* semantics.
+ *
+ * After name: the other eight directives come in any order, each optional and repeatable, as the
+ * handlers in C's init_parse_room do. A repeated type:/rating:/rows:/columns:/doors:/tval: keeps
+ * only its last text here, so the assembler never sees an earlier value that C would have refused
+ * as it was read. Keeping one Directive per line, as VaultGrammar does, is parked (docs/Parked.md).
  */
 parser grammar RoomProfileGrammar;
 
@@ -70,10 +75,11 @@ tval    returns[String tvalStr]
         ;
 
 /**
- * The room's (optional) {@code flags:} directive — a {@code |}-separated list of flag names. Made
- * optional at the {@link #roomProfile} call site, since the real data has records with no
- * {@code flags:} line at all; when absent, this rule simply doesn't run and {@code flagList}
- * stays empty on the caller's side.
+ * One {@code flags:} directive — a {@code |}-separated list of flag names. Like every directive
+ * after {@code name:}, it is optional and repeatable at the {@link #roomProfile} call site: the
+ * real data has records with no {@code flags:} line at all, and a second line adds its flags to
+ * the first, as {@code parse_room_flags} ORs into the template's flags. When absent, this rule
+ * simply doesn't run and the caller's flag list stays empty.
  */
 flags   returns[List<String> flagList]
         @init {
@@ -111,24 +117,27 @@ roomMap
         ;
 
 /**
- * One full room record — every directive in {@code name:}...{@code D:} order, stitched into a
- * {@link RoomProfileParseRecord}. {@code flags} is wrapped in {@code (...)?} because it's the one
- * directive that's genuinely optional in the data.
+ * One full room record — a {@code name:} directive, then any number of the other eight in any
+ * order, stitched into a {@link RoomProfileParseRecord}. The alternatives are wrapped in
+ * {@code (...)*}, so each is optional and may repeat. A directive left out stays {@code null} (an
+ * empty list for {@code flags:} and {@code D:}), and the assembler turns that into C's zero. A
+ * repeated number or {@code tval:} line overwrites the earlier text, while {@code flags:} and
+ * {@code D:} lines accumulate in file order.
  */
 roomProfile
         returns[RoomProfileParseRecord profile]
         @init {
             String nameInit = "";
-            String typeInit = "";
-            String ratingInit = "";
-            String rowsInit = "";
-            String columnsInit = "";
-            String doorsInit = "";
-            String tvalInit = "";
+            String typeInit = null;
+            String ratingInit = null;
+            String rowsInit = null;
+            String columnsInit = null;
+            String doorsInit = null;
+            String tvalInit = null;
             List<String> flagsInit = new ArrayList<>();
             List<String> roomInit = new ArrayList<>();
             int profileLineNo = 0;
-            int roomMapLineNo = 0;
+            int roomMapLineNo = -1;
         }
         @after {
             $profile = new RoomProfileParseRecord(nameInit, typeInit, ratingInit,
@@ -136,23 +145,27 @@ roomProfile
                 profileLineNo, roomMapLineNo);
         }
         :   name { nameInit = $name.nameStr; profileLineNo = $name.line; }
-            type { typeInit = $type.typeInt; }
-            rating { ratingInit = $rating.ratingInt; }
-            rows { rowsInit = $rows.rowsInt; }
-            columns { columnsInit = $columns.columnsInt; }
-            doors { doorsInit = $doors.doorsInt; }
-            tval { tvalInit = $tval.tvalStr; }
-            (flags { flagsInit.addAll($flags.flagList); })?
-            roomMap { roomInit.addAll($roomMap.roomMapList); roomMapLineNo = $roomMap.firstLine; }
+        (   type { typeInit = $type.typeInt; }
+        |   rating { ratingInit = $rating.ratingInt; }
+        |   rows { rowsInit = $rows.rowsInt; }
+        |   columns { columnsInit = $columns.columnsInt; }
+        |   doors { doorsInit = $doors.doorsInt; }
+        |   tval { tvalInit = $tval.tvalStr; }
+        |   flags { flagsInit.addAll($flags.flagList); }
+        |   roomMap { 
+                roomInit.addAll($roomMap.roomMapList);
+                if (roomMapLineNo == -1)
+                    roomMapLineNo = $roomMap.firstLine; 
+            } )*
         ;
 
 /**
- * The whole file: one or more room records.
+ * The whole file: any number of room records, including none.
  */
 file
         returns[List<RoomProfileParseRecord> records]
         @init {
             $records = new ArrayList<>();
         }
-        :   (roomProfile { $records.add($roomProfile.profile); })+ EOF
+        :   (roomProfile { $records.add($roomProfile.profile); })* EOF
         ;

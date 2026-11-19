@@ -31,16 +31,21 @@ import java.util.List;
  * ({@code "rod"}, {@code "wand"}, ...) forms, and resolving either to a {@code TValue} is also the
  * assembler's job.
  *
- * <p>{@code flags} is never {@code null} even when the record's {@code flags:} directive is absent
- * — the grammar makes {@code flags:} optional, and an absent line simply leaves this an empty list.
+ * <p>Every directive after {@code name:} is optional in the grammar. An absent {@code type},
+ * {@code rating}, {@code rows}, {@code columns}, {@code doors} or {@code tval} is {@code null}, and
+ * the assembler reads that as C's zero. A repeated one holds its last text only.
+ *
+ * <p>{@code flags} and {@code roomMap} are never {@code null}: an absent {@code flags:} or
+ * {@code D:} directive leaves an empty list, and repeated lines add to the list in file order.
  *
  * @param profileName   the room's name, from {@code name:}
- * @param type          the room's type, as written after {@code type:}
- * @param rating        the room's rating, as written after {@code rating:}
- * @param rows          the row count, as written after {@code rows:}
- * @param columns       the column count, as written after {@code columns:}
- * @param doors         the door count, as written after {@code doors:}
- * @param tval          the tval text, as written after {@code tval:} — numeric or a name
+ * @param type          the room's type, as written after {@code type:}; {@code null} if absent
+ * @param rating        the room's rating, as written after {@code rating:}; {@code null} if absent
+ * @param rows          the row count, as written after {@code rows:}; {@code null} if absent
+ * @param columns       the column count, as written after {@code columns:}; {@code null} if absent
+ * @param doors         the door count, as written after {@code doors:}; {@code null} if absent
+ * @param tval          the tval text, as written after {@code tval:} — numeric or a name;
+ *                      {@code null} if absent
  * @param flags         the flag names from {@code flags:}, in file order; empty if the directive
  *                      was absent
  * @param roomMap       the room layout, one string per {@code D:} line, in file order

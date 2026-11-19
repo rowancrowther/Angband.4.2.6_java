@@ -89,6 +89,12 @@ public interface PlayerTimedGrammarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#effectDice}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEffectDice(PlayerTimedGrammar.EffectDiceContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link PlayerTimedGrammar#resist}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

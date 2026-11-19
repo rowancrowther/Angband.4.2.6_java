@@ -83,20 +83,27 @@ import java.util.Optional;
  * <p><b>Deviations from C:</b> the names {@code NONE} and {@code MAX} are refused, where C's name
  * list ends in {@code MAX} and so accepts it and then indexes past the array. The {@code PY_FOOD_*}
  * thresholds that C sets while parsing the {@code FOOD} grades are set from the finished effect in
- * {@code PlayerRegistry.setPlayerTimedEffects}, not here. The record this assembler receives holds at
- * most one {@code on-begin-effect:} and one {@code on-end-effect:}, each an {@code EffectParseRecord}
- * carrying the effect name, its sub-type and, for the end effect only, the {@code effect-dice:} value.
- * C appends an effect for every such line, and also reads {@code radius}, {@code other},
- * {@code effect-yx:}, {@code effect-expr:} and {@code effect-msg:}. The shipped {@code player_timed.txt}
- * has three effect lines, in three different records, and one {@code effect-dice:}, so it needs none
- * of those.
+ * {@code PlayerRegistry.setPlayerTimedEffects}, not here. The effect parts of an {@code on-begin-effect:}
+ * or {@code on-end-effect:} line that C reads and the grammar does not are {@code radius}, {@code other},
+ * {@code effect-yx:}, {@code effect-expr:} and {@code effect-msg:}, and an {@code effect-dice:} takes
+ * digits only, where C takes any dice string; the grammar refuses each of those. The shipped
+ * {@code player_timed.txt} has three effect lines, in two records ({@code SPRINT} has one end effect,
+ * {@code SCRAMBLE} a begin and an end effect), and one {@code effect-dice:}, so it needs none of those.
+ * An {@code effect-dice:} that comes with no effect open is dropped by the grammar and never reaches
+ * this assembler, where C stops the load (parked, see {@code docs/Parked.md}).
+ *
+ * <p><b>Effect chains:</b> the record holds a list of effect blocks for each chain, one per line in
+ * file order, with any {@code effect-dice:} already attached to the effect it follows. Each chain is
+ * resolved through {@link EffectAssembler} and appended to the chain the effect already holds, as C
+ * appends one effect per line; an empty list adds nothing, and an unknown effect name anywhere in a
+ * chain ends the load.
  *
  * <p><b>Load-order dependency:</b> the {@code ATT_*} statuses resolve a brand/slay code through
  * {@link ObjectRegistry#lookupBrandCode}/{@link ObjectRegistry#lookupSlay}, so {@code brand.txt} and
  * {@code slay.txt} must already be loaded when this runs.
  *
  * <p>Class PlayerTimedAssembler coded before 260915, commented in full on 261107 (updated on 261105
- * for the removal of the soft-error path).
+ * for the removal of the soft-error path, and on 261119 for the effect chains becoming lists).
  *
  * @author Rowan Crowther
  */
@@ -355,8 +362,8 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
                 onBeginEffects = previous.getOnBeginEffect();
             else
                 onBeginEffects = new ArrayList<>();
-            if (record.onBeginEffect() != null && !record.onBeginEffect().typeInit().isEmpty()) {
-                begin = EffectAssembler.assemble(List.of(record.onBeginEffect()), filename);
+            if (record.onBeginEffect() != null) {
+                begin = EffectAssembler.assemble(record.onBeginEffect(), filename);
                 onBeginEffects.addAll(begin);
             }
             List<Effect> end;
@@ -365,8 +372,8 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
                 onEndEffects = previous.getOnEndEffect();
             else
                 onEndEffects = new ArrayList<>();
-            if (record.onEndEffect() != null && !record.onEndEffect().typeInit().isEmpty()) {
-                end = EffectAssembler.assemble(List.of(record.onEndEffect()), filename);
+            if (record.onEndEffect() != null) {
+                end = EffectAssembler.assemble(record.onEndEffect(), filename);
                 onEndEffects.addAll(end);
             }
             ElementEnum resist = updatePrevious ? previous.getTempResist() : ElementEnum.ELEM_NONE;

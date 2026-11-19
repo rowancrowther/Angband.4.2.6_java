@@ -17,8 +17,8 @@
 
 package uk.co.jackoftradesltd.backend.parser.playertimed;
 
-import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 
 import java.util.List;
 
@@ -30,11 +30,22 @@ import java.util.List;
  * parsing, brand/slay resolution, the "1-character means dummy" grade rule — happens in one place,
  * the assembler, where errors can be collected and reported per record.
  *
- * <p>Fields that a record may omit are captured as the empty string (or an empty list); the two
- * effect fields are captured as {@code null} when their directive is absent. Directives that may
- * legitimately repeat ({@code grade:}, {@code fail:}, {@code flags:}) are lists; {@code brand:} and
+ * <p>Fields that a record may omit are captured as the empty string (or an empty list), including
+ * the two effect chains. Directives that may legitimately repeat ({@code grade:}, {@code fail:},
+ * {@code flags:}, {@code on-begin-effect:} and {@code on-end-effect:}) are lists; {@code brand:} and
  * {@code slay:} are single strings because a timed effect grants at most one of each (C's single
  * {@code temp_brand}/{@code temp_slay} index).
+ *
+ * <p><b>Effect chains:</b> every {@code on-begin-effect:} or {@code on-end-effect:} line opens one
+ * more {@link EffectParseRecord} on its chain, in file order, as C appends a new effect to the end of
+ * {@code on_begin_effect} or {@code on_end_effect}. An {@code effect-dice:} line is already folded
+ * into the effect opened last, whichever chain that is and whatever lines sit in between, as C's
+ * {@code ps->e} does, so the assembler sees each effect with its own dice and never sees the
+ * directive. An {@code effect-dice:} that comes with no effect open is dropped here; C stops the
+ * load on it (parked, see {@code docs/Parked.md}).
+ *
+ * <p>Class PlayerTimedParseRecord coded before 261119, commented in full on 261119 (updated on
+ * 261119 for the two effect fields becoming lists).
  *
  * @param name             the {@code name:} token — a {@code TMD_*} identifier, still unprefixed
  * @param description      the {@code desc:} free text
@@ -44,8 +55,10 @@ import java.util.List;
  * @param onDecrease       the {@code on-decrease:} message, or empty
  * @param msgT             the {@code msgt:} message-type token, or empty
  * @param fail             the {@code fail:} conditions, one per line (see {@link FailureParseRecord})
- * @param onBeginEffect    the {@code on-begin-effect:} block as a raw {@link EffectParseRecord}, or null
- * @param onEndEffect      the {@code on-end-effect:} block as a raw {@link EffectParseRecord}, or null
+ * @param onBeginEffect    the {@code on-begin-effect:} blocks, one raw {@link EffectParseRecord} per
+ *                         line in file order, each carrying its own {@code effect-dice:}; empty if none
+ * @param onEndEffect      the {@code on-end-effect:} blocks, one raw {@link EffectParseRecord} per
+ *                         line in file order, each carrying its own {@code effect-dice:}; empty if none
  * @param resist           the {@code resist:} element token, or empty
  * @param brand            the {@code brand:} code, or empty (at most one)
  * @param slay             the {@code slay:} code, or empty (at most one)
@@ -64,8 +77,8 @@ public record PlayerTimedParseRecord(String name,
                                      String onDecrease,
                                      String msgT,
                                      List<FailureParseRecord> fail,
-                                     EffectParseRecord onBeginEffect,
-                                     EffectParseRecord onEndEffect,
+                                     List<EffectParseRecord> onBeginEffect,
+                                     List<EffectParseRecord> onEndEffect,
                                      String resist,
                                      String brand,
                                      String slay,

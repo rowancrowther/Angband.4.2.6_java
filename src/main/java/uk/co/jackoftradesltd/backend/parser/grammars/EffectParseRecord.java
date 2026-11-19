@@ -22,6 +22,17 @@ package uk.co.jackoftradesltd.backend.parser.grammars;
  * grammar reused across many data files): the raw, still-unresolved fields, later turned into
  * the {@code Effect} domain type by {@link EffectAssembler}.
  *
+ * <p>A grammar builds the record when the effect line arrives, with the name and sub-type given and
+ * every other field the empty string, then fills the rest in as the lines that follow it are read:
+ * {@code effect-yx:} through {@link #amendYX}, {@code dice:} and {@code expr:} through
+ * {@link #amendExpression}, and {@code effect-msg:} through {@link #appendMessage}. Each of those
+ * returns a new record and leaves this one unchanged, so the caller has to write the result back over
+ * the old one; dropping it loses the line. Nothing here is validated or resolved: a bad name, a
+ * non-numeric {@code radius} or a malformed dice string is only found when {@link EffectAssembler}
+ * assembles the record.
+ *
+ * <p>Class EffectParseRecord coded before 261119, commented in full on 261119.
+ *
  * @param typeInit              the effect name, still as text (e.g. {@code "DAMAGE"}); resolved
  *                              against {@code EffectEnum} with an {@code EF_} prefix
  * @param subTypeWrapper        the effect's second token, still as text; what it means depends on
@@ -50,7 +61,9 @@ package uk.co.jackoftradesltd.backend.parser.grammars;
  * @param effectMessage         the message text shown when the effect fires, or {@code null}/empty
  *                              if the line gave none
  * @param line                  the source line the {@code effect:} block starts on, for error
- *                              messages
+ *                              messages; the assembler's errors cite this line, so a grammar that
+ *                              builds the record from a later line than the effect line gives the
+ *                              wrong line in them
  * @author Rowan Crowther
  */
 public record EffectParseRecord(String typeInit,
@@ -66,12 +79,38 @@ public record EffectParseRecord(String typeInit,
                                 String effectMessage,
                                 int line) {
     
+    /**
+     * A copy of this record with the y and x parameters replaced, for an {@code effect-yx:} line.
+     * Both are replaced together, as C's {@code effect-yx} handlers set {@code y} and {@code x} in one
+     * step, and everything else is carried over.
+     *
+     * <p>Function amendYX coded before 261119, commented in full on 261119.
+     *
+     * @param yVal the new y parameter, still as text
+     * @param xVal the new x parameter, still as text
+     * @return the amended copy; this record is unchanged
+     */
     public EffectParseRecord amendYX(String yVal, String xVal) {
         return new EffectParseRecord(this.typeInit(), this.subTypeWrapper(), this.radius(),
                 this.other(), this.diceString(), yVal, xVal, this.expressionChars(),
                 this.expressionBases(), this.expressionOperations(), this.effectMessage(), this.line);
     }
     
+    /**
+     * A copy of this record with the dice string and the three expression fields replaced as a set,
+     * for a {@code dice:} or {@code expr:} line. The fields are replaced, not added to: a caller that
+     * is binding a further expression to the dice already held passes that dice string back and the
+     * three expression fields already held with the new letter, base and operations joined on
+     * with {@code ^}, as {@code ChestTrapGrammar.g4} does.
+     *
+     * <p>Function amendExpression coded before 261119, commented in full on 261119.
+     *
+     * @param diceStr             the dice string, still as text
+     * @param expressionChar      the {@code ^}-delimited codes bound within the dice string
+     * @param expressionBase      the {@code ^}-delimited base-type names, paired with the codes
+     * @param expressionOperation the {@code ^}-delimited operation strings, paired with the codes
+     * @return the amended copy; this record is unchanged
+     */
     public EffectParseRecord amendExpression(String diceStr, 
                                              String expressionChar,
                                              String expressionBase,
@@ -81,6 +120,17 @@ public record EffectParseRecord(String typeInit,
                 expressionChar, expressionBase, expressionOperation, this.effectMessage(), this.line);
     }
     
+    /**
+     * A copy of this record with {@code text} added to the end of the message, for an
+     * {@code effect-msg:} line. The text is joined on with no separator, as C's {@code string_append}
+     * does for a repeated line, and when the record has no message yet the copy holds {@code text}
+     * alone.
+     *
+     * <p>Function appendMessage coded before 261119, commented in full on 261119.
+     *
+     * @param text the message text of the line, to add after any already held
+     * @return the amended copy; this record is unchanged
+     */
     public EffectParseRecord appendMessage(String text) {
         String joined = (this.effectMessage() == null) ? text : this.effectMessage() + text;
         return new EffectParseRecord(this.typeInit(), this.subTypeWrapper(), this.radius(),

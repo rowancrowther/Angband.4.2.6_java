@@ -154,6 +154,18 @@ public class PlayerTimedGrammarBaseListener implements PlayerTimedGrammarListene
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterEffectDice(PlayerTimedGrammar.EffectDiceContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEffectDice(PlayerTimedGrammar.EffectDiceContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterResist(PlayerTimedGrammar.ResistContext ctx) { }
 	/**
 	 * {@inheritDoc}

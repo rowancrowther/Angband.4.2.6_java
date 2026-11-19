@@ -18,6 +18,7 @@ options {tokenVocab = PlayerTimedLexer; }
     import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.PlayerTimedGradeParseRecord;
     import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.FailureParseRecord;
     import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecordType;
 
     import java.util.List;
     import java.util.ArrayList;
@@ -85,16 +86,22 @@ fail
         ;
 
 onBeginEffect
-        returns[String type, String subType]
+        returns[String type, String subType, String effectType]
         :   ON_BEGIN_EFFECT t=DELIM_BETWEEN_COLONS { $type = $t.getText(); $subType = ""; }
             (DELIM_COLON s=DELIM_BETWEEN_COLONS { $subType = $s.getText(); })?
+            { $effectType = "begin"; }
         ;
 
 onEndEffectBlock
-        returns[String type, String subType, String dice]
+        returns[String type, String subType, String effectType]
         :   ON_END_EFFECT t=DELIM_BETWEEN_COLONS { $type = $t.getText(); $subType = ""; }
             (DELIM_COLON s=DELIM_BETWEEN_COLONS { $subType = $s.getText(); })?
-            (EFFECT_DICE INTEGER { $dice = $INTEGER.getText(); })?
+            { $effectType = "end"; }
+        ;
+
+effectDice
+        returns[String dice]
+        :   EFFECT_DICE INTEGER { $dice = $INTEGER.getText(); }
         ;
 
 resist
@@ -144,8 +151,9 @@ playerTimed
             String onDecreaseInit = "";
             String msgtInit = "";
             List<FailureParseRecord> fails = new ArrayList<>();
-            EffectParseRecord onBeginEffectInit = null;
-            EffectParseRecord onEndEffectInit = null;
+            List<EffectParseRecordType> effectsInit = new ArrayList<>();
+            List<EffectParseRecord> onBeginEffectInit = new ArrayList<>();
+            List<EffectParseRecord> onEndEffectInit = new ArrayList<>();
             String resistInit = "";
             String brandInit = "";
             String slayInit = "";
@@ -156,6 +164,12 @@ playerTimed
             int line = 0;
         }
         @after {
+            for (EffectParseRecordType recordType : effectsInit) {
+                if (recordType.type().equals("end"))
+                    onEndEffectInit.add(recordType.convertToRecord());
+                else
+                    onBeginEffectInit.add(recordType.convertToRecord());
+            }
             $timed = new PlayerTimedParseRecord(nameInit, descInit, grades,
                     onEndInit, onIncreaseInit, onDecreaseInit, msgtInit,
                     fails, onBeginEffectInit, onEndEffectInit,
@@ -180,21 +194,32 @@ playerTimed
         |   fail { String failTypeInit = $fail.type;
                    String failValueInit = $fail.value;
                    fails.addFirst(new FailureParseRecord(failTypeInit, failValueInit)); }
-        |   onBeginEffect { onBeginEffectInit = new EffectParseRecord($onBeginEffect.type,
+        |   onBeginEffect {
+                    effectsInit.add(new EffectParseRecordType("begin", $onBeginEffect.type,
                             $onBeginEffect.subType, "", "", "",
                             "", "", "", "",
-                            "", "", line); }
-        |   onEndEffectBlock { onEndEffectInit = new EffectParseRecord($onEndEffectBlock.type,
-                            $onEndEffectBlock.subType, "", "", $onEndEffectBlock.dice,
+                            "", "", line));
+                }
+        |   onEndEffectBlock {
+                    effectsInit.add(new EffectParseRecordType("end", $onEndEffectBlock.type,
+                            $onEndEffectBlock.subType, "", "", "",
                             "", "", "", "",
-                            "", "", line); }
+                            "", "", line)); 
+                }
+        |   effectDice {
+                if (!effectsInit.isEmpty()) {
+                    EffectParseRecordType lastEffect = effectsInit.getLast();
+                    lastEffect = lastEffect.amendDice($effectDice.dice);
+                    effectsInit.set(effectsInit.size() - 1, lastEffect);
+                } 
+            }
         |   resist { resistInit = $resist.res; }
         |   brand { brandInit = $brand.b; }
         |   slay { slayInit = $slay.s; }
         |   flagSynonym { flagSynonymFlagInit = $flagSynonym.objProp;
                           flagSynonymValueInit = $flagSynonym.val; }
         |   lowerBound { lowerBoundInit = $lowerBound.bound; }
-        |   flags { flags.addAll($flags.flagList); })+
+        |   flags { flags.addAll($flags.flagList); })*
         ;
 
 file
@@ -202,5 +227,5 @@ file
         @init {
             $results = new ArrayList<>();
         }
-        :   (playerTimed { $results.add($playerTimed.timed); })+ EOF
+        :   (playerTimed { $results.add($playerTimed.timed); })* EOF
         ;

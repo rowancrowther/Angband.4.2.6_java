@@ -25,6 +25,7 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.DataFileParseException;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.data.PlayerData;
@@ -450,11 +451,17 @@ class PlayerTimedReaderTest {
                 () -> new PlayerTimedReader().parseWithResults(tempDir.resolve("absent.txt").toString()));
     }
 
+    /**
+     * C's {@code run_parse_player_timed} accepts a file with no {@code name:} lines and leaves every
+     * timed effect as it was, and the {@code file} rule is {@code (playerTimed)* EOF}, so an empty
+     * file loads an empty list.
+     *
+     * <p>Function aHeaderWithNoRecordLoadsAnEmptyListAsInC coded on 261119, commented in full on
+     * 261119 (replaces the pin that refused it).
+     */
     @Test
-    void aHeaderWithNoRecordIsRefusedHereWhereCLoadsAnEmptyList() throws IOException {
-        // run_parse_player_timed accepts a file with no name: lines; the grammar wants at least one.
-        assertThrows(ParseCancellationException.class, () -> load("header-only.txt", ""));
-
+    void aHeaderWithNoRecordLoadsAnEmptyListAsInC() throws IOException {
+        assertTrue(load("header-only.txt", "").items().isEmpty());
     }
 
     // ---- Fields: what C accepts and the grammar does not ------------------
@@ -505,10 +512,201 @@ class PlayerTimedReaderTest {
         }
     }
 
-    @Test
-    void anEffectDiceAfterAnOnBeginEffectIsRefusedHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("begin-dice.txt", "name:FAST\ngrade:G:100:Test:Message\non-begin-effect:SCRAMBLE_STATS\neffect-dice:5\n"));
+    // ---- effect-dice: attaches to the effect opened last, as C's ps->e does ----------
 
+    /**
+     * The effects of one chain, named as {@code Effect.index} holds them and joined by commas, so a
+     * test can say which effects a chain holds and in what order ({@code Effect} has no accessor).
+     *
+     * <p>Function effectNames coded on 261119, commented in full on 261119.
+     *
+     * @param chain a begin or end effect chain
+     * @return the {@code EF_*} names in chain order, e.g. {@code EF_SCRAMBLE_STATS,EF_UNSCRAMBLE_STATS}
+     * @throws Exception if the field cannot be reached
+     */
+    private static String effectNames(List<Effect> chain) throws Exception {
+        Field index = Effect.class.getDeclaredField("index");
+        index.setAccessible(true);
+        StringBuilder names = new StringBuilder();
+        for (Effect effect : chain) {
+            if (!names.isEmpty()) names.append(',');
+            names.append(index.get(effect));
+        }
+        return names.toString();
+    }
+
+    /**
+     * C's {@code parse_player_timed_effect_dice} puts the dice on {@code ps->e}, the effect opened by
+     * the last {@code on-begin-effect:} line, so it is not only an end-effect directive.
+     *
+     * <p>Function anEffectDiceAfterAnOnBeginEffectLoadsAsInC coded on 261119, commented in full on
+     * 261119 (replaces the pin that refused it).
+     */
+    @Test
+    void anEffectDiceAfterAnOnBeginEffectLoadsAsInC() throws Exception {
+        PlayerTimedEffect fast = load("begin-dice.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-begin-effect:SCRAMBLE_STATS\neffect-dice:5\n")
+                .items().get(0);
+
+        assertEquals(1, fast.getOnBeginEffect().size());
+        assertEquals("0,0,5", EffectProbe.yxBase(fast.getOnBeginEffect().getFirst()));
+        assertTrue(fast.getOnEndEffect().isEmpty());
+    }
+
+    /**
+     * Other directives can sit between an effect line and its {@code effect-dice:}, because
+     * {@code ps->e} is only cleared by the next {@code name:}.
+     *
+     * <p>Function anEffectDiceAfterAnotherDirectiveReachesItsEffectAsInC coded on 261119, commented
+     * in full on 261119.
+     */
+    @Test
+    void anEffectDiceAfterAnotherDirectiveReachesItsEffectAsInC() throws Exception {
+        PlayerTimedEffect fast = load("dice-after-msgt.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\nmsgt:SPEED\n"
+                        + "on-end:Done\nlower-bound:3\neffect-dice:100\n").items().get(0);
+
+        assertEquals(1, fast.getOnEndEffect().size());
+        assertEquals("0,0,100", EffectProbe.yxBase(fast.getOnEndEffect().getFirst()));
+        assertEquals("Done", fast.getOnEnd());
+        assertEquals(3, fast.getLowerBound());
+    }
+
+    /**
+     * A second {@code effect-dice:} for the same effect replaces the dice, as C's handler frees the
+     * old dice and keeps the new.
+     *
+     * <p>Function aSecondEffectDiceLineReplacesTheFirstAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void aSecondEffectDiceLineReplacesTheFirstAsInC() throws Exception {
+        PlayerTimedEffect fast = load("two-dice.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n"
+                        + "effect-dice:5\neffect-dice:6\n").items().get(0);
+
+        assertEquals("0,0,6", EffectProbe.yxBase(fast.getOnEndEffect().getFirst()));
+    }
+
+    /**
+     * With a begin and an end effect both open, the dice go to whichever line came last in the
+     * file, not to the end effect by default, and the other effect keeps no dice.
+     *
+     * <p>Function anEffectDiceGoesToTheEffectOpenedLastAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void anEffectDiceGoesToTheEffectOpenedLastAsInC() throws Exception {
+        PlayerTimedEffect endLast = load("end-last.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-begin-effect:SCRAMBLE_STATS\n"
+                        + "on-end-effect:TIMED_INC_NO_RES:SLOW\neffect-dice:7\n").items().get(0);
+        assertEquals("0,0,", EffectProbe.yxBase(endLast.getOnBeginEffect().getFirst()));
+        assertEquals("0,0,7", EffectProbe.yxBase(endLast.getOnEndEffect().getFirst()));
+
+        PlayerTimedEffect beginLast = load("begin-last.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n"
+                        + "on-begin-effect:SCRAMBLE_STATS\neffect-dice:9\n").items().get(0);
+        assertEquals("0,0,9", EffectProbe.yxBase(beginLast.getOnBeginEffect().getFirst()));
+        assertEquals("0,0,", EffectProbe.yxBase(beginLast.getOnEndEffect().getFirst()));
+    }
+
+    /**
+     * Every {@code on-begin-effect:} or {@code on-end-effect:} line appends a new effect to its
+     * chain, so a record keeps them all in file order, and each {@code effect-dice:} lands on the
+     * effect before it.
+     *
+     * <p>Function everyEffectLineOfARecordIsKeptInFileOrderAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void everyEffectLineOfARecordIsKeptInFileOrderAsInC() throws Exception {
+        PlayerTimedEffect fast = load("many-effects.txt",
+                "name:FAST\ngrade:G:100:Test:Message\n"
+                        + "on-begin-effect:SCRAMBLE_STATS\neffect-dice:1\n"
+                        + "on-begin-effect:UNSCRAMBLE_STATS\neffect-dice:2\n"
+                        + "on-end-effect:TIMED_INC_NO_RES:SLOW\neffect-dice:3\n"
+                        + "on-end-effect:UNSCRAMBLE_STATS\neffect-dice:4\n").items().get(0);
+
+        assertEquals("EF_SCRAMBLE_STATS,EF_UNSCRAMBLE_STATS", effectNames(fast.getOnBeginEffect()));
+        assertEquals("EF_TIMED_INC_NO_RES,EF_UNSCRAMBLE_STATS", effectNames(fast.getOnEndEffect()));
+        assertEquals("0,0,1", EffectProbe.yxBase(fast.getOnBeginEffect().get(0)));
+        assertEquals("0,0,2", EffectProbe.yxBase(fast.getOnBeginEffect().get(1)));
+        assertEquals("0,0,3", EffectProbe.yxBase(fast.getOnEndEffect().get(0)));
+        assertEquals("0,0,4", EffectProbe.yxBase(fast.getOnEndEffect().get(1)));
+    }
+
+    /**
+     * An effect line with no {@code effect-dice:} loads with an empty dice string, as C's zeroed
+     * effect has no dice.
+     *
+     * <p>Function anEffectLineWithNoDiceLoadsWithEmptyDiceAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void anEffectLineWithNoDiceLoadsWithEmptyDiceAsInC() throws Exception {
+        PlayerTimedEffect fast = load("no-dice.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n").items().get(0);
+
+        assertEquals("0,0,", EffectProbe.yxBase(fast.getOnEndEffect().getFirst()));
+    }
+
+    /**
+     * The shipped {@code player_timed.txt} keeps every effect and the one {@code effect-dice:} it
+     * has: {@code SPRINT} ends with {@code TIMED_INC_NO_RES} carrying dice 100, and {@code SCRAMBLE}
+     * begins with {@code SCRAMBLE_STATS} and ends with {@code UNSCRAMBLE_STATS}, neither with dice.
+     *
+     * <p>Function theShippedEffectsAndTheirDiceLoadAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void theShippedEffectsAndTheirDiceLoadAsInC() throws Exception {
+        List<PlayerTimedEffect> effects = new PlayerTimedReader().parseWithResults(REAL_FILE).items();
+
+        PlayerTimedEffect sprint = byName(effects, TimedEffect.TMD_SPRINT);
+        assertEquals("EF_TIMED_INC_NO_RES", effectNames(sprint.getOnEndEffect()));
+        assertEquals("0,0,100", EffectProbe.yxBase(sprint.getOnEndEffect().getFirst()));
+        assertTrue(sprint.getOnBeginEffect().isEmpty());
+
+        PlayerTimedEffect scramble = byName(effects, TimedEffect.TMD_SCRAMBLE);
+        assertEquals("EF_SCRAMBLE_STATS", effectNames(scramble.getOnBeginEffect()));
+        assertEquals("EF_UNSCRAMBLE_STATS", effectNames(scramble.getOnEndEffect()));
+        assertEquals("0,0,", EffectProbe.yxBase(scramble.getOnBeginEffect().getFirst()));
+        assertEquals("0,0,", EffectProbe.yxBase(scramble.getOnEndEffect().getFirst()));
+    }
+
+    /**
+     * Parked 2026-11-19 (see {@code docs/Parked.md}). C's handler returns
+     * {@code PARSE_ERROR_MISSING_RECORD_HEADER} and stops the load when {@code effect-dice:} comes
+     * with no effect open; the grammar drops the dice and loads the record.
+     *
+     * <p>Function anEffectDiceWithNoEffectOpenIsDroppedHereWhereCRefusesIt coded on 261119, commented
+     * in full on 261119.
+     */
+    @Test
+    void anEffectDiceWithNoEffectOpenIsDroppedHereWhereCRefusesIt() throws Exception {
+        PlayerTimedEffect fast = load("dice-no-effect.txt",
+                "name:FAST\ngrade:G:100:Test:Message\neffect-dice:5\n").items().get(0);
+
+        assertTrue(fast.getOnBeginEffect().isEmpty());
+        assertTrue(fast.getOnEndEffect().isEmpty());
+    }
+
+    /**
+     * Parked 2026-11-19 (see {@code docs/Parked.md}). The same refusal in C when {@code effect-dice:}
+     * comes before the effect line it belongs to: {@code ps->e} is not yet set, so C stops the load.
+     * The grammar drops that dice and the later effect loads with none.
+     *
+     * <p>Function anEffectDiceBeforeItsEffectLineIsDroppedHereWhereCRefusesIt coded on 261119,
+     * commented in full on 261119.
+     */
+    @Test
+    void anEffectDiceBeforeItsEffectLineIsDroppedHereWhereCRefusesIt() throws Exception {
+        PlayerTimedEffect fast = load("dice-first.txt",
+                "name:FAST\ngrade:G:100:Test:Message\neffect-dice:5\non-end-effect:TIMED_INC_NO_RES:SLOW\n")
+                .items().get(0);
+
+        assertEquals(1, fast.getOnEndEffect().size());
+        assertEquals("0,0,", EffectProbe.yxBase(fast.getOnEndEffect().getFirst()));
     }
 
     @Test

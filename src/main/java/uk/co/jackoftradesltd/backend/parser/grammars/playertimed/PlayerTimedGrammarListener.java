@@ -126,6 +126,16 @@ public interface PlayerTimedGrammarListener extends ParseTreeListener {
 	 */
 	void exitOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link PlayerTimedGrammar#effectDice}.
+	 * @param ctx the parse tree
+	 */
+	void enterEffectDice(PlayerTimedGrammar.EffectDiceContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PlayerTimedGrammar#effectDice}.
+	 * @param ctx the parse tree
+	 */
+	void exitEffectDice(PlayerTimedGrammar.EffectDiceContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link PlayerTimedGrammar#resist}.
 	 * @param ctx the parse tree
 	 */

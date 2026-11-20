@@ -41,11 +41,16 @@ import org.jetbrains.annotations.Nullable;
  * The RGB values live elsewhere: in the frontend's {@code Colour} class, the Java form of C's
  * {@code angband_color_table[][]}.
  * <p>
- * {@link #COLOUR_SHADE} is the odd one out, because C gives it no {@code color_table[]} row.
+ * There are 28 constants, one for each {@code color_table[]} row C fills, {@code 'd'} (Dark) to
+ * {@code 'Z'} (Deep Light Blue). C's colour 28, {@code COLOUR_SHADE}, has an RGB row in
+ * {@code angband_color_table} but no {@code color_table[]} name or index character, so no data file
+ * can name it and it has no constant here. C uses it only in the front ends, as the background of
+ * the {@code BG_DARK} glyph set.
  *
  * @author Rowan Crowther
  *
- * <p>Class ColourEnum coded before 2026-10-20, commented in full on 2026-10-20.
+ * <p>Class ColourEnum coded before 2026-10-20, commented in full on 2026-10-20, updated on 261120
+ * for the removal of {@code COLOUR_SHADE}.
  */
 public enum ColourEnum {
     COLOUR_DARK('d', "Dark",
@@ -103,37 +108,23 @@ public enum ColourEnum {
     COLOUR_BLUE_SLATE('z', "Blue Slate",
             new char[]{'z', 'w', 'W', 's', 'Z', 's', 'Z', 'Z', 'W'}),
     COLOUR_DEEP_LIGHT_BLUE('Z', "Deep Light Blue",
-            new char[]{'Z', 'w', 'B', 'W', 'B', 'z', 'B', 'B', 'B'}),
-    /**
-     * The shaded-background colour, number 28 in C ({@code COLOUR_SHADE},
-     * {@code [C] src/z-color.h}). C has an RGB row for it but no {@code color_table[]} row, so
-     * its index character is {@code '\0'}, its name empty and its translation row all zeros.
-     * <p>
-     * Nothing can name it by character: {@link #fromCode(char)} turns both {@code ' '} and
-     * {@code '\0'} into {@link #COLOUR_DARK} before it searches, the same early return C makes.
-     * It is a fixed point only under {@link ColourTranslation#ATTR_FULL}; under every other
-     * translation C reads the zero row and gets {@code COLOUR_DARK}, and the row here
-     * ({@code 'd'} in each of the eight other columns) gives the same answer.
-     * <p>
-     * The code {@code ' '} and the name {@code "Shade"} are Java inventions. The name does
-     * resolve through {@link #fromCode(String)}, where in C no colour name matches, and
-     * {@link #attributeToString(ColourEnum)} returns it where C's {@code attr_to_text()}
-     * returns the empty name of the zero row.
-     *
-     * <p>Constant COLOUR_SHADE coded before 2026-10-20, commented in full on 2026-10-20.
-     */
-    COLOUR_SHADE(' ', "Shade",
-            new char[]{' ', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd'});
+            new char[]{'Z', 'w', 'B', 'W', 'B', 'z', 'B', 'B', 'B'});
+    //COLOUR_SHADE(' ', "Shade",
+    //        new char[]{' ', 'd', 'd', 'd', 'd', 'd', 'd', 'd', 'd'});
 
     /**
-     * The number of named colours, 29 - C's {@code BASIC_COLORS} ({@code [C] src/z-color.h}).
-     * It counts every constant in this enum, {@link #COLOUR_SHADE} included, so the largest
-     * valid {@link #ordinal()} is {@code basicColours - 1}. The frontend's
-     * {@code Colour.basicColours} carries the same number for its RGB table.
+     * The number of named colours, 28. It counts every constant in this enum, so the largest
+     * valid {@link #ordinal()} is {@code basicColours - 1}.
+     * <p>
+     * This is one less than C's {@code BASIC_COLORS} ({@code [C] src/z-color.h}), which is 29
+     * because it also counts {@code COLOUR_SHADE}, a colour with RGB values but no name. The
+     * frontend's {@code Colour.basicColours} is still 29, the length of its RGB table, which keeps
+     * the Shade row.
      *
-     * <p>Field basicColours coded before 2026-10-20, commented in full on 2026-10-20.
+     * <p>Field basicColours coded before 2026-10-20, commented in full on 2026-10-20, updated on
+     * 261120 for the removal of {@code COLOUR_SHADE}.
      */
-    public final static int basicColours = 29;
+    public final static int basicColours = 28;
     /**
      * Single-character code identifying this colour in data files and preferences - C's
      * {@code index_char}. Searched, case-sensitively, by {@link #fromCode(char)}.
@@ -182,13 +173,14 @@ public enum ColourEnum {
      *
      * <p>C's version takes a colour number and answers {@code "Icky"} for one past
      * {@code BASIC_COLORS}; an enum constant cannot be out of range, so that branch has no
-     * Java counterpart. The one other difference is {@link #COLOUR_SHADE}, which gets
-     * {@code "Shade"} here and the empty name of its zero row in C.
+     * Java counterpart. Nor does C's colour 28, {@code COLOUR_SHADE}, whose empty name C would
+     * return: it has no constant here.
      *
      * @param colour the colour to name
      * @return its display name, e.g. {@code "Light Green"}
      *
-     * <p>Function attributeToString coded before 2026-10-20, commented in full on 2026-10-20.
+     * <p>Function attributeToString coded before 2026-10-20, commented in full on 2026-10-20,
+     * updated on 261120 for the removal of {@code COLOUR_SHADE}.
      */
     @NotNull
     @Contract(pure = true)
@@ -246,8 +238,9 @@ public enum ColourEnum {
      * Slate, {@code 'v'} is Violet but {@code 'V'} is Light Purple.
      *
      * <p>Like C, a space or a {@code '\0'} answers {@link #COLOUR_DARK} without searching, so
-     * a blank colour field means "no colour" rather than failing. That early return is also
-     * why {@link #COLOUR_SHADE} can never be named by character.
+     * a blank colour field means "no colour" rather than failing. In C that early return also
+     * keeps the search away from the unfilled {@code color_table[]} rows 28 to 31, whose index
+     * character is {@code '\0'}.
      *
      * <p>Unlike C, whose version ends with {@code "we assume white"}, a character that matches
      * no colour yields {@code null} so the caller can reject it - see
@@ -257,7 +250,8 @@ public enum ColourEnum {
      * @return the matching colour, {@link #COLOUR_DARK} for a space or {@code '\0'}, or
      *         {@code null} if no colour uses that character
      *
-     * <p>Function fromCode(char) coded before 2026-10-20, commented in full on 2026-10-20.
+     * <p>Function fromCode(char) coded before 2026-10-20, commented in full on 2026-10-20, updated
+     * on 261120 for the removal of {@code COLOUR_SHADE}.
      */
     @Nullable
     @CheckReturnValue
@@ -284,7 +278,7 @@ public enum ColourEnum {
      * table, as {@code get_color()} does for a zero {@code attr}. Every other mode looks up the
      * target's index code in {@link #colourTranslate} and resolves it with
      * {@link #fromCode(char)}, so a row entry of {@code ' '} or {@code '\0'} would come back as
-     * {@link #COLOUR_DARK}; {@link #COLOUR_SHADE}'s row uses {@code 'd'} for that reason.
+     * {@link #COLOUR_DARK}.
      * <p>
      * C's {@code get_color()} also returns a graphical attr (high bit set) untouched; there is
      * no Java counterpart, since the high bit is not part of this enum.
@@ -293,7 +287,8 @@ public enum ColourEnum {
      * @return the translated colour, or {@code null} if the table row holds a code that names no
      *         colour - a transcription error, which {@code ColourEnumTest} checks cannot happen
      *
-     * <p>Function forTranslation coded before 2026-10-20, commented in full on 2026-10-20.
+     * <p>Function forTranslation coded before 2026-10-20, commented in full on 2026-10-20,
+     * updated on 261120 for the removal of {@code COLOUR_SHADE}.
      */
     @Nullable
     @CheckReturnValue

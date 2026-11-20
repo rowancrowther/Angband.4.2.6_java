@@ -52,10 +52,11 @@ lexer grammar Colours;
  *   Y Light Yellow  i Magenta-Pink  T Light Teal    V Light Violet
  *   I Light Pink    M Mustard       z Blue Slate    Z Deep Light Blue
  *
- * The 29th colour, Shade, has a space (' ') for its code; a bare space is not
- * usable as a colour token in any data file, so it is deliberately omitted
- * here (matching every historical hand-written copy of this alphabet). Shade
- * is still reachable by its name via COLOUR_NAME below.
+ * These are the 28 rows C's color_table names. C's colour 28, COLOUR_SHADE,
+ * has RGB values but no index character or name, so no data file can write
+ * it and ColourEnum has no constant for it.
+ *
+ * Fragment COLOUR_CODE updated on 261120 for the removal of COLOUR_SHADE.
  */
 fragment COLOUR_CODE
         :   [dwsorgbuDWPyRGBUpvtmYiTVIMzZ]
@@ -66,9 +67,13 @@ fragment COLOUR_CODE
  *
  * The full colour names, accepted in both minuscule (as written in most
  * gamedata) and Title case (as written in a few preference-style lines).
- * Ordered to mirror COLOUR_CODE above, including Shade, whose code has no
- * printable form. ColourEnum.fromCode resolves either case, so the two
- * variants are equivalent to the consuming grammar.
+ * Ordered to mirror COLOUR_CODE above. ColourEnum.fromCode resolves either
+ * case, so the two variants are equivalent to the consuming grammar.
+ *
+ * Shade is not listed: it is not a C colour name, so C's name lookup,
+ * color_text_to_attr, answers white for it.
+ *
+ * Fragment COLOUR_NAME updated on 261120 for the removal of COLOUR_SHADE.
  */
 fragment COLOUR_NAME
         :   (   'dark' | 'white' | 'slate' | 'orange' | 'red' | 'green' | 'blue'
@@ -76,12 +81,12 @@ fragment COLOUR_NAME
             |   'light red' | 'light green' | 'light blue' | 'light umber'
             |   'purple' | 'violet' | 'teal' | 'mud' | 'light yellow'
             |   'magenta-pink' | 'light teal' | 'light violet' | 'light pink'
-            |   'mustard' | 'blue slate' | 'deep light blue' | 'shade'
+            |   'mustard' | 'blue slate' | 'deep light blue'
 
             |   'Dark' | 'White' | 'Slate' | 'Orange' | 'Red' | 'Green' | 'Blue'
             |   'Umber' | 'Light Dark' | 'Light Slate' | 'Light Purple' | 'Yellow'
             |   'Light Red' | 'Light Green' | 'Light Blue' | 'Light Umber'
             |   'Purple' | 'Violet' | 'Teal' | 'Mud' | 'Light Yellow'
             |   'Magenta-Pink' | 'Light Teal' | 'Light Violet' | 'Light Pink'
-            |   'Mustard' | 'Blue Slate' | 'Deep Light Blue' | 'Shade')
+            |   'Mustard' | 'Blue Slate' | 'Deep Light Blue')
         ;

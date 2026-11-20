@@ -501,13 +501,13 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *   <li>a value that matches nothing falls back to {@code COLOUR_WHITE}, never to an error.</li>
      * </ul>
      *
-     * <p>{@link ColourEnum#COLOUR_SHADE} is never returned. {@link ColourEnum#fromCode(String)}
-     * matches the name {@code Shade}, a Java addition, but C's colour table has no usable row for
-     * it, so the name falls back to white here like any unknown one. The method never returns
+     * <p>The name {@code Shade} falls back to white like any unknown one: C's colour table has no
+     * row of that name, and {@link ColourEnum} has no such constant. The method never returns
      * {@code null} and never throws.
      *
      * <p>Function resolveColour coded before 260915, commented in full on 261029, updated on 261105
-     * for the removal of the soft-error path.
+     * for the removal of the soft-error path, and on 261120 for the removal of
+     * {@code COLOUR_SHADE}.
      *
      * @param colour the value from the {@code color:} line
      * @return the matching colour, {@code COLOUR_DARK} for an empty or blank value, or
@@ -521,7 +521,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
 
         ColourEnum result = ColourEnum.fromCode(colour);
         
-        if (result == null || result == ColourEnum.COLOUR_SHADE)
+        if (result == null)
             return ColourEnum.COLOUR_WHITE;
         
         return result;

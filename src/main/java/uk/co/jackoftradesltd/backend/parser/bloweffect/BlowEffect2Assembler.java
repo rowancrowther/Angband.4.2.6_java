@@ -469,9 +469,9 @@ public class BlowEffect2Assembler implements Assembler<BlowEffect2ParseRecord, L
      *   <li>otherwise {@link ColourEnum#fromCode(String)} resolves it, so {@code "Light Green"},
      *       {@code "light green"} and {@code "G"} agree with C;</li>
      *   <li>a value that matches no colour gives {@link ColourEnum#COLOUR_WHITE}, as C's
-     *       "Default to white" and "we assume white" do, where {@code fromCode} itself answers null;</li>
-     *   <li>{@link ColourEnum#COLOUR_SHADE} also gives white. Only the name {@code "Shade"} can
-     *       reach it, a name the port invented, and C has no colour of that name.</li>
+     *       "Default to white" and "we assume white" do, where {@code fromCode} itself answers null.
+     *       {@code "Shade"} is one such value: C has no colour of that name, and neither does
+     *       {@link ColourEnum}.</li>
      * </ol>
      *
      * <p>The one refusal C has here, {@code PARSE_ERROR_INVALID_COLOR}, fires only for a
@@ -480,7 +480,8 @@ public class BlowEffect2Assembler implements Assembler<BlowEffect2ParseRecord, L
      * character straight back. An unknown name is never refused in C. This method has no
      * counterpart for the negative case: a character that matches no colour is white.
      *
-     * <p>Function parseColour coded before 261117, commented in full on 261117.
+     * <p>Function parseColour coded before 261117, commented in full on 261117, updated on 261120
+     * for the removal of {@code COLOUR_SHADE}.
      *
      * @param colour the raw colour text from the directive, which may be null or empty
      * @return the colour, never null
@@ -491,7 +492,7 @@ public class BlowEffect2Assembler implements Assembler<BlowEffect2ParseRecord, L
         }
         
         ColourEnum result = ColourEnum.fromCode(colour);
-        if (result == null || result == ColourEnum.COLOUR_SHADE) {
+        if (result == null) {
             return ColourEnum.COLOUR_WHITE;
         }
         

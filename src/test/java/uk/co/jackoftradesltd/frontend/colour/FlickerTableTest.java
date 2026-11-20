@@ -173,16 +173,4 @@ class FlickerTableTest {
             }
         }
     }
-
-    /**
-     * The one colour the shipped file gives no block, {@code COLOUR_SHADE}, is a zeroed row in C:
-     * dark at every frame.
-     */
-    @Test
-    void shippedFileLeavesShadeDark() throws IOException {
-        FlickerTable table = new VisualsReader().parseFlickerWithResults(REAL_FILE).items().getFirst();
-        for (int frame = 0; frame < 4; frame++) {
-            assertEquals(ColourEnum.COLOUR_DARK, table.getAttr(ColourEnum.COLOUR_SHADE, frame));
-        }
-    }
 }

@@ -24,7 +24,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 
-import java.awt.Color;
+import java.awt.*;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,8 +48,9 @@ class ColourTest {
     }
 
     /**
-     * Every row of {@code angband_color_table}, index for index, as
-     * {@code {0x00, r, g, b}} in the C source.
+     * Every row of {@code angband_color_table} that has a {@link ColourEnum} constant, index for
+     * index, as {@code {0x00, r, g, b}} in the C source. Row 28, {@code COLOUR_SHADE}, has RGB
+     * values in C but no {@code color_table} name, so it has no constant and is not listed.
      */
     static Stream<Arguments> colourRgbTriples() {
         return Stream.of(
@@ -80,8 +81,7 @@ class ColourTest {
                 Arguments.of(ColourEnum.COLOUR_LIGHT_PINK, 0xff, 0x80, 0x80),
                 Arguments.of(ColourEnum.COLOUR_MUSTARD, 0xb4, 0xb4, 0x00),
                 Arguments.of(ColourEnum.COLOUR_BLUE_SLATE, 0xa0, 0xc0, 0xd0),
-                Arguments.of(ColourEnum.COLOUR_DEEP_LIGHT_BLUE, 0x00, 0xb0, 0xff),
-                Arguments.of(ColourEnum.COLOUR_SHADE, 0x28, 0x28, 0x28));
+                Arguments.of(ColourEnum.COLOUR_DEEP_LIGHT_BLUE, 0x00, 0xb0, 0xff));
     }
 
     @ParameterizedTest
@@ -98,10 +98,10 @@ class ColourTest {
     }
 
     @Test
-    void theLastNamedRowIsShade() {
-        // Row 28, the last of the 29 rows angband_color_table actually names;
-        // the boundary at the end of Colour#basicColours.
-        assertEquals(new Color(0x28, 0x28, 0x28), Colour.getColour(ColourEnum.COLOUR_SHADE));
+    void theLastNamedRowIsDeepLightBlue() {
+        // Row 27, the last row color_table names and the last ColourEnum constant;
+        // the boundary at the end of the enum.
+        assertEquals(new Color(0x00, 0xb0, 0xff), Colour.getColour(ColourEnum.COLOUR_DEEP_LIGHT_BLUE));
     }
 
     @Test
@@ -113,6 +113,6 @@ class ColourTest {
         Colour.init();
 
         assertEquals(new Color(0xc0, 0x00, 0x00), Colour.getColour(ColourEnum.COLOUR_RED));
-        assertEquals(new Color(0x28, 0x28, 0x28), Colour.getColour(ColourEnum.COLOUR_SHADE));
+        assertEquals(new Color(0x00, 0xb0, 0xff), Colour.getColour(ColourEnum.COLOUR_DEEP_LIGHT_BLUE));
     }
 }

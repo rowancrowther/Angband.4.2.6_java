@@ -52,11 +52,14 @@ public class Colour {
      */
     public final static int maxColours = 32;
     /**
-     * Number of "basic" named colours before the extra/shade entries - the
-     * Java form of C's {@code BASIC_COLORS} ({@code [C] src/z-color.h}), and
-     * the length of both {@link #colourTable} and {@link ColourEnum#values()}.
+     * Number of rows in {@link #colourTable}, 29 - the Java form of C's
+     * {@code BASIC_COLORS} ({@code [C] src/z-color.h}). That is one more than
+     * {@link ColourEnum#basicColours}, because the table keeps row 28, C's
+     * {@code COLOUR_SHADE}, which has RGB values but no {@link ColourEnum}
+     * constant.
      *
-     * <p>Field basicColours coded on 260902, commented in full on 260916.
+     * <p>Field basicColours coded on 260902, commented in full on 260916,
+     * updated on 261120 for the removal of {@code COLOUR_SHADE}.
      */
     public final static int basicColours = 29;
 
@@ -64,11 +67,16 @@ public class Colour {
      * The 29 default RGB triples, in {@link ColourEnum} declaration order -
      * the Java form of the C original's {@code angband_color_table[MAX_COLORS][4]}
      * ({@code [C] src/z-color.c}), read there as {@code {full, r, g, b}} per
-     * row. Only the {@link #basicColours} named rows are given here; C's array
-     * is sized to {@link #maxColours} but leaves the remaining rows zeroed, and
-     * this port never indexes past {@link ColourEnum#COLOUR_SHADE}.
+     * row. Only the {@link #basicColours} rows C gives values are here; C's
+     * array is sized to {@link #maxColours} but leaves the remaining rows
+     * zeroed.
+     * <p>
+     * The last row, {@code (40, 40, 40)}, is C's {@code COLOUR_SHADE}.
+     * {@link ColourEnum} has 28 constants and no Shade, so {@link #init()},
+     * which walks the constants, never reads this row.
      *
-     * <p>Field colourTable coded on 260902, commented in full on 260916.
+     * <p>Field colourTable coded on 260902, commented in full on 260916,
+     * updated on 261120 for the removal of {@code COLOUR_SHADE}.
      */
     private static Color colourTable[] = {
             new Color(0, 0, 0),

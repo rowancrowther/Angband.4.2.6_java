@@ -104,8 +104,8 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
      *       {@code COLOUR_DARK} for a space, the colour whose index character matches
      *       (case-sensitively), and otherwise {@code COLOUR_WHITE}. Its only error, a negative
      *       {@code char}, has no Java counterpart. So an unresolved colour here becomes
-     *       {@code COLOUR_WHITE}, and so does {@code "Shade"}, which
-     *       {@link ColourEnum#fromCode(String)} resolves but C's empty-named row does not. An
+     *       {@code COLOUR_WHITE}, {@code "Shade"} included, since neither C nor
+     *       {@link ColourEnum} has a colour of that name. An
      *       absent colour stays {@code null}, where C's zeroed field reads
      *       {@code COLOUR_DARK}.</li>
      *   <li>{@code effect-type:} is matched exactly, as C's {@code streq} matches it; an
@@ -124,7 +124,8 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
      * </ul>
      *
      * <p>Function assemble coded before 260915, commented in full on 260915, rewritten for
-     * the load-ending errors, the white colour fallback and base 0 integers on 261023.
+     * the load-ending errors, the white colour fallback and base 0 integers on 261023,
+     * updated on 261120 for the removal of {@code COLOUR_SHADE}.
      *
      * @param records  the blow-effect records in file order, as produced by the grammar
      * @param filename the name of the data file, used in the error messages
@@ -157,21 +158,18 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
             ColourEnum base = null;
             if (!record.loreColourBase().isEmpty()) {
                 base = ColourEnum.fromCode(record.loreColourBase());
-                if (base == ColourEnum.COLOUR_SHADE) base = ColourEnum.COLOUR_WHITE;
                 if (base == null)
                     base = ColourEnum.COLOUR_WHITE;
             }
             ColourEnum resist = null;
             if (!record.loreColourResist().isEmpty()) {
                 resist = ColourEnum.fromCode(record.loreColourResist());
-                if (resist == ColourEnum.COLOUR_SHADE) resist = ColourEnum.COLOUR_WHITE;
                 if (resist == null)
                     resist = ColourEnum.COLOUR_WHITE;
                 }
             ColourEnum immune = null;
             if (!record.loreColourImmune().isEmpty()) {
                 immune = ColourEnum.fromCode(record.loreColourImmune());
-                if (immune == ColourEnum.COLOUR_SHADE) immune = ColourEnum.COLOUR_WHITE;
                 if (immune == null) 
                     immune = ColourEnum.COLOUR_WHITE;
             }

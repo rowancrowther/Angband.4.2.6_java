@@ -104,10 +104,9 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
      * handler then, so the record keeps the zero that the copied {@code default} record holds,
      * which is the dark colour, and this method gives {@link ColourEnum#COLOUR_DARK} too.
      *
-     * <p>One name differs: {@code Shade} resolves to {@link ColourEnum#COLOUR_SHADE} through
-     * {@link ColourEnum#fromCode(String)}, a constant C's {@code color_table} has no named row
-     * for, so C would answer white. {@code object_base.txt} does not use it, and
-     * {@link ColourEnum} documents the difference.
+     * <p>The name {@code Shade} is an unknown colour like any other, so it is white, as in C:
+     * C's {@code color_table} has no row of that name, and {@link ColourEnum} has no such
+     * constant.
      *
      * <p><b>Flags.</b> {@code parse_object_base_flags} offers each token to three tables and the
      * token is valid if any accepts it. A token with an underscore whose text before the first
@@ -150,7 +149,7 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
      * finds too.
      *
      * <p>Function assemble coded before 260915, commented in full on 261028, colour and flag
-     * paragraphs corrected on 261107.
+     * paragraphs corrected on 261107, updated on 261120 for the removal of {@code COLOUR_SHADE}.
      *
      * @param records  the raw object-base records from the grammar, in file order, with the
      *                 {@code default:} values already folded in

@@ -90,7 +90,7 @@ class AngbandDisplayCharacterTest {
 
         @Test
         void theGlyphItselfIsStoredVerbatimIncludingUnusualCharacters() {
-            assertEquals(' ', new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_SHADE)
+            assertEquals(' ', new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_SLATE)
                     .getNarrowCharacter());
             assertEquals('\0', new AngbandDisplayCharacter('\0', ColourEnum.COLOUR_DARK)
                     .getNarrowCharacter());

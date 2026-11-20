@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -928,11 +929,12 @@ class VisualsReaderTest {
         }
 
         @Test
-        void realFileGivesNoCycleForShade() throws IOException {
-            // No flicker: line can name Shade (' ' resolves to Dark first), so its C row is never written.
+        void realFileGivesACycleForEveryColour() throws IOException {
+            // visuals.txt has one flicker: block for each of the 28 colours color_table names, so
+            // every ColourEnum constant keys a row.
             FlickerTable t = new VisualsReader().parseFlicker(REAL_FILE);
 
-            assertFalse(byAttr(t).containsKey(ColourEnum.COLOUR_SHADE));
+            assertEquals(EnumSet.allOf(ColourEnum.class), EnumSet.copyOf(byAttr(t).keySet()));
         }
 
         @Test

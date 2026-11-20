@@ -49,12 +49,12 @@ import java.util.List;
  *       {@code color_text_to_attr()} both answer white, so the flavour is kept and painted
  *       white. {@code PARSE_ERROR_INVALID_COLOR} in C is reachable only for a negative
  *       {@code char}, which the data files do not contain.</li>
- *   <li>{@link ColourEnum#COLOUR_SHADE} also becomes white, since no {@code color_table[]} row in C
- *       carries a name that could select it.</li>
+ *   <li>The name {@code Shade} also becomes white, since no {@code color_table[]} row in C carries
+ *       it, and {@link ColourEnum} has no constant for it.</li>
  * </ul>
  *
  * <p>Class FlavourAssembler coded before 260915, commented in full on 261025, updated on 261105 for
- * the removal of the soft-error path.
+ * the removal of the soft-error path, and on 261120 for the removal of {@code COLOUR_SHADE}.
  *
  * @author Rowan Crowther
  */
@@ -121,14 +121,15 @@ public class FlavourAssembler implements Assembler<FlavourParseRecord, List<Flav
      * {@code attr} to C's {@code color_char_to_attr()} and a longer one to
      * {@code color_text_to_attr()} (case-insensitive on the name). Both C functions answer white for
      * a miss, where {@code fromCode} answers {@code null}, so a {@code null} becomes
-     * {@link ColourEnum#COLOUR_WHITE} here. {@link ColourEnum#COLOUR_SHADE}, which only the Java
-     * name {@code "Shade"} can select, becomes white too, as no name in C's table matches it. A
+     * {@link ColourEnum#COLOUR_WHITE} here. The name {@code "Shade"} is one such miss: no name in
+     * C's table matches it, and {@code fromCode} has no constant to give. A
      * blank {@code attr} is {@link ColourEnum#COLOUR_DARK}, as in C.
      *
      * <p>{@code text} may be {@code null}: C only appends {@code desc} when it is present, which
      * is how scroll flavours come through, and the {@link Flavour} gets the {@code null}.
      *
-     * <p>Function storeFlavour coded before 260915, commented in full on 261025.
+     * <p>Function storeFlavour coded before 260915, commented in full on 261025, updated on 261120
+     * for the removal of {@code COLOUR_SHADE}.
      *
      * @param flavours the list being built, appended to
      * @param line     the line the record starts on, for the messages
@@ -151,7 +152,7 @@ public class FlavourAssembler implements Assembler<FlavourParseRecord, List<Flav
         int index = ParseUtils.parseIntString("Flavour", indexStr, line, filename, "index");
         
         ColourEnum colour = ColourEnum.fromCode(attr);
-        if (colour == null || colour == ColourEnum.COLOUR_SHADE) {
+        if (colour == null) {
             colour = ColourEnum.COLOUR_WHITE;
         }
         if (sVal == null) {

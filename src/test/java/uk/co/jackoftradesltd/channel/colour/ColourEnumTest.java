@@ -56,6 +56,17 @@ class ColourEnumTest {
         assertEquals("Dark", ColourEnum.attributeToString(ColourEnum.COLOUR_DARK));
     }
 
+    @Test
+    void theColoursAreCsTwentyEightNamedColorTableRows() {
+        // color_table in z-color.c fills rows 0 ('d', Dark) to 27 ('Z', Deep Light Blue) and
+        // leaves the rest for later. basicColours counts the constants, so it is 28.
+        ColourEnum[] all = ColourEnum.values();
+        assertEquals(28, all.length);
+        assertEquals(ColourEnum.basicColours, all.length);
+        assertSame(ColourEnum.COLOUR_DARK, all[0]);
+        assertSame(ColourEnum.COLOUR_DEEP_LIGHT_BLUE, all[all.length - 1]);
+    }
+
     /**
      * Lookup by data-file code and by display name.
      */
@@ -78,16 +89,16 @@ class ColourEnumTest {
         }
 
         @Test
-        void aSpaceResolvesToDarkNotShade() {
+        void aSpaceResolvesToDark() {
             // C's color_char_to_attr() answers COLOUR_DARK for ' ' before it searches the
-            // table, so no data-file character can name COLOUR_SHADE.
+            // table.
             assertSame(ColourEnum.COLOUR_DARK, ColourEnum.fromCode(' '));
         }
 
         @Test
         void aNulCharacterResolvesToDark() {
-            // The other half of the same C early return; entry 28 (Shade) has a '\0' index
-            // character in C, but the early return means it is never reached.
+            // The other half of the same C early return. In C it also keeps the search away from
+            // color_table's unfilled rows 28 to 31, whose index character is '\0'.
             assertSame(ColourEnum.COLOUR_DARK, ColourEnum.fromCode('\0'));
         }
 
@@ -123,6 +134,15 @@ class ColourEnumTest {
         @Test
         void anUnknownNameResolvesToNull() {
             assertNull(ColourEnum.fromCode("Chartreuse"));
+        }
+
+        @Test
+        void shadeIsNotAColourName() {
+            // C's color_table names entries 0 to 27 only; row 28 (COLOUR_SHADE) is left with an
+            // empty name, so color_text_to_attr matches nothing and answers white. Here the
+            // miss is null and each caller supplies the white.
+            assertNull(ColourEnum.fromCode("Shade"));
+            assertNull(ColourEnum.fromCode("shade"));
         }
 
         @Test
@@ -176,13 +196,10 @@ class ColourEnumTest {
 
         @ParameterizedTest
         @EnumSource(ColourEnum.class)
-        void everyColourExceptShadeIsFoundByItsOwnCode(ColourEnum colour) throws Exception {
+        void everyColourIsFoundByItsOwnCode(ColourEnum colour) throws Exception {
             // fromCode returns the first match, so if two colours shared a code the later one
             // could never round-trip back to itself here - this is the uniqueness check on the
-            // codes. Shade is excluded because C's early return for ' ' and '\0' means no code
-            // can name it.
-            if (colour == ColourEnum.COLOUR_SHADE) return;
-
+            // codes.
             Field code = ColourEnum.class.getDeclaredField("colourCharacter");
             code.setAccessible(true);
             assertSame(colour, ColourEnum.fromCode(code.getChar(colour)));
@@ -239,32 +256,13 @@ class ColourEnumTest {
         }
 
         @Test
-        void shadeIsUnchangedOnlyByTheFullTranslation() {
+        void translateColourLeavesAColourAloneUnderTheFullTranslationHoweverManyTimes() {
             // C's get_color() returns the colour as it is for ATTR_FULL without reading the
-            // table. Shade has no row in C's color_table (the entries stop at index 27), so
-            // every other translation reads zeros, which is COLOUR_DARK.
-            assertSame(ColourEnum.COLOUR_SHADE,
-                    ColourEnum.COLOUR_SHADE.forTranslation(ColourTranslation.ATTR_FULL));
-            for (ColourTranslation translation : ColourTranslation.values()) {
-                if (translation == ColourTranslation.ATTR_FULL) continue;
-                assertSame(ColourEnum.COLOUR_DARK,
-                        ColourEnum.COLOUR_SHADE.forTranslation(translation),
-                        () -> "Shade under " + translation);
-            }
-        }
-
-        @Test
-        void translateColourLeavesShadeAloneUnderTheFullTranslationHoweverManyTimes() {
-            assertSame(ColourEnum.COLOUR_SHADE, ColourEnum.translateColour(
-                    ColourEnum.COLOUR_SHADE, ColourTranslation.ATTR_FULL, 0));
-            assertSame(ColourEnum.COLOUR_SHADE, ColourEnum.translateColour(
-                    ColourEnum.COLOUR_SHADE, ColourTranslation.ATTR_FULL, 3));
-        }
-
-        @Test
-        void translateColourSendsShadeToDarkUnderAnyOtherTranslation() {
-            assertSame(ColourEnum.COLOUR_DARK, ColourEnum.translateColour(
-                    ColourEnum.COLOUR_SHADE, ColourTranslation.ATTR_DARK, 1));
+            // table, whatever n is.
+            assertSame(ColourEnum.COLOUR_RED, ColourEnum.translateColour(
+                    ColourEnum.COLOUR_RED, ColourTranslation.ATTR_FULL, 0));
+            assertSame(ColourEnum.COLOUR_RED, ColourEnum.translateColour(
+                    ColourEnum.COLOUR_RED, ColourTranslation.ATTR_FULL, 3));
         }
 
         @Test

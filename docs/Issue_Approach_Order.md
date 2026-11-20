@@ -734,9 +734,12 @@ flags
 - Interior tabs stay an accepted deviation (Stage 6), so the tab line under "What C accepts" is C's behaviour only.
 - **Stage 7d as a whole.** [<span style="color:#006400">**CLOSED**</span> 26-11-20: checked this date. The old separator `' '? '|' ' '?` appears in no `.g4` under `src/main`. All 17 lexers carry the two-alternative shape on every list separator (`FLAG_OR`, `VALUE_OR`, `VALUES_OR`, `VALUES_INTRO_OR`, `VALUE_INTRO_OR`, `VALUE_FLAG_OR`, and `OR` in Vault). Each of the 17 committed parsers was regenerated into a scratch directory and matches its `.g4` (MonsterBase only by layout, its committed copy having been reformatted), so none is stale. Every list grammar has a no-final-newline pin, apart from Artifact, where it was probed this date instead: `flags:` and `values:` as a last line with no final newline load in all twelve shapes tried. So the "a directive on the last line is fine" wording in Stage 6 item 1 and in `docs/grammar_issues.md` now holds for flag lists too. Every pin named in this section exists, apart from the retired pins the entries say were replaced. The full suite passes (15,032 tests, 19 skipped). Left over, none of it open: the MonsterBase leading-delimiter deviation (`docs/Accepted_Deviations.md`), interior tabs (Stage 6), and three items in `docs/Parked.md` (Artifact `values:` leading delimiter, Artifact blank-only `values:`, and bare against blank on required `str` lists).]
 
-### 7e. `alloc:` spacing
+### 7e. `alloc:` spacing [<span style="color:#006400">**CLOSED**</span> 26-11-20: all three lexers below carry `ALLOC_TO` as `(' ' | '\t')+ 'to' (' ' | '\t')+` and `ALLOC_COLON` as `':' (' ' | '\t')*`, and each reader test has an "as in C" pin for both directions.]
 
-- G: `ItemObjectLexer.g4`, `EgoItemsLexer.g4`, `ArtifactLexer.g4`. All three read `N to N` with optional blanks in C.
+- G: `ItemObjectLexer.g4`, `EgoItemsLexer.g4`, `ArtifactLexer.g4`. All three read `N to N` through `grab_int_range` in C. That needs at least one blank or tab on each side of `to`, but any number of them, and it skips blanks before the first figure and after the last. (Corrected 26-11-20: this line used to say "optional blanks", but the blanks round `to` are required.)
+- `ItemObjectLexer.g4` [<span style="color:#006400">**CLOSED**</span> 26-11-20: see its entry in `docs/grammar_issues.md`. Before the fix it was too lenient (`1to100` loaded) as well as too strict.]
+- `EgoItemsLexer.g4` [<span style="color:#006400">**CLOSED**</span> 26-11-20: see its entry in `docs/grammar_issues.md`.]
+- `ArtifactLexer.g4` [<span style="color:#006400">**CLOSED**</span> 26-11-20: see its entry in `docs/grammar_issues.md`.]
 
 ### 7f. Colours given by name or mistyped
 

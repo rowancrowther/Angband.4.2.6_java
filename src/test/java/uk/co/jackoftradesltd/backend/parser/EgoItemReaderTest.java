@@ -1333,17 +1333,48 @@ class EgoItemReaderTest {
     }
 
     /**
-     * {@code grab_int_range} takes {@code <int><whitespace><optional "to"><whitespace><int>} and
-     * ignores trailing spaces, and {@code strtol} skips leading ones. The lexer matches the literal
-     * {@code " to "} and nothing else around the figures, apart from blanks before the line end,
-     * which {@code CommentsAndEol} now absorbs (see
-     * {@link #aTrailingBlankAfterTheAllocRangeIsIgnoredAsInC}).
+     * {@code grab_int_range} in {@code datafile.c} reads each figure with {@code strtol}, which
+     * skips leading white space, takes any run of spaces or tabs before {@code to}, and allows only
+     * spaces or tabs after the second figure. So C loads every shape below as 10, 5, 20. The
+     * lexer's {@code ALLOC_COLON} takes blanks or tabs after the colon, {@code ALLOC_TO} takes any
+     * run of them on each side of {@code to}, and {@code ALLOC_EOL} takes them before the newline
+     * (see also {@link #aTrailingBlankAfterTheAllocRangeIsIgnoredAsInC}).
+     *
+     * <p>Method allocWithAnyRunOfBlanksOrTabsRoundTheFiguresLoadsAsInC coded before 261120,
+     * commented in full on 261120 (was allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt;
+     * flipped to the C behaviour on 261120 when {@code ALLOC_TO} became one-or-more blanks or tabs
+     * each side and {@code ALLOC_COLON} took the blanks after the colon).
      */
     @Test
-    void allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("alloc-wide.txt", "alloc:10:5  to  20\n");
-        assertHardError("alloc-tabs.txt", "alloc:10:5\tto\t20\n");
-        assertHardError("alloc-leading.txt", "alloc:10: 5 to 20\n");
+    void allocWithAnyRunOfBlanksOrTabsRoundTheFiguresLoadsAsInC() throws Exception {
+        String[] ranges = {"5  to  20", "5\tto\t20", "5 \t to \t 20", " 5 to 20", "\t5 to 20", "5 to 20\t"};
+        for (String range : ranges) {
+            EgoItem e = loadOne("alloc-spacing.txt", "type:sword\nalloc:10:" + range + "\n");
+
+            int prob = field(e, "allocProb");
+            int min = field(e, "allocMin");
+            int max = field(e, "allocMax");
+            assertEquals(10, prob, range);
+            assertEquals(5, min, range);
+            assertEquals(20, max, range);
+        }
+    }
+
+    /**
+     * {@code grab_int_range} in {@code datafile.c} needs white space straight after the first
+     * figure and straight after {@code to}, so C refuses {@code 5to20}, {@code 5 to20} and
+     * {@code 5to 20} with {@code PARSE_ERROR_INVALID_ALLOCATION}. The lexer's {@code ALLOC_TO}
+     * needs one or more blanks or tabs on each side of {@code to}, so all three are refused here
+     * too.
+     *
+     * <p>Method allocWithNoBlankEitherSideOfToIsAHardErrorAsInC coded on 261120, commented in full
+     * on 261120.
+     */
+    @Test
+    void allocWithNoBlankEitherSideOfToIsAHardErrorAsInC() throws IOException {
+        assertHardError("alloc-tight.txt", "alloc:10:5to20\n");
+        assertHardError("alloc-tight-after.txt", "alloc:10:5 to20\n");
+        assertHardError("alloc-tight-before.txt", "alloc:10:5to 20\n");
     }
 
     /**

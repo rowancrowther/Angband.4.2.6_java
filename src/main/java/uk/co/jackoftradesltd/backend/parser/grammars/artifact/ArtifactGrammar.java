@@ -75,8 +75,8 @@ public class ArtifactGrammar extends Parser {
 			"'alloc:'", "'attack:'", "'armor:'", null, "'act:'", "'time:'", "'msg:'", 
 			"'values:'", "'brand:'", "'slay:'", "'curse:'", "'desc:'", null, null, 
 			null, "'graphics:'", "'color:'", "'glyph:'", null, null, null, null, 
-			null, null, null, null, null, null, "' to '", null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, null, "'['", "']'"
+			null, null, null, null, null, null, null, null, null, null, null, null, 
+			null, null, null, null, null, null, null, null, null, "'['", "']'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();

@@ -1294,16 +1294,47 @@ class ItemObjectReaderTest {
     }
 
     /**
-     * {@code grab_int_range} insists on white space after the first number, so C rejects
-     * {@code 1to100}. The lexer's {@code ALLOC_TO} makes the spaces optional.
+     * {@code grab_int_range} in {@code datafile.c} needs white space straight after the first
+     * figure and straight after {@code to}, so C refuses {@code 1to100}, {@code 1 to100} and
+     * {@code 1to 100} with {@code PARSE_ERROR_INVALID_ALLOCATION}. The lexer's {@code ALLOC_TO}
+     * needs one or more blanks or tabs on each side of {@code to}, so all three are refused here
+     * too.
+     *
+     * <p>Method allocWithNoBlankEitherSideOfToIsAHardErrorAsInC coded before 261120, commented in
+     * full on 261120 (was allocWithNoSpacesAroundToIsAcceptedHereWhereCRejectsIt; flipped to the C
+     * behaviour on 261120 when {@code ALLOC_TO} became one-or-more blanks each side).
      */
     @Test
-    void allocWithNoSpacesAroundToIsAcceptedHereWhereCRejectsIt() throws Exception {
-        ParseResult<ObjectKind> result = load("alloc-tight.txt", obj("tight", HEAD + "alloc:5:1to100\n"));
+    void allocWithNoBlankEitherSideOfToIsAHardErrorAsInC() {
+        assertThrows(ParseCancellationException.class,
+                () -> load("alloc-tight.txt", obj("tight", HEAD + "alloc:5:1to100\n")));
+        assertThrows(ParseCancellationException.class,
+                () -> load("alloc-tight-after.txt", obj("tight after", HEAD + "alloc:5:1 to100\n")));
+        assertThrows(ParseCancellationException.class,
+                () -> load("alloc-tight-before.txt", obj("tight before", HEAD + "alloc:5:1to 100\n")));
+    }
 
-        ObjectKind kind = result.items().get(0);
-        assertEquals(1, (int) kindField(kind, "alloc_min"));
-        assertEquals(100, (int) kindField(kind, "alloc_max"));
+    /**
+     * {@code grab_int_range} in {@code datafile.c} reads each figure with {@code strtol}, which
+     * skips leading white space, takes any run of spaces or tabs before {@code to}, and allows
+     * only spaces or tabs after the second figure. So C loads every shape below as 1 to 100.
+     * The lexer's {@code ALLOC_COLON} takes blanks or tabs after the colon, {@code ALLOC_TO}
+     * takes any run of them on each side, and {@code ALLOC_EOL} takes them before the newline.
+     *
+     * <p>Method allocWithAnyRunOfBlanksOrTabsRoundTheFiguresLoadsAsInC coded on 261120, commented
+     * in full on 261120.
+     */
+    @Test
+    void allocWithAnyRunOfBlanksOrTabsRoundTheFiguresLoadsAsInC() throws Exception {
+        String[] ranges = {"1  to  100", "1\tto\t100", "1 \t to \t 100", " 1 to 100", "\t1 to 100",
+                "1 to 100 ", "1 to 100\t"};
+        for (String range : ranges) {
+            ParseResult<ObjectKind> result = load("alloc-spacing.txt", obj("spaced", HEAD + "alloc:5:" + range + "\n"));
+
+            ObjectKind kind = result.items().get(0);
+            assertEquals(1, (int) kindField(kind, "alloc_min"), range);
+            assertEquals(100, (int) kindField(kind, "alloc_max"), range);
+        }
     }
 
     /**

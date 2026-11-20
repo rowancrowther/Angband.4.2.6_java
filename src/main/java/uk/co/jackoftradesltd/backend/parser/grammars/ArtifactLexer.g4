@@ -284,19 +284,25 @@ ALLOC_INT
         :   DEC_FRAGMENT
         ;
 
-// The ':' between the commonness and the range.
+// The ':' between the commonness and the range, with any blanks or tabs after it. C's
+// grab_int_range reads the first end of the range with strtol, which skips leading white space,
+// so "alloc:1: 2 to 3" loads.
 //
-// Token ALLOC_COLON coded before 261112, commented in full on 261112.
+// Token ALLOC_COLON coded before 261112, commented in full on 261112, updated on 261120 to take
+// the blanks or tabs after the colon.
 ALLOC_COLON
-        :   ':'
+        :   ':' (' ' | '\t')*
         ;
 
-// The separator between the two ends of the range, " to " with exactly one space on each side.
-// C's grab_int_range accepts any run of blanks round the "to".
+// The separator between the two ends of the range: "to" with one or more blanks or tabs on each
+// side. C's grab_int_range needs white space straight after the first end and straight after
+// "to", but takes any run of it, so "2  to 3" and "2<tab>to<tab>3" load and "2to3", "2 to3" and
+// "2to 3" are refused.
 //
-// Token ALLOC_TO coded before 261112, commented in full on 261112.
+// Token ALLOC_TO coded before 261112, commented in full on 261112, updated on 261120 from the
+// literal " to " to one-or-more blanks or tabs on each side.
 ALLOC_TO
-        :   ' to '
+        :   (' ' | '\t')+ 'to' (' ' | '\t')+
         ;
 
 // The end of the alloc: line. Skips the newline and pops back to the default mode.

@@ -74,6 +74,5 @@ GLYPH_EOL=57
 'graphics:'=21
 'color:'=22
 'glyph:'=23
-' to '=34
 '['=49
 ']'=50

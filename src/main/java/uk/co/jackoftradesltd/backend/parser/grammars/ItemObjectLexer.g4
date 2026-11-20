@@ -124,11 +124,11 @@ ALLOC_INT
         ;
 
 ALLOC_COLON
-        :   ':'
+        :   ':' (' ' | '\t')*
         ;
 
 ALLOC_TO
-        :   ' '? 'to' ' '?
+        :   (' ' | '\t')+ 'to' (' ' | '\t')+
         ;
 
 ALLOC_EOL

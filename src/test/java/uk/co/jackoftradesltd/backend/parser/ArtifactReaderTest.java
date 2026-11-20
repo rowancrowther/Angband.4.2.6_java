@@ -1276,13 +1276,46 @@ class ArtifactReaderTest {
     }
 
     /**
-     * {@code grab_int_range} takes the figures round {@code "to"} with {@code strtol}, which skips
-     * blanks, so any spacing loads. The lexer's {@code ALLOC_TO} is the literal {@code " to "}.
+     * {@code grab_int_range} in {@code datafile.c} reads each figure with {@code strtol}, which
+     * skips leading white space, takes any run of spaces or tabs before {@code to}, and allows only
+     * spaces or tabs after the second figure. So C loads every shape below as 1, 2, 3. The lexer's
+     * {@code ALLOC_COLON} takes blanks or tabs after the colon, {@code ALLOC_TO} takes any run of
+     * them on each side of {@code to}, and {@code ALLOC_EOL} takes them before the newline.
+     *
+     * <p>Method allocWithAnyRunOfBlanksOrTabsRoundTheFiguresLoadsAsInC coded before 261120,
+     * commented in full on 261120 (was allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt;
+     * its two-space case flipped to the C behaviour on 261120 when {@code ALLOC_TO} became
+     * one-or-more blanks or tabs each side and {@code ALLOC_COLON} took the blanks after the colon.
+     * Its {@code 2to3} case, which C refuses too, moved to
+     * {@link #allocWithNoBlankEitherSideOfToIsAHardErrorAsInC}).
      */
     @Test
-    void allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("alloc-two-spaces.txt", "name:X\n" + BASE + "alloc:1:2  to 3\n");
+    void allocWithAnyRunOfBlanksOrTabsRoundTheFiguresLoadsAsInC() throws IOException {
+        String[] ranges = {"2  to 3", "2  to  3", "2\tto\t3", "2 \t to \t 3", " 2 to 3", "\t2 to 3", "2 to 3\t"};
+        for (String range : ranges) {
+            Artifact a = loadClean("alloc-spacing.txt", "alloc:1:" + range + "\n");
+
+            assertEquals("1/2/3", a.getAllocProb() + "/" + a.getAllocMin() + "/" + a.getAllocMax(), range);
+        }
+    }
+
+    /**
+     * {@code grab_int_range} in {@code datafile.c} needs white space straight after the first
+     * figure and straight after {@code to}, so C refuses {@code 2to3}, {@code 2 to3} and
+     * {@code 2to 3} with {@code PARSE_ERROR_INVALID_ALLOCATION}. The lexer's {@code ALLOC_TO}
+     * needs one or more blanks or tabs on each side of {@code to}, so all three are refused here
+     * too.
+     *
+     * <p>Method allocWithNoBlankEitherSideOfToIsAHardErrorAsInC coded on 261120, commented in full
+     * on 261120 (its {@code 2to3} case came from
+     * allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt, where it was
+     * wrongly listed as a shape C accepts).
+     */
+    @Test
+    void allocWithNoBlankEitherSideOfToIsAHardErrorAsInC() {
         assertHardError("alloc-no-spaces.txt", "name:X\n" + BASE + "alloc:1:2to3\n");
+        assertHardError("alloc-tight-after.txt", "name:X\n" + BASE + "alloc:1:2 to3\n");
+        assertHardError("alloc-tight-before.txt", "name:X\n" + BASE + "alloc:1:2to 3\n");
     }
 
     /**

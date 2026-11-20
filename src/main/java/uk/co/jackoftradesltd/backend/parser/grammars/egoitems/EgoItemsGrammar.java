@@ -73,7 +73,7 @@ public class EgoItemsGrammar extends Parser {
 			"'type:'", "'item:'", "'flags:'", "'flags-off:'", "'values:'", "'min-values:'", 
 			"'act:'", "'time:'", "'brand:'", "'slay:'", "'curse:'", "'desc:'", null, 
 			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, "' to '", null, null, null, "'['", null, null, "']'"
+			null, null, null, null, null, null, "'['", null, null, "']'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();

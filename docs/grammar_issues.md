@@ -768,7 +768,7 @@ Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
 
 ## `ItemObjectLexer.g4`: the spaces around `to` in `alloc:` are optional, C requires them
 
-Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: in `ItemObjectLexer.g4`, `ALLOC_TO` is now `(' ' | '\t')+ 'to' (' ' | '\t')+` and `ALLOC_COLON` is `':' (' ' | '\t')*`. So `1to100`, `1 to100` and `1to 100` are refused as in C, and two spaces, tabs, or a blank or tab before the first figure all load as in C. That second half was a strict-side difference this entry never listed. A blank or tab after the last figure already loaded through the `NL` fragment in `imports/CommentsAndEol.g4`. The committed lexer was regenerated. Pinned by `allocWithNoBlankEitherSideOfToIsAHardErrorAsInC` (flipped from `allocWithNoSpacesAroundToIsAcceptedHereWhereCRejectsIt`) and `allocWithAnyRunOfBlanksOrTabsRoundTheFiguresLoadsAsInC` in `ItemObjectReaderTest`, which passes (113). The bullets below describe the state before the fix.]
 
 - `parse_object_alloc` hands the range text to `grab_int_range` with the separator `to`. That function requires white
   space after the first number and after the separator, so `alloc:5:1to100` and `alloc:5:1 to100` are
@@ -1161,7 +1161,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `EgoItemsLexer.g4`: `alloc:` wants exactly `N to N`, C accepts any spacing round the figures
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: in `EgoItemsLexer.g4`, `ALLOC_TO` is now `(' ' | '\t')+ 'to' (' ' | '\t')+` and `ALLOC_COLON` is `':' (' ' | '\t')*`. So two spaces, tabs, and a blank or tab after the colon all load as in C. A blank at the end of the line already loaded through the `NL` fragment in `imports/CommentsAndEol.g4`. The heading overstates C: `grab_int_range` needs at least one white-space character straight after the first figure and straight after `to`, so `5to20`, `5 to20` and `5to 20` are refused in C, and are refused here too. The committed lexer and parser were regenerated. The parser's only change was dropping the stale `' to '` literal name. Pinned by `allocWithAnyRunOfBlanksOrTabsRoundTheFiguresLoadsAsInC` (flipped from `allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt`) and `allocWithNoBlankEitherSideOfToIsAHardErrorAsInC` in `EgoItemReaderTest`, which passes (120). The bullets below describe the state before the fix.]
 
 - `parse_ego_alloc` hands the `minmax` text to `grab_int_range` in `datafile.c` with the separator `"to"`. That reads
   `<int><whitespace>to<whitespace><int>` with `strtol`, which skips leading whitespace, and accepts trailing spaces.
@@ -1231,7 +1231,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style
 
 ## `ArtifactLexer.g4`: `alloc:` wants exactly `N to N`, C accepts any spacing round the figures
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: in `ArtifactLexer.g4`, `ALLOC_TO` is now `(' ' | '\t')+ 'to' (' ' | '\t')+` and `ALLOC_COLON` is `':' (' ' | '\t')*`. So two spaces, tabs, and a blank or tab after the colon all load as in C. The entry was wrong about "none": `grab_int_range` needs at least one white-space character straight after the first figure and straight after `to`, so C refuses `2to3`, `2 to3` and `2to 3`, and so does the lexer. The committed lexer and parser were regenerated. The parser's only change was dropping the stale `' to '` literal name. Pinned by `allocWithAnyRunOfBlanksOrTabsRoundTheFiguresLoadsAsInC` (flipped from `allocSpacingOtherThanOneSpaceEitherSideOfToIsASyntaxErrorHereWhereCAcceptsIt`) and `allocWithNoBlankEitherSideOfToIsAHardErrorAsInC` (which took over that pin's `2to3` case) in `ArtifactReaderTest`, which passes (70). The bullets below describe the state before the fix.]
 
 - `parse_artifact_alloc` hands the text to `grab_int_range` with separator `"to"`, which uses `strtol` and skips blanks.
 - `ArtifactLexer.g4:103` makes `ALLOC_TO` the literal `' to '`, so two spaces or none are lexer errors.

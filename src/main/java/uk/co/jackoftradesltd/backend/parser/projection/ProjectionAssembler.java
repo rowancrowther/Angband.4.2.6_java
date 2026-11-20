@@ -450,20 +450,28 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
 
     /**
      * Resolves the {@code msgt:} value of a projection block to a {@link MessageType}, following
-     * {@code message_lookup_by_name()} in the C original's {@code message.c}. The whole job is
-     * handed to {@link MessageType#lookupByName(String)}, which holds the rules: a number selects
-     * a message type by position and a name is matched case-insensitively, and the accepted
-     * non-ASCII case-folding deviation is recorded there.
+     * {@code message_lookup_by_name()} in the C original's {@code message.c}.
+     *
+     * <p>The lexer hands over the whole rest of the {@code msgt:} line, so this method first
+     * does what C's {@code parser_parse} in {@code parser.c} does with {@code strtok(..., ":")}:
+     * leading colons are skipped and the value stops at the next colon. {@code ":BR_ACID"} and
+     * {@code "BR_ACID:x"} both give {@code BR_ACID}; {@code "::"} leaves an empty value, which
+     * matches nothing and is refused, as C refuses a field with no token. Blanks are kept, so
+     * {@code "BR_ACID "} is refused as in C. The rest is handed to
+     * {@link MessageType#lookupByName(String)}, which holds the rules: a number selects a message
+     * type by position and a name is matched case-insensitively, and the accepted non-ASCII
+     * case-folding deviation is recorded there.
      *
      * <p>The caller supplies {@code MSG_GENERIC} for an absent {@code msgt:} line, so it never
      * reaches this method. The method reports nothing itself: a {@code null} return is turned
      * into a stop-the-load exception by {@link #assemble}, after the colour is resolved, where C
      * returns {@code PARSE_ERROR_INVALID_MESSAGE} at the {@code msgt:} line.
      *
-     * <p>Function resolveMsgt coded before 260915, commented in full on 261029.
+     * <p>Function resolveMsgt coded before 260915, commented in full on 261029, updated on 261120
+     * for the colon handling.
      *
-     * @param msgt     the value from the {@code msgt:} line, as a name without {@code MSG_} or a
-     *                 number
+     * @param msgt     the rest of the {@code msgt:} line, unchanged; a name without {@code MSG_}
+     *                 or a number once the colons are dealt with
      * @return the matching constant, or {@code null} if there is none
      */
     @CheckReturnValue

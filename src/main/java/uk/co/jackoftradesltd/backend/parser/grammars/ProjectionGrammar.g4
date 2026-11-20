@@ -168,10 +168,12 @@ damageCap
 /*
  * @author Rowan Crowther
  *
- * "msgt:<MSG_TYPE>" - message type/sound used when this projection hits.
+ * "msgt:<MSG_TYPE>" - message type/sound used when this projection hits. The text is
+ * the whole rest of the line, kept raw; ProjectionAssembler.resolveMsgt skips leading
+ * colons, cuts at the next ':' and resolves what is left, as C does.
  */
 msgt    returns[String projectionMsgt]
-        :   MSGT msg=STRING_TO_COLON {
+        :   MSGT msg=MSGT_STRING {
             $projectionMsgt = $msg.getText();
         }
         ;

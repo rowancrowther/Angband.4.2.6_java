@@ -139,7 +139,8 @@ DAMAGE_CAP
 /*
  * @author Rowan Crowther
  *
- * msgt directive
+ * msgt directive. The value is read in MSGT_FREE_TEXT, not FLAG_MODE, because C
+ * matches a message name in any case or takes a message number.
  * cf ProjectionGrammar.g4's 'msgt' rule
  */
 MSGT    :   'msgt:' -> pushMode(MSGT_FREE_TEXT)
@@ -199,7 +200,7 @@ mode FLAG_MODE;
  * @author Rowan Crowther
  *
  * A flag token that matches a ('A'..'Z')('A'..'Z'|'0'..'9'|'_')* enum value.
- * cf ProjectionGrammar.g4's 'code' and 'msgt' rules
+ * cf ProjectionGrammar.g4's 'code' rule
  */
 FLAG
         :   FLAG_BODY -> popMode
@@ -223,9 +224,24 @@ STRING
         :   ~('\r' | '\n')+ -> popMode
         ;
 
+/*
+ * @author Rowan Crowther
+ *
+ * A mode to pull in the msgt value as one MSGT_STRING token.
+ */
 mode MSGT_FREE_TEXT;
 
-STRING_TO_COLON
+/*
+ * @author Rowan Crowther
+ *
+ * The msgt value: everything up to the end of the line. The token keeps any
+ * ':' in the value. C's parser_parse reads the field with strtok(..., ":"),
+ * which skips leading colons and stops at the next one; ProjectionAssembler.resolveMsgt
+ * does the same before calling MessageType.lookupByName. An empty value has no token
+ * and stops the load, where C reports a missing field.
+ * cf ProjectionGrammar.g4's 'msgt' rule
+ */
+MSGT_STRING
         :   ~('\r' | '\n')+ -> popMode
         ;
 

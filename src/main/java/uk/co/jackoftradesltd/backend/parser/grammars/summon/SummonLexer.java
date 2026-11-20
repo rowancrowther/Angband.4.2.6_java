@@ -34,7 +34,7 @@ public class SummonLexer extends Lexer {
 		new PredictionContextCache();
 	public static final int
 		NAME=1, MSGT=2, UNIQUES=3, BASE=4, RACE_FLAG=5, FALLBACK=6, DESC=7, INTEGER=8, 
-		COMMENT=9, INDENT=10, EOL=11, FLAG=12, STRING=13, STRING_NO_COLON=14;
+		COMMENT=9, INDENT=10, EOL=11, FLAG=12, STRING=13, MSGT_STRING=14;
 	public static final int
 		FLAG_MODE=1, FREE_TEXT_MODE=2, MSGT_FREE_TEXT=3;
 	public static String[] channelNames = {
@@ -49,7 +49,7 @@ public class SummonLexer extends Lexer {
 		return new String[] {
 			"NAME", "MSGT", "UNIQUES", "BASE", "RACE_FLAG", "FALLBACK", "DESC", "INTEGER", 
 			"COMMENT", "NL", "NEWLINE", "INDENT", "EOL", "FLAG_BODY", "FLAG", "STRING", 
-			"STRING_NO_COLON"
+			"MSGT_STRING"
 		};
 	}
 	public static final String[] ruleNames = makeRuleNames();
@@ -64,7 +64,7 @@ public class SummonLexer extends Lexer {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "NAME", "MSGT", "UNIQUES", "BASE", "RACE_FLAG", "FALLBACK", "DESC", 
-			"INTEGER", "COMMENT", "INDENT", "EOL", "FLAG", "STRING", "STRING_NO_COLON"
+			"INTEGER", "COMMENT", "INDENT", "EOL", "FLAG", "STRING", "MSGT_STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();

@@ -41,7 +41,7 @@ public class SummonGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		NAME=1, MSGT=2, UNIQUES=3, BASE=4, RACE_FLAG=5, FALLBACK=6, DESC=7, INTEGER=8, 
-		COMMENT=9, INDENT=10, EOL=11, FLAG=12, STRING=13, STRING_NO_COLON=14;
+		COMMENT=9, INDENT=10, EOL=11, FLAG=12, STRING=13, MSGT_STRING=14;
 	public static final int
 		RULE_name = 0, RULE_msgt = 1, RULE_uniques = 2, RULE_base = 3, RULE_raceFlag = 4, 
 		RULE_fallback = 5, RULE_desc = 6, RULE_summon = 7, RULE_file = 8;
@@ -63,7 +63,7 @@ public class SummonGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "NAME", "MSGT", "UNIQUES", "BASE", "RACE_FLAG", "FALLBACK", "DESC", 
-			"INTEGER", "COMMENT", "INDENT", "EOL", "FLAG", "STRING", "STRING_NO_COLON"
+			"INTEGER", "COMMENT", "INDENT", "EOL", "FLAG", "STRING", "MSGT_STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -173,7 +173,7 @@ public class SummonGrammar extends Parser {
 		public String msgtStr;
 		public Token msg;
 		public TerminalNode MSGT() { return getToken(SummonGrammar.MSGT, 0); }
-		public TerminalNode STRING_NO_COLON() { return getToken(SummonGrammar.STRING_NO_COLON, 0); }
+		public TerminalNode MSGT_STRING() { return getToken(SummonGrammar.MSGT_STRING, 0); }
 		public MsgtContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -202,7 +202,7 @@ public class SummonGrammar extends Parser {
 			setState(22);
 			match(MSGT);
 			setState(23);
-			((MsgtContext)_localctx).msg = match(STRING_NO_COLON);
+			((MsgtContext)_localctx).msg = match(MSGT_STRING);
 			 ((MsgtContext)_localctx).msgtStr =  ((MsgtContext)_localctx).msg.getText(); 
 			}
 		}

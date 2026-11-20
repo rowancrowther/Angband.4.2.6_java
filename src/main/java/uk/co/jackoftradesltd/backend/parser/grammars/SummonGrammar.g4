@@ -44,10 +44,12 @@ name
                           $lineNo = $start.getLine(); }
         ;
 
-// "msgt:<TYPE>" - message type symbol (e.g. SUM_MONSTER).
+// "msgt:<TYPE>" - message type name or number (e.g. SUM_MONSTER). The text is
+// the whole rest of the line, kept raw; SummonAssembler skips leading colons,
+// cuts at the next ':' and resolves what is left, as C does.
 msgt
         returns[String msgtStr]
-        :   MSGT msg=STRING_NO_COLON { $msgtStr = $msg.getText(); }
+        :   MSGT msg=MSGT_STRING { $msgtStr = $msg.getText(); }
         ;
 
 // "uniques:<number>" - whether uniques may be summoned. The text is kept raw;

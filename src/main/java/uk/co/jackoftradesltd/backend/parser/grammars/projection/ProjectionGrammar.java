@@ -43,7 +43,7 @@ public class ProjectionGrammar extends Parser {
 		CODE=1, NAME=2, TYPE=3, DESC=4, PLAYER_DESC=5, BLIND_DESC=6, LASH_DESC=7, 
 		NUMERATOR=8, DENOMINATOR=9, DIVISOR=10, DAMAGE_CAP=11, MSGT=12, OBVIOUS=13, 
 		WAKE=14, COLOUR=15, INTEGER=16, COMMENT=17, INDENT=18, EOL=19, SIMPLE_DICE_STRING=20, 
-		COMPLEX_DICE_STRING=21, FLAG=22, STRING=23, STRING_TO_COLON=24, SIMPLE_DICE=25;
+		COMPLEX_DICE_STRING=21, FLAG=22, STRING=23, MSGT_STRING=24, SIMPLE_DICE=25;
 	public static final int
 		RULE_code = 0, RULE_name = 1, RULE_type = 2, RULE_desc = 3, RULE_playerDesc = 4, 
 		RULE_blindDesc = 5, RULE_lashDesc = 6, RULE_numerator = 7, RULE_denominator = 8, 
@@ -71,7 +71,7 @@ public class ProjectionGrammar extends Parser {
 			null, "CODE", "NAME", "TYPE", "DESC", "PLAYER_DESC", "BLIND_DESC", "LASH_DESC", 
 			"NUMERATOR", "DENOMINATOR", "DIVISOR", "DAMAGE_CAP", "MSGT", "OBVIOUS", 
 			"WAKE", "COLOUR", "INTEGER", "COMMENT", "INDENT", "EOL", "SIMPLE_DICE_STRING", 
-			"COMPLEX_DICE_STRING", "FLAG", "STRING", "STRING_TO_COLON", "SIMPLE_DICE"
+			"COMPLEX_DICE_STRING", "FLAG", "STRING", "MSGT_STRING", "SIMPLE_DICE"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -691,7 +691,7 @@ public class ProjectionGrammar extends Parser {
 		public String projectionMsgt;
 		public Token msg;
 		public TerminalNode MSGT() { return getToken(ProjectionGrammar.MSGT, 0); }
-		public TerminalNode STRING_TO_COLON() { return getToken(ProjectionGrammar.STRING_TO_COLON, 0); }
+		public TerminalNode MSGT_STRING() { return getToken(ProjectionGrammar.MSGT_STRING, 0); }
 		public MsgtContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -720,7 +720,7 @@ public class ProjectionGrammar extends Parser {
 			setState(78);
 			match(MSGT);
 			setState(79);
-			((MsgtContext)_localctx).msg = match(STRING_TO_COLON);
+			((MsgtContext)_localctx).msg = match(MSGT_STRING);
 
 			            ((MsgtContext)_localctx).projectionMsgt =  ((MsgtContext)_localctx).msg.getText();
 			        

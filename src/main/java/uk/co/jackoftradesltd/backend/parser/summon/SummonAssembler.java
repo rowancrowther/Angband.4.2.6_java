@@ -129,6 +129,13 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
      * blank last slot of {@code summons} and fails in {@code strcmp} (an accepted deviation, recorded in
      * the class block).
      * <p>
+     * Each {@code msgt:} value arrives as the whole rest of its line. Before the lookup it is cut
+     * as C's {@code parser_parse} in {@code parser.c} cuts it with {@code strtok(..., ":")}:
+     * leading colons are skipped and the value stops at the next colon, so {@code ":SUM_MONSTER"}
+     * and {@code "SUM_MONSTER:x"} both give {@code SUM_MONSTER}, and {@code "::"} leaves an empty
+     * value that matches nothing and is refused. Blanks are kept, so {@code "SUM_MONSTER "} is
+     * refused as in C.
+     * <p>
      * Each resolved base is put at the head of the summon's list with {@code addFirst}, as
      * {@code parse_summon_base} does, so a summon's bases come back last-written first.
      * <p>
@@ -143,8 +150,9 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
      * C meets first; the load stops either way.
      *
      * <p>Function assemble coded before 260915, commented in full on 261107, updated on 261108 for the
-     * reversed bases, on 261112 for directives in any order and several {@code uniques:} lines, and on
-     * 261113 for every {@code msgt:} and {@code race-flag:} line being resolved.
+     * reversed bases, on 261112 for directives in any order and several {@code uniques:} lines, on
+     * 261113 for every {@code msgt:} and {@code race-flag:} line being resolved, and on 261120 for
+     * the colon handling on {@code msgt:}.
      *
      * @param records  the raw parse records, in file order; may be empty, which gives an empty list
      * @param filename the file the records were read from, named in the message of a fault

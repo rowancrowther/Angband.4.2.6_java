@@ -23,8 +23,9 @@
 // This lexer only tokenizes; resolving the message type, monster bases, race
 // flag and the fallback (a reference to a sibling summon by name) is left to
 // SummonAssembler. The free-text values (name, base, fallback, desc) read in
-// FREE_TEXT_MODE; the two upper-case symbolic values (msgt, race-flag) read in
-// FLAG_MODE. Each sub-mode emits a single token and pops straight back.
+// FREE_TEXT_MODE; the msgt value reads in MSGT_FREE_TEXT; the race-flag value, an
+// upper-case symbol, reads in FLAG_MODE. Each sub-mode emits a single token and
+// goes straight back to the default mode.
 //
 // @author Rowan Crowther
 
@@ -40,10 +41,10 @@ NAME
         :   'name:' -> pushMode(FREE_TEXT_MODE)
         ;
 
-// "msgt:<TYPE>" - the message type (e.g. SUM_MONSTER). Its value is an upper-
-// case symbol matching the flag alphabet, so it is read via the shared FLAG
-// token in FLAG_MODE; the assembler resolves it to a message-type enum. It is
-// not a race flag despite sharing the token.
+// "msgt:<TYPE>" - the message type (e.g. SUM_MONSTER, sum_monster or 20). C
+// matches a name in any case or takes a message number, so the value is not
+// limited to the flag alphabet: the whole rest of the line is read in
+// MSGT_FREE_TEXT, and SummonAssembler cuts it at a ':' and resolves it.
 MSGT
         :   'msgt:' -> mode(MSGT_FREE_TEXT)
         ;
@@ -85,8 +86,8 @@ INTEGER
         :   '-'? ('0'..'9')+
         ;
 
-// Value mode shared by msgt and race-flag: a single upper-case symbol, then pop
-// back so the following directive keyword is seen in the default mode.
+// Value mode for race-flag: a single upper-case symbol, then pop back so the
+// following directive keyword is seen in the default mode.
 mode FLAG_MODE;
 
 FLAG
@@ -101,8 +102,14 @@ STRING
         :   ~('\r' | '\n')+ -> popMode
         ;
 
+// Value mode for msgt: everything up to end-of-line is one MSGT_STRING, then
+// back to the default mode. The token keeps any ':' in the value; C's
+// parser_parse reads the field with strtok(..., ":"), which skips
+// leading colons and stops at the next one, and SummonAssembler does the same
+// before calling MessageType.lookupByName. An empty value has no token and is a
+// syntax error, where C reports a missing field.
 mode MSGT_FREE_TEXT;
 
-STRING_NO_COLON
+MSGT_STRING
         :   ~('\n' | '\r')+ -> mode(DEFAULT_MODE)
         ;

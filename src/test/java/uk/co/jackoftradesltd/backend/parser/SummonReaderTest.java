@@ -737,7 +737,7 @@ class SummonReaderTest {
     @Test
     void aMessageTypeWithNoTokenBetweenItsColonsIsRefusedAsInC() {
         // ":" and "::" leave strtok with no token, which is PARSE_ERROR_MISSING_FIELD in C. ":x" does have
-        // one, "x", which is not a message name. An empty value has no STRING_NO_COLON token at all, so the
+        // one, "x", which is not a message name. An empty value has no MSGT_STRING token at all, so the
         // lexer refuses it before the assembler is reached.
         for (String value : List.of(":", "::", ":::", ":x")) {
             assertMsgtRefused(value);

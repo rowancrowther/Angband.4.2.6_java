@@ -792,24 +792,157 @@ class PlayerClassReaderTest {
         assertEquals(0, load("no-classes.txt", "").items().size());
     }
 
-    /** C: {@code strtok(flags, " |")} splits on a space as well as a bar. */
-    @Test
-    void playerFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("flag-space.txt", "name:X\nplayer-flags:NO_MANA SHIELD_BASH\n"));
-
+    /**
+     * One of the class's two flag-list directives, with two real flag names to put on it and the
+     * constants they load as. C's {@code parse_class_obj_flags} and {@code parse_class_play_flags}
+     * in {@code init.c} split the value the same way, so every flag-list test runs over both.
+     *
+     * <p>Record ClassFlagList coded on 261120, commented in full on 261120.
+     *
+     * @param directive   the directive with its colon, as it starts the line
+     * @param field       the {@link PlayerClass} field the flags land in
+     * @param first       the first flag name, as written in the file
+     * @param second      the second flag name, as written in the file
+     * @param firstConst  the constant {@code first} loads as
+     * @param secondConst the constant {@code second} loads as
+     */
+    private record ClassFlagList(String directive, String field, String first, String second,
+                                 String firstConst, String secondConst) {
     }
 
-    @Test
-    void objectFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("oflag-space.txt", "name:X\nobj-flags:PROT_FEAR SUST_STR\n"));
+    /**
+     * Both flag-list directives of {@code class.txt}: {@code obj-flags:} into {@code oFlags} and
+     * {@code player-flags:} into {@code pFlags}.
+     *
+     * <p>Field CLASS_FLAG_LISTS coded on 261120, commented in full on 261120.
+     */
+    private static final List<ClassFlagList> CLASS_FLAG_LISTS = List.of(
+            new ClassFlagList("obj-flags:", "oFlags", "PROT_FEAR", "SUST_STR", "OF_PROT_FEAR", "OF_SUST_STR"),
+            new ClassFlagList("player-flags:", "pFlags", "NO_MANA", "SHIELD_BASH", "PF_NO_MANA", "PF_SHIELD_BASH"));
 
+    /**
+     * Loads a one-class file whose second line is {@code list}'s directive followed by
+     * {@code value}, and returns the names of the flags that landed in the list's field. With
+     * {@code finalNewline} false the flag line is the last line of the file and has no newline.
+     *
+     * <p>Function loadClassFlags coded on 261120, commented in full on 261120.
+     *
+     * @param fileName     the temp file to write
+     * @param list         the directive under test
+     * @param value        the text after the directive's colon
+     * @param finalNewline whether the flag line ends in a newline
+     * @return the constant names set in the class's flag field
+     * @throws Exception if the load or the reflective read fails
+     */
+    private Set<String> loadClassFlags(String fileName, ClassFlagList list, String value,
+                                       boolean finalNewline) throws Exception {
+        String content = "name:X\n" + list.directive() + value + (finalNewline ? "\n" : "");
+        List<PlayerClass> classes = load(fileName, content).items();
+        assertEquals(1, classes.size(), () -> "[" + content + "]");
+        Flag<?> flags = field(classes.getFirst(), list.field());
+        Set<String> names = new HashSet<>();
+        for (Enum<?> flag : flags) names.add(flag.name());
+        return names;
     }
 
-    /** C: {@code obj-flags ?str flags} — the argument is optional, so an empty list is accepted. */
+    /**
+     * C splits a flag list with {@code strtok(flags, " |")}, so any run of blanks and bars between
+     * two names is one separator: {@code PROT_FEAR SUST_STR}, {@code PROT_FEAR||SUST_STR} and
+     * {@code PROT_FEAR |  | SUST_STR} all give the same two flags as {@code PROT_FEAR | SUST_STR},
+     * on {@code obj-flags:} and on {@code player-flags:}.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesClassFlagsAsInC coded on 261120, commented in full on 261120.
+     *
+     * @throws Exception if a load or a reflective read fails
+     */
     @Test
-    void anEmptyFlagListIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("empty-flags.txt", "name:X\nplayer-flags:\n"));
+    void anyRunOfBlanksAndBarsSeparatesClassFlagsAsInC() throws Exception {
+        int n = 0;
+        for (ClassFlagList list : CLASS_FLAG_LISTS) {
+            for (String sep : List.of(" ", "    ", "|", " | ", "||", " | | ", "| |", " |  | ")) {
+                String value = list.first() + sep + list.second();
+                assertEquals(Set.of(list.firstConst(), list.secondConst()),
+                        loadClassFlags("flag-sep-" + n++ + ".txt", list, value, true),
+                        "[" + list.directive() + value + "]");
+            }
+        }
+    }
 
+    /**
+     * {@code strtok} skips delimiters before the first name and after the last, so a leading or
+     * trailing blank, bar or run of them adds nothing: {@code | PROT_FEAR}, {@code  PROT_FEAR} and
+     * {@code PROT_FEAR |} each give one flag, and {@code  | | PROT_FEAR | SUST_STR} gives two.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnClassFlagsLoadsAsInC coded on 261120, commented in full on 261120.
+     *
+     * @throws Exception if a load or a reflective read fails
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnClassFlagsLoadsAsInC() throws Exception {
+        int n = 0;
+        for (ClassFlagList list : CLASS_FLAG_LISTS) {
+            for (String shape : List.of("| %s", "|%s", " %s", " | | %s", "%s |", "%s ", "%s||")) {
+                String value = shape.formatted(list.first());
+                assertEquals(Set.of(list.firstConst()),
+                        loadClassFlags("flag-edge-" + n++ + ".txt", list, value, true),
+                        "[" + list.directive() + value + "]");
+            }
+            String value = " | | " + list.first() + " | " + list.second();
+            assertEquals(Set.of(list.firstConst(), list.secondConst()),
+                    loadClassFlags("flag-edge-" + n++ + ".txt", list, value, true),
+                    "[" + list.directive() + value + "]");
+        }
+    }
+
+    /**
+     * Both directives are {@code ?str} in C, so a bare line has no value and the handler returns at
+     * once, and a value of blanks or bars only ({@code |}, {@code ||}, {@code  | |}, a lone blank)
+     * reaches the handler, where {@code strtok} finds no name. Either way the class loads with no
+     * flags from that line.
+     *
+     * <p>Function aBareOrDelimiterOnlyClassFlagsLineLoadsEmptyAsInC coded on 261120, commented in full on 261120.
+     *
+     * @throws Exception if a load or a reflective read fails
+     */
+    @Test
+    void aBareOrDelimiterOnlyClassFlagsLineLoadsEmptyAsInC() throws Exception {
+        int n = 0;
+        for (ClassFlagList list : CLASS_FLAG_LISTS) {
+            for (String value : List.of("", " ", "   ", "|", "||", " | |")) {
+                assertEquals(Set.of(), loadClassFlags("flag-empty-" + n++ + ".txt", list, value, true),
+                        "[" + list.directive() + value + "]");
+            }
+        }
+    }
+
+    /**
+     * C reads a last line that has no final newline, so a flag line at the very end of the file
+     * gives the same answer as the same line followed by a newline: two flags split by a blank or
+     * a bar, one with a leading or trailing delimiter, and none for a bare line or a bar alone.
+     *
+     * <p>Function aClassFlagsLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in full on 261120.
+     *
+     * @throws Exception if a load or a reflective read fails
+     */
+    @Test
+    void aClassFlagsLineWithNoFinalNewlineLoadsAsInC() throws Exception {
+        int n = 0;
+        for (ClassFlagList list : CLASS_FLAG_LISTS) {
+            Map<String, Set<String>> shapes = new LinkedHashMap<>();
+            shapes.put(list.first(), Set.of(list.firstConst()));
+            shapes.put(list.first() + " " + list.second(), Set.of(list.firstConst(), list.secondConst()));
+            shapes.put(list.first() + " | " + list.second(), Set.of(list.firstConst(), list.secondConst()));
+            shapes.put(list.first() + " |", Set.of(list.firstConst()));
+            shapes.put("| " + list.first(), Set.of(list.firstConst()));
+            shapes.put("|", Set.of());
+            shapes.put(" ", Set.of());
+            shapes.put("", Set.of());
+            for (Map.Entry<String, Set<String>> shape : shapes.entrySet()) {
+                assertEquals(shape.getValue(),
+                        loadClassFlags("flag-eof-" + n++ + ".txt", list, shape.getKey(), false),
+                        "[" + list.directive() + shape.getKey() + "] at end of file");
+            }
+        }
     }
 
     /** C: {@code parse_class_magic} returns {@code PARSE_ERROR_REPEATED_DIRECTIVE}. */

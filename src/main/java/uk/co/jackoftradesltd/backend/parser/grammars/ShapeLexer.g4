@@ -65,7 +65,8 @@ FLAG
         ;
 
 FLAG_OR
-        :   ' '? '|' ' '?
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
         ;
 
 FLAG_EOL
@@ -78,10 +79,19 @@ VALUE_MOD
         :   FLAG_BODY -> mode(VALUE_INT_MODE)
         ;
 
+VALUE_INTRO_OR
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
+        ;
+
+VALUE_INTRO_EOL
+        :   NL ->skip, mode(DEFAULT_MODE)
+        ;
+
 mode VALUE_INT_MODE;
 
 VALUE_L_BRACKET
-        :   '[' -> skip
+        :   '['
         ;
 
 VALUE_INT
@@ -89,13 +99,14 @@ VALUE_INT
         ;
 
 VALUE_R_BRACKET
-        :   ']' -> skip, mode(VALUE_BREAK)
+        :   ']' -> mode(VALUE_BREAK)
         ;
 
 mode VALUE_BREAK;
 
 VALUE_OR
-        :   ' '? '|' ' '? -> skip, mode(VALUE_INTRO)
+        :  (' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*) -> mode(VALUE_INTRO)
         ;
 
 VALUE_EOL

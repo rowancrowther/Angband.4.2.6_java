@@ -42,7 +42,7 @@ options { tokenVocab = TerrainFeatureLexer; }
 // list-terrain.h.
 code
         returns[String codeFlag, int lineNo]
-        :   CODE FLAG FLAG_EOL {
+        :   CODE FLAG {
                 $codeFlag = $FLAG.getText();
                 $lineNo = $start.getLine();
             }
@@ -70,7 +70,7 @@ graphics
 // "mimic:<FEAT_CODE>" - the terrain this one visually/mechanically mimics.
 mimic
         returns[String mimicFlag]
-        :   MIMIC FLAG FLAG_EOL {
+        :   MIMIC FLAG {
                 $mimicFlag = $FLAG.getText();
             }
         ;
@@ -84,19 +84,26 @@ priority
             }
         ;
 
-// "flags:<TF_FLAG> [| <TF_FLAG> ...]" - this terrain's flags. May appear on
-// several lines: `terrain`'s `(flags {...})+` addAll's each line's list into one
-// accumulated set, so repeated flags: lines merge rather than replace.
+// "flags:<TF_FLAG> [| <TF_FLAG> ...]" - this terrain's flags, split as C's
+// parse_feat_flags splits them with strtok(flags, " |"): any run of blanks and
+// bars separates two names, and a run before the first name or after the last
+// adds nothing. The first alternative takes a line of delimiters only; a leading
+// run followed by a flag is taken by the (FLAG_OR FLAG?)* loop. A bare flags:
+// line loads with no flags, as C's ?str does. May appear on several lines:
+// `terrain`'s flags alternative addAll's each line's list into one accumulated
+// list, so repeated flags: lines merge rather than replace, as grab_flag does
+// on the one f->flags.
 flags
         returns[List<String> flagsList]
         @init {
             $flagsList = new ArrayList<>();
         }
-        :   FLAGS f1=FLAG {
+        :   FLAGS (FLAG_OR+
+        |   f1=FLAG {
                 $flagsList.add($f1.getText());
-            }(FLAG_OR f2=FLAG {
+            })? (FLAG_OR (f2=FLAG {
                 $flagsList.add($f2.getText());
-            })* FLAG_EOL
+            })?)*
         ;
 
 // "digging:<index>" - digging difficulty index for this terrain.
@@ -179,7 +186,6 @@ resist_flag
         returns[String resistFlag]
         :   RESIST_FLAG f1=FLAG {
                 $resistFlag = $f1.getText(); }
-            FLAG_EOL
         ;
 
 // "desc:<text>" - flavour description.

@@ -65,8 +65,9 @@ flagsReq
         @init {
             $flags = new ArrayList<>();
         }
-        :   FLAGS_REQ f1=FLAG { $flags.add($f1.getText()); }
-            (FLAG_OR f2=FLAG { $flags.add($f2.getText()); })*
+        :   FLAGS_REQ (FLAG_OR+
+        |   f1=FLAG { $flags.add($f1.getText()); })?
+            (FLAG_OR (f2=FLAG { $flags.add($f2.getText()); })?)*
         ;
 
 // "flags-ban:<FLAG> | ..." - the forbidden race-flag codes (same shape).
@@ -75,8 +76,9 @@ flagsBan
         @init {
             $flags = new ArrayList<>();
         }
-        :   FLAGS_BAN f1=FLAG { $flags.add($f1.getText()); }
-            (FLAG_OR f2=FLAG { $flags.add($f2.getText()); })*
+        :   FLAGS_BAN (FLAG_OR 
+        |   f1=FLAG { $flags.add($f1.getText()); })?
+            (FLAG_OR (f2=FLAG { $flags.add($f2.getText()); })?)*
         ;
 
 // "innate-freq:<n>".
@@ -92,8 +94,9 @@ spellReq
         @init {
             $spells = new ArrayList<>();
         }
-        :   SPELL_REQ s1=FLAG { $spells.add($s1.getText()); }
-            (FLAG_OR s2=FLAG { $spells.add($s2.getText()); })*
+        :   SPELL_REQ (FLAG_OR+
+        |   s1=FLAG { $spells.add($s1.getText()); })?
+            (FLAG_OR (s2=FLAG { $spells.add($s2.getText()); })?)*
         ;
 
 // "spell-ban:<FLAG> | ..." - forbidden spell-flag codes.
@@ -102,8 +105,9 @@ spellBan
         @init {
             $spells = new ArrayList<>();
         }
-        :   SPELL_BAN s1=FLAG { $spells.add($s1.getText()); }
-            (FLAG_OR s2=FLAG { $spells.add($s2.getText()); })*
+        :   SPELL_BAN (FLAG_OR+
+        |   s1=FLAG { $spells.add($s1.getText()); })?
+            (FLAG_OR (s2=FLAG { $spells.add($s2.getText()); })?)*
         ;
 
 // "mon-ban:<name>" - one forbidden monster name (verbatim).

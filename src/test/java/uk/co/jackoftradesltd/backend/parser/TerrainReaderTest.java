@@ -26,7 +26,9 @@ import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.middle.cave.Feature;
+import uk.co.jackoftradesltd.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -589,20 +591,134 @@ class TerrainReaderTest {
     }
 
     // =====================================================================
-    // Where the grammar is stricter than C (docs/grammar_issues.md)
+    // Flag lists (Stage 7d): C's parse_feat_flags splits with strtok(flags, " |")
     // =====================================================================
 
-    /** C: {@code strtok(flags, " |")}, so a space alone separates two flags. */
-    @Test
-    void flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertHardError("space-flags.txt", VALID_RECORD + "flags:LOS PASSABLE\n");
+    /**
+     * Every separator C's {@code strtok(flags, " |")} accepts between two names: any run of blanks
+     * and bars with at least one character in it.
+     */
+    private static final List<String> SEPARATORS = List.of(" ", "    ", "|", " |", "| ", " | ", "  |  ",
+            "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Runs of blanks and bars with no name in them, which {@code strtok} skips at either end of a list.
+     */
+    private static final List<String> DELIMITER_RUNS = List.of(" ", "  ", "|", " | ", "||", " | | ", "|  |");
+
+    /** A second record after the {@code flags:} line, to show the line ended cleanly. */
+    private static final String GRANITE_TAIL = "code:GRANITE\nname:granite wall\ngraphics:#:W\n";
+
+    /**
+     * Loads the open-floor record with {@code flagsLine} (no line end of its own) followed by granite,
+     * checks both records loaded and granite carries no flag, and returns the floor.
+     */
+    private Feature floorWithFlagsMidFile(String flagsLine) throws IOException {
+        List<Feature> items = load("flags-mid.txt", VALID_RECORD + flagsLine + "\n" + GRANITE_TAIL).items();
+
+        assertEquals(2, items.size(), flagsLine);
+        assertEquals(TerrainFlags.FEAT_GRANITE, items.get(1).getCodeFlags(), flagsLine);
+        assertTrue(items.get(1).getFlags().isEmpty(), flagsLine);
+        return items.get(0);
     }
 
-    /** C: {@code flags} is {@code ?str}, and an absent value is {@code PARSE_ERROR_NONE}. */
     @Test
-    void anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("empty-flags.txt", VALID_RECORD + "flags:\n");
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() throws IOException {
+        for (String sep : SEPARATORS) {
+            Feature floor = floorWithFlagsMidFile("flags:LOS" + sep + "PASSABLE");
+            assertTrue(floor.getFlags().has(TerrainFeatureFlags.TF_LOS), () -> "sep=[" + sep + "]");
+            assertTrue(floor.getFlags().has(TerrainFeatureFlags.TF_PASSABLE), () -> "sep=[" + sep + "]");
+
+            // A second name that C splits off reaches grab_flag and stops the load as
+            // PARSE_ERROR_INVALID_FLAG; an unsplit line could not name it.
+            assertFatal("flags-split.txt", VALID_RECORD + "flags:LOS" + sep + "WIBBLE\n",
+                    "illegal terrain flag value: WIBBLE");
+        }
     }
+
+    @Test
+    void aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC() throws IOException {
+        // strtok skips delimiters before the first name and finds nothing after the last.
+        for (String run : DELIMITER_RUNS) {
+            for (String line : List.of("flags:" + run + "LOS", "flags:LOS" + run)) {
+                Feature floor = floorWithFlagsMidFile(line);
+                assertTrue(floor.getFlags().has(TerrainFeatureFlags.TF_LOS), () -> "[" + line + "]");
+                assertFalse(floor.getFlags().has(TerrainFeatureFlags.TF_PASSABLE), () -> "[" + line + "]");
+            }
+        }
+    }
+
+    @Test
+    void aBareOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC() throws IOException {
+        // "flags ?str flags": parse_feat_flags returns early when the value is absent, and strtok
+        // finds no name in a value that is only blanks and bars.
+        assertTrue(floorWithFlagsMidFile("flags:").getFlags().isEmpty());
+        for (String run : DELIMITER_RUNS) {
+            assertTrue(floorWithFlagsMidFile("flags:" + run).getFlags().isEmpty(), () -> "run=[" + run + "]");
+        }
+    }
+
+    @Test
+    void aFlagsLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        // file_getl hands C an unterminated last line as it stands; the answer matches the same
+        // line with a newline after it.
+        List<String> named = List.of("flags:LOS", "flags:LOS PASSABLE", "flags:LOS | | PASSABLE",
+                "flags:| LOS", "flags: LOS", "flags:LOS |", "flags:LOS ||");
+        List<String> empty = List.of("flags:", "flags: ", "flags:|", "flags:||", "flags: | ", "flags:| |");
+
+        for (String line : named) {
+            List<Feature> items = load("flags-last.txt", VALID_RECORD + line).items();
+            assertEquals(1, items.size(), line);
+            assertTrue(items.get(0).getFlags().has(TerrainFeatureFlags.TF_LOS), () -> "[" + line + "]");
+            assertEquals(line.contains("PASSABLE"), items.get(0).getFlags().has(TerrainFeatureFlags.TF_PASSABLE),
+                    () -> "[" + line + "]");
+        }
+        for (String line : empty) {
+            List<Feature> items = load("flags-last.txt", VALID_RECORD + line).items();
+            assertEquals(1, items.size(), line);
+            assertTrue(items.get(0).getFlags().isEmpty(), () -> "[" + line + "]");
+        }
+    }
+
+    @Test
+    void aSingleValueFlagDirectiveWithNoFinalNewlineLoadsAsInC() throws IOException {
+        // code:, mimic: and resist-flag: share the flag mode; each reads its last line as C does.
+        assertEquals(TerrainFlags.FEAT_FLOOR,
+                load("code-last.txt", "code:FLOOR").items().get(0).getCodeFlags());
+        assertEquals(TerrainFlags.FEAT_GRANITE,
+                load("mimic-last.txt", VALID_RECORD + "mimic:GRANITE").items().get(0).getMimicTerrainFlags());
+        assertEquals(MonsterRaceFlag.RF_IM_FIRE,
+                load("resist-last.txt", VALID_RECORD + "resist-flag:IM_FIRE").items().get(0).getResistFlag());
+    }
+
+    @Test
+    void aSecondNameOnASingleValueDirectiveIsRefusedAsInC() {
+        // The flag mode is shared with these directives, and only flags: is a list. In C a second
+        // name stays in the one value and fails its lookup: lookup_feat_code for code: and mimic:
+        // (str), and lookup_flag against mon_race_flags for resist-flag: (a sym, split on ':' only).
+        // Java refuses each at the parser, mid-file and as a last line with no final newline.
+        List<String> bodies = List.of(
+                "code:FLOOR GRANITE\nname:open floor\ngraphics:.:w\n",
+                "code:FLOOR|GRANITE\nname:open floor\ngraphics:.:w\n",
+                "code:FLOOR |\nname:open floor\ngraphics:.:w\n",
+                "code:FLOOR GRANITE",
+                VALID_RECORD + "mimic:FLOOR GRANITE\n",
+                VALID_RECORD + "mimic:FLOOR|GRANITE\n",
+                VALID_RECORD + "mimic:FLOOR |\n",
+                VALID_RECORD + "mimic:FLOOR GRANITE",
+                VALID_RECORD + "resist-flag:IM_FIRE IM_COLD\n",
+                VALID_RECORD + "resist-flag:IM_FIRE|IM_COLD\n",
+                VALID_RECORD + "resist-flag:IM_FIRE |\n",
+                VALID_RECORD + "resist-flag:IM_FIRE IM_COLD");
+
+        for (String body : bodies) {
+            assertThrows(ParseCancellationException.class, () -> load("one-value.txt", body), body);
+        }
+    }
+
+    // =====================================================================
+    // Where the grammar is stricter than C (docs/grammar_issues.md)
+    // =====================================================================
 
     /** C: {@code strtoul(tok, &z, 0)}, so {@code 0x3} is 3. */
     @Test

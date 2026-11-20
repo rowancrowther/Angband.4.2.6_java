@@ -52,19 +52,21 @@ combat
 flags
         returns[List<String> flagList]
         :   { $flagList = new ArrayList<>(); }
-            FLAGS f1=FLAG { $flagList.add($f1.getText()); }
-            (FLAG_OR f2=FLAG { $flagList.add($f2.getText()); })*
+            FLAGS (FLAG_OR+
+        |   f1=FLAG { $flagList.add($f1.getText()); })?
+            (FLAG_OR+ (f2=FLAG { $flagList.add($f2.getText()); })?)*
         ;
 
 values
         returns[Map<String, String> valueMap]
         :   { $valueMap = new HashMap<>(); }
-            VALUES vf1=VALUE_FLAG vi1=VALUE_INT {
+            VALUES VALUE_FLAG_OR*
+            (vf1=VALUE_FLAG vi1=VALUE_INT {
                 $valueMap.put($vf1.getText(), $vi1.getText());
-            }
-            (VALUE_OR vf2=VALUE_FLAG vi2=VALUE_INT {
+            })?
+            (VALUE_OR VALUE_FLAG_OR* (vf2=VALUE_FLAG vi2=VALUE_INT {
                 $valueMap.put($vf2.getText(), $vi2.getText());
-            })*
+            })?)*
         ;
 
 msg
@@ -85,8 +87,9 @@ conflict
 conflictFlags
         returns[List<String> cFlags]
         :   { $cFlags = new ArrayList<>(); }
-            CONFLICT_FLAGS f1=FLAG { $cFlags.add($f1.getText()); }
-            (FLAG_OR f2=FLAG { $cFlags.add($f2.getText()); })*
+            CONFLICT_FLAGS (FLAG_OR+ 
+        |   f1=FLAG { $cFlags.add($f1.getText()); })?
+            (FLAG_OR+ (f2=FLAG { $cFlags.add($f2.getText()); })?)*
         ;
 
 time

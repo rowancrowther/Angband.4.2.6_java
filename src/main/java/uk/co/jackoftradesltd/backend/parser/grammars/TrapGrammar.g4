@@ -58,8 +58,9 @@ desc
 flags
         returns[List<String> flagList]
         :   { $flagList = new ArrayList<>(); }
-            FLAGS f1=FLAG { $flagList.add($f1.getText()); }
-            (FLAG_OR f2=FLAG { $flagList.add($f2.getText()); })*
+            FLAGS (FLAG_OR+
+        |   f1=FLAG { $flagList.add($f1.getText()); })?
+            (FLAG_OR (f2=FLAG { $flagList.add($f2.getText()); })?)*
         ;
 
 msg
@@ -70,8 +71,9 @@ msg
 save
         returns[List<String> saveFlags]
         :   { $saveFlags = new ArrayList<>(); }
-            SAVE f1=FLAG { $saveFlags.add($f1.getText()); }
-            (FLAG_OR f2=FLAG { $saveFlags.add($f2.getText()); })*
+            SAVE (FLAG_OR+
+        |   f1=FLAG { $saveFlags.add($f1.getText()); })?
+            (FLAG_OR (f2=FLAG { $saveFlags.add($f2.getText()); })?)*
         ;
 
 msgGood

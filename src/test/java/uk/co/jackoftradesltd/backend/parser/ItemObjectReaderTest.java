@@ -1951,4 +1951,204 @@ class ItemObjectReaderTest {
         assertEquals(70, (int) kindField(kind, "alloc_prob"));
         assertEquals(5, kind.getWeight());
     }
+
+    // ---- Flag and value list separators (Stage 7d) -------------------------
+
+    /**
+     * Separators that {@code strtok(s, " |")} treats as one break between two names: a blank or a
+     * bar on its own, and every run of blanks and bars, including a bar, a blank and a bar.
+     *
+     * <p>Field LIST_SEPARATORS coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> LIST_SEPARATORS = List.of(
+            " ", "    ", "|", " |", "| ", " | ", " |  ", "  |  ", "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Loads one kind whose body is {@link #HEAD}, the given list line and a {@code weight:5} line.
+     * The weight shows that the list line's mode ended and the next directive was read.
+     *
+     * <p>Function loadOneWithList coded on 261120, commented in full on 261120.
+     *
+     * @param fileName the temporary file name
+     * @param listLine the list line, ending in its own newline
+     * @return the one kind loaded
+     * @throws IOException if the temporary file cannot be written or read
+     */
+    private ObjectKind loadOneWithList(String fileName, String listLine) throws IOException {
+        ParseResult<ObjectKind> result = load(fileName, obj("sep", HEAD + listLine + "weight:5\n"));
+        assertEquals(1, result.items().size(), "[" + listLine + "]");
+        return result.items().get(0);
+    }
+
+    /**
+     * Copies a flag view into a set, so two kinds' flags can be compared whole.
+     *
+     * <p>Function flagSet coded on 261120, commented in full on 261120.
+     *
+     * @param view the flags to copy
+     * @param <E>  the flag enum
+     * @return a set holding every flag in {@code view}
+     */
+    private static <E extends Enum<E>> Set<E> flagSet(uk.co.jackoftradesltd.channel.utils.FlagView<E> view) {
+        Set<E> out = new HashSet<>();
+        view.forEach(out::add);
+        return out;
+    }
+
+    /**
+     * Asserts that a kind holds exactly what a kind with no {@code flags:} and no {@code values:}
+     * line holds: the same object flags, the same kind flags (the base's, unioned in) and no
+     * modifiers.
+     *
+     * <p>Function assertNoListEntries coded on 261120, commented in full on 261120.
+     *
+     * @param kind  the kind under test
+     * @param plain the kind loaded from the same head with no list line
+     * @param shown the input, for the failure message
+     * @throws Exception if the private modifier map cannot be read
+     */
+    private static void assertNoListEntries(ObjectKind kind, ObjectKind plain, String shown) throws Exception {
+        assertEquals(flagSet(plain.getFlags()), flagSet(kind.getFlags()), shown);
+        assertEquals(flagSet(plain.getKindFlags()), flagSet(kind.getKindFlags()), shown);
+        assertTrue(((Map<?, ?>) kindField(kind, "modifiers")).isEmpty(), shown);
+    }
+
+    /**
+     * {@code parse_object_flags} in {@code obj-init.c} splits with {@code strtok(s, " |")}, so any
+     * run of blanks and bars between two names is one separator: {@code EASY_KNOW PROT_FEAR},
+     * {@code EASY_KNOW||PROT_FEAR} and {@code EASY_KNOW | | PROT_FEAR} all give the same kind flag
+     * and object flag.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() throws IOException {
+        int n = 0;
+        for (String sep : LIST_SEPARATORS) {
+            String shown = "[" + sep + "]";
+            ObjectKind kind = loadOneWithList("flags-sep-" + n++ + ".txt", "flags:EASY_KNOW" + sep + "PROT_FEAR\n");
+
+            assertTrue(kind.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW), shown);
+            assertTrue(kind.getFlags().has(ObjectFlag.OF_PROT_FEAR), shown);
+            assertEquals(5, kind.getWeight(), shown);
+        }
+    }
+
+    /**
+     * {@code parse_object_values} splits with {@code strtok(s, " |")} as well, so any run of blanks
+     * and bars between two entries is one separator: {@code STR[1] DEX[2]} and
+     * {@code STR[1] | | DEX[2]} both give two modifiers.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesValuesAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesValuesAsInC() throws Exception {
+        int n = 0;
+        for (String sep : LIST_SEPARATORS) {
+            String shown = "[" + sep + "]";
+            ObjectKind kind = loadOneWithList("values-sep-" + n++ + ".txt", "values:STR[1]" + sep + "DEX[2]\n");
+
+            assertEquals("1+0d0m0", dice(kind.getModifier(ObjectModifier.OM_STR)), shown);
+            assertEquals("2+0d0m0", dice(kind.getModifier(ObjectModifier.OM_DEX)), shown);
+            assertEquals(2, ((Map<?, ?>) kindField(kind, "modifiers")).size(), shown);
+            assertEquals(5, kind.getWeight(), shown);
+        }
+    }
+
+    /**
+     * {@code strtok} skips delimiters at the start and the end of the value, so a leading or trailing
+     * run of blanks and bars adds nothing: each of these reads one flag, or one value, alone.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnFlagsAndValuesLoadsAsInC coded on 261120, commented in
+     * full on 261120.
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnFlagsAndValuesLoadsAsInC() throws Exception {
+        List<String> shapes = List.of(" %s", "| %s", "|%s", " | | %s", "%s |", "%s ", "%s||", "%s | ");
+        int n = 0;
+        for (String shape : shapes) {
+            String flags = "flags:" + shape.formatted("PROT_FEAR") + "\n";
+            ObjectKind flagKind = loadOneWithList("flags-edge-" + n + ".txt", flags);
+            assertTrue(flagKind.getFlags().has(ObjectFlag.OF_PROT_FEAR), flags);
+            assertEquals(1, flagKind.getFlags().count(), flags);
+
+            String values = "values:" + shape.formatted("STR[1]") + "\n";
+            ObjectKind valueKind = loadOneWithList("values-edge-" + n++ + ".txt", values);
+            assertEquals("1+0d0m0", dice(valueKind.getModifier(ObjectModifier.OM_STR)), values);
+            assertEquals(1, ((Map<?, ?>) kindField(valueKind, "modifiers")).size(), values);
+        }
+    }
+
+    /**
+     * A {@code flags:} or {@code values:} value of delimiters only, or of blanks only, is present
+     * but has no name in it. C hands it to the handler, {@code strtok} finds nothing and the handler
+     * returns {@code PARSE_ERROR_NONE}, so the kind loads as if the line were absent.
+     *
+     * <p>Function aDelimiterOrBlankOnlyFlagsAndValuesLineLoadsEmptyAsInC coded on 261120, commented
+     * in full on 261120.
+     */
+    @Test
+    void aDelimiterOrBlankOnlyFlagsAndValuesLineLoadsEmptyAsInC() throws Exception {
+        ObjectKind plain = load("plain.txt", obj("sep", HEAD + "weight:5\n")).items().get(0);
+        int n = 0;
+        for (String value : List.of("|", "||", " | |", "|  |", " ", "  ")) {
+            String flags = "flags:" + value + "\n";
+            assertNoListEntries(loadOneWithList("flags-only-" + n + ".txt", flags), plain, "[" + flags + "]");
+
+            String values = "values:" + value + "\n";
+            assertNoListEntries(loadOneWithList("values-only-" + n++ + ".txt", values), plain, "[" + values + "]");
+        }
+    }
+
+    /**
+     * C reads a last line that has no final newline, so a list line at the very end of the file
+     * gives the same answer as the same line followed by a newline: one item, whether the line ends
+     * on the name, on a trailing bar or after a leading one, and nothing for delimiters only.
+     *
+     * <p>Function aFlagsOrValuesLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in full
+     * on 261120.
+     */
+    @Test
+    void aFlagsOrValuesLineWithNoFinalNewlineLoadsAsInC() throws Exception {
+        ObjectKind plain = load("plain-last.txt", obj("last", HEAD)).items().get(0);
+        int n = 0;
+        for (String shape : List.of("%s", "%s |", "| %s")) {
+            String flags = "flags:" + shape.formatted("PROT_FEAR");
+            ObjectKind flagKind = load("flags-last-" + n + ".txt", obj("last", HEAD + flags)).items().get(0);
+            assertTrue(flagKind.getFlags().has(ObjectFlag.OF_PROT_FEAR), "[" + flags + "]");
+
+            String values = "values:" + shape.formatted("STR[1]");
+            ObjectKind valueKind = load("values-last-" + n++ + ".txt", obj("last", HEAD + values)).items().get(0);
+            assertEquals("1+0d0m0", dice(valueKind.getModifier(ObjectModifier.OM_STR)), "[" + values + "]");
+        }
+        assertNoListEntries(load("flags-last-bar.txt", obj("last", HEAD + "flags:|")).items().get(0),
+                plain, "[flags:|]");
+        assertNoListEntries(load("values-last-bar.txt", obj("last", HEAD + "values:|")).items().get(0),
+                plain, "[values:|]");
+    }
+
+    /**
+     * {@code flags} and {@code values} are both required {@code str} in C's object parser, so a
+     * bare {@code flags:} or {@code values:} is {@code PARSE_ERROR_MISSING_FIELD} and stops the load.
+     * The grammar cannot tell a bare line from {@code flags: }, which C loads (the {@code NL}
+     * fragment takes the blanks before the newline), and treats both as a list with no items, in
+     * the middle of a file and on its last line. Parked 2026-11-19 for every such list, in
+     * {@code docs/Parked.md} (the bare-against-blank item).
+     *
+     * <p>Function aBareFlagsOrValuesLineLoadsEmptyHereWhereCRefusesIt coded on 261120, commented in
+     * full on 261120.
+     */
+    @Test
+    void aBareFlagsOrValuesLineLoadsEmptyHereWhereCRefusesIt() throws Exception {
+        ObjectKind plain = load("plain-bare.txt", obj("sep", HEAD + "weight:5\n")).items().get(0);
+
+        assertNoListEntries(loadOneWithList("flags-bare.txt", "flags:\n"), plain, "[flags:]");
+        assertNoListEntries(loadOneWithList("values-bare.txt", "values:\n"), plain, "[values:]");
+        assertNoListEntries(load("flags-bare-last.txt", obj("sep", HEAD + "weight:5\nflags:")).items().get(0),
+                plain, "[flags: last line]");
+        assertNoListEntries(load("values-bare-last.txt", obj("sep", HEAD + "weight:5\nvalues:")).items().get(0),
+                plain, "[values: last line]");
+    }
 }

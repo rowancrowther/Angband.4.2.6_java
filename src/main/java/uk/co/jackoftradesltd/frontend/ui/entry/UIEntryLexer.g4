@@ -135,7 +135,8 @@ FLAG
 // The '|' separator between flags in a multi-flag flags: line, tolerating a
 // surrounding space on either side.
 FLAG_OR
-        :   ' '? '|' ' '?
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
         ;
 
 // End of a flag line: consumed (skipped) and pops back to the default mode.

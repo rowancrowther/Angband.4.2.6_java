@@ -731,11 +731,114 @@ class PlayerTimedReaderTest {
 
     }
 
-    @Test
-    void aBareFlagsLineIsRefusedHereWhereCAcceptsIt() throws IOException {
-        // "flags ?str flags": parse_player_timed_effect_flags returns early when the value is absent.
-        assertThrows(ParseCancellationException.class, () -> load("bare-flags.txt", "name:FAST\ngrade:G:100:Test:Message\nflags:\n"));
+    // ---- flags: reads C's separator (Stage 7d) -----------------------------
 
+    /**
+     * The separators C's {@code strtok(flags, " |")} collapses in
+     * {@code parse_player_timed_effect_flags} ({@code player-timed.c}): any run of blanks and bars,
+     * a single blank included, splits two names.
+     */
+    private static final List<String> SEPARATORS = List.of(" ", "    ", "|", " |", "| ", " | ", "  |  ",
+            "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Runs of blanks and bars with no name in them, which {@code strtok} skips at either end of a list.
+     */
+    private static final List<String> DELIMITER_RUNS = List.of(" ", "  ", "|", " | ", "||", " | | ", "|  |");
+
+    /** A FAST record with only its grade, opening on line 1, for a {@code flags:} line to follow. */
+    private static final String FAST_HEAD = "name:FAST\ngrade:G:100:Test:Message\n";
+
+    /** A second record after the {@code flags:} line, to show the line ended cleanly. */
+    private static final String SLOW_TAIL = "name:SLOW\ngrade:G:100:Test:Message\n";
+
+    /**
+     * Loads FAST with {@code flagsLine} (no line end of its own) followed by SLOW, checks both records
+     * loaded, and returns FAST.
+     */
+    private PlayerTimedEffect fastWithFlagsMidFile(String flagsLine) throws IOException {
+        List<PlayerTimedEffect> items = load("flags-mid.txt", FAST_HEAD + flagsLine + "\n" + SLOW_TAIL).items();
+
+        assertEquals(2, items.size(), flagsLine);
+        assertEquals(TimedEffect.TMD_SLOW, items.get(1).getName(), flagsLine);
+        assertFalse(items.get(1).isNonStacking(), flagsLine);
+        return items.get(0);
+    }
+
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() throws IOException {
+        for (String sep : SEPARATORS) {
+            assertTrue(fastWithFlagsMidFile("flags:NONSTACKING" + sep + "NONSTACKING").isNonStacking(),
+                    () -> "sep=[" + sep + "]");
+
+            // Only NONSTACKING is a timed-effect flag, so a second name that C splits off reaches the
+            // flag check and stops the load as PARSE_ERROR_INVALID_FLAG; an unsplit line could not.
+            assertStopsTheLoad("flags-split.txt", FAST_HEAD + "flags:NONSTACKING" + sep + "WIBBLE\n", 1,
+                    "has an illegal flag value: WIBBLE");
+        }
+    }
+
+    @Test
+    void aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC() throws IOException {
+        // strtok skips delimiters before the first name and finds nothing after the last.
+        for (String run : DELIMITER_RUNS) {
+            for (String line : List.of("flags:" + run + "NONSTACKING", "flags:NONSTACKING" + run)) {
+                assertTrue(fastWithFlagsMidFile(line).isNonStacking(), () -> "[" + line + "]");
+            }
+        }
+    }
+
+    @Test
+    void aBareOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC() throws IOException {
+        // "flags ?str flags": parse_player_timed_effect_flags returns early when the value is absent,
+        // and strtok finds no name in a value that is only blanks and bars.
+        assertFalse(fastWithFlagsMidFile("flags:").isNonStacking());
+        for (String run : DELIMITER_RUNS) {
+            assertFalse(fastWithFlagsMidFile("flags:" + run).isNonStacking(), () -> "run=[" + run + "]");
+        }
+    }
+
+    @Test
+    void aFlagsLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        // file_getl hands C an unterminated last line as it stands; the answer matches the same
+        // line with a newline after it.
+        List<String> named = List.of("flags:NONSTACKING", "flags:NONSTACKING NONSTACKING",
+                "flags:NONSTACKING | | NONSTACKING", "flags:| NONSTACKING", "flags: NONSTACKING",
+                "flags:NONSTACKING |", "flags:NONSTACKING ||");
+        List<String> empty = List.of("flags:", "flags: ", "flags:|", "flags:||", "flags: | ", "flags:| |");
+
+        for (String line : named) {
+            List<PlayerTimedEffect> items = load("flags-last.txt", FAST_HEAD + line).items();
+            assertEquals(1, items.size(), line);
+            assertTrue(items.get(0).isNonStacking(), () -> "[" + line + "]");
+        }
+        for (String line : empty) {
+            List<PlayerTimedEffect> items = load("flags-last.txt", FAST_HEAD + line).items();
+            assertEquals(1, items.size(), line);
+            assertFalse(items.get(0).isNonStacking(), () -> "[" + line + "]");
+        }
+    }
+
+    @Test
+    void aSecondNameOnASingleValueDirectiveIsRefusedAsInC() {
+        // The flag mode is shared with these directives, and only flags: is a list. In C a second
+        // name stays in the one value and fails its lookup: grab_name for name: (str), and for the
+        // sym directives message_lookup_by_name (msgt:), proj_name_to_idx (resist:) and the code
+        // compare against brands[] or slays[] (brand:, slay:). Java refuses each at the parser.
+        List<String> bodies = List.of(
+                "name:FAST SLOW\ngrade:G:100:Test:Message\n",
+                "name:FAST|SLOW\ngrade:G:100:Test:Message\n",
+                "name:FAST |\ngrade:G:100:Test:Message\n",
+                FAST_HEAD + "msgt:SPEED SLOW\n",
+                FAST_HEAD + "msgt:SPEED|SLOW\n",
+                FAST_HEAD + "resist:FIRE COLD\n",
+                FAST_HEAD + "resist:FIRE|COLD\n",
+                FAST_HEAD + "brand:FIRE_3 COLD_3\n",
+                FAST_HEAD + "slay:EVIL_2 ANIMAL_2\n");
+
+        for (String body : bodies) {
+            assertThrows(ParseCancellationException.class, () -> load("one-value.txt", body), body);
+        }
     }
 
     @Test

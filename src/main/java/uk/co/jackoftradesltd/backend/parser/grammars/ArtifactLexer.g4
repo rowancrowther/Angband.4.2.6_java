@@ -383,7 +383,8 @@ FLAG
 //
 // Token FLAG_OR coded before 261112, commented in full on 261112.
 FLAG_OR
-        :   ' '? '|' ' '?
+        :   (' '+ '|'* ' '*
+        |    ' '* '|'+ ' '*)
         ;
 
 // The end of the flags: line. Skips the newline and pops back to the default mode.
@@ -397,6 +398,12 @@ FLAG_EOL
 //
 // Mode VALUES_INTRO coded before 261112, commented in full on 261112.
 mode VALUES_INTRO;
+
+// The bar between two value names, with one optional space on each side.
+VALUES_INTRO_OR
+        :   (' '+ '|'* ' '*
+        |    ' '* '|'+ ' '*)
+        ;
 
 // A label: the name of an object modifier, or an element resistance with the RES_ prefix, in
 // the FLAG_BODY shape of Flags. The lexer moves to VALUES_MODE for its figure.
@@ -462,7 +469,8 @@ mode VALUES_BREAK;
 //
 // Token VALUES_OR coded before 261112, commented in full on 261112.
 VALUES_OR
-        :   ' '? '|' ' '? -> mode(VALUES_INTRO)
+        :   (' '+ '|'* ' '*
+        |    ' '* '|'+ ' '*) -> mode(VALUES_INTRO)
         ;
 
 // The end of the values: line. Skips the newline and pops back to the default mode.

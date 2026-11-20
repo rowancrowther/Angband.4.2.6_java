@@ -3,7 +3,8 @@
  *
  * Lexer for room_template.txt. Every directive on a room record is a fixed literal prefix;
  * three of them (name:, tval:, D:) hand the rest of their line to REST_OF_LINE as free text,
- * and flags: hands off to FLAG_MODE to tokenize a `|`-separated flag list. Everything else
+ * and flags: hands off to FLAG_MODE to tokenize a flag list split on blanks and bars, as C's
+ * strtok(s, " |") in parse_room_flags (generate.c) splits it. Everything else
  * (type:/rating:/rows:/columns:/doors:) is followed by a plain INTEGER in the default mode.
  *
  * Comments and blank lines are handled by the imported CommentsAndEol rules, which only apply
@@ -77,10 +78,14 @@ FLAG
 /*
  * @author Rowan Crowther
  *
- * The `|` separator between flag names in a flags: list, with optional surrounding spaces.
+ * A separator in a flags: list: any run of blanks and bars, as C's strtok(s, " |") reads it.
+ * The first alternative starts with a blank and the second with a bar. Neither takes a bar after
+ * blanks that follow a bar, so a run such as " | | " arrives as two FLAG_OR tokens in a row, and
+ * the flags rule in RoomProfileGrammar takes a FLAG_OR with no FLAG after it for that reason.
  */
 FLAG_OR
-        :   ' '? '|' ' '?
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
         ;
 
 /*

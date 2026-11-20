@@ -163,22 +163,27 @@ equip
 
 objFlag
         returns[List<String> oFlags]
-        :   OBJ_FLAGS f1=FLAG {
+        :   { $oFlags = new ArrayList<>(); }
+            OBJ_FLAGS (FLAG_OR+
+        |   f1=FLAG {
                 $oFlags = new ArrayList<>();
                 $oFlags.add($f1.getText());
-            } (FLAG_OR f2=FLAG {
+            })?
+            (FLAG_OR (f2=FLAG {
                 $oFlags.add($f2.getText());
-            })*
+            })?)*
         ;
 
 playerFlags
         returns[List<String> pFlags]
-        :   PLAYER_FLAGS f1=FLAG {
+        :   { $pFlags = new ArrayList<>(); }
+            PLAYER_FLAGS (FLAG_OR+
+        |   f1=FLAG {
                 $pFlags = new ArrayList<>();
                 $pFlags.add($f1.getText());
-            } (FLAG_OR f2=FLAG {
+            })? (FLAG_OR (f2=FLAG {
                 $pFlags.add($f2.getText());
-            })*
+            })?)*
         ;
 
 exp

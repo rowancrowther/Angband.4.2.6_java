@@ -136,8 +136,9 @@ flags
         @init {
             $flagList = new ArrayList<>();
         }
-        :   FLAGS f1=FLAG { $flagList.add($f1.getText()); }
-            (FLAG_OR f2=FLAG { $flagList.add($f2.getText()); })*
+        :   FLAGS (FLAG_OR+
+        |   f1=FLAG { $flagList.add($f1.getText()); })?
+            (FLAG_OR (f2=FLAG { $flagList.add($f2.getText()); })?)*
         ;
 
 playerTimed

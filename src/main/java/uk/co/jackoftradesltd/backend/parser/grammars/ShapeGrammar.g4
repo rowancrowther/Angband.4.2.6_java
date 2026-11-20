@@ -80,32 +80,45 @@ skillDig
 objFlags
         returns[List<String> flags]
         :   { $flags = new ArrayList<>(); }
-            OBJ_FLAGS f1=FLAG {
+            OBJ_FLAGS (FLAG_OR+
+        |   f1=FLAG {
                 $flags.add($f1.getText());
-            } (FLAG_OR f2=FLAG{
+            })? (FLAG_OR (f2=FLAG{
                 $flags.add($f2.getText());
-            })*
+            })?)*
         ;
 
 playerFlags
         returns[List<String> flags]
         :   { $flags = new ArrayList<>(); }
-            PLAYER_FLAGS f1=FLAG {
+            PLAYER_FLAGS (FLAG_OR+
+        |   f1=FLAG {
                 $flags.add($f1.getText());
-            } (FLAG_OR f2=FLAG {
+            })? (FLAG_OR (f2=FLAG {
                 $flags.add($f2.getText());
-            })*
+            })?)*
         ;
 
 values
         returns[Map<String, String> valueMap]
         :   {
             $valueMap = new HashMap<>();
-        } VALUES vm1=VALUE_MOD vi1=VALUE_INT {
-            $valueMap.put($vm1.getText(), $vi1.getText());
-        } (vm2=VALUE_MOD vi2=VALUE_INT {
-            $valueMap.put($vm2.getText(), $vi2.getText());
-        })*
+            String vm = "";
+            String vi = "0";
+            } VALUES (VALUE_INTRO_OR+ (vm0=VALUE_MOD VALUE_L_BRACKET (vi0=VALUE_INT { vi = $vi0.getText(); })? VALUE_R_BRACKET {
+            vm = $vm0.getText();
+            $valueMap.put(vm, vi);
+            vi = "0";
+            })?
+        |   vm1=VALUE_MOD VALUE_L_BRACKET (vi1=VALUE_INT { vi = $vi1.getText(); } )? VALUE_R_BRACKET {
+            vm = $vm1.getText();
+            $valueMap.put(vm, vi);
+            vi = "0";
+            })? (VALUE_OR VALUE_INTRO_OR* (vm2=VALUE_MOD VALUE_L_BRACKET (vi2=VALUE_INT { vi = $vi2.getText(); })? VALUE_R_BRACKET {
+            vm = $vm2.getText();
+            $valueMap.put(vm, vi);
+            vi = "0";
+        })?)*
         ;
 
 blow

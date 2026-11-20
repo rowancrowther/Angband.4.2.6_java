@@ -478,9 +478,10 @@ class RoomProfileReaderTest {
     // they may come in any order, repeat, or be left out, and parser.c skips leading
     // whitespace, ignores anything after a numeric value, and reads a uint with strtoul in base
     // zero. RoomProfileGrammar now takes the eight directives after name: in any order, each
-    // optional and repeatable (Stage 7a), and the file may hold no records. The cases below that
-    // still end in a whole-file failure (no items, one hard error) are the flag separator, the
-    // hexadecimal number and the field after a value, which are lexer work in later stages.
+    // optional and repeatable (Stage 7a), and the file may hold no records. The flags: separator
+    // follows C's strtok(s, " |") (Stage 7d, tests below). The cases below that still end in a
+    // whole-file failure (no items, one hard error) are the hexadecimal number and the field after
+    // a value, which are lexer work in later stages.
 
     /**
      * Runs {@code content} through the reader and asserts the whole file was refused: hard errors
@@ -594,21 +595,163 @@ class RoomProfileReaderTest {
         assertStopsTheLoad("ok-then-tall.txt", "name:R\nrows:5\nrows:99\n", "illegal row count value");
     }
 
+    // ---- flags: separators (Stage 7d) ----
+    //
+    // C: parse_room_flags in generate.c splits the value with strtok(s, " |"), so any run of
+    // blanks and bars separates two names, and a run before the first name or after the last is
+    // skipped. flags is a required str in init_parse_room, so an empty value is
+    // PARSE_ERROR_MISSING_FIELD, while a value of blanks and bars alone reaches the handler, where
+    // strtok finds no name and it loads with no flags.
+
     /**
-     * C: {@code parse_room_flags} splits on {@code strtok(s, " |")}, so a space alone separates
-     * flags. {@code FLAG_OR} in the lexer needs the {@code |}. The {@code |} form, with or without
-     * spaces round it, is the control.
+     * Separators between two names, each one a run of blanks and bars that {@code strtok(s, " |")}
+     * collapses into a single break.
+     */
+    private static final List<String> SEPARATORS = List.of(" ", "    ", "|", " |", "| ", " | ", "  |  ",
+            "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Runs of blanks and bars with no name in them, which {@code strtok} skips at either end of a
+     * list.
+     */
+    private static final List<String> DELIMITER_RUNS = List.of(" ", "  ", "|", " | ", "||", " | | ", "|  |");
+
+    /**
+     * Loads a {@link #GOOD_RECORD} carrying {@code flagsLine} (no line end of its own) after its
+     * {@code tval:} line, followed by a second, flagless record. Checks that both records loaded and
+     * that the flagged record kept all three {@code D:} lines, so the {@code flags:} line ended
+     * cleanly, then returns the flagged record. C prepends each record, so it is the last in the list.
+     */
+    private RoomTemplate withFlagsMidFile(String flagsLine) throws IOException {
+        String body = GOOD_RECORD.replace("tval:0", "tval:0\n" + flagsLine) + "\n"
+                + GOOD_RECORD.replace("Good room", "Second room") + "\n";
+
+        List<RoomTemplate> items = new RoomProfileReader().parseWithResults(tempFile("flags-mid.txt", body)).items();
+
+        assertEquals(2, items.size(), flagsLine);
+        assertEquals("Second room", items.getFirst().getName(), flagsLine);
+        assertFalse(items.getFirst().getFlags().has(RoomFlags.FEW_ENTRANCES), flagsLine);
+        assertEquals("%%%%.%%%%", items.getLast().getMapText(), flagsLine);
+        return items.getLast();
+    }
+
+    /**
+     * Loads a {@link #GOOD_RECORD} followed by {@code flagsLine} as the last line of the file, with
+     * no final newline, checks that the one record loaded, and returns it.
+     */
+    private RoomTemplate withFlagsAsLastLine(String flagsLine) throws IOException {
+        List<RoomTemplate> items = new RoomProfileReader()
+                .parseWithResults(tempFile("flags-last.txt", GOOD_RECORD + "\n" + flagsLine)).items();
+
+        assertEquals(1, items.size(), flagsLine);
+        return items.getFirst();
+    }
+
+    /**
+     * C: {@code strtok(s, " |")} splits on any run of blanks and bars, so every separator in
+     * {@link #SEPARATORS} gives two names. {@code MAX} is a name C's {@code lookup_flag} finds, so
+     * both flags are set. {@code WIBBLE} is not, so a second name that is split off reaches
+     * {@code grab_flag} and stops the load as {@code PARSE_ERROR_INVALID_FLAG}, which an unsplit
+     * line could not do.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsAsInC coded on 261120, commented in full on
+     * 261120. It replaces flagsSeparatedByASpaceAloneAreRefusedHereWhereCSplitsOnIt.
      */
     @Test
-    void flagsSeparatedByASpaceAloneAreRefusedHereWhereCSplitsOnIt() throws IOException {
-        String piped = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES | FEW_ENTRANCES");
-        String spaced = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES FEW_ENTRANCES");
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() throws IOException {
+        for (String sep : SEPARATORS) {
+            RoomTemplate template = withFlagsMidFile("flags:FEW_ENTRANCES" + sep + "MAX");
+            assertTrue(template.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "sep=[" + sep + "]");
+            assertTrue(template.getFlags().has(RoomFlags.MAX), () -> "sep=[" + sep + "]");
 
-        ParseResult<RoomTemplate> control = new RoomProfileReader()
-                .parseWithResults(tempFile("piped.txt", piped + "\n"));
-        assertTrue(control.items().getFirst().getFlags().has(RoomFlags.FEW_ENTRANCES));
+            String split = GOOD_RECORD.replace("tval:0", "tval:0\nflags:FEW_ENTRANCES" + sep + "WIBBLE");
+            assertStopsTheLoad("flags-split.txt", split + "\n", "illegal room flag value: WIBBLE");
+        }
+    }
 
-        assertWholeFileRefused("spaced.txt", spaced + "\n");
+    /**
+     * C: {@code strtok} skips delimiters before the first name and finds nothing after the last,
+     * so a run of blanks and bars at either end of the list adds nothing and loses nothing.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC coded on 261120, commented in full
+     * on 261120.
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC() throws IOException {
+        for (String run : DELIMITER_RUNS) {
+            for (String line : List.of("flags:" + run + "FEW_ENTRANCES", "flags:FEW_ENTRANCES" + run)) {
+                RoomTemplate template = withFlagsMidFile(line);
+                assertTrue(template.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "[" + line + "]");
+                assertFalse(template.getFlags().has(RoomFlags.MAX), () -> "[" + line + "]");
+            }
+        }
+    }
+
+    /**
+     * C: a value of blanks and bars alone is present, so the required {@code str} reaches
+     * {@code parse_room_flags}, where {@code strtok} finds no name and the handler returns
+     * {@code PARSE_ERROR_NONE}. The record loads with no flags.
+     *
+     * <p>Function aDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC coded on 261120, commented in full
+     * on 261120.
+     */
+    @Test
+    void aDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC() throws IOException {
+        for (String run : DELIMITER_RUNS) {
+            RoomTemplate template = withFlagsMidFile("flags:" + run);
+            assertFalse(template.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "run=[" + run + "]");
+            assertFalse(template.getFlags().has(RoomFlags.MAX), () -> "run=[" + run + "]");
+        }
+    }
+
+    /**
+     * C: {@code flags} is a required {@code str}, so {@code parser_parse} finds nothing after the
+     * colon of a bare {@code flags:} and stops the load with {@code PARSE_ERROR_MISSING_FIELD}.
+     * The shared {@code NL} fragment takes any blanks before the newline, so the grammar cannot
+     * tell {@code flags:} from {@code flags: }, and both load with no flags. Parked in
+     * {@code docs/Parked.md} (a bare {@code X:} and a blank-only {@code X: }), direction undecided.
+     *
+     * <p>Function aBareFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt coded on 261120, commented in
+     * full on 261120.
+     */
+    @Test
+    void aBareFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt() throws IOException {
+        assertFalse(withFlagsMidFile("flags:").getFlags().has(RoomFlags.FEW_ENTRANCES));
+        assertFalse(withFlagsAsLastLine("flags:").getFlags().has(RoomFlags.FEW_ENTRANCES));
+    }
+
+    /**
+     * C: {@code file_getl} hands an unterminated last line to the parser as it stands, so a
+     * {@code flags:} line with no final newline gives the same answer as the same line with one.
+     * {@code FLAG_EOF} pops the flag mode on a newline only, and end of file ends the parse
+     * cleanly without it.
+     *
+     * <p>Function aFlagsLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void aFlagsLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        List<String> one = List.of("flags:FEW_ENTRANCES", "flags: FEW_ENTRANCES", "flags:| FEW_ENTRANCES",
+                "flags:FEW_ENTRANCES |", "flags:FEW_ENTRANCES ||");
+        List<String> two = List.of("flags:FEW_ENTRANCES MAX", "flags:FEW_ENTRANCES|MAX",
+                "flags:FEW_ENTRANCES | | MAX");
+        List<String> none = List.of("flags: ", "flags:|", "flags:||", "flags: | ", "flags:| |");
+
+        for (String line : one) {
+            RoomTemplate template = withFlagsAsLastLine(line);
+            assertTrue(template.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "[" + line + "]");
+            assertFalse(template.getFlags().has(RoomFlags.MAX), () -> "[" + line + "]");
+        }
+        for (String line : two) {
+            RoomTemplate template = withFlagsAsLastLine(line);
+            assertTrue(template.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "[" + line + "]");
+            assertTrue(template.getFlags().has(RoomFlags.MAX), () -> "[" + line + "]");
+        }
+        for (String line : none) {
+            RoomTemplate template = withFlagsAsLastLine(line);
+            assertFalse(template.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "[" + line + "]");
+            assertFalse(template.getFlags().has(RoomFlags.MAX), () -> "[" + line + "]");
+        }
     }
 
     /**

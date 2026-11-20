@@ -18,6 +18,11 @@
 // Generated from RoomProfileGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.roomprofiler;
 
+    import uk.co.jackoftradesltd.backend.parser.roomprofile.RoomProfileParseRecord;
+
+    import java.util.List;
+    import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**

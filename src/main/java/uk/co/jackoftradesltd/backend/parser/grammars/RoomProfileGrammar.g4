@@ -75,21 +75,28 @@ tval    returns[String tvalStr]
         ;
 
 /**
- * One {@code flags:} directive — a {@code |}-separated list of flag names. Like every directive
- * after {@code name:}, it is optional and repeatable at the {@link #roomProfile} call site: the
- * real data has records with no {@code flags:} line at all, and a second line adds its flags to
- * the first, as {@code parse_room_flags} ORs into the template's flags. When absent, this rule
- * simply doesn't run and the caller's flag list stays empty.
+ * One {@code flags:} directive — a list of flag names split on any run of blanks and bars, as
+ * {@code strtok(s, " |")} splits it in {@code parse_room_flags}. A run of separators with no
+ * name, or a first name, may follow {@code FLAGS} directly, and the loop after it takes a
+ * separator with or without a name, so a leading run before the first name, a trailing run and
+ * two {@code FLAG_OR} tokens in a row all load as in C. A bare {@code flags:} loads with no
+ * flags here, where C refuses it as a missing required {@code str} (parked in
+ * {@code docs/Parked.md}). Like every directive after {@code name:}, it is optional and
+ * repeatable at the {@link #roomProfile} call site: the real data has records with no
+ * {@code flags:} line at all, and a second line adds its flags to the first, as
+ * {@code parse_room_flags} ORs into the template's flags. When absent, this rule simply doesn't
+ * run and the caller's flag list stays empty.
  */
 flags   returns[List<String> flagList]
         @init {
             $flagList = new ArrayList<>();
         }
-        :   FLAGS f1=FLAG {
+        :   FLAGS ( FLAG_OR+
+        |   f1=FLAG {
                 $flagList.add($f1.getText());
-            } (FLAG_OR f2=FLAG {
+            })? (FLAG_OR (f2=FLAG {
                 $flagList.add($f2.getText());
-            })*
+            })?)*
         ;
 
 /** One {@code D:} line of a room's layout, with its own source line number for diagnostics. */

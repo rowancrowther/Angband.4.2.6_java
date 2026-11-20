@@ -70,43 +70,49 @@ item
 flags
         returns[List<String> flagList]
         :   { $flagList = new ArrayList<>(); }
-            FLAGS f1=FLAG {
+            FLAGS (FLAG_OR+
+        |   f1=FLAG {
                $flagList.add($f1.getText().trim());
-            } (FLAG_OR f2=FLAG {
+            })? 
+           (FLAG_OR (f2=FLAG {
                $flagList.add($f2.getText().trim());
-            })* FLAG_OR?
+            })?)*
         ;
 
 flagsOff
         returns[List<String> flagList]
         :   { $flagList = new ArrayList<>(); }
-            FLAGS_OFF f1=FLAG {
+            FLAGS_OFF (FLAG_OR+
+        |   f1=FLAG {
                $flagList.add($f1.getText().trim());
-            } (FLAG_OR f2=FLAG {
+            })?
+            (FLAG_OR (f2=FLAG {
                $flagList.add($f2.getText().trim());
-            })* FLAG_OR?
+            })?)*
         ;
 
 values
         returns[Map<String, String> valueMap]
         :   { $valueMap = new HashMap<>(); }
-            VALUES l1=VALUE_FLAG VALUE_LBRACKET v1=(VALUE_DICE | VALUE_INTEGER) VALUE_RBRACKET {
+            VALUES (VALUE_OR+
+        |   l1=VALUE_FLAG v1=(VALUE_DICE | VALUE_INTEGER) {
                 $valueMap.put($l1.getText(), $v1.getText());
-            }
-            (VALUE_OR l2=VALUE_FLAG VALUE_LBRACKET v2=(VALUE_DICE | VALUE_INTEGER) VALUE_RBRACKET {
+            })?
+            (VALUE_OR+ (l2=VALUE_FLAG v2=(VALUE_DICE | VALUE_INTEGER) {
                 $valueMap.put($l2.getText(), $v2.getText());
-            })*
+            })?)*
         ;
 
 minValues
         returns[Map<String, String> valueMap]
         :   { $valueMap = new HashMap<>(); }
-            MIN_VALUES l1=VALUE_FLAG VALUE_LBRACKET v1=(VALUE_DICE | VALUE_INTEGER) VALUE_RBRACKET {
+            MIN_VALUES (VALUE_OR+
+        |   l1=VALUE_FLAG v1=(VALUE_DICE | VALUE_INTEGER) {
                 $valueMap.put($l1.getText(), $v1.getText());
-            }
-            (VALUE_OR l2=VALUE_FLAG VALUE_LBRACKET v2=(VALUE_DICE | VALUE_INTEGER) VALUE_RBRACKET {
+            })?
+            (VALUE_OR+ (l2=VALUE_FLAG v2=(VALUE_DICE | VALUE_INTEGER) {
                 $valueMap.put($l2.getText(), $v2.getText());
-            })*
+            })?)*
         ;
 
 act

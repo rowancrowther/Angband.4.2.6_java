@@ -211,6 +211,110 @@ class UIEntryGrammarTest {
         assertEquals(List.of("RAND_50", "TIMED_AS_AUX"), ctx.entries.get(0).flags());
     }
 
+    /**
+     * Parses one {@code flags:} value inside a record, either mid-file (followed by a {@code desc:}
+     * line) or as the last line of the file with no final newline, and returns the record's flags.
+     * Fails the calling test if the parse reports any error.
+     *
+     * <p>Function flagsOf coded on 261120, commented in full on 261120.
+     *
+     * @param value     the text after {@code flags:}
+     * @param lastLine  {@code true} to end the file straight after the value, with no newline
+     * @return the flags the grammar collected, in file order
+     */
+    private List<String> flagsOf(String value, boolean lastLine) {
+        Errors errors = new Errors();
+        String src = "name:foo\nflags:" + value + (lastLine ? "" : "\ndesc:x\n");
+        UIEntryGrammar.FileContext ctx = parser(src, errors).file();
+
+        assertTrue(errors.messages.isEmpty(),
+                () -> "flags:[" + value + "] lastLine=" + lastLine + " unexpected errors: " + errors.messages);
+        assertEquals(1, ctx.entries.size());
+        if (!lastLine) {
+            assertEquals("x", ctx.entries.get(0).desc(), "the line after flags: must still be read");
+        }
+        return ctx.entries.get(0).flags();
+    }
+
+    /**
+     * Any run of blanks and bars between two names separates them, as C's {@code parse_entry_flags}
+     * in {@code ui-entry.c} does with {@code strtok(flags, " |")}. {@code A | | B} arrives as two
+     * {@code FLAG_OR} tokens in a row, so it also checks the {@code (FLAG_OR FLAG?)*} loop.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsAsInC coded on 261120, commented in full on 261120.
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() {
+        for (String sep : List.of(" ", "    ", "|", " |", "| ", " | ", "  |  ", "||", " | | ", "| |", " |  | ")) {
+            assertEquals(List.of("TIMED_AS_AUX", "RAND_50"),
+                    flagsOf("TIMED_AS_AUX" + sep + "RAND_50", false), () -> "separator [" + sep + "]");
+        }
+    }
+
+    /**
+     * A blank or bar, or a run of them, before the first name or after the last is skipped, as
+     * {@code strtok} skips leading and trailing delimiters in C.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC coded on 261120, commented in full on 261120.
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC() {
+        for (String value : List.of(" TIMED_AS_AUX", "|TIMED_AS_AUX", "| TIMED_AS_AUX", "||TIMED_AS_AUX",
+                " | | TIMED_AS_AUX", "TIMED_AS_AUX|", "TIMED_AS_AUX ", "TIMED_AS_AUX | ")) {
+            assertEquals(List.of("TIMED_AS_AUX"), flagsOf(value, false), () -> "flags:[" + value + "]");
+        }
+    }
+
+    /**
+     * A bare {@code flags:}, a blank-only value and a delimiter-only value all load with no flag.
+     * C registers the directive as {@code flags ?str flags}: a bare line has no value and
+     * {@code parse_entry_flags} returns at its {@code parser_hasval} check, and for a blank or
+     * delimiter-only value {@code strtok} finds no name, so nothing is set and the load goes on.
+     *
+     * <p>Function aBareBlankOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC coded on 261120, commented in
+     * full on 261120.
+     */
+    @Test
+    void aBareBlankOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC() {
+        for (String value : List.of("", " ", "  ", "|", "||", " | |", "|  |")) {
+            assertEquals(List.of(), flagsOf(value, false), () -> "flags:[" + value + "]");
+        }
+    }
+
+    /**
+     * A {@code flags:} line that ends the file with no final newline loads, in every shape, as C's
+     * {@code file_getl} hands an unterminated last line to the parser.
+     *
+     * <p>Function aFlagsLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in full on 261120.
+     */
+    @Test
+    void aFlagsLineWithNoFinalNewlineLoadsAsInC() {
+        assertEquals(List.of("TIMED_AS_AUX"), flagsOf("TIMED_AS_AUX", true));
+        assertEquals(List.of("TIMED_AS_AUX", "RAND_50"), flagsOf("TIMED_AS_AUX RAND_50", true));
+        assertEquals(List.of("TIMED_AS_AUX", "RAND_50"), flagsOf("TIMED_AS_AUX | | RAND_50", true));
+        assertEquals(List.of("TIMED_AS_AUX"), flagsOf("| TIMED_AS_AUX |", true));
+        assertEquals(List.of(), flagsOf("", true));
+        assertEquals(List.of(), flagsOf(" ", true));
+        assertEquals(List.of(), flagsOf(" | |", true));
+    }
+
+    /**
+     * {@code combine:} shares {@code FLAG_MODE} with {@code flags:} but is a single value in C
+     * ({@code combine str combine}, looked up whole by {@code ui_entry_combiner_lookup}), so the wider
+     * separator must not turn it into a list. Two names, with a bar or a blank between them, are refused.
+     *
+     * <p>Function combineStillTakesOneValueThoughItSharesTheFlagMode coded on 261120, commented in full
+     * on 261120.
+     */
+    @Test
+    void combineStillTakesOneValueThoughItSharesTheFlagMode() {
+        for (String value : List.of("ADD|RESIST_0", "ADD RESIST_0", "ADD | RESIST_0")) {
+            Errors errors = new Errors();
+            parser("name:foo\ncombine:" + value + "\n", errors).file();
+            assertFalse(errors.messages.isEmpty(), () -> "combine:[" + value + "] must not parse");
+        }
+    }
+
     @Test
     void repeatedDescLinesAreConcatenatedInOrder() {
         // Each desc: STRING captures from just after the colon to end of line; the rule appends them

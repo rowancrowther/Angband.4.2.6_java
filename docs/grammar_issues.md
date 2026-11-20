@@ -307,7 +307,7 @@ Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
 
 ## `PitLexer.g4`: flag and spell lists must be `CODE | CODE`, C splits on spaces and bars and skips padding
 
-Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `FLAG_OR` in `PitLexer.g4` is now a run of blanks and bars, `' '+ '|'* ' '*` or `' '* '|'+ ' '*`, and the four list rules in `PitGrammar.g4` take an empty list, a delimiter-only run, or a first code, with `(FLAG_OR FLAG?)*` after it. `flags-req:`, `flags-ban:`, `spell-req:` and `spell-ban:` now load every shape C's `strtok(s, " |")` does: blanks or bars between codes in any run, leading and trailing delimiters, a bare or delimiter-only value, and a last line with no final newline. Pinned by `anyRunOfBlanksAndBarsSeparatesEveryPitListAsInC`, `aLeadingOrTrailingDelimiterOnEveryPitListLoadsAsInC`, `aBareOrDelimiterOnlyPitListLoadsEmptyAsInC` and `aPitListLineWithNoFinalNewlineLoadsAsInC` in `PitReaderTest`; the two pins named below were removed. The 7d entry in `docs/Issue_Approach_Order.md` has the detail. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1385,7 +1385,7 @@ Found 2026-10-18 during `/port backend/parser/RealmReader.java`. Not fixed.
 
 ## `ShapeGrammar.g4`: the file needs a shape, and `obj-flags:` and `player-flags:` need a flag
 
-Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: both halves load as in C. The empty file closed in Stage 7b on 26-11-19: the `file` rule in `ShapeGrammar.g4` takes `*` on its record loop, pinned by `ShapeReaderTest.anEmptyFileLoadsNothingAsInC`. The empty flag lines closed in Stage 7d on 26-11-20: the `objFlags` and `playerFlags` rules take a bare line, a delimiter-only run or a first flag after the directive, so `obj-flags:` and `player-flags:` alone load with no flags, as C's `?str` does. Pinned by `ShapeReaderTest.aBareFlagLineLoadsWithNoFlagsAsInC`; the two pins named below were removed. The 7b and 7d entries in `docs/Issue_Approach_Order.md` have the detail. The bullets below describe the state before the fix.]
 
 - **Empty file.** The `file` rule in `ShapeGrammar.g4` is `recordCount (shape)+ EOF`, so `record-count:0` with no shapes is a
   hard error. C reads an empty `shape.txt` and ends with an empty `shapes` list.
@@ -1400,7 +1400,7 @@ Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
 
 ## `ShapeLexer.g4`: flag and value lists need a bar between names, and a blank after `values:` is a lexer error
 
-Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `FLAG_OR`, `VALUE_INTRO_OR` and `VALUE_OR` in `ShapeLexer.g4` are now runs of blanks and bars, `' '+ '|'* ' '*` or `' '* '|'+ ' '*`, and `VALUE_INTRO` has its own end-of-line rule. The `objFlags`, `playerFlags` and `values` rules in `ShapeGrammar.g4` take a delimiter-only run, a leading run with a first item after it, or a first item alone, with the separator loop after it. `obj-flags:`, `player-flags:` and `values:` now load every shape C's `strtok(s, " |")` does: blanks or bars between names in any run, leading and trailing delimiters (`values: STR[3]`, the upstream bear line, included), a delimiter-only value, and a last line with no final newline. `values:` also reads C's brackets: an empty bracket stores 0 and a missing or doubled bracket is refused. Pinned by `anyRunOfBlanksAndBarsSeparatesShapeFlagsAsInC`, `anyRunOfBlanksAndBarsSeparatesShapeValuesAsInC`, `aLeadingOrTrailingDelimiterOnEveryShapeListLoadsAsInC`, `aDelimiterOnlyShapeListLoadsEmptyAsInC`, `aShapeListLineWithNoFinalNewlineLoadsAsInC`, `aValueWithAMissingOrDoubledBracketIsRefusedAsInC` and `anEmptyValuesBracketLoadsAsZeroAsInC` in `ShapeReaderTest`; the two separator pins named below were removed. A bare `values:` loads empty where C refuses it, which is the bare-against-blank item in `docs/Parked.md`, pinned by `aBareValuesLineLoadsWithNoValuesHereWhereCRefusesIt`. The 7d entry in `docs/Issue_Approach_Order.md` has the detail. The bullets below describe the state before the fix.]
 
 ### What C does
 

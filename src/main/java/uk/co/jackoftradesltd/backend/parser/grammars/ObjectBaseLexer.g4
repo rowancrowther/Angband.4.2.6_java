@@ -31,7 +31,8 @@
 //     plural (e.g. "name:gold"). Both are EMITTED, not skipped - the parser needs
 //     them to tell the two `name` forms apart;
 //   - FREE_TEXT_MODE (also entered by graphics:) grabs a whole line as one STRING;
-//   - FLAG_MODE (entered by flags:) reads '|'-separated FLAG tokens.
+//   - FLAG_MODE (entered by flags:) reads FLAG tokens separated by any run of
+//     blanks and bars, as C's strtok(s, " |") splits them.
 // A FLAG is letter-initial (imports/Flags.g4 FLAG_BODY), so it can never collide
 // with INTEGER even when its tail carries digits.
 //
@@ -108,9 +109,13 @@ STRING_EOL
         :   NL  -> skip, mode(DEFAULT_MODE)
         ;
 
-// A '|'-separated list of flag names (flags:). FLAG wraps the shared FLAG_BODY
-// fragment; FLAG_OR is the separator (optional surrounding spaces); FLAG_EOL ends
-// the list and popModes back to the default mode.
+// A list of flag names (flags:). FLAG wraps the shared FLAG_BODY fragment.
+// FLAG_OR is the separator, matching C's strtok(s, " |"): one or more blanks with
+// optional bars after them, or one or more bars with optional blanks around them.
+// A blank, bar, blank run lexes as two FLAG_ORs in a row, so the parser's flags
+// rule takes FLAG_OR+ between names. FLAG_EOL ends the list; it is skipped, and
+// popModes back to the default mode, so a last line with no final newline needs
+// nothing more from the parser.
 mode FLAG_MODE;
 
 FLAG
@@ -118,9 +123,10 @@ FLAG
         ;
 
 FLAG_OR
-        :   ' '? '|' ' '?
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
         ;
 
 FLAG_EOL
-        :   NL -> popMode
+        :   NL -> skip, popMode
         ;

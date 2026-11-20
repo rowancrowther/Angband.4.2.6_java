@@ -54,6 +54,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -781,34 +782,197 @@ class PitReaderTest {
         assertTrue(e.getMessage().endsWith("an illegal monster base value: Orc"), e.getMessage());
     }
 
-    // ---- Where the grammar is stricter than C ----------------------------
-    // Each of these loads in C. They are pinned so the difference is on record; see docs/grammar_issues.md.
+    // ---- The four flag lists, split as strtok splits them ----------------
+    // parse_pit_flags_req, parse_pit_flags_ban, parse_pit_spell_req and parse_pit_spell_ban in
+    // mon-init.c each split their value with strtok(s, " |"), and all four directives are ?str.
 
     /**
-     * {@code flags-req ?str flags}: the value is optional, and {@code parse_pit_flags_req} returns
-     * without error when it is absent. The grammar needs at least one code after the colon.
+     * One of the four pit list directives: the directive text, the {@link PitProfile} field it fills,
+     * how a bare code becomes its enum constant, and two codes that resolve.
+     *
+     * <p>Class PitList coded on 261120, commented in full on 261120.
+     *
+     * @param directive the directive, colon included
+     * @param field     the {@link PitProfile} field the directive fills
+     * @param code      turns a bare code from the file into its enum constant
+     * @param first     a code that resolves
+     * @param second    another code that resolves
      */
-    @Test
-    void anEmptyFlagListIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("empty-flags.txt", "name:Empty\nflags-req:", GOOD_RECORD));
-
+    private record PitList(String directive, String field, Function<String, Enum<?>> code,
+                           String first, String second) {
     }
 
     /**
-     * The handlers split the value with {@code strtok(flags, " |")}, so a space separates codes as well
-     * as a bar, and leading, trailing and doubled separators are skipped. The lexer only knows
-     * {@code FLAG_OR}, a bar with an optional space either side. Blanks before the line end are the
-     * exception: {@code CommentsAndEol} absorbs them (see
-     * {@link #aTrailingBlankAfterAFlagListIsIgnoredAsInC}).
+     * The four list directives. The race flags take {@code RF_} and the spells {@code RSF_}, as the
+     * assembler adds them.
+     *
+     * <p>Field PIT_LISTS coded on 261120, commented in full on 261120.
      */
-    @Test
-    void spaceSeparatedOrPaddedFlagListsAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        for (String line : List.of("flags-req:ANIMAL EVIL", "flags-req: ANIMAL",
-                "flags-req:ANIMAL |", "spell-ban:BR_FIRE BR_COLD")) {
-            assertThrows(ParseCancellationException.class, () -> load("padded-flags.txt", "name:Padded\n" + line), line);
+    private static final List<PitList> PIT_LISTS = List.of(
+            new PitList("flags-req:", "flags", c -> MonsterRaceFlag.valueOf("RF_" + c), "ANIMAL", "EVIL"),
+            new PitList("flags-ban:", "forbiddenFlags", c -> MonsterRaceFlag.valueOf("RF_" + c), "UNIQUE", "EVIL"),
+            new PitList("spell-req:", "spellsFlags", c -> MonsterSpell.valueOf("RSF_" + c), "BR_ACID", "BR_FIRE"),
+            new PitList("spell-ban:", "forbiddenSpellFlags", c -> MonsterSpell.valueOf("RSF_" + c), "BR_ELEC",
+                    "BR_COLD"));
 
+    /**
+     * Separators to put between two codes. Each is a run of blanks and bars, which C's {@code strtok}
+     * collapses into one break.
+     *
+     * <p>Field LIST_SEPARATORS coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> LIST_SEPARATORS = List.of(
+            " ", "    ", "|", " |", "| ", " | ", " |  ", "  |  ", "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Shapes that put a delimiter before or after one code, each with a {@code %s} for the code. C's
+     * {@code strtok} skips a leading run and a trailing one, so every shape gives the one code.
+     *
+     * <p>Field EDGE_SHAPES coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> EDGE_SHAPES = List.of(
+            " %s", "| %s", " | | %s", "||%s", "%s ", "%s |", "%s | ", "%s||");
+
+    /**
+     * Values with no code in them: an empty value, which C's {@code ?str} lets through to a handler
+     * that returns at once, and values of delimiters only, where {@code strtok} finds no code.
+     *
+     * <p>Field EMPTY_VALUES coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> EMPTY_VALUES = List.of("", "|", "||", " | |", "|  |", " ");
+
+    /**
+     * Loads a {@code Listed} record holding the given list line and a {@code room:2} line after it,
+     * followed by {@link #GOOD_RECORD}. The room type shows the list line's mode ended and the next
+     * directive was read, and the second record shows the load went on past it.
+     *
+     * <p>Function withList coded on 261120, commented in full on 261120.
+     *
+     * @param file the temporary file's name
+     * @param line the list line, directive included
+     * @return the {@code Listed} profile
+     */
+    private PitProfile withList(String file, String line) throws Exception {
+        ParseResult<PitProfile> result = load(file, "name:Listed\n" + line + "\nroom:2", GOOD_RECORD);
+
+        assertEquals(List.of("Listed", "Good pit"), names(result), "[" + line + "]");
+        PitProfile pit = result.items().getFirst();
+        assertEquals(PitRoomType.PIT_TYPE_NEST, field(pit, "roomType"), "[" + line + "]");
+        return pit;
+    }
+
+    /**
+     * Checks that the list's field on {@code pit} holds exactly the given codes.
+     *
+     * <p>Function assertListHolds coded on 261120, commented in full on 261120.
+     *
+     * @param pit   the loaded profile
+     * @param list  the directive whose field is read
+     * @param codes the bare codes the field should hold, and no others
+     * @param label the line under test, for the failure message
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private static void assertListHolds(PitProfile pit, PitList list, List<String> codes, String label)
+            throws Exception {
+        Flag flags = field(pit, list.field());
+        assertEquals(codes.size(), flags.count(), label);
+        for (String code : codes) {
+            assertTrue(flags.has(list.code().apply(code)), label + " " + code);
         }
     }
+
+    /**
+     * C's {@code strtok(s, " |")} breaks on any run of blanks and bars, so {@code flags-req:ANIMAL EVIL},
+     * {@code ANIMAL||EVIL} and {@code ANIMAL |  | EVIL} all give the same two codes, on every one of the
+     * four list directives.
+     *
+     * <p>Test anyRunOfBlanksAndBarsSeparatesEveryPitListAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesEveryPitListAsInC() throws Exception {
+        int n = 0;
+        for (PitList list : PIT_LISTS) {
+            for (String sep : LIST_SEPARATORS) {
+                String line = list.directive() + list.first() + sep + list.second();
+                assertListHolds(withList("list-sep-" + n++ + ".txt", line), list,
+                        List.of(list.first(), list.second()), "[" + line + "]");
+            }
+        }
+    }
+
+    /**
+     * C's {@code strtok} skips a run of delimiters before the first code and after the last, so
+     * {@code flags-req: ANIMAL}, {@code spell-ban:| BR_ELEC} and {@code flags-ban:UNIQUE |} each give
+     * one code.
+     *
+     * <p>Test aLeadingOrTrailingDelimiterOnEveryPitListLoadsAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnEveryPitListLoadsAsInC() throws Exception {
+        int n = 0;
+        for (PitList list : PIT_LISTS) {
+            for (String shape : EDGE_SHAPES) {
+                String line = list.directive() + shape.formatted(list.first());
+                assertListHolds(withList("list-edge-" + n++ + ".txt", line), list, List.of(list.first()),
+                        "[" + line + "]");
+            }
+        }
+    }
+
+    /**
+     * All four directives are {@code ?str} in C, so a bare {@code flags-req:} loads, and the handler
+     * returns at once because {@code parser_hasval} is false. A value of delimiters only
+     * ({@code |}, {@code ||}, {@code  | |}, a lone blank) reaches the handler, and {@code strtok}
+     * finds no code in it. Either way the record loads with nothing from that line.
+     *
+     * <p>Test aBareOrDelimiterOnlyPitListLoadsEmptyAsInC coded on 261120, commented in full on 261120.
+     */
+    @Test
+    void aBareOrDelimiterOnlyPitListLoadsEmptyAsInC() throws Exception {
+        int n = 0;
+        for (PitList list : PIT_LISTS) {
+            for (String value : EMPTY_VALUES) {
+                String line = list.directive() + value;
+                assertListHolds(withList("list-empty-" + n++ + ".txt", line), list, List.of(), "[" + line + "]");
+            }
+        }
+    }
+
+    /**
+     * C reads a last line that has no final newline, so a list line at the very end of the file gives
+     * the same answer as the same line followed by a newline: one code whether the line ends on the
+     * code, on a trailing bar or after a leading one; two codes split by a blank; and nothing for a
+     * bar alone or a bare directive.
+     *
+     * <p>Test aPitListLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in full on 261120.
+     */
+    @Test
+    void aPitListLineWithNoFinalNewlineLoadsAsInC() throws Exception {
+        int n = 0;
+        for (PitList list : PIT_LISTS) {
+            Map<String, List<String>> shapes = new java.util.LinkedHashMap<>();
+            shapes.put(list.first(), List.of(list.first()));
+            shapes.put(list.first() + " |", List.of(list.first()));
+            shapes.put("| " + list.first(), List.of(list.first()));
+            shapes.put(list.first() + " " + list.second(), List.of(list.first(), list.second()));
+            shapes.put("|", List.of());
+            shapes.put("", List.of());
+            for (Map.Entry<String, List<String>> shape : shapes.entrySet()) {
+                String line = list.directive() + shape.getKey();
+                String path = tempFile("list-last-" + n++ + ".txt", "name:Last\n" + line);
+
+                ParseResult<PitProfile> result = new PitReader().parseWithResults(path);
+
+                assertEquals(List.of("Last"), names(result), "[" + line + "]");
+                assertListHolds(result.items().getFirst(), list, shape.getValue(), "[" + line + " last line]");
+            }
+        }
+    }
+
+    // ---- Where the grammar is stricter than C ----------------------------
+    // Each of these loads in C. They are pinned so the difference is on record; see docs/grammar_issues.md.
 
     /**
      * {@code strtok(flags, " |")} skips a trailing separator, so {@code flags-req:ANIMAL } loads the

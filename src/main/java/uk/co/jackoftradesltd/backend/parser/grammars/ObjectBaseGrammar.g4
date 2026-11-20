@@ -97,8 +97,11 @@ max_stack
             }
         ;
 
-// "flags:<FLAG> [| <FLAG> ...]" - base-level flag names, captured raw. The
-// assembler splits them: HATES_* map to element-vulnerability flags, the rest to
+// "flags:<FLAG> [<sep> <FLAG> ...]" - base-level flag names, captured raw, where
+// <sep> is any run of blanks and bars, as in C's strtok(s, " |"). A leading or
+// trailing run is skipped, and a line of delimiters only gives no flags; a bare
+// "flags:" gives none too, where C refuses it (parked in docs/Parked.md). The
+// assembler sorts them: HATES_* map to element-vulnerability flags, the rest to
 // ObjectKindFlag (see ObjectBaseAssembler). May appear on several lines per base;
 // `object_base` addAll's each line so repeats accumulate rather than replace.
 flags
@@ -106,12 +109,13 @@ flags
         @init {
             $flagsList = new ArrayList<>();
         }
-        :   FLAGS flag1=FLAG {
+        :   FLAGS (FLAG_OR+
+        |   flag1=FLAG {
                 $flagsList.add($flag1.getText());
-            }
-            (FLAG_OR flag2=FLAG {
+            })?
+            (FLAG_OR+ (flag2=FLAG {
                 $flagsList.add($flag2.getText());
-            })* FLAG_EOL
+            })?)*
         ;
 
 // One full base record: a name: line, then any number of graphics:, break:,

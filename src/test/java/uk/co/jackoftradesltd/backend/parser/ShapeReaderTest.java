@@ -524,18 +524,91 @@ class ShapeReaderTest {
         assertEquals(0, load("empty.txt", "").items().size());
     }
 
-    @Test
-    void anEmptyFlagLineIsAHardErrorWhereCTakesAnOptionalString() throws IOException {
-        // "obj-flags ?str flags" and "player-flags ?str flags": C returns PARSE_ERROR_NONE with no flags.
-        assertThrows(ParseCancellationException.class, () -> load("empty-of.txt", shape("a", "obj-flags:\n")));
-        assertThrows(ParseCancellationException.class, () -> load("empty-pf.txt", shape("a", "player-flags:\n")));
+    // ---- Flag and value lists: C's strtok(s, " |") separator (Stage 7d) ----
+
+    /**
+     * The separators C's {@code strtok(s, " |")} collapses: any run of blanks and bars, a single
+     * blank included, splits two names. {@code parse_shape_obj_flags}, {@code parse_shape_play_flags}
+     * and {@code parse_shape_values} in {@code init.c} all split this way.
+     *
+     * <p>Field SEPARATORS coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> SEPARATORS = List.of(" ", "    ", "|", " |", "| ", " | ", "  |  ",
+            "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Runs of blanks and bars with no name in them, which {@code strtok} skips at either end of a list.
+     *
+     * <p>Field DELIMITER_RUNS coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> DELIMITER_RUNS = List.of(" ", "|", " | ", "||", " | | ", "|  |");
+
+    /**
+     * Loads one shape whose only line is {@code line}, which carries its own line end (or none, for a
+     * last line with no final newline).
+     *
+     * <p>Function shapeWith coded on 261120, commented in full on 261120.
+     *
+     * @param line the body line, with its line end if it has one
+     * @return the one shape loaded
+     * @throws IOException if the temporary file cannot be written
+     */
+    private PlayerShape shapeWith(String line) throws IOException {
+        return load("list.txt", shape("list", line)).items().get(0);
     }
 
+    /**
+     * {@code obj-flags} and {@code player-flags} are {@code ?str} in {@code init_parse_shape}, so a bare
+     * line has no value and the handlers return {@code PARSE_ERROR_NONE} with no flags set. Checked with
+     * a newline after the line and as the last line of the file.
+     *
+     * <p>Function aBareFlagLineLoadsWithNoFlagsAsInC coded on 261120, commented in full on 261120;
+     * replaces the pin anEmptyFlagLineIsAHardErrorWhereCTakesAnOptionalString.
+     */
     @Test
-    void namesSeparatedBySpacesAreAHardErrorWhereCSplitsOnSpaceAndBar() throws IOException {
-        // strtok(s, " |") in parse_shape_obj_flags and parse_shape_values.
-        assertThrows(ParseCancellationException.class, () -> load("sp-flags.txt", shape("a", "obj-flags:REGEN FREE_ACT\n")));
-        assertThrows(ParseCancellationException.class, () -> load("sp-vals.txt", shape("a", "values:STR[1] INT[2]\n")));
+    void aBareFlagLineLoadsWithNoFlagsAsInC() throws IOException {
+        for (String end : List.of("\n", "")) {
+            assertTrue(shapeWith("obj-flags:" + end).getFlags().isEmpty(), () -> "end=" + end.replace("\n", "\\n"));
+            assertTrue(shapeWith("player-flags:" + end).getPflags().isEmpty(), () -> "end=" + end.replace("\n", "\\n"));
+        }
+    }
+
+    /**
+     * Every run in {@link #SEPARATORS}, a single blank included, splits two flag names on
+     * {@code obj-flags:} and on {@code player-flags:}.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesShapeFlagsAsInC coded on 261120, commented in full on
+     * 261120; replaces the pin namesSeparatedBySpacesAreAHardErrorWhereCSplitsOnSpaceAndBar.
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesShapeFlagsAsInC() throws IOException {
+        for (String sep : SEPARATORS) {
+            Flag<ObjectFlag> of = shapeWith("obj-flags:REGEN" + sep + "FREE_ACT\n").getFlags();
+            assertTrue(of.has(ObjectFlag.OF_REGEN) && of.has(ObjectFlag.OF_FREE_ACT), () -> "sep=[" + sep + "]");
+
+            Flag<PlayerFlag> pf = shapeWith("player-flags:SEE_ORE" + sep + "KNOW_ZAPPER\n").getPflags();
+            assertTrue(pf.has(PlayerFlag.PF_SEE_ORE) && pf.has(PlayerFlag.PF_KNOW_ZAPPER), () -> "sep=[" + sep + "]");
+        }
+    }
+
+    /**
+     * Every run in {@link #SEPARATORS} splits two {@code values:} entries, a modifier pair and an
+     * element pair alike.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesShapeValuesAsInC coded on 261120, commented in full on
+     * 261120; replaces the values half of the pin namesSeparatedBySpacesAreAHardErrorWhereCSplitsOnSpaceAndBar.
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesShapeValuesAsInC() throws IOException {
+        for (String sep : SEPARATORS) {
+            PlayerShape mods = shapeWith("values:STR[1]" + sep + "INT[2]\n");
+            assertEquals(Map.of(ObjectModifier.OM_STR, 1, ObjectModifier.OM_INT, 2), mods.getObjectValueModifiers(),
+                    () -> "sep=[" + sep + "]");
+
+            PlayerShape res = shapeWith("values:RES_ACID[1]" + sep + "RES_FIRE[2]\n");
+            assertEquals(1, res.getElementValueModifiers().get(ElementEnum.ELEM_ACID).getResLevel(), () -> "sep=[" + sep + "]");
+            assertEquals(2, res.getElementValueModifiers().get(ElementEnum.ELEM_FIRE).getResLevel(), () -> "sep=[" + sep + "]");
+        }
     }
 
     @Test
@@ -548,11 +621,91 @@ class ShapeReaderTest {
         assertEquals(Map.of(ObjectModifier.OM_STR, 1, ObjectModifier.OM_INT, 2), s.getObjectValueModifiers());
     }
 
+    /**
+     * {@code strtok} skips delimiters before the first name and finds nothing after the last, so a
+     * leading or trailing run in {@link #DELIMITER_RUNS} changes nothing on any of the three lists. The
+     * upstream {@code shape.txt} bear line, {@code values: STR[3] | ...}, has this shape.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnEveryShapeListLoadsAsInC coded on 261120, commented in
+     * full on 261120; replaces the pin aBlankAfterValuesColonIsAHardErrorWhereCSkipsIt.
+     */
     @Test
-    void aBlankAfterValuesColonIsAHardErrorWhereCSkipsIt() throws IOException {
-        // The upstream shape.txt writes "values: STR[3] | ..." for bear; the shipped copy had the blank removed.
-        assertThrows(ParseCancellationException.class, () -> load("lead-blank.txt", shape("a", "values: STR[3]\n")));
+    void aLeadingOrTrailingDelimiterOnEveryShapeListLoadsAsInC() throws IOException {
+        for (String run : DELIMITER_RUNS) {
+            for (String line : List.of("obj-flags:" + run + "REGEN\n", "obj-flags:REGEN" + run + "\n")) {
+                Flag<ObjectFlag> of = shapeWith(line).getFlags();
+                assertTrue(of.has(ObjectFlag.OF_REGEN), line);
+            }
+            for (String line : List.of("player-flags:" + run + "SEE_ORE\n", "player-flags:SEE_ORE" + run + "\n")) {
+                Flag<PlayerFlag> pf = shapeWith(line).getPflags();
+                assertTrue(pf.has(PlayerFlag.PF_SEE_ORE), line);
+            }
+            for (String line : List.of("values:" + run + "STR[3]\n", "values:STR[3]" + run + "\n")) {
+                assertEquals(Map.of(ObjectModifier.OM_STR, 3), shapeWith(line).getObjectValueModifiers(), line);
+            }
+        }
+    }
 
+    /**
+     * A list of delimiters and no name has a value, so the handler runs, {@code strtok} finds no token,
+     * and it returns {@code PARSE_ERROR_NONE} with nothing set. This holds for the required
+     * {@code values} as well as the two {@code ?str} flag lists.
+     *
+     * <p>Function aDelimiterOnlyShapeListLoadsEmptyAsInC coded on 261120, commented in full on 261120.
+     */
+    @Test
+    void aDelimiterOnlyShapeListLoadsEmptyAsInC() throws IOException {
+        for (String run : DELIMITER_RUNS) {
+            assertTrue(shapeWith("obj-flags:" + run + "\n").getFlags().isEmpty(), () -> "run=[" + run + "]");
+            assertTrue(shapeWith("player-flags:" + run + "\n").getPflags().isEmpty(), () -> "run=[" + run + "]");
+
+            PlayerShape s = shapeWith("values:" + run + "\n");
+            assertTrue(s.getObjectValueModifiers().isEmpty(), () -> "run=[" + run + "]");
+            assertTrue(s.getElementValueModifiers().isEmpty(), () -> "run=[" + run + "]");
+        }
+    }
+
+    /**
+     * {@code file_getl} hands {@code parse_file} an unterminated last line, which parses as if it had a
+     * newline. Each list, split by a blank, a bar or a run of both, and a {@code values:} line ending in a
+     * delimiter run, all load as the last line of the file.
+     *
+     * <p>Function aShapeListLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in full on 261120.
+     */
+    @Test
+    void aShapeListLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        for (String sep : List.of(" ", " | ", " | | ")) {
+            Flag<ObjectFlag> of = shapeWith("obj-flags:REGEN" + sep + "FREE_ACT").getFlags();
+            assertTrue(of.has(ObjectFlag.OF_REGEN) && of.has(ObjectFlag.OF_FREE_ACT), () -> "sep=[" + sep + "]");
+
+            Flag<PlayerFlag> pf = shapeWith("player-flags:SEE_ORE" + sep + "KNOW_ZAPPER").getPflags();
+            assertTrue(pf.has(PlayerFlag.PF_SEE_ORE) && pf.has(PlayerFlag.PF_KNOW_ZAPPER), () -> "sep=[" + sep + "]");
+
+            assertEquals(Map.of(ObjectModifier.OM_STR, 1, ObjectModifier.OM_INT, 2),
+                    shapeWith("values:STR[1]" + sep + "INT[2]").getObjectValueModifiers(), () -> "sep=[" + sep + "]");
+        }
+        for (String run : DELIMITER_RUNS) {
+            assertEquals(Map.of(ObjectModifier.OM_STR, 1), shapeWith("values:STR[1]" + run).getObjectValueModifiers(),
+                    () -> "run=[" + run + "]");
+        }
+    }
+
+    /**
+     * {@code values} is a required {@code str} in {@code init_parse_shape}, so {@code parser_parse}
+     * refuses a bare {@code values:} with {@code PARSE_ERROR_MISSING_FIELD}. The Java loads it with no
+     * entries, with a newline after it or as the last line of the file. Parked in {@code docs/Parked.md}
+     * (the bare-against-blank item).
+     *
+     * <p>Function aBareValuesLineLoadsWithNoValuesHereWhereCRefusesIt coded on 261120, commented in full
+     * on 261120.
+     */
+    @Test
+    void aBareValuesLineLoadsWithNoValuesHereWhereCRefusesIt() throws IOException {
+        for (String end : List.of("\n", "")) {
+            PlayerShape s = shapeWith("values:" + end);
+            assertTrue(s.getObjectValueModifiers().isEmpty(), () -> "end=" + end.replace("\n", "\\n"));
+            assertTrue(s.getElementValueModifiers().isEmpty(), () -> "end=" + end.replace("\n", "\\n"));
+        }
     }
 
     // ---- The number inside a values: bracket (find_value_arg in datafile.c: strtol, base 10) ----
@@ -598,11 +751,62 @@ class ShapeReaderTest {
         assertThrows(ParseCancellationException.class, () -> load("no-close.txt", shape("a", "values:STR[3\n")));
     }
 
+    /**
+     * {@code find_value_arg} in {@code datafile.c} needs a {@code '['} in the token, reads the number
+     * with {@code strtol}, and refuses unless the character {@code strtol} stops at is {@code ']'}.
+     * {@code STR 1} is split by {@code strtok} into {@code STR} and {@code 1}, neither of which has a
+     * {@code '['}. Each is checked with a newline after it and as the last line of the file, and as the
+     * second entry on the line as well as the first.
+     *
+     * <p>Function aValueWithAMissingOrDoubledBracketIsRefusedAsInC coded on 261120, commented in full on
+     * 261120.
+     */
     @Test
-    void anEmptyValuesBracketIsAHardErrorHereWhereCReadsZero() throws IOException {
-        // strtol finds no digit and stops at once on the ']', which is all find_value_arg tests, so C
-        // loads STR[] as STR with 0. Java has no token for an empty bracket.
-        assertThrows(ParseCancellationException.class, () -> load("empty-br.txt", shape("a", "values:STR[]\n")));
+    void aValueWithAMissingOrDoubledBracketIsRefusedAsInC() {
+        for (String value : List.of("STR[1", "STR[[1]]", "STR1", "STR1]", "STR 1")) {
+            for (String line : List.of("values:" + value, "values:INT[2] | " + value)) {
+                for (String end : List.of("\n", "")) {
+                    assertThrows(ParseCancellationException.class, () -> shapeWith(line + end),
+                            () -> line + " end=" + end.replace("\n", "\\n"));
+                }
+            }
+        }
+    }
+
+    /**
+     * {@code find_value_arg}: {@code strtol("]")} converts nothing and leaves its end pointer on the
+     * {@code ']'}, so the check passes and C stores 0, for a modifier and for an element's
+     * {@code res_level} alike. Each {@code []} is 0 wherever it falls on the line and does not take the
+     * number of the entry before it, and a later {@code STR[]} overwrites an earlier {@code STR[1]}.
+     *
+     * <p>Function anEmptyValuesBracketLoadsAsZeroAsInC coded on 261120, commented in full on 261120;
+     * replaces the pin anEmptyValuesBracketIsAHardErrorHereWhereCReadsZero.
+     */
+    @Test
+    void anEmptyValuesBracketLoadsAsZeroAsInC() throws IOException {
+        Map<String, Map<ObjectModifier, Integer>> mods = Map.of(
+                "STR[]", Map.of(ObjectModifier.OM_STR, 0),
+                " STR[]", Map.of(ObjectModifier.OM_STR, 0),
+                "| STR[]", Map.of(ObjectModifier.OM_STR, 0),
+                "STR[] | INT[2]", Map.of(ObjectModifier.OM_STR, 0, ObjectModifier.OM_INT, 2),
+                "STR[1] | INT[5] | CON[]",
+                Map.of(ObjectModifier.OM_STR, 1, ObjectModifier.OM_INT, 5, ObjectModifier.OM_CON, 0),
+                "STR[1] | INT[] | CON[3]",
+                Map.of(ObjectModifier.OM_STR, 1, ObjectModifier.OM_INT, 0, ObjectModifier.OM_CON, 3),
+                "STR[1] | STR[]", Map.of(ObjectModifier.OM_STR, 0));
+
+        for (Map.Entry<String, Map<ObjectModifier, Integer>> c : mods.entrySet()) {
+            for (String end : List.of("\n", "")) {
+                assertEquals(c.getValue(), shapeWith("values:" + c.getKey() + end).getObjectValueModifiers(),
+                        () -> c.getKey() + " end=" + end.replace("\n", "\\n"));
+            }
+        }
+        for (String end : List.of("\n", "")) {
+            PlayerShape s = shapeWith("values:RES_ACID[1] | RES_COLD[5] | RES_FIRE[]" + end);
+            assertEquals(1, s.getElementValueModifiers().get(ElementEnum.ELEM_ACID).getResLevel());
+            assertEquals(5, s.getElementValueModifiers().get(ElementEnum.ELEM_COLD).getResLevel());
+            assertEquals(0, s.getElementValueModifiers().get(ElementEnum.ELEM_FIRE).getResLevel());
+        }
     }
 
     @Test
@@ -838,8 +1042,9 @@ class ShapeReaderTest {
 
     @Test
     void theShippedFileDiffersFromUpstreamInOneLineThatTheseTestsDependOn() throws IOException {
-        // lib/gamedata/shape.txt drops the blank after "values:" on bear; the upstream file does not load
-        // in that form. The werewolf effect-msg is back in upstream order, above its first effect, where
+        // lib/gamedata/shape.txt drops the blank after "values:" on bear. Since 261120 the upstream form
+        // loads as well (aLeadingOrTrailingDelimiterOnEveryShapeListLoadsAsInC), so the shipped line could
+        // go back to it. The werewolf effect-msg is back in upstream order, above its first effect, where
         // C drops it and Java now does too.
         String text = Files.readString(Path.of(REAL_FILE));
 

@@ -769,17 +769,6 @@ class ObjectBaseReaderTest {
     }
 
     /**
-     * C: a {@code flags:} line as the last line of the file, with no final newline, is read like
-     * any other. {@code FLAG_EOL} needs the newline and the {@code flags} rule has no
-     * {@code EOF} alternative, so this ends the load. When the rule takes the {@code EOF}, this
-     * goes red: flip it to expect the {@code SHOW_DICE} kind flag.
-     */
-    @Test
-    void aFlagsLineWithNoFinalNewlineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("flags-eof.txt", DEFAULTS + "name:sword:S~\nflags:SHOW_DICE");
-    }
-
-    /**
      * C: a {@code name:} line with no plural part as the last line, with no final newline, is read
      * like any other. {@code NAME_EOL} needs the newline, so the second {@code name} alternative
      * cannot match and this ends the load. When it can, this goes red: flip it to expect a
@@ -790,10 +779,161 @@ class ObjectBaseReaderTest {
         assertHardError("name-eof.txt", DEFAULTS + "name:gold");
     }
 
-    /** C: flag names are separated by any run of spaces and pipes. The grammar needs a pipe. */
+    // ---- flags: separators (Stage 7d) ------------------------------------
+
+    /**
+     * The separators C's {@code strtok(s, " |")} treats as one: any run of blanks and bars. An
+     * interior tab is left out, as it is an accepted Stage 6 deviation.
+     *
+     * <p>Field LIST_SEPARATORS coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> LIST_SEPARATORS = List.of(
+            " ", "    ", "|", " |", "| ", " | ", " |  ", "  |  ", "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Loads one {@code sword} record holding {@code flagsLine}, and returns the base it declares.
+     * Mid-file, a {@code graphics:} line follows the list; as the last line, the list ends the file
+     * with no final newline.
+     *
+     * <p>Function swordWithFlags coded on 261120, commented in full on 261120.
+     *
+     * @param file      the temporary file name
+     * @param flagsLine the whole {@code flags:} line, without a newline
+     * @param lastLine  {@code true} to end the file on the list with no final newline
+     * @return the one declared base
+     * @throws IOException if the temporary file cannot be written
+     */
+    private ObjectBase swordWithFlags(String file, String flagsLine, boolean lastLine) throws IOException {
+        String tail = lastLine ? "" : "\ngraphics:white\n";
+        return declared(load(file, DEFAULTS + "name:sword:S~\n" + flagsLine + tail)).get(0);
+    }
+
+    /**
+     * {@code parse_object_base_flags} in {@code obj-init.c} splits with {@code strtok(s, " |")}, so
+     * any run of blanks and bars between two names is one separator: {@code HATES_ACID SHOW_DICE},
+     * {@code HATES_ACID||SHOW_DICE} and {@code HATES_ACID | | SHOW_DICE} all give the hated element
+     * and the kind flag. Three names with mixed separators give all three.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsAsInC coded on 261120, commented in full on
+     * 261120.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
     @Test
-    void flagsSeparatedBySpacesAloneAreAHardErrorWhereCAcceptsThem() throws IOException {
-        assertHardError("space-flags.txt", DEFAULTS + "name:sword:S~\ngraphics:white\nflags:HATES_ACID HATES_FIRE\n");
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() throws IOException {
+        int n = 0;
+        for (String sep : LIST_SEPARATORS) {
+            String line = "flags:HATES_ACID" + sep + "SHOW_DICE";
+            ObjectBase base = swordWithFlags("flags-sep-" + n++ + ".txt", line, false);
+
+            assertEquals(Set.of("ACID"), hatedElementNames(base), "[" + line + "]");
+            assertEquals(Set.of("SHOW_DICE"), kindFlagNames(base), "[" + line + "]");
+        }
+
+        String three = "flags:HATES_ACID HATES_FIRE | SHOW_DICE";
+        ObjectBase base = swordWithFlags("flags-three.txt", three, false);
+        assertEquals(Set.of("ACID", "FIRE"), hatedElementNames(base), "[" + three + "]");
+        assertEquals(Set.of("SHOW_DICE"), kindFlagNames(base), "[" + three + "]");
+    }
+
+    /**
+     * C's {@code strtok} skips a run of delimiters at the start of the value and one at the end, so
+     * {@code flags: SHOW_DICE}, {@code flags:| SHOW_DICE} and {@code flags:SHOW_DICE | | } each give
+     * the one kind flag and nothing else.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC coded on 261120, commented in full on
+     * 261120.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC() throws IOException {
+        int n = 0;
+        for (String shape : List.of(" %s", "  %s", "|%s", "| %s", " | | %s",
+                "%s ", "%s |", "%s||", "%s | | ")) {
+            String line = "flags:" + shape.formatted("SHOW_DICE");
+            ObjectBase base = swordWithFlags("flags-edge-" + n++ + ".txt", line, false);
+
+            assertEquals(Set.of("SHOW_DICE"), kindFlagNames(base), "[" + line + "]");
+            assertEquals(Set.of(), hatedElementNames(base), "[" + line + "]");
+        }
+    }
+
+    /**
+     * A value of delimiters only, or blanks only, reaches C's handler as a non-empty {@code str};
+     * {@code strtok} finds no name, the loop never runs and the handler returns
+     * {@code PARSE_ERROR_NONE}. The record loads with no flags.
+     *
+     * <p>Function aDelimiterOrBlankOnlyFlagsLineLoadsWithNoFlagsAsInC coded on 261120, commented in
+     * full on 261120.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
+    @Test
+    void aDelimiterOrBlankOnlyFlagsLineLoadsWithNoFlagsAsInC() throws IOException {
+        int n = 0;
+        for (String value : List.of("|", "||", "| |", " ", "   ", " | ")) {
+            String line = "flags:" + value;
+            ObjectBase base = swordWithFlags("flags-empty-" + n++ + ".txt", line, false);
+
+            assertEquals(Set.of(), kindFlagNames(base), "[" + line + "]");
+            assertEquals(Set.of(), hatedElementNames(base), "[" + line + "]");
+        }
+    }
+
+    /**
+     * C reads a last line that has no final newline, so a {@code flags:} line at the very end of the
+     * file gives the same answer as the same line followed by a newline: the kind flag whether the
+     * line ends on the name, on a trailing bar or after a leading one, both names for two, and
+     * nothing for a bar alone. {@code FLAG_EOL} is skipped, so the parser never needs to see the
+     * line end.
+     *
+     * <p>Function aFlagsLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in full on
+     * 261120. Flipped on 261120 from aFlagsLineWithNoFinalNewlineIsAHardErrorHereWhereCAcceptsIt.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
+    @Test
+    void aFlagsLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        int n = 0;
+        for (String shape : List.of("%s", "%s |", "| %s")) {
+            String line = "flags:" + shape.formatted("SHOW_DICE");
+            ObjectBase base = swordWithFlags("flags-last-" + n++ + ".txt", line, true);
+
+            assertEquals(Set.of("SHOW_DICE"), kindFlagNames(base), "[" + line + " last line]");
+        }
+
+        ObjectBase two = swordWithFlags("flags-last-two.txt", "flags:HATES_ACID SHOW_DICE", true);
+        assertEquals(Set.of("ACID"), hatedElementNames(two), "[flags:HATES_ACID SHOW_DICE last line]");
+        assertEquals(Set.of("SHOW_DICE"), kindFlagNames(two), "[flags:HATES_ACID SHOW_DICE last line]");
+
+        ObjectBase bar = swordWithFlags("flags-last-bar.txt", "flags:|", true);
+        assertEquals(Set.of(), kindFlagNames(bar), "[flags:| last line]");
+        assertEquals(Set.of(), hatedElementNames(bar), "[flags:| last line]");
+    }
+
+    /**
+     * {@code flags} is a required {@code str} in C's object base parser, so a bare {@code flags:}
+     * is {@code PARSE_ERROR_MISSING_FIELD} and stops the load. The grammar cannot tell a bare line
+     * from {@code flags: }, which C loads (the {@code NL} fragment takes the blanks before the
+     * newline), and treats both as a list with no flags, in the middle of a file and on its last
+     * line. Parked 2026-11-19 for every such list, in {@code docs/Parked.md} (the bare-against-blank
+     * item).
+     *
+     * <p>Function aBareFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt coded on 261120, commented in
+     * full on 261120.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
+    @Test
+    void aBareFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt() throws IOException {
+        ObjectBase mid = swordWithFlags("flags-bare.txt", "flags:", false);
+        assertEquals(Set.of(), kindFlagNames(mid), "[flags:]");
+        assertEquals(Set.of(), hatedElementNames(mid), "[flags:]");
+
+        ObjectBase last = swordWithFlags("flags-bare-last.txt", "flags:", true);
+        assertEquals(Set.of(), kindFlagNames(last), "[flags: last line]");
+        assertEquals(Set.of(), hatedElementNames(last), "[flags: last line]");
     }
 
     // ---- Where C and Java agree on failing -------------------------------

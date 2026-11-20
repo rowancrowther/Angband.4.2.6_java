@@ -119,11 +119,12 @@ flags
         @init {
             $entryFlagEnum = new ArrayList<>();
         }
-        :   FLAGS FLAG {
+        :   FLAGS (FLAG_OR+
+        |   FLAG {
+            $entryFlagEnum.add($FLAG.getText()); 
+        })? (FLAG_OR (FLAG {
             $entryFlagEnum.add($FLAG.getText());
-        } (FLAG_OR FLAG {
-            $entryFlagEnum.add($FLAG.getText());
-        })*;
+        })?)*;
 
 // "desc:<text>" - description; can repeat to build up multiple lines.
 desc

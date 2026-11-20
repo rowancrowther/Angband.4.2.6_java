@@ -70,7 +70,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * handlers and {@code finish_parse_p_race}, and {@code datafile.c}, not from the Java.
  *
  * <p>Class PlayerRaceReaderTest coded before 260915, updated on 261029 for the fatal assembler, commented in
- * full on 261029.
+ * full on 261029, updated on 261120 for C's flag and value list separators (Stage 7d).
  *
  * @author Rowan Crowther
  */
@@ -625,25 +625,16 @@ class PlayerRaceReaderTest {
     }
 
     @Test
-    void objectFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        // C's strtok(flags, " |") reads "SUST_STR REGEN" as two flags.
-        assertThrows(ParseCancellationException.class, () -> load("of-space.txt",
-                race("Sp", "history:1\nobj-flags:SUST_STR REGEN\n")));
+    void aBareValuesLineLoadsWithNoValuesHereWhereCRefusesIt() throws Exception {
+        // "values str values" is a required str, so parser_parse refuses a bare "values:" with
+        // PARSE_ERROR_MISSING_FIELD. The Java loads it with no entries, with a newline after it or as
+        // the last line of the file. Parked in docs/Parked.md (the bare-against-blank item).
+        for (String end : List.of("\n", "")) {
+            PlayerRace r = load("bare-values.txt", race("Bare", "history:1\nvalues:" + end)).items().get(0);
 
-    }
-
-    @Test
-    void playerFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("pf-space.txt",
-                race("Sp", "history:1\nplayer-flags:SEE_ORE KNOW_ZAPPER\n")));
-
-    }
-
-    @Test
-    void valuesSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("val-space.txt",
-                race("Sp", "history:1\nvalues:RES_ACID[1] RES_FIRE[1]\n")));
-
+            Map<ElementEnum, ElementInfo> resists = field(r, "resists");
+            assertTrue(resists.isEmpty(), () -> "end=" + end.replace("\n", "\\n"));
+        }
     }
 
     @Test
@@ -667,6 +658,141 @@ class PlayerRaceReaderTest {
     }
 
     // ---- Behaviour now matching C ------------------------------------------
+
+    /**
+     * The separators C's {@code strtok(s, " |")} collapses: any run of blanks and bars, a single
+     * blank included, splits two names. {@code parse_p_race_obj_flags}, {@code parse_p_race_play_flags}
+     * and {@code parse_p_race_values} in {@code init.c} all split this way.
+     */
+    private static final List<String> SEPARATORS = List.of(" ", "    ", "|", " |", "| ", " | ", "  |  ",
+            "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Runs of blanks and bars with no name in them, which {@code strtok} skips at either end of a list.
+     */
+    private static final List<String> DELIMITER_RUNS = List.of(" ", "|", " | ", "||", " | | ", "|  |");
+
+    /**
+     * Loads one race whose only lines are {@code history:1} and {@code line}, which carries its own
+     * line end (or none, for a last line with no final newline).
+     */
+    private PlayerRace raceWith(String line) throws IOException {
+        return load("list.txt", race("List", "history:1\n" + line)).items().get(0);
+    }
+
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesRaceFlagsAsInC() throws Exception {
+        for (String sep : SEPARATORS) {
+            Flag<ObjectFlag> of = field(raceWith("obj-flags:SUST_STR" + sep + "REGEN\n"), "oFlags");
+            assertTrue(of.has(ObjectFlag.OF_SUST_STR) && of.has(ObjectFlag.OF_REGEN), () -> "sep=[" + sep + "]");
+
+            Flag<PlayerFlag> pf = field(raceWith("player-flags:SEE_ORE" + sep + "KNOW_ZAPPER\n"), "pFlags");
+            assertTrue(pf.has(PlayerFlag.PF_SEE_ORE) && pf.has(PlayerFlag.PF_KNOW_ZAPPER), () -> "sep=[" + sep + "]");
+        }
+    }
+
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesValuesAsInC() throws Exception {
+        for (String sep : SEPARATORS) {
+            PlayerRace r = raceWith("values:RES_ACID[1]" + sep + "RES_FIRE[2]\n");
+
+            assertEquals(1, r.getResistanceLevel(ElementEnum.ELEM_ACID), () -> "sep=[" + sep + "]");
+            assertEquals(2, r.getResistanceLevel(ElementEnum.ELEM_FIRE), () -> "sep=[" + sep + "]");
+        }
+    }
+
+    @Test
+    void aLeadingOrTrailingDelimiterOnEveryRaceListLoadsAsInC() throws Exception {
+        // strtok skips delimiters before the first token and finds nothing after the last.
+        for (String run : DELIMITER_RUNS) {
+            for (String line : List.of("obj-flags:" + run + "SUST_STR\n", "obj-flags:SUST_STR" + run + "\n")) {
+                Flag<ObjectFlag> of = field(raceWith(line), "oFlags");
+                assertTrue(of.has(ObjectFlag.OF_SUST_STR), line);
+            }
+            for (String line : List.of("player-flags:" + run + "SEE_ORE\n", "player-flags:SEE_ORE" + run + "\n")) {
+                Flag<PlayerFlag> pf = field(raceWith(line), "pFlags");
+                assertTrue(pf.has(PlayerFlag.PF_SEE_ORE), line);
+            }
+            for (String line : List.of("values:" + run + "RES_ACID[1]\n", "values:RES_ACID[1]" + run + "\n")) {
+                Map<ElementEnum, ElementInfo> resists = field(raceWith(line), "resists");
+                assertEquals(Set.of(ElementEnum.ELEM_ACID), resists.keySet(), line);
+                assertEquals(1, resists.get(ElementEnum.ELEM_ACID).getResLevel(), line);
+            }
+        }
+    }
+
+    @Test
+    void aDelimiterOnlyRaceListLoadsEmptyAsInC() throws Exception {
+        // The flags directives are ?str and values is str, but each has a value here, so the handler
+        // runs, strtok finds no token, and it returns PARSE_ERROR_NONE with nothing set.
+        for (String run : DELIMITER_RUNS) {
+            Flag<ObjectFlag> of = field(raceWith("obj-flags:" + run + "\n"), "oFlags");
+            assertTrue(of.isEmpty(), () -> "run=[" + run + "]");
+
+            Flag<PlayerFlag> pf = field(raceWith("player-flags:" + run + "\n"), "pFlags");
+            assertTrue(pf.isEmpty(), () -> "run=[" + run + "]");
+
+            Map<ElementEnum, ElementInfo> resists = field(raceWith("values:" + run + "\n"), "resists");
+            assertTrue(resists.isEmpty(), () -> "run=[" + run + "]");
+        }
+    }
+
+    @Test
+    void aValueWithAMissingOrDoubledBracketIsRefusedAsInC() {
+        // find_value_arg in datafile.c needs a '[' in the token, reads the number with strtol, and
+        // refuses unless the character strtol stops at is ']'. "RES_FIRE 1" is split by strtok into
+        // "RES_FIRE" and "1", neither of which has a '['.
+        for (String value : List.of("RES_FIRE[1", "RES_FIRE[[1]]", "RES_FIRE1", "RES_FIRE1]", "RES_FIRE 1")) {
+            assertThrows(ParseCancellationException.class,
+                    () -> load("bracket.txt", race("Br", "history:1\nvalues:" + value + "\n")), value);
+        }
+    }
+
+    @Test
+    void anEmptyBracketValueLoadsAsLevelZeroAsInC() throws Exception {
+        // find_value_arg: strtol("]") converts nothing and leaves its end pointer on the ']', so the
+        // check passes and C stores res_level 0. Each [] is 0 wherever it falls on the line, and is not
+        // the number of the entry before it; a later RES_FIRE[] overwrites an earlier RES_FIRE[1].
+        Map<String, Map<ElementEnum, Integer>> cases = Map.of(
+                "RES_FIRE[]", Map.of(ElementEnum.ELEM_FIRE, 0),
+                "| RES_FIRE[]", Map.of(ElementEnum.ELEM_FIRE, 0),
+                "RES_ACID[1] RES_FIRE[]", Map.of(ElementEnum.ELEM_ACID, 1, ElementEnum.ELEM_FIRE, 0),
+                "RES_ACID[1] | RES_COLD[5] | RES_FIRE[]",
+                Map.of(ElementEnum.ELEM_ACID, 1, ElementEnum.ELEM_COLD, 5, ElementEnum.ELEM_FIRE, 0),
+                "RES_ACID[1] | RES_COLD[] | RES_FIRE[3]",
+                Map.of(ElementEnum.ELEM_ACID, 1, ElementEnum.ELEM_COLD, 0, ElementEnum.ELEM_FIRE, 3),
+                "RES_FIRE[1] | RES_FIRE[]", Map.of(ElementEnum.ELEM_FIRE, 0));
+
+        for (Map.Entry<String, Map<ElementEnum, Integer>> c : cases.entrySet()) {
+            for (String end : List.of("\n", "")) {
+                PlayerRace r = raceWith("values:" + c.getKey() + end);
+                for (Map.Entry<ElementEnum, Integer> want : c.getValue().entrySet()) {
+                    assertEquals(want.getValue(), r.getResistanceLevel(want.getKey()),
+                            () -> c.getKey() + " " + want.getKey() + " end=" + end.replace("\n", "\\n"));
+                }
+            }
+        }
+    }
+
+    @Test
+    void aRaceListLineWithNoFinalNewlineLoadsAsInC() throws Exception {
+        // file_getl hands parse_file an unterminated last line, which parses as if it had a newline.
+        for (String sep : List.of(" ", " | ", " | | ")) {
+            Flag<ObjectFlag> of = field(raceWith("obj-flags:SUST_STR" + sep + "REGEN"), "oFlags");
+            assertTrue(of.has(ObjectFlag.OF_SUST_STR) && of.has(ObjectFlag.OF_REGEN), () -> "sep=[" + sep + "]");
+
+            Flag<PlayerFlag> pf = field(raceWith("player-flags:SEE_ORE" + sep + "KNOW_ZAPPER"), "pFlags");
+            assertTrue(pf.has(PlayerFlag.PF_SEE_ORE) && pf.has(PlayerFlag.PF_KNOW_ZAPPER), () -> "sep=[" + sep + "]");
+
+            PlayerRace r = raceWith("values:RES_ACID[1]" + sep + "RES_FIRE[2]");
+            assertEquals(1, r.getResistanceLevel(ElementEnum.ELEM_ACID), () -> "sep=[" + sep + "]");
+            assertEquals(2, r.getResistanceLevel(ElementEnum.ELEM_FIRE), () -> "sep=[" + sep + "]");
+        }
+        for (String run : DELIMITER_RUNS) {
+            Map<ElementEnum, ElementInfo> resists = field(raceWith("values:RES_ACID[1]" + run), "resists");
+            assertEquals(Set.of(ElementEnum.ELEM_ACID), resists.keySet(), () -> "run=[" + run + "]");
+        }
+    }
 
     @Test
     void aRaceWithNoHistoryLineLoadsWithANullHistoryAsCDoes() throws Exception {

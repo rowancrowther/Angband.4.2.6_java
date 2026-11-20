@@ -136,7 +136,8 @@ FLAG
 
 // The " | " (spaces optional) separating codes on one line.
 FLAG_OR
-        :   ' '? '|' ' '?
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
         ;
 
 // End of the flag line: leave the mode and drop the newline.

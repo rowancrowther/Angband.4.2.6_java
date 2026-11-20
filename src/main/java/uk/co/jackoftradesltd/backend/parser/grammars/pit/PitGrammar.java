@@ -442,13 +442,13 @@ public class PitGrammar extends Parser {
 		public Token f1;
 		public Token f2;
 		public TerminalNode FLAGS_REQ() { return getToken(PitGrammar.FLAGS_REQ, 0); }
-		public List<TerminalNode> FLAG() { return getTokens(PitGrammar.FLAG); }
-		public TerminalNode FLAG(int i) {
-			return getToken(PitGrammar.FLAG, i);
-		}
 		public List<TerminalNode> FLAG_OR() { return getTokens(PitGrammar.FLAG_OR); }
 		public TerminalNode FLAG_OR(int i) {
 			return getToken(PitGrammar.FLAG_OR, i);
+		}
+		public List<TerminalNode> FLAG() { return getTokens(PitGrammar.FLAG); }
+		public TerminalNode FLAG(int i) {
+			return getToken(PitGrammar.FLAG, i);
 		}
 		public FlagsReqContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -477,27 +477,68 @@ public class PitGrammar extends Parser {
 		        
 		int _la;
 		try {
+			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(54);
 			match(FLAGS_REQ);
-			setState(55);
-			((FlagsReqContext)_localctx).f1 = match(FLAG);
-			 _localctx.flags.add(((FlagsReqContext)_localctx).f1.getText()); 
 			setState(62);
+			_errHandler.sync(this);
+			switch ( getInterpreter().adaptivePredict(_input,1,_ctx) ) {
+			case 1:
+				{
+				setState(56); 
+				_errHandler.sync(this);
+				_alt = 1;
+				do {
+					switch (_alt) {
+					case 1:
+						{
+						{
+						setState(55);
+						match(FLAG_OR);
+						}
+						}
+						break;
+					default:
+						throw new NoViableAltException(this);
+					}
+					setState(58); 
+					_errHandler.sync(this);
+					_alt = getInterpreter().adaptivePredict(_input,0,_ctx);
+				} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
+				}
+				break;
+			case 2:
+				{
+				setState(60);
+				((FlagsReqContext)_localctx).f1 = match(FLAG);
+				 _localctx.flags.add(((FlagsReqContext)_localctx).f1.getText()); 
+				}
+				break;
+			}
+			setState(71);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==FLAG_OR) {
 				{
 				{
-				setState(57);
-				match(FLAG_OR);
-				setState(58);
-				((FlagsReqContext)_localctx).f2 = match(FLAG);
-				 _localctx.flags.add(((FlagsReqContext)_localctx).f2.getText()); 
-				}
-				}
 				setState(64);
+				match(FLAG_OR);
+				setState(67);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==FLAG) {
+					{
+					setState(65);
+					((FlagsReqContext)_localctx).f2 = match(FLAG);
+					 _localctx.flags.add(((FlagsReqContext)_localctx).f2.getText()); 
+					}
+				}
+
+				}
+				}
+				setState(73);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -520,13 +561,13 @@ public class PitGrammar extends Parser {
 		public Token f1;
 		public Token f2;
 		public TerminalNode FLAGS_BAN() { return getToken(PitGrammar.FLAGS_BAN, 0); }
-		public List<TerminalNode> FLAG() { return getTokens(PitGrammar.FLAG); }
-		public TerminalNode FLAG(int i) {
-			return getToken(PitGrammar.FLAG, i);
-		}
 		public List<TerminalNode> FLAG_OR() { return getTokens(PitGrammar.FLAG_OR); }
 		public TerminalNode FLAG_OR(int i) {
 			return getToken(PitGrammar.FLAG_OR, i);
+		}
+		public List<TerminalNode> FLAG() { return getTokens(PitGrammar.FLAG); }
+		public TerminalNode FLAG(int i) {
+			return getToken(PitGrammar.FLAG, i);
 		}
 		public FlagsBanContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -557,25 +598,47 @@ public class PitGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(65);
+			setState(74);
 			match(FLAGS_BAN);
-			setState(66);
-			((FlagsBanContext)_localctx).f1 = match(FLAG);
-			 _localctx.flags.add(((FlagsBanContext)_localctx).f1.getText()); 
-			setState(73);
+			setState(78);
+			_errHandler.sync(this);
+			switch ( getInterpreter().adaptivePredict(_input,4,_ctx) ) {
+			case 1:
+				{
+				setState(75);
+				match(FLAG_OR);
+				}
+				break;
+			case 2:
+				{
+				setState(76);
+				((FlagsBanContext)_localctx).f1 = match(FLAG);
+				 _localctx.flags.add(((FlagsBanContext)_localctx).f1.getText()); 
+				}
+				break;
+			}
+			setState(87);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==FLAG_OR) {
 				{
 				{
-				setState(68);
+				setState(80);
 				match(FLAG_OR);
-				setState(69);
-				((FlagsBanContext)_localctx).f2 = match(FLAG);
-				 _localctx.flags.add(((FlagsBanContext)_localctx).f2.getText()); 
+				setState(83);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==FLAG) {
+					{
+					setState(81);
+					((FlagsBanContext)_localctx).f2 = match(FLAG);
+					 _localctx.flags.add(((FlagsBanContext)_localctx).f2.getText()); 
+					}
+				}
+
 				}
 				}
-				setState(75);
+				setState(89);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -623,9 +686,9 @@ public class PitGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(76);
+			setState(90);
 			match(INNATE_FREQ);
-			setState(77);
+			setState(91);
 			((InnateFreqContext)_localctx).f = match(PIT_INTEGER);
 			 ((InnateFreqContext)_localctx).innFreq =  ((InnateFreqContext)_localctx).f.getText(); 
 			}
@@ -647,13 +710,13 @@ public class PitGrammar extends Parser {
 		public Token s1;
 		public Token s2;
 		public TerminalNode SPELL_REQ() { return getToken(PitGrammar.SPELL_REQ, 0); }
-		public List<TerminalNode> FLAG() { return getTokens(PitGrammar.FLAG); }
-		public TerminalNode FLAG(int i) {
-			return getToken(PitGrammar.FLAG, i);
-		}
 		public List<TerminalNode> FLAG_OR() { return getTokens(PitGrammar.FLAG_OR); }
 		public TerminalNode FLAG_OR(int i) {
 			return getToken(PitGrammar.FLAG_OR, i);
+		}
+		public List<TerminalNode> FLAG() { return getTokens(PitGrammar.FLAG); }
+		public TerminalNode FLAG(int i) {
+			return getToken(PitGrammar.FLAG, i);
 		}
 		public SpellReqContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -682,27 +745,68 @@ public class PitGrammar extends Parser {
 		        
 		int _la;
 		try {
+			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(80);
+			setState(94);
 			match(SPELL_REQ);
-			setState(81);
-			((SpellReqContext)_localctx).s1 = match(FLAG);
-			 _localctx.spells.add(((SpellReqContext)_localctx).s1.getText()); 
-			setState(88);
+			setState(102);
+			_errHandler.sync(this);
+			switch ( getInterpreter().adaptivePredict(_input,8,_ctx) ) {
+			case 1:
+				{
+				setState(96); 
+				_errHandler.sync(this);
+				_alt = 1;
+				do {
+					switch (_alt) {
+					case 1:
+						{
+						{
+						setState(95);
+						match(FLAG_OR);
+						}
+						}
+						break;
+					default:
+						throw new NoViableAltException(this);
+					}
+					setState(98); 
+					_errHandler.sync(this);
+					_alt = getInterpreter().adaptivePredict(_input,7,_ctx);
+				} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
+				}
+				break;
+			case 2:
+				{
+				setState(100);
+				((SpellReqContext)_localctx).s1 = match(FLAG);
+				 _localctx.spells.add(((SpellReqContext)_localctx).s1.getText()); 
+				}
+				break;
+			}
+			setState(111);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==FLAG_OR) {
 				{
 				{
-				setState(83);
+				setState(104);
 				match(FLAG_OR);
-				setState(84);
-				((SpellReqContext)_localctx).s2 = match(FLAG);
-				 _localctx.spells.add(((SpellReqContext)_localctx).s2.getText()); 
+				setState(107);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==FLAG) {
+					{
+					setState(105);
+					((SpellReqContext)_localctx).s2 = match(FLAG);
+					 _localctx.spells.add(((SpellReqContext)_localctx).s2.getText()); 
+					}
+				}
+
 				}
 				}
-				setState(90);
+				setState(113);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -725,13 +829,13 @@ public class PitGrammar extends Parser {
 		public Token s1;
 		public Token s2;
 		public TerminalNode SPELL_BAN() { return getToken(PitGrammar.SPELL_BAN, 0); }
-		public List<TerminalNode> FLAG() { return getTokens(PitGrammar.FLAG); }
-		public TerminalNode FLAG(int i) {
-			return getToken(PitGrammar.FLAG, i);
-		}
 		public List<TerminalNode> FLAG_OR() { return getTokens(PitGrammar.FLAG_OR); }
 		public TerminalNode FLAG_OR(int i) {
 			return getToken(PitGrammar.FLAG_OR, i);
+		}
+		public List<TerminalNode> FLAG() { return getTokens(PitGrammar.FLAG); }
+		public TerminalNode FLAG(int i) {
+			return getToken(PitGrammar.FLAG, i);
 		}
 		public SpellBanContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -760,27 +864,68 @@ public class PitGrammar extends Parser {
 		        
 		int _la;
 		try {
+			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(91);
+			setState(114);
 			match(SPELL_BAN);
-			setState(92);
-			((SpellBanContext)_localctx).s1 = match(FLAG);
-			 _localctx.spells.add(((SpellBanContext)_localctx).s1.getText()); 
-			setState(99);
+			setState(122);
+			_errHandler.sync(this);
+			switch ( getInterpreter().adaptivePredict(_input,12,_ctx) ) {
+			case 1:
+				{
+				setState(116); 
+				_errHandler.sync(this);
+				_alt = 1;
+				do {
+					switch (_alt) {
+					case 1:
+						{
+						{
+						setState(115);
+						match(FLAG_OR);
+						}
+						}
+						break;
+					default:
+						throw new NoViableAltException(this);
+					}
+					setState(118); 
+					_errHandler.sync(this);
+					_alt = getInterpreter().adaptivePredict(_input,11,_ctx);
+				} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
+				}
+				break;
+			case 2:
+				{
+				setState(120);
+				((SpellBanContext)_localctx).s1 = match(FLAG);
+				 _localctx.spells.add(((SpellBanContext)_localctx).s1.getText()); 
+				}
+				break;
+			}
+			setState(131);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==FLAG_OR) {
 				{
 				{
-				setState(94);
+				setState(124);
 				match(FLAG_OR);
-				setState(95);
-				((SpellBanContext)_localctx).s2 = match(FLAG);
-				 _localctx.spells.add(((SpellBanContext)_localctx).s2.getText()); 
+				setState(127);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==FLAG) {
+					{
+					setState(125);
+					((SpellBanContext)_localctx).s2 = match(FLAG);
+					 _localctx.spells.add(((SpellBanContext)_localctx).s2.getText()); 
+					}
+				}
+
 				}
 				}
-				setState(101);
+				setState(133);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -828,9 +973,9 @@ public class PitGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(102);
+			setState(134);
 			match(MON_BAN);
-			setState(103);
+			setState(135);
 			((MonBanContext)_localctx).STRING = match(STRING);
 			 ((MonBanContext)_localctx).monName =  ((MonBanContext)_localctx).STRING.getText(); 
 			}
@@ -972,27 +1117,27 @@ public class PitGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(106);
+			setState(138);
 			((PitRecordContext)_localctx).name = name();
 			 nameInit = ((PitRecordContext)_localctx).name.nameStr; line = ((PitRecordContext)_localctx).name.line; 
-			setState(143);
+			setState(175);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 12284L) != 0)) {
 				{
-				setState(141);
+				setState(173);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case ROOM:
 					{
-					setState(108);
+					setState(140);
 					((PitRecordContext)_localctx).room = room();
 					 pitRoomTypeInit = ((PitRecordContext)_localctx).room.roomType; 
 					}
 					break;
 				case ALLOC:
 					{
-					setState(111);
+					setState(143);
 					((PitRecordContext)_localctx).alloc = alloc();
 					 rarityInit = ((PitRecordContext)_localctx).alloc.rarity;
 					                    depthInit = ((PitRecordContext)_localctx).alloc.averageLevel; 
@@ -1000,63 +1145,63 @@ public class PitGrammar extends Parser {
 					break;
 				case OBJ_RARITY:
 					{
-					setState(114);
+					setState(146);
 					((PitRecordContext)_localctx).objRarity = objRarity();
 					 objRarityInit = ((PitRecordContext)_localctx).objRarity.objectRarity; 
 					}
 					break;
 				case COLOUR:
 					{
-					setState(117);
+					setState(149);
 					((PitRecordContext)_localctx).colour = colour();
 					 colours.add(((PitRecordContext)_localctx).colour.colourChar); 
 					}
 					break;
 				case MON_BASE:
 					{
-					setState(120);
+					setState(152);
 					((PitRecordContext)_localctx).monBase = monBase();
 					 monsterBases.add(((PitRecordContext)_localctx).monBase.monsterBase); 
 					}
 					break;
 				case MON_BAN:
 					{
-					setState(123);
+					setState(155);
 					((PitRecordContext)_localctx).monBan = monBan();
 					 bannedMonsterBases.add(((PitRecordContext)_localctx).monBan.monName); 
 					}
 					break;
 				case FLAGS_REQ:
 					{
-					setState(126);
+					setState(158);
 					((PitRecordContext)_localctx).flagsReq = flagsReq();
 					 flags.addAll(((PitRecordContext)_localctx).flagsReq.flags); 
 					}
 					break;
 				case FLAGS_BAN:
 					{
-					setState(129);
+					setState(161);
 					((PitRecordContext)_localctx).flagsBan = flagsBan();
 					 bannedFlags.addAll(((PitRecordContext)_localctx).flagsBan.flags); 
 					}
 					break;
 				case INNATE_FREQ:
 					{
-					setState(132);
+					setState(164);
 					((PitRecordContext)_localctx).innateFreq = innateFreq();
 					 innateFreqInit = ((PitRecordContext)_localctx).innateFreq.innFreq; 
 					}
 					break;
 				case SPELL_REQ:
 					{
-					setState(135);
+					setState(167);
 					((PitRecordContext)_localctx).spellReq = spellReq();
 					 spells.addAll(((PitRecordContext)_localctx).spellReq.spells); 
 					}
 					break;
 				case SPELL_BAN:
 					{
-					setState(138);
+					setState(170);
 					((PitRecordContext)_localctx).spellBan = spellBan();
 					 bannedSpells.addAll(((PitRecordContext)_localctx).spellBan.spells); 
 					}
@@ -1065,7 +1210,7 @@ public class PitGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(145);
+				setState(177);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -1127,22 +1272,22 @@ public class PitGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(151);
+			setState(183);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==NAME) {
 				{
 				{
-				setState(146);
+				setState(178);
 				((FileContext)_localctx).pitRecord = pitRecord();
 				 _localctx.pits.add(((FileContext)_localctx).pitRecord.pit); 
 				}
 				}
-				setState(153);
+				setState(185);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(154);
+			setState(186);
 			match(EOF);
 			}
 		}
@@ -1158,7 +1303,7 @@ public class PitGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u001e\u009d\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u001e\u00bd\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1167,86 +1312,112 @@ public class PitGrammar extends Parser {
 		"\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001"+
 		"\u0003\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001"+
 		"\u0004\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0006\u0001"+
-		"\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0005\u0006=\b"+
-		"\u0006\n\u0006\f\u0006@\t\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001"+
-		"\u0007\u0001\u0007\u0001\u0007\u0005\u0007H\b\u0007\n\u0007\f\u0007K\t"+
-		"\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001\t\u0001\t\u0001\t"+
-		"\u0001\t\u0001\t\u0005\tW\b\t\n\t\f\tZ\t\t\u0001\n\u0001\n\u0001\n\u0001"+
-		"\n\u0001\n\u0001\n\u0005\nb\b\n\n\n\f\ne\t\n\u0001\u000b\u0001\u000b\u0001"+
-		"\u000b\u0001\u000b\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
+		"\u0006\u0004\u00069\b\u0006\u000b\u0006\f\u0006:\u0001\u0006\u0001\u0006"+
+		"\u0003\u0006?\b\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0003\u0006"+
+		"D\b\u0006\u0005\u0006F\b\u0006\n\u0006\f\u0006I\t\u0006\u0001\u0007\u0001"+
+		"\u0007\u0001\u0007\u0001\u0007\u0003\u0007O\b\u0007\u0001\u0007\u0001"+
+		"\u0007\u0001\u0007\u0003\u0007T\b\u0007\u0005\u0007V\b\u0007\n\u0007\f"+
+		"\u0007Y\t\u0007\u0001\b\u0001\b\u0001\b\u0001\b\u0001\t\u0001\t\u0004"+
+		"\ta\b\t\u000b\t\f\tb\u0001\t\u0001\t\u0003\tg\b\t\u0001\t\u0001\t\u0001"+
+		"\t\u0003\tl\b\t\u0005\tn\b\t\n\t\f\tq\t\t\u0001\n\u0001\n\u0004\nu\b\n"+
+		"\u000b\n\f\nv\u0001\n\u0001\n\u0003\n{\b\n\u0001\n\u0001\n\u0001\n\u0003"+
+		"\n\u0080\b\n\u0005\n\u0082\b\n\n\n\f\n\u0085\t\n\u0001\u000b\u0001\u000b"+
+		"\u0001\u000b\u0001\u000b\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
 		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
 		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
 		"\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001\f\u0001"+
-		"\f\u0001\f\u0005\f\u008e\b\f\n\f\f\f\u0091\t\f\u0001\r\u0001\r\u0001\r"+
-		"\u0005\r\u0096\b\r\n\r\f\r\u0099\t\r\u0001\r\u0001\r\u0001\r\u0000\u0000"+
-		"\u000e\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018"+
-		"\u001a\u0000\u0000\u009e\u0000\u001c\u0001\u0000\u0000\u0000\u0002 \u0001"+
-		"\u0000\u0000\u0000\u0004$\u0001\u0000\u0000\u0000\u0006*\u0001\u0000\u0000"+
-		"\u0000\b.\u0001\u0000\u0000\u0000\n2\u0001\u0000\u0000\u0000\f6\u0001"+
-		"\u0000\u0000\u0000\u000eA\u0001\u0000\u0000\u0000\u0010L\u0001\u0000\u0000"+
-		"\u0000\u0012P\u0001\u0000\u0000\u0000\u0014[\u0001\u0000\u0000\u0000\u0016"+
-		"f\u0001\u0000\u0000\u0000\u0018j\u0001\u0000\u0000\u0000\u001a\u0097\u0001"+
-		"\u0000\u0000\u0000\u001c\u001d\u0005\u0001\u0000\u0000\u001d\u001e\u0005"+
-		"\u0016\u0000\u0000\u001e\u001f\u0006\u0000\uffff\uffff\u0000\u001f\u0001"+
-		"\u0001\u0000\u0000\u0000 !\u0005\u0002\u0000\u0000!\"\u0005\f\u0000\u0000"+
-		"\"#\u0006\u0001\uffff\uffff\u0000#\u0003\u0001\u0000\u0000\u0000$%\u0005"+
-		"\u0003\u0000\u0000%&\u0005\u0019\u0000\u0000&\'\u0005\u0018\u0000\u0000"+
-		"\'(\u0005\u0019\u0000\u0000()\u0006\u0002\uffff\uffff\u0000)\u0005\u0001"+
-		"\u0000\u0000\u0000*+\u0005\u0004\u0000\u0000+,\u0005\u001b\u0000\u0000"+
-		",-\u0006\u0003\uffff\uffff\u0000-\u0007\u0001\u0000\u0000\u0000./\u0005"+
-		"\u0005\u0000\u0000/0\u0005\u001d\u0000\u000001\u0006\u0004\uffff\uffff"+
-		"\u00001\t\u0001\u0000\u0000\u000023\u0005\u0006\u0000\u000034\u0005\u0016"+
-		"\u0000\u000045\u0006\u0005\uffff\uffff\u00005\u000b\u0001\u0000\u0000"+
-		"\u000067\u0005\u0007\u0000\u000078\u0005\u0013\u0000\u00008>\u0006\u0006"+
-		"\uffff\uffff\u00009:\u0005\u0014\u0000\u0000:;\u0005\u0013\u0000\u0000"+
-		";=\u0006\u0006\uffff\uffff\u0000<9\u0001\u0000\u0000\u0000=@\u0001\u0000"+
-		"\u0000\u0000><\u0001\u0000\u0000\u0000>?\u0001\u0000\u0000\u0000?\r\u0001"+
-		"\u0000\u0000\u0000@>\u0001\u0000\u0000\u0000AB\u0005\b\u0000\u0000BC\u0005"+
-		"\u0013\u0000\u0000CI\u0006\u0007\uffff\uffff\u0000DE\u0005\u0014\u0000"+
-		"\u0000EF\u0005\u0013\u0000\u0000FH\u0006\u0007\uffff\uffff\u0000GD\u0001"+
-		"\u0000\u0000\u0000HK\u0001\u0000\u0000\u0000IG\u0001\u0000\u0000\u0000"+
-		"IJ\u0001\u0000\u0000\u0000J\u000f\u0001\u0000\u0000\u0000KI\u0001\u0000"+
-		"\u0000\u0000LM\u0005\t\u0000\u0000MN\u0005\u0011\u0000\u0000NO\u0006\b"+
-		"\uffff\uffff\u0000O\u0011\u0001\u0000\u0000\u0000PQ\u0005\n\u0000\u0000"+
-		"QR\u0005\u0013\u0000\u0000RX\u0006\t\uffff\uffff\u0000ST\u0005\u0014\u0000"+
-		"\u0000TU\u0005\u0013\u0000\u0000UW\u0006\t\uffff\uffff\u0000VS\u0001\u0000"+
-		"\u0000\u0000WZ\u0001\u0000\u0000\u0000XV\u0001\u0000\u0000\u0000XY\u0001"+
-		"\u0000\u0000\u0000Y\u0013\u0001\u0000\u0000\u0000ZX\u0001\u0000\u0000"+
-		"\u0000[\\\u0005\u000b\u0000\u0000\\]\u0005\u0013\u0000\u0000]c\u0006\n"+
-		"\uffff\uffff\u0000^_\u0005\u0014\u0000\u0000_`\u0005\u0013\u0000\u0000"+
-		"`b\u0006\n\uffff\uffff\u0000a^\u0001\u0000\u0000\u0000be\u0001\u0000\u0000"+
-		"\u0000ca\u0001\u0000\u0000\u0000cd\u0001\u0000\u0000\u0000d\u0015\u0001"+
-		"\u0000\u0000\u0000ec\u0001\u0000\u0000\u0000fg\u0005\r\u0000\u0000gh\u0005"+
-		"\u0016\u0000\u0000hi\u0006\u000b\uffff\uffff\u0000i\u0017\u0001\u0000"+
-		"\u0000\u0000jk\u0003\u0000\u0000\u0000k\u008f\u0006\f\uffff\uffff\u0000"+
-		"lm\u0003\u0002\u0001\u0000mn\u0006\f\uffff\uffff\u0000n\u008e\u0001\u0000"+
-		"\u0000\u0000op\u0003\u0004\u0002\u0000pq\u0006\f\uffff\uffff\u0000q\u008e"+
-		"\u0001\u0000\u0000\u0000rs\u0003\u0006\u0003\u0000st\u0006\f\uffff\uffff"+
-		"\u0000t\u008e\u0001\u0000\u0000\u0000uv\u0003\b\u0004\u0000vw\u0006\f"+
-		"\uffff\uffff\u0000w\u008e\u0001\u0000\u0000\u0000xy\u0003\n\u0005\u0000"+
-		"yz\u0006\f\uffff\uffff\u0000z\u008e\u0001\u0000\u0000\u0000{|\u0003\u0016"+
-		"\u000b\u0000|}\u0006\f\uffff\uffff\u0000}\u008e\u0001\u0000\u0000\u0000"+
-		"~\u007f\u0003\f\u0006\u0000\u007f\u0080\u0006\f\uffff\uffff\u0000\u0080"+
-		"\u008e\u0001\u0000\u0000\u0000\u0081\u0082\u0003\u000e\u0007\u0000\u0082"+
-		"\u0083\u0006\f\uffff\uffff\u0000\u0083\u008e\u0001\u0000\u0000\u0000\u0084"+
-		"\u0085\u0003\u0010\b\u0000\u0085\u0086\u0006\f\uffff\uffff\u0000\u0086"+
-		"\u008e\u0001\u0000\u0000\u0000\u0087\u0088\u0003\u0012\t\u0000\u0088\u0089"+
-		"\u0006\f\uffff\uffff\u0000\u0089\u008e\u0001\u0000\u0000\u0000\u008a\u008b"+
-		"\u0003\u0014\n\u0000\u008b\u008c\u0006\f\uffff\uffff\u0000\u008c\u008e"+
-		"\u0001\u0000\u0000\u0000\u008dl\u0001\u0000\u0000\u0000\u008do\u0001\u0000"+
-		"\u0000\u0000\u008dr\u0001\u0000\u0000\u0000\u008du\u0001\u0000\u0000\u0000"+
-		"\u008dx\u0001\u0000\u0000\u0000\u008d{\u0001\u0000\u0000\u0000\u008d~"+
-		"\u0001\u0000\u0000\u0000\u008d\u0081\u0001\u0000\u0000\u0000\u008d\u0084"+
-		"\u0001\u0000\u0000\u0000\u008d\u0087\u0001\u0000\u0000\u0000\u008d\u008a"+
-		"\u0001\u0000\u0000\u0000\u008e\u0091\u0001\u0000\u0000\u0000\u008f\u008d"+
-		"\u0001\u0000\u0000\u0000\u008f\u0090\u0001\u0000\u0000\u0000\u0090\u0019"+
-		"\u0001\u0000\u0000\u0000\u0091\u008f\u0001\u0000\u0000\u0000\u0092\u0093"+
-		"\u0003\u0018\f\u0000\u0093\u0094\u0006\r\uffff\uffff\u0000\u0094\u0096"+
-		"\u0001\u0000\u0000\u0000\u0095\u0092\u0001\u0000\u0000\u0000\u0096\u0099"+
-		"\u0001\u0000\u0000\u0000\u0097\u0095\u0001\u0000\u0000\u0000\u0097\u0098"+
-		"\u0001\u0000\u0000\u0000\u0098\u009a\u0001\u0000\u0000\u0000\u0099\u0097"+
-		"\u0001\u0000\u0000\u0000\u009a\u009b\u0005\u0000\u0000\u0001\u009b\u001b"+
-		"\u0001\u0000\u0000\u0000\u0007>IXc\u008d\u008f\u0097";
+		"\f\u0001\f\u0001\f\u0005\f\u00ae\b\f\n\f\f\f\u00b1\t\f\u0001\r\u0001\r"+
+		"\u0001\r\u0005\r\u00b6\b\r\n\r\f\r\u00b9\t\r\u0001\r\u0001\r\u0001\r\u0000"+
+		"\u0000\u000e\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016"+
+		"\u0018\u001a\u0000\u0000\u00cd\u0000\u001c\u0001\u0000\u0000\u0000\u0002"+
+		" \u0001\u0000\u0000\u0000\u0004$\u0001\u0000\u0000\u0000\u0006*\u0001"+
+		"\u0000\u0000\u0000\b.\u0001\u0000\u0000\u0000\n2\u0001\u0000\u0000\u0000"+
+		"\f6\u0001\u0000\u0000\u0000\u000eJ\u0001\u0000\u0000\u0000\u0010Z\u0001"+
+		"\u0000\u0000\u0000\u0012^\u0001\u0000\u0000\u0000\u0014r\u0001\u0000\u0000"+
+		"\u0000\u0016\u0086\u0001\u0000\u0000\u0000\u0018\u008a\u0001\u0000\u0000"+
+		"\u0000\u001a\u00b7\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0001\u0000"+
+		"\u0000\u001d\u001e\u0005\u0016\u0000\u0000\u001e\u001f\u0006\u0000\uffff"+
+		"\uffff\u0000\u001f\u0001\u0001\u0000\u0000\u0000 !\u0005\u0002\u0000\u0000"+
+		"!\"\u0005\f\u0000\u0000\"#\u0006\u0001\uffff\uffff\u0000#\u0003\u0001"+
+		"\u0000\u0000\u0000$%\u0005\u0003\u0000\u0000%&\u0005\u0019\u0000\u0000"+
+		"&\'\u0005\u0018\u0000\u0000\'(\u0005\u0019\u0000\u0000()\u0006\u0002\uffff"+
+		"\uffff\u0000)\u0005\u0001\u0000\u0000\u0000*+\u0005\u0004\u0000\u0000"+
+		"+,\u0005\u001b\u0000\u0000,-\u0006\u0003\uffff\uffff\u0000-\u0007\u0001"+
+		"\u0000\u0000\u0000./\u0005\u0005\u0000\u0000/0\u0005\u001d\u0000\u0000"+
+		"01\u0006\u0004\uffff\uffff\u00001\t\u0001\u0000\u0000\u000023\u0005\u0006"+
+		"\u0000\u000034\u0005\u0016\u0000\u000045\u0006\u0005\uffff\uffff\u0000"+
+		"5\u000b\u0001\u0000\u0000\u00006>\u0005\u0007\u0000\u000079\u0005\u0014"+
+		"\u0000\u000087\u0001\u0000\u0000\u00009:\u0001\u0000\u0000\u0000:8\u0001"+
+		"\u0000\u0000\u0000:;\u0001\u0000\u0000\u0000;?\u0001\u0000\u0000\u0000"+
+		"<=\u0005\u0013\u0000\u0000=?\u0006\u0006\uffff\uffff\u0000>8\u0001\u0000"+
+		"\u0000\u0000><\u0001\u0000\u0000\u0000>?\u0001\u0000\u0000\u0000?G\u0001"+
+		"\u0000\u0000\u0000@C\u0005\u0014\u0000\u0000AB\u0005\u0013\u0000\u0000"+
+		"BD\u0006\u0006\uffff\uffff\u0000CA\u0001\u0000\u0000\u0000CD\u0001\u0000"+
+		"\u0000\u0000DF\u0001\u0000\u0000\u0000E@\u0001\u0000\u0000\u0000FI\u0001"+
+		"\u0000\u0000\u0000GE\u0001\u0000\u0000\u0000GH\u0001\u0000\u0000\u0000"+
+		"H\r\u0001\u0000\u0000\u0000IG\u0001\u0000\u0000\u0000JN\u0005\b\u0000"+
+		"\u0000KO\u0005\u0014\u0000\u0000LM\u0005\u0013\u0000\u0000MO\u0006\u0007"+
+		"\uffff\uffff\u0000NK\u0001\u0000\u0000\u0000NL\u0001\u0000\u0000\u0000"+
+		"NO\u0001\u0000\u0000\u0000OW\u0001\u0000\u0000\u0000PS\u0005\u0014\u0000"+
+		"\u0000QR\u0005\u0013\u0000\u0000RT\u0006\u0007\uffff\uffff\u0000SQ\u0001"+
+		"\u0000\u0000\u0000ST\u0001\u0000\u0000\u0000TV\u0001\u0000\u0000\u0000"+
+		"UP\u0001\u0000\u0000\u0000VY\u0001\u0000\u0000\u0000WU\u0001\u0000\u0000"+
+		"\u0000WX\u0001\u0000\u0000\u0000X\u000f\u0001\u0000\u0000\u0000YW\u0001"+
+		"\u0000\u0000\u0000Z[\u0005\t\u0000\u0000[\\\u0005\u0011\u0000\u0000\\"+
+		"]\u0006\b\uffff\uffff\u0000]\u0011\u0001\u0000\u0000\u0000^f\u0005\n\u0000"+
+		"\u0000_a\u0005\u0014\u0000\u0000`_\u0001\u0000\u0000\u0000ab\u0001\u0000"+
+		"\u0000\u0000b`\u0001\u0000\u0000\u0000bc\u0001\u0000\u0000\u0000cg\u0001"+
+		"\u0000\u0000\u0000de\u0005\u0013\u0000\u0000eg\u0006\t\uffff\uffff\u0000"+
+		"f`\u0001\u0000\u0000\u0000fd\u0001\u0000\u0000\u0000fg\u0001\u0000\u0000"+
+		"\u0000go\u0001\u0000\u0000\u0000hk\u0005\u0014\u0000\u0000ij\u0005\u0013"+
+		"\u0000\u0000jl\u0006\t\uffff\uffff\u0000ki\u0001\u0000\u0000\u0000kl\u0001"+
+		"\u0000\u0000\u0000ln\u0001\u0000\u0000\u0000mh\u0001\u0000\u0000\u0000"+
+		"nq\u0001\u0000\u0000\u0000om\u0001\u0000\u0000\u0000op\u0001\u0000\u0000"+
+		"\u0000p\u0013\u0001\u0000\u0000\u0000qo\u0001\u0000\u0000\u0000rz\u0005"+
+		"\u000b\u0000\u0000su\u0005\u0014\u0000\u0000ts\u0001\u0000\u0000\u0000"+
+		"uv\u0001\u0000\u0000\u0000vt\u0001\u0000\u0000\u0000vw\u0001\u0000\u0000"+
+		"\u0000w{\u0001\u0000\u0000\u0000xy\u0005\u0013\u0000\u0000y{\u0006\n\uffff"+
+		"\uffff\u0000zt\u0001\u0000\u0000\u0000zx\u0001\u0000\u0000\u0000z{\u0001"+
+		"\u0000\u0000\u0000{\u0083\u0001\u0000\u0000\u0000|\u007f\u0005\u0014\u0000"+
+		"\u0000}~\u0005\u0013\u0000\u0000~\u0080\u0006\n\uffff\uffff\u0000\u007f"+
+		"}\u0001\u0000\u0000\u0000\u007f\u0080\u0001\u0000\u0000\u0000\u0080\u0082"+
+		"\u0001\u0000\u0000\u0000\u0081|\u0001\u0000\u0000\u0000\u0082\u0085\u0001"+
+		"\u0000\u0000\u0000\u0083\u0081\u0001\u0000\u0000\u0000\u0083\u0084\u0001"+
+		"\u0000\u0000\u0000\u0084\u0015\u0001\u0000\u0000\u0000\u0085\u0083\u0001"+
+		"\u0000\u0000\u0000\u0086\u0087\u0005\r\u0000\u0000\u0087\u0088\u0005\u0016"+
+		"\u0000\u0000\u0088\u0089\u0006\u000b\uffff\uffff\u0000\u0089\u0017\u0001"+
+		"\u0000\u0000\u0000\u008a\u008b\u0003\u0000\u0000\u0000\u008b\u00af\u0006"+
+		"\f\uffff\uffff\u0000\u008c\u008d\u0003\u0002\u0001\u0000\u008d\u008e\u0006"+
+		"\f\uffff\uffff\u0000\u008e\u00ae\u0001\u0000\u0000\u0000\u008f\u0090\u0003"+
+		"\u0004\u0002\u0000\u0090\u0091\u0006\f\uffff\uffff\u0000\u0091\u00ae\u0001"+
+		"\u0000\u0000\u0000\u0092\u0093\u0003\u0006\u0003\u0000\u0093\u0094\u0006"+
+		"\f\uffff\uffff\u0000\u0094\u00ae\u0001\u0000\u0000\u0000\u0095\u0096\u0003"+
+		"\b\u0004\u0000\u0096\u0097\u0006\f\uffff\uffff\u0000\u0097\u00ae\u0001"+
+		"\u0000\u0000\u0000\u0098\u0099\u0003\n\u0005\u0000\u0099\u009a\u0006\f"+
+		"\uffff\uffff\u0000\u009a\u00ae\u0001\u0000\u0000\u0000\u009b\u009c\u0003"+
+		"\u0016\u000b\u0000\u009c\u009d\u0006\f\uffff\uffff\u0000\u009d\u00ae\u0001"+
+		"\u0000\u0000\u0000\u009e\u009f\u0003\f\u0006\u0000\u009f\u00a0\u0006\f"+
+		"\uffff\uffff\u0000\u00a0\u00ae\u0001\u0000\u0000\u0000\u00a1\u00a2\u0003"+
+		"\u000e\u0007\u0000\u00a2\u00a3\u0006\f\uffff\uffff\u0000\u00a3\u00ae\u0001"+
+		"\u0000\u0000\u0000\u00a4\u00a5\u0003\u0010\b\u0000\u00a5\u00a6\u0006\f"+
+		"\uffff\uffff\u0000\u00a6\u00ae\u0001\u0000\u0000\u0000\u00a7\u00a8\u0003"+
+		"\u0012\t\u0000\u00a8\u00a9\u0006\f\uffff\uffff\u0000\u00a9\u00ae\u0001"+
+		"\u0000\u0000\u0000\u00aa\u00ab\u0003\u0014\n\u0000\u00ab\u00ac\u0006\f"+
+		"\uffff\uffff\u0000\u00ac\u00ae\u0001\u0000\u0000\u0000\u00ad\u008c\u0001"+
+		"\u0000\u0000\u0000\u00ad\u008f\u0001\u0000\u0000\u0000\u00ad\u0092\u0001"+
+		"\u0000\u0000\u0000\u00ad\u0095\u0001\u0000\u0000\u0000\u00ad\u0098\u0001"+
+		"\u0000\u0000\u0000\u00ad\u009b\u0001\u0000\u0000\u0000\u00ad\u009e\u0001"+
+		"\u0000\u0000\u0000\u00ad\u00a1\u0001\u0000\u0000\u0000\u00ad\u00a4\u0001"+
+		"\u0000\u0000\u0000\u00ad\u00a7\u0001\u0000\u0000\u0000\u00ad\u00aa\u0001"+
+		"\u0000\u0000\u0000\u00ae\u00b1\u0001\u0000\u0000\u0000\u00af\u00ad\u0001"+
+		"\u0000\u0000\u0000\u00af\u00b0\u0001\u0000\u0000\u0000\u00b0\u0019\u0001"+
+		"\u0000\u0000\u0000\u00b1\u00af\u0001\u0000\u0000\u0000\u00b2\u00b3\u0003"+
+		"\u0018\f\u0000\u00b3\u00b4\u0006\r\uffff\uffff\u0000\u00b4\u00b6\u0001"+
+		"\u0000\u0000\u0000\u00b5\u00b2\u0001\u0000\u0000\u0000\u00b6\u00b9\u0001"+
+		"\u0000\u0000\u0000\u00b7\u00b5\u0001\u0000\u0000\u0000\u00b7\u00b8\u0001"+
+		"\u0000\u0000\u0000\u00b8\u00ba\u0001\u0000\u0000\u0000\u00b9\u00b7\u0001"+
+		"\u0000\u0000\u0000\u00ba\u00bb\u0005\u0000\u0000\u0001\u00bb\u001b\u0001"+
+		"\u0000\u0000\u0000\u0012:>CGNSWbfkovz\u007f\u0083\u00ad\u00af\u00b7";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

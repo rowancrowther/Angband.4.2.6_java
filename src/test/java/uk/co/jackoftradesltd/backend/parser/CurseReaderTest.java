@@ -912,21 +912,338 @@ class CurseReaderTest {
                 curse("chatty", "type:cloak\neffect:WAKE\neffect-msg:hello\ndesc:x\n")));
     }
 
-    @Test
-    void flagsSeparatedBySpacesAloneAreAHardErrorHereWhereCAcceptsThem() throws IOException {
-        // strtok(s, " |") makes "AGGRAVATE AFRAID" two flags.
-        assertHardError("flags-space.txt", curse("spaced", "type:cloak\nflags:AGGRAVATE AFRAID\ndesc:x\n"));
+    // ---- Flag and value separators: C's strtok(s, " |") (Stage 7d) -----------------------
+
+    /** Separators one {@code FLAG_OR} or {@code VALUE_OR} token covers, so every list rule reads them. */
+    private static final String[] ONE_TOKEN_SEPARATORS = {" ", "    ", "|", " |", "| ", " | ", "  |  ", "||"};
+
+    /** Separators that arrive as two tokens in a row (a bar, a blank, a bar). */
+    private static final String[] TWO_TOKEN_SEPARATORS = {" | | ", "| |", " |  | "};
+
+    private Curse loadOneCurse(String file, String body) throws IOException {
+        return load(file, curse("sep", "type:cloak\n" + body)).items().get(0);
     }
 
-    @Test
-    void valuesSeparatedBySpacesAloneAreAHardErrorHereWhereCAcceptsThem() throws IOException {
-        // parse_curse_values runs strtok(s, " |") as parse_curse_flags does.
-        assertHardError("values-space.txt", curse("spaced", "type:cloak\nvalues:STR[-1] INT[-1]\ndesc:x\n"));
+    private static void assertFlagPair(Curse c, String separator) {
+        assertTrue(c.getItemObject().getFlags().has(ObjectFlag.OF_AGGRAVATE), "[" + separator + "]");
+        assertTrue(c.getItemObject().getFlags().has(ObjectFlag.OF_AFRAID), "[" + separator + "]");
     }
 
+    private static void assertConflictFlagPair(Curse c, String separator) {
+        assertTrue(c.getConflictFlags().has(ObjectFlag.OF_AGGRAVATE), "[" + separator + "]");
+        assertTrue(c.getConflictFlags().has(ObjectFlag.OF_AFRAID), "[" + separator + "]");
+    }
+
+    private static void assertValuePair(Curse c, String separator) {
+        assertEquals(-1, c.getItemObject().getModifiers().get(ObjectModifier.OM_STR), "[" + separator + "]");
+        assertEquals(-1, c.getItemObject().getModifiers().get(ObjectModifier.OM_INT), "[" + separator + "]");
+        assertEquals(2, c.getItemObject().getModifiers().size(), "[" + separator + "]");
+    }
+
+    /**
+     * {@code parse_curse_flags} in {@code obj-init.c} splits with {@code strtok(s, " |")}, so any run
+     * of blanks and bars between two names is one separator: {@code AGGRAVATE AFRAID},
+     * {@code AGGRAVATE||AFRAID} and {@code AGGRAVATE | | AFRAID} all give the same two flags.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsAsInC coded on 261119, commented in full on
+     * 261119 (replaces flagsSeparatedBySpacesAloneAreAHardErrorHereWhereCAcceptsThem).
+     */
     @Test
-    void conflictFlagsSeparatedBySpacesAloneAreAHardErrorHereWhereCAcceptsThem() throws IOException {
-        assertHardError("cflags-space.txt", curse("spaced", "type:cloak\nconflict-flags:AGGRAVATE AFRAID\ndesc:x\n"));
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() throws IOException {
+        int n = 0;
+        for (String sep : ONE_TOKEN_SEPARATORS) {
+            assertFlagPair(loadOneCurse("flags-one-" + n++ + ".txt", "flags:AGGRAVATE" + sep + "AFRAID\ndesc:x\n"), sep);
+        }
+        for (String sep : TWO_TOKEN_SEPARATORS) {
+            assertFlagPair(loadOneCurse("flags-two-" + n++ + ".txt", "flags:AGGRAVATE" + sep + "AFRAID\ndesc:x\n"), sep);
+        }
+    }
+
+    /**
+     * {@code strtok} skips delimiters at the start and the end of the value, so a leading or trailing
+     * run of blanks and bars adds nothing: each of these reads {@code AGGRAVATE} alone.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC() throws IOException {
+        String[] lines = {" AGGRAVATE", "| AGGRAVATE", "|AGGRAVATE", "| | AGGRAVATE", "AGGRAVATE |", "AGGRAVATE ", "AGGRAVATE||"};
+        int n = 0;
+        for (String line : lines) {
+            Curse c = loadOneCurse("flags-edge-" + n++ + ".txt", "flags:" + line + "\ndesc:x\n");
+            assertTrue(c.getItemObject().getFlags().has(ObjectFlag.OF_AGGRAVATE), "[" + line + "]");
+            assertFalse(c.getItemObject().getFlags().has(ObjectFlag.OF_AFRAID), "[" + line + "]");
+        }
+    }
+
+    /**
+     * A {@code flags:} value of delimiters only is present but has no name, so {@code strtok} finds
+     * nothing and the handler returns {@code PARSE_ERROR_NONE}: the curse loads with no flags. A lone
+     * blank is one of these.
+     *
+     * <p>Function aDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void aDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC() throws IOException {
+        String[] lines = {"|", " ", "| |", "||"};
+        int n = 0;
+        for (String line : lines) {
+            Curse c = loadOneCurse("flags-only-" + n++ + ".txt", "flags:" + line + "\ndesc:x\n");
+            assertTrue(c.getItemObject().getFlags().isEmpty(), "[" + line + "]");
+        }
+    }
+
+    /**
+     * A {@code flags:} line that is the last line of the file, with no final newline, is fed to the
+     * parser by {@code file_getl} as it stands, so C reads it.
+     *
+     * <p>Function aFlagsLineWithNoFinalNewlineLoadsAsInC coded on 261119, commented in full on 261119.
+     */
+    @Test
+    void aFlagsLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        Curse plain = load("flags-last.txt", "name:x\ntype:cloak\nflags:AGGRAVATE").items().get(0);
+        Curse bar = load("flags-last-bar.txt", "name:x\ntype:cloak\nflags:AGGRAVATE |").items().get(0);
+
+        assertTrue(plain.getItemObject().getFlags().has(ObjectFlag.OF_AGGRAVATE));
+        assertTrue(bar.getItemObject().getFlags().has(ObjectFlag.OF_AGGRAVATE));
+    }
+
+    /**
+     * {@code flags} is a required {@code str} in {@code init_parse_curse}, so a bare {@code flags:}
+     * is {@code PARSE_ERROR_MISSING_FIELD} and stops the load. The grammar cannot tell it from
+     * {@code flags: }, which C loads (the {@code NL} fragment takes the blanks before the newline),
+     * and treats both as a list with no flags. Parked 2026-11-19 for every such list, in
+     * {@code docs/Parked.md}.
+     *
+     * <p>Function aBareFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt coded on 261119, commented in full
+     * on 261119.
+     */
+    @Test
+    void aBareFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt() throws IOException {
+        Curse c = loadOneCurse("flags-bare.txt", "flags:\ndesc:x\n");
+
+        assertTrue(c.getItemObject().getFlags().isEmpty());
+    }
+
+    /**
+     * {@code parse_curse_conflict_flags} splits with {@code strtok(s, " |")} as well, so any run of
+     * blanks and bars between two names is one separator, including a bar, a blank and a bar.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesConflictFlagsAsInC coded on 261119, commented in full
+     * on 261119 (replaces conflictFlagsSeparatedBySpacesAloneAreAHardErrorHereWhereCAcceptsThem and
+     * aBarBlankBarOnConflictFlagsIsRefusedHereWhereCAcceptsIt).
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesConflictFlagsAsInC() throws IOException {
+        int n = 0;
+        for (String sep : ONE_TOKEN_SEPARATORS) {
+            assertConflictFlagPair(
+                    loadOneCurse("cflags-one-" + n++ + ".txt", "conflict-flags:AGGRAVATE" + sep + "AFRAID\ndesc:x\n"), sep);
+        }
+        for (String sep : TWO_TOKEN_SEPARATORS) {
+            assertConflictFlagPair(
+                    loadOneCurse("cflags-two-" + n++ + ".txt", "conflict-flags:AGGRAVATE" + sep + "AFRAID\ndesc:x\n"), sep);
+        }
+    }
+
+    /**
+     * A leading or trailing run of delimiters adds nothing, as {@code strtok} skips it: each of these
+     * reads {@code AGGRAVATE} alone.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnConflictFlagsLoadsAsInC coded on 261119, commented in
+     * full on 261119 (replaces aLeadingOrTrailingDelimiterOnConflictFlagsIsRefusedHereWhereCSkipsIt).
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnConflictFlagsLoadsAsInC() throws IOException {
+        String[] lines = {" AGGRAVATE", "| AGGRAVATE", "|AGGRAVATE", "| | AGGRAVATE", "AGGRAVATE |", "AGGRAVATE ", "AGGRAVATE||"};
+        int n = 0;
+        for (String line : lines) {
+            Curse c = loadOneCurse("cflags-edge-" + n++ + ".txt", "conflict-flags:" + line + "\ndesc:x\n");
+            assertTrue(c.getConflictFlags().has(ObjectFlag.OF_AGGRAVATE), "[" + line + "]");
+            assertFalse(c.getConflictFlags().has(ObjectFlag.OF_AFRAID), "[" + line + "]");
+        }
+    }
+
+    /**
+     * A {@code conflict-flags:} value of delimiters only, a lone blank included, has no name, so
+     * {@code strtok} finds nothing and the curse loads with no conflict flags.
+     *
+     * <p>Function aDelimiterOnlyConflictFlagsLineLoadsWithNoFlagsAsInC coded on 261119, commented in
+     * full on 261119 (replaces aDelimiterOnlyConflictFlagsLineIsRefusedHereWhereCLoadsIt).
+     */
+    @Test
+    void aDelimiterOnlyConflictFlagsLineLoadsWithNoFlagsAsInC() throws IOException {
+        String[] lines = {"|", "||", "| |", " "};
+        int n = 0;
+        for (String line : lines) {
+            Curse c = loadOneCurse("cflags-only-" + n++ + ".txt", "conflict-flags:" + line + "\ndesc:x\n");
+            assertTrue(c.getConflictFlags().isEmpty(), "[" + line + "]");
+        }
+    }
+
+    /**
+     * A {@code conflict-flags:} line that is the last line of the file, with no final newline, loads.
+     *
+     * <p>Function aConflictFlagsLineWithNoFinalNewlineLoadsAsInC coded on 261119, commented in full on
+     * 261119.
+     */
+    @Test
+    void aConflictFlagsLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        Curse plain = load("cflags-last.txt", "name:x\ntype:cloak\nconflict-flags:AGGRAVATE").items().get(0);
+        Curse bar = load("cflags-last-bar.txt", "name:x\ntype:cloak\nconflict-flags:AGGRAVATE |").items().get(0);
+
+        assertTrue(plain.getConflictFlags().has(ObjectFlag.OF_AGGRAVATE));
+        assertTrue(bar.getConflictFlags().has(ObjectFlag.OF_AGGRAVATE));
+    }
+
+    /**
+     * {@code conflict-flags} is a required {@code str}, so a bare {@code conflict-flags:} is
+     * {@code PARSE_ERROR_MISSING_FIELD} in C. As with {@code flags:}, the grammar cannot tell it from
+     * {@code conflict-flags: }, which C loads, and treats both as a list with no flags. Parked
+     * 2026-11-19 for every such list, in {@code docs/Parked.md}.
+     *
+     * <p>Function aBareConflictFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt coded on 261119, commented
+     * in full on 261119 (replaces aBareConflictFlagsLineIsRefusedAsInC).
+     */
+    @Test
+    void aBareConflictFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt() throws IOException {
+        Curse c = loadOneCurse("cflags-bare.txt", "conflict-flags:\ndesc:x\n");
+
+        assertTrue(c.getConflictFlags().isEmpty());
+    }
+
+    /**
+     * {@code parse_curse_values} runs the same {@code strtok(s, " |")}, so any run of blanks and bars
+     * between two {@code NAME[n]} entries loads, including a bar, a blank and a bar. A trailing blank
+     * alone loads (the {@code NL} fragment takes it), and so does a {@code values:} line with no final
+     * newline.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesValuesAsInC coded on 261119, commented in full on
+     * 261119 (replaces valuesSeparatedBySpacesAloneAreAHardErrorHereWhereCAcceptsThem and
+     * aBarBlankBarOnValuesIsRefusedHereWhereCAcceptsIt).
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesValuesAsInC() throws IOException {
+        int n = 0;
+        for (String sep : ONE_TOKEN_SEPARATORS) {
+            assertValuePair(loadOneCurse("values-one-" + n++ + ".txt", "values:STR[-1]" + sep + "INT[-1]\ndesc:x\n"), sep);
+        }
+        for (String sep : TWO_TOKEN_SEPARATORS) {
+            assertValuePair(loadOneCurse("values-two-" + n++ + ".txt", "values:STR[-1]" + sep + "INT[-1]\ndesc:x\n"), sep);
+        }
+        Curse trailing = loadOneCurse("values-trailing-blank.txt", "values:STR[-1] \ndesc:x\n");
+        assertEquals(-1, trailing.getItemObject().getModifiers().get(ObjectModifier.OM_STR));
+
+        Curse last = load("values-last.txt", "name:x\ntype:cloak\nvalues:STR[-1]").items().get(0);
+        assertEquals(-1, last.getItemObject().getModifiers().get(ObjectModifier.OM_STR));
+    }
+
+    /**
+     * C skips a trailing run of delimiters, so {@code STR[-1] |}, {@code STR[-1]||} and
+     * {@code STR[-1] | |} each read {@code STR[-1]} alone. {@code VALUE_FLAG_MODE} in
+     * {@code CurseLexer.g4}, which the lexer is in after a separator, has its own newline rule
+     * ({@code VALUE_FLAG_EOL}), so a line that ends right after a bar no longer reaches the lexer's
+     * error path.
+     *
+     * <p>Function aTrailingDelimiterOnValuesLoadsAsInC coded on 261120, commented in full on 261120
+     * (replaces the trailing-bar half of aLeadingOrTrailingDelimiterOnValuesIsRefusedHereWhereCSkipsIt).
+     */
+    @Test
+    void aTrailingDelimiterOnValuesLoadsAsInC() throws IOException {
+        String[] lines = {"STR[-1] |", "STR[-1]||", "STR[-1] | |", "STR[-1] "};
+        int n = 0;
+        for (String line : lines) {
+            Curse c = loadOneCurse("values-trailing-" + n++ + ".txt", "values:" + line + "\ndesc:x\n");
+            assertEquals(-1, c.getItemObject().getModifiers().get(ObjectModifier.OM_STR), "[" + line + "]");
+            assertEquals(1, c.getItemObject().getModifiers().size(), "[" + line + "]");
+        }
+    }
+
+    /**
+     * C skips a leading run of delimiters, so {@code | STR[-1]} reads {@code STR[-1]}. The {@code values}
+     * rule takes any number of {@code VALUE_FLAG_OR} straight after {@code values:}, which is what the
+     * lexer produces for a delimiter before the first entry, and then the entry.
+     *
+     * <p>Function aLeadingDelimiterOnValuesLoadsAsInC coded on 261120, commented in full on 261120
+     * (replaces aLeadingDelimiterOnValuesIsRefusedHereWhereCSkipsIt).
+     */
+    @Test
+    void aLeadingDelimiterOnValuesLoadsAsInC() throws IOException {
+        String[] lines = {" STR[-1]", "| STR[-1]", "|STR[-1]", "| | STR[-1]", "|  | STR[-1]", "||STR[-1]"};
+        int n = 0;
+        for (String line : lines) {
+            Curse c = loadOneCurse("values-leading-" + n++ + ".txt", "values:" + line + "\ndesc:x\n");
+            assertEquals(-1, c.getItemObject().getModifiers().get(ObjectModifier.OM_STR), "[" + line + "]");
+            assertEquals(1, c.getItemObject().getModifiers().size(), "[" + line + "]");
+        }
+        Curse two = loadOneCurse("values-leading-two.txt", "values:  | | STR[-1] | RES_FIRE[1] \ndesc:x\n");
+        assertEquals(-1, two.getItemObject().getModifiers().get(ObjectModifier.OM_STR));
+        assertEquals(1, two.getItemObject().getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel());
+    }
+
+    /**
+     * C reads a {@code values:} value of delimiters only as a list with no entries, so {@code |},
+     * {@code ||}, {@code | |} and a lone blank load with no modifiers. The grammar takes a run of
+     * {@code VALUE_FLAG_OR} straight after {@code values:}, so the bar, blank, bar shape is one run.
+     *
+     * <p>Function aDelimiterOnlyValuesLineLoadsWithNoEntriesAsInC coded on 261120, commented in full
+     * on 261120 (replaces aDelimiterOnlyValuesLineIsRefusedHereWhereCLoadsIt and
+     * aTwoBarsWithABlankBetweenAndNoEntryOnValuesIsRefusedHereWhereCLoadsIt).
+     */
+    @Test
+    void aDelimiterOnlyValuesLineLoadsWithNoEntriesAsInC() throws IOException {
+        String[] lines = {"|", "||", "| |", " "};
+        int n = 0;
+        for (String line : lines) {
+            Curse c = loadOneCurse("values-only-" + n++ + ".txt", "values:" + line + "\ndesc:x\n");
+            assertTrue(c.getItemObject().getModifiers().isEmpty(), "[" + line + "]");
+        }
+    }
+
+    /**
+     * {@code values} is a required {@code str} in {@code init_parse_curse}, so a bare {@code values:}
+     * is {@code PARSE_ERROR_MISSING_FIELD} in C. The grammar cannot tell it from {@code values: },
+     * which C loads (the {@code NL} fragment takes the blanks before the newline), and treats both as
+     * a list with no entries, with a newline after it or on the last line of the file. Parked
+     * 2026-11-19 for every such list, in {@code docs/Parked.md}.
+     *
+     * <p>Function aBareValuesLineLoadsWithNoValuesHereWhereCRefusesIt coded on 261120, commented in
+     * full on 261120 (replaces aBareValuesLineIsRefusedAsInC and
+     * aBareValuesLineAtTheEndOfTheFileLoadsHereWhereCRefusesIt).
+     */
+    @Test
+    void aBareValuesLineLoadsWithNoValuesHereWhereCRefusesIt() throws IOException {
+        Curse mid = loadOneCurse("values-bare.txt", "values:\ndesc:x\n");
+        Curse last = load("values-bare-last.txt", "name:x\ntype:cloak\nvalues:").items().get(0);
+
+        assertTrue(mid.getItemObject().getModifiers().isEmpty());
+        assertTrue(last.getItemObject().getModifiers().isEmpty());
+    }
+
+    /**
+     * A {@code values:} line that is the last line of the file, with no final newline, gives the same
+     * answer as the same text followed by a newline: a trailing bar loads with the entry before it,
+     * and a value of delimiters only loads with no entries, as in C.
+     *
+     * <p>Function aTrailingBarOrDelimiterOnlyValuesAtTheEndOfTheFileLoadsAsInC coded on 261119,
+     * commented in full on 261119.
+     */
+    @Test
+    void aTrailingBarOrDelimiterOnlyValuesAtTheEndOfTheFileLoadsAsInC() throws IOException {
+        String[] trailing = {"STR[-1] |", "STR[-1]||", "STR[-1] | |"};
+        int n = 0;
+        for (String line : trailing) {
+            Curse c = load("values-last-trailing-" + n++ + ".txt", "name:x\ntype:cloak\nvalues:" + line).items().get(0);
+            assertEquals(-1, c.getItemObject().getModifiers().get(ObjectModifier.OM_STR), "[" + line + "]");
+            assertEquals(1, c.getItemObject().getModifiers().size(), "[" + line + "]");
+        }
+        String[] only = {"|", "||", "| |", " "};
+        for (String line : only) {
+            Curse c = load("values-last-only-" + n++ + ".txt", "name:x\ntype:cloak\nvalues:" + line).items().get(0);
+            assertTrue(c.getItemObject().getModifiers().isEmpty(), "[" + line + "]");
+        }
     }
 
     @Test

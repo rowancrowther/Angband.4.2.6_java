@@ -137,7 +137,7 @@ VALUE_FLAG
         ;
 
 VALUE_LBRACKET
-        :   '['
+        :   '[' -> skip
         ;
 
 VALUE_DICE
@@ -149,11 +149,12 @@ VALUE_INTEGER
         ;
 
 VALUE_RBRACKET
-        :   ']'
+        :   ']' -> skip
         ;
 
 VALUE_OR
-        :   ' '? '|' ' '?
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
         ;
 
 VALUE_EOL
@@ -163,11 +164,12 @@ VALUE_EOL
 mode FLAG_MODE;
 
 FLAG
-        :   ' '? FLAG_BODY
+        :   FLAG_BODY
         ;
 
 FLAG_OR
-        :   ' '? '|' ' '?
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
         ;
 
 FLAG_EOL

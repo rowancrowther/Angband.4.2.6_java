@@ -1116,38 +1116,220 @@ class EgoItemReaderTest {
         assertEquals(0, load("no-records.txt", "").items().size());
     }
 
+    // ---- Flag and value separators: C's strtok(s, " |") (Stage 7d) -----------------------
+
+    /** Separators between two flags: a single blank, longer runs of blanks, and every mix with bars. */
+    private static final String[] FLAG_SEPARATORS =
+            {" ", "  ", "    ", "|", " |", "| ", " | ", "  |  ", "||", " | | ", "| |", " |  | "};
+
+    /** Separators between two values: the same twelve shapes. */
+    private static final String[] VALUE_SEPARATORS = FLAG_SEPARATORS;
+
+    private static final String[] EDGE_FLAG_LINES =
+            {" SEE_INVIS", "| SEE_INVIS", "|SEE_INVIS", "| | SEE_INVIS", "SEE_INVIS |", "SEE_INVIS ", "SEE_INVIS||"};
+
+    private static final String[] EDGE_VALUE_LINES =
+            {" STEALTH[1]", "| STEALTH[1]", "|STEALTH[1]", "| | STEALTH[1]", "STEALTH[1] |", "STEALTH[1] ", "STEALTH[1]||"};
+
+    private static final String[] NO_ENTRY_LINES = {"|", " ", "| |", "||"};
+
     /**
-     * {@code flags ?str flags} is optional, and {@code parse_ego_flags} and {@code parse_ego_flags_off}
-     * return no error when {@code parser_hasval} is false.
+     * {@code parse_ego_flags} in {@code obj-init.c} splits with {@code strtok(flags, " |")}, so any
+     * run of blanks and bars between two names is one separator: {@code SEE_INVIS FREE_ACT},
+     * {@code SEE_INVIS||FREE_ACT} and {@code SEE_INVIS | | FREE_ACT} all give the same two flags. The
+     * single blank was refused until {@code FLAG} in {@code EgoItemsLexer.g4} stopped taking a
+     * leading blank, which made it longer than {@code FLAG_OR}.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsAsInC coded on 261119, commented in full on
+     * 261119 (replaces flagsSeparatedBySpaceAloneOrByOddBarsAreSyntaxErrorsHereWhereCAcceptsThem and
+     * aSingleBlankBetweenFlagsIsRefusedHereWhereCAcceptsIt).
      */
     @Test
-    void emptyFlagsAndFlagsOffLinesAreSyntaxErrorsHereWhereCAcceptsThem() throws IOException {
-        assertHardError("flags-empty.txt", "type:sword\nflags:\n");
-        assertHardError("flags-off-empty.txt", "type:sword\nflags-off:\n");
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() throws Exception {
+        int n = 0;
+        for (String sep : FLAG_SEPARATORS) {
+            EgoItem e = loadOne("flags-sep-" + n++ + ".txt", "type:sword\nflags:SEE_INVIS" + sep + "FREE_ACT\n");
+            Flag<ObjectFlag> flags = field(e, "flags");
+            assertTrue(flags.has(ObjectFlag.OF_SEE_INVIS), "[" + sep + "]");
+            assertTrue(flags.has(ObjectFlag.OF_FREE_ACT), "[" + sep + "]");
+        }
     }
 
     /**
-     * C splits the list with {@code strtok(flags, " |")}, so a space alone, a doubled bar and a
-     * leading bar all separate flags. The grammar wants exactly {@code |} between two flags, with
-     * optional spaces around it.
+     * {@code parse_ego_flags_off} runs the same {@code strtok(flags, " |")}.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsOffAsInC coded on 261119, commented in full on
+     * 261119.
      */
     @Test
-    void flagsSeparatedBySpaceAloneOrByOddBarsAreSyntaxErrorsHereWhereCAcceptsThem() throws IOException {
-        assertHardError("flags-space.txt", "type:sword\nflags:SEE_INVIS FREE_ACT\n");
-        assertHardError("flags-double-bar.txt", "type:sword\nflags:SEE_INVIS || FREE_ACT\n");
-        assertHardError("flags-leading-bar.txt", "type:sword\nflags:| SEE_INVIS\n");
+    void anyRunOfBlanksAndBarsSeparatesFlagsOffAsInC() throws Exception {
+        int n = 0;
+        for (String sep : FLAG_SEPARATORS) {
+            EgoItem e = loadOne("flags-off-sep-" + n++ + ".txt", "type:sword\nflags-off:SEE_INVIS" + sep + "FREE_ACT\n");
+            Flag<ObjectFlag> off = field(e, "flagsOff");
+            assertTrue(off.has(ObjectFlag.OF_SEE_INVIS), "[" + sep + "]");
+            assertTrue(off.has(ObjectFlag.OF_FREE_ACT), "[" + sep + "]");
+        }
     }
 
     /**
-     * The same {@code strtok(s, " |")} splits {@code values:} and {@code min-values:}. The grammar
-     * accepts a trailing bar after flags but not after values, and wants a bar between two values.
+     * {@code strtok} skips delimiters at the start and the end of the value, so a leading or
+     * trailing run adds nothing: each of these reads {@code SEE_INVIS} alone, in {@code flags:} and in
+     * {@code flags-off:}.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnFlagsAndFlagsOffLoadsAsInC coded on 261119, commented
+     * in full on 261119 (replaces the leading-bar assertion of
+     * flagsSeparatedBySpaceAloneOrByOddBarsAreSyntaxErrorsHereWhereCAcceptsThem).
      */
     @Test
-    void valuesSeparatedBySpaceAloneOrEndingInABarAreSyntaxErrorsHereWhereCAcceptsThem() throws IOException {
-        assertHardError("values-space.txt", "type:sword\nvalues:STEALTH[1] LIGHT[2]\n");
-        assertHardError("values-trailing-bar.txt", "type:sword\nvalues:STEALTH[1] |\n");
-        assertHardError("values-double-bar.txt", "type:sword\nvalues:STEALTH[1] || LIGHT[2]\n");
-        assertHardError("min-values-trailing-bar.txt", "type:sword\nmin-values:STEALTH[1] |\n");
+    void aLeadingOrTrailingDelimiterOnFlagsAndFlagsOffLoadsAsInC() throws Exception {
+        int n = 0;
+        for (String line : EDGE_FLAG_LINES) {
+            Flag<ObjectFlag> flags = field(loadOne("flags-edge-" + n++ + ".txt", "type:sword\nflags:" + line + "\n"), "flags");
+            assertTrue(flags.has(ObjectFlag.OF_SEE_INVIS), "flags [" + line + "]");
+            Flag<ObjectFlag> off = field(loadOne("flags-off-edge-" + n++ + ".txt", "type:sword\nflags-off:" + line + "\n"), "flagsOff");
+            assertTrue(off.has(ObjectFlag.OF_SEE_INVIS), "flags-off [" + line + "]");
+        }
+    }
+
+    /**
+     * {@code flags ?str flags} and {@code flags-off ?str flags} are optional, and the handlers return
+     * no error when {@code parser_hasval} is false, so a bare line loads with no flags. A value of
+     * delimiters only, a lone blank included, has no name for {@code strtok} to return and loads the
+     * same way.
+     *
+     * <p>Function aBareOrDelimiterOnlyFlagsAndFlagsOffLoadWithNoFlagsAsInC coded on 261119, commented
+     * in full on 261119 (replaces emptyFlagsAndFlagsOffLinesAreSyntaxErrorsHereWhereCAcceptsThem).
+     */
+    @Test
+    void aBareOrDelimiterOnlyFlagsAndFlagsOffLoadWithNoFlagsAsInC() throws Exception {
+        int n = 0;
+        for (String line : new String[]{"", "|", " ", "| |", "||"}) {
+            Flag<ObjectFlag> flags = field(loadOne("flags-only-" + n++ + ".txt", "type:sword\nflags:" + line + "\n"), "flags");
+            assertTrue(flags.isEmpty(), "flags [" + line + "]");
+            Flag<ObjectFlag> off = field(loadOne("flags-off-only-" + n++ + ".txt", "type:sword\nflags-off:" + line + "\n"), "flagsOff");
+            assertTrue(off.isEmpty(), "flags-off [" + line + "]");
+        }
+    }
+
+    /**
+     * A {@code flags:} or {@code flags-off:} line that is the last line of the file, with no final
+     * newline, is fed to the parser by {@code file_getl} as it stands, so C reads it.
+     *
+     * <p>Function aFlagsOrFlagsOffLineWithNoFinalNewlineLoadsAsInC coded on 261119, commented in full
+     * on 261119.
+     */
+    @Test
+    void aFlagsOrFlagsOffLineWithNoFinalNewlineLoadsAsInC() throws Exception {
+        Flag<ObjectFlag> flags = field(load("flags-last.txt", "name:t\ntype:sword\nflags:SEE_INVIS |").items().get(0), "flags");
+        Flag<ObjectFlag> off = field(load("flags-off-last.txt", "name:t\ntype:sword\nflags-off:SEE_INVIS |").items().get(0), "flagsOff");
+
+        assertTrue(flags.has(ObjectFlag.OF_SEE_INVIS));
+        assertTrue(off.has(ObjectFlag.OF_SEE_INVIS));
+    }
+
+    /**
+     * {@code parse_ego_values} and {@code parse_ego_min_val} run {@code strtok(s, " |")}, so any run
+     * of blanks and bars between two {@code NAME[n]} entries separates them, a lone blank and a bar,
+     * blank, bar included.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesValuesAndMinValuesAsInC coded on 261119, commented in
+     * full on 261119 (replaces the space and double-bar assertions of
+     * valuesSeparatedBySpaceAloneOrEndingInABarAreSyntaxErrorsHereWhereCAcceptsThem).
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesValuesAndMinValuesAsInC() throws Exception {
+        int n = 0;
+        for (String sep : VALUE_SEPARATORS) {
+            Map<ObjectModifier, Random> mods = field(
+                    loadOne("values-sep-" + n++ + ".txt", "type:sword\nvalues:STEALTH[1]" + sep + "LIGHT[2]\n"), "modifiers");
+            assertTrue(mods.containsKey(ObjectModifier.OM_STEALTH) && mods.containsKey(ObjectModifier.OM_LIGHT), "values [" + sep + "]");
+            assertEquals(2, mods.size(), "values [" + sep + "]");
+
+            Map<ObjectModifier, Integer> min = field(
+                    loadOne("min-values-sep-" + n++ + ".txt", "type:sword\nmin-values:STEALTH[1]" + sep + "LIGHT[2]\n"), "minModifiers");
+            assertEquals(1, min.get(ObjectModifier.OM_STEALTH), "min-values [" + sep + "]");
+            assertEquals(2, min.get(ObjectModifier.OM_LIGHT), "min-values [" + sep + "]");
+        }
+    }
+
+    /**
+     * A leading or trailing run of delimiters adds nothing, as {@code strtok} skips it: each of these
+     * reads {@code STEALTH[1]} alone, in {@code values:} and in {@code min-values:}.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnValuesAndMinValuesLoadsAsInC coded on 261119,
+     * commented in full on 261119 (replaces the trailing-bar assertions of
+     * valuesSeparatedBySpaceAloneOrEndingInABarAreSyntaxErrorsHereWhereCAcceptsThem).
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnValuesAndMinValuesLoadsAsInC() throws Exception {
+        int n = 0;
+        for (String line : EDGE_VALUE_LINES) {
+            Map<ObjectModifier, Random> mods = field(loadOne("values-edge-" + n++ + ".txt", "type:sword\nvalues:" + line + "\n"), "modifiers");
+            assertEquals(1, mods.size(), "values [" + line + "]");
+            assertTrue(mods.containsKey(ObjectModifier.OM_STEALTH), "values [" + line + "]");
+
+            Map<ObjectModifier, Integer> min = field(loadOne("min-values-edge-" + n++ + ".txt", "type:sword\nmin-values:" + line + "\n"), "minModifiers");
+            assertEquals(1, min.size(), "min-values [" + line + "]");
+            assertEquals(1, min.get(ObjectModifier.OM_STEALTH), "min-values [" + line + "]");
+        }
+    }
+
+    /**
+     * A {@code values:} or {@code min-values:} value of delimiters only is present but has no entry,
+     * so {@code strtok} finds nothing and the handler returns {@code PARSE_ERROR_NONE}: the record
+     * loads with no entries. A lone blank is one of these.
+     *
+     * <p>Function aDelimiterOnlyValuesAndMinValuesLoadWithNoEntriesAsInC coded on 261119, commented
+     * in full on 261119.
+     */
+    @Test
+    void aDelimiterOnlyValuesAndMinValuesLoadWithNoEntriesAsInC() throws Exception {
+        int n = 0;
+        for (String line : NO_ENTRY_LINES) {
+            Map<ObjectModifier, Random> mods = field(loadOne("values-only-" + n++ + ".txt", "type:sword\nvalues:" + line + "\n"), "modifiers");
+            assertTrue(mods.isEmpty(), "values [" + line + "]");
+            Map<ObjectModifier, Integer> min = field(loadOne("min-values-only-" + n++ + ".txt", "type:sword\nmin-values:" + line + "\n"), "minModifiers");
+            assertTrue(min.isEmpty(), "min-values [" + line + "]");
+        }
+    }
+
+    /**
+     * A {@code values:} or {@code min-values:} line that is the last line of the file, with no final
+     * newline, loads, as in C.
+     *
+     * <p>Function aValuesOrMinValuesLineWithNoFinalNewlineLoadsAsInC coded on 261119, commented in
+     * full on 261119.
+     */
+    @Test
+    void aValuesOrMinValuesLineWithNoFinalNewlineLoadsAsInC() throws Exception {
+        Map<ObjectModifier, Random> mods = field(
+                load("values-last.txt", "name:t\ntype:sword\nvalues:STEALTH[1] |").items().get(0), "modifiers");
+        Map<ObjectModifier, Integer> min = field(
+                load("min-values-last.txt", "name:t\ntype:sword\nmin-values:STEALTH[1] |").items().get(0), "minModifiers");
+
+        assertTrue(mods.containsKey(ObjectModifier.OM_STEALTH));
+        assertEquals(1, min.get(ObjectModifier.OM_STEALTH));
+    }
+
+    /**
+     * {@code values} and {@code min-values} are required {@code str} fields in
+     * {@code init_parse_ego}, so a bare {@code values:} or {@code min-values:} is
+     * {@code PARSE_ERROR_MISSING_FIELD} and stops the load. The grammar cannot tell it from
+     * {@code values: }, which C loads (the {@code NL} fragment takes the blanks before the newline),
+     * and treats both as a list with no entries. Parked 2026-11-19 for every such list, in
+     * {@code docs/Parked.md}.
+     *
+     * <p>Function aBareValuesOrMinValuesLineLoadsWithNoEntriesHereWhereCRefusesIt coded on 261119,
+     * commented in full on 261119.
+     */
+    @Test
+    void aBareValuesOrMinValuesLineLoadsWithNoEntriesHereWhereCRefusesIt() throws Exception {
+        Map<ObjectModifier, Random> mods = field(loadOne("values-bare.txt", "type:sword\nvalues:\n"), "modifiers");
+        Map<ObjectModifier, Integer> min = field(loadOne("min-values-bare.txt", "type:sword\nmin-values:\n"), "minModifiers");
+
+        assertTrue(mods.isEmpty());
+        assertTrue(min.isEmpty());
     }
 
     /**

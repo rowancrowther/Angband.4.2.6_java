@@ -613,20 +613,192 @@ class TrapReaderTest {
         assertEquals(1, t.getEffect().size());
     }
 
-    @Test
-    void flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertHardError("space-flags.txt", "name:a:b\nflags:TRAP FLOOR\n");
+    // ---- Flag lists: C's strtok(s, " |") separator (Stage 7d) -----------
+
+    /**
+     * Separators between two names. C's {@code parse_trap_flags} and {@code parse_trap_save_flags}
+     * split with {@code strtok(s, " |")}, so any run of blanks and bars is one separator.
+     *
+     * <p>Field SEPARATORS coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> SEPARATORS = List.of(
+            " ", "    ", "|", " |", "| ", " |  ", "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Runs of delimiters on their own, used before the first name, after the last, and as the
+     * whole value.
+     *
+     * <p>Field DELIMITER_RUNS coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> DELIMITER_RUNS = List.of(" ", "  ", "|", " | ", "||", " | | ", "|  |");
+
+    /**
+     * A second record after the line under test, to show that line ended cleanly.
+     *
+     * <p>Field SECOND_RECORD coded on 261120, commented in full on 261120.
+     */
+    private static final String SECOND_RECORD = "name:c:second\ngraphics:^:w\n";
+
+    /**
+     * Loads a record holding {@code line} (no line end of its own) followed by
+     * {@link #SECOND_RECORD}, checks both records loaded and the second carries no flag of
+     * either kind, and returns the first.
+     *
+     * <p>Function trapWithLineMidFile coded on 261120, commented in full on 261120.
+     *
+     * @param line the {@code flags:} or {@code save:} line under test
+     * @return the first record
+     * @throws IOException if the temporary file cannot be written
+     */
+    private TrapKind trapWithLineMidFile(String line) throws IOException {
+        List<TrapKind> items = load("list-mid.txt", "name:a:first\n" + line + "\n" + SECOND_RECORD).items();
+
+        assertEquals(2, items.size(), line);
+        assertTrue(items.get(1).getFlags().isEmpty(), line);
+        assertTrue(items.get(1).getSaveFlags().isEmpty(), line);
+        return items.get(0);
     }
 
+    /**
+     * C: {@code strtok(s, " |")} splits on any run of blanks and bars, a single blank included, on
+     * both {@code flags:} and {@code save:}. A second name that C splits off reaches
+     * {@code grab_flag} and stops the load as {@code PARSE_ERROR_INVALID_FLAG}; an unsplit line
+     * could not name it.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsAndSaveAsInC coded on 261120, commented in full
+     * on 261120. Replaces the pins {@code flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo}
+     * and {@code saveFlagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo}.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
     @Test
-    void saveFlagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        assertHardError("space-save.txt", "name:a:b\nsave:FEATHER FREE_ACT\n");
+    void anyRunOfBlanksAndBarsSeparatesFlagsAndSaveAsInC() throws IOException {
+        for (String sep : SEPARATORS) {
+            TrapKind f = trapWithLineMidFile("flags:TRAP" + sep + "FLOOR");
+            assertTrue(f.getFlags().has(TrapEnum.TRF_TRAP), () -> "flags sep=[" + sep + "]");
+            assertTrue(f.getFlags().has(TrapEnum.TRF_FLOOR), () -> "flags sep=[" + sep + "]");
+
+            TrapKind s = trapWithLineMidFile("save:FEATHER" + sep + "FREE_ACT");
+            assertTrue(s.getSaveFlags().has(ObjectFlag.OF_FEATHER), () -> "save sep=[" + sep + "]");
+            assertTrue(s.getSaveFlags().has(ObjectFlag.OF_FREE_ACT), () -> "save sep=[" + sep + "]");
+
+            assertThrows(DataFileParseException.class,
+                    () -> load("flags-split.txt", "name:a:b\nflags:TRAP" + sep + "NOTAFLAG\n"),
+                    () -> "flags sep=[" + sep + "]");
+            assertThrows(DataFileParseException.class,
+                    () -> load("save-split.txt", "name:a:b\nsave:FEATHER" + sep + "NOTAFLAG\n"),
+                    () -> "save sep=[" + sep + "]");
+        }
     }
 
-    /** C: {@code flags} is {@code ?str}, so the value may be missing. */
+    /**
+     * C: {@code strtok} skips delimiters before the first name and finds nothing after the last, on
+     * both directives.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnFlagsAndSaveLoadsAsInC coded on 261120, commented in
+     * full on 261120.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
     @Test
-    void anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("empty-flags.txt", "name:a:b\nflags:\n");
+    void aLeadingOrTrailingDelimiterOnFlagsAndSaveLoadsAsInC() throws IOException {
+        for (String run : DELIMITER_RUNS) {
+            for (String line : List.of("flags:" + run + "TRAP", "flags:TRAP" + run)) {
+                TrapKind t = trapWithLineMidFile(line);
+                assertTrue(t.getFlags().has(TrapEnum.TRF_TRAP), () -> "[" + line + "]");
+                assertFalse(t.getFlags().has(TrapEnum.TRF_FLOOR), () -> "[" + line + "]");
+            }
+            for (String line : List.of("save:" + run + "FEATHER", "save:FEATHER" + run)) {
+                TrapKind t = trapWithLineMidFile(line);
+                assertTrue(t.getSaveFlags().has(ObjectFlag.OF_FEATHER), () -> "[" + line + "]");
+                assertFalse(t.getSaveFlags().has(ObjectFlag.OF_FREE_ACT), () -> "[" + line + "]");
+            }
+        }
+    }
+
+    /**
+     * C: {@code flags} is {@code ?str}, so {@code parse_trap_flags} returns early on a bare line.
+     * {@code save} is a required {@code str}, but a value of blanks and bars is still a value, and
+     * {@code strtok} finds no name in it. Either way the record loads with no flags from the line.
+     *
+     * <p>Function aBareFlagsOrDelimiterOnlyFlagsOrSaveLineLoadsEmptyAsInC coded on 261120,
+     * commented in full on 261120. Replaces the pin {@code anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt}.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
+    @Test
+    void aBareFlagsOrDelimiterOnlyFlagsOrSaveLineLoadsEmptyAsInC() throws IOException {
+        assertTrue(trapWithLineMidFile("flags:").getFlags().isEmpty());
+        for (String run : DELIMITER_RUNS) {
+            assertTrue(trapWithLineMidFile("flags:" + run).getFlags().isEmpty(), () -> "flags run=[" + run + "]");
+            assertTrue(trapWithLineMidFile("save:" + run).getSaveFlags().isEmpty(), () -> "save run=[" + run + "]");
+        }
+    }
+
+    /**
+     * C: {@code file_getl} hands the parser an unterminated last line as it stands, so a
+     * {@code flags:} or {@code save:} line with no final newline gives the same answer as the same
+     * line with a newline after it.
+     *
+     * <p>Function aFlagsOrSaveLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in full on
+     * 261120.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
+    @Test
+    void aFlagsOrSaveLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        List<String> namedFlags = List.of("flags:TRAP", "flags:TRAP FLOOR", "flags:TRAP | | FLOOR",
+                "flags:| TRAP", "flags: TRAP", "flags:TRAP |", "flags:TRAP ||");
+        List<String> emptyFlags = List.of("flags:", "flags: ", "flags:|", "flags:||", "flags: | ", "flags:| |");
+        List<String> namedSave = List.of("save:FEATHER", "save:FEATHER FREE_ACT", "save:FEATHER | | FREE_ACT",
+                "save:| FEATHER", "save: FEATHER", "save:FEATHER |", "save:FEATHER ||");
+        List<String> emptySave = List.of("save: ", "save:|", "save:||", "save: | ", "save:| |");
+
+        for (String line : namedFlags) {
+            List<TrapKind> items = load("flags-last.txt", "name:a:b\n" + line).items();
+            assertEquals(1, items.size(), line);
+            assertTrue(items.get(0).getFlags().has(TrapEnum.TRF_TRAP), () -> "[" + line + "]");
+            assertEquals(line.contains("FLOOR"), items.get(0).getFlags().has(TrapEnum.TRF_FLOOR),
+                    () -> "[" + line + "]");
+        }
+        for (String line : emptyFlags) {
+            List<TrapKind> items = load("flags-last.txt", "name:a:b\n" + line).items();
+            assertEquals(1, items.size(), line);
+            assertTrue(items.get(0).getFlags().isEmpty(), () -> "[" + line + "]");
+        }
+        for (String line : namedSave) {
+            List<TrapKind> items = load("save-last.txt", "name:a:b\n" + line).items();
+            assertEquals(1, items.size(), line);
+            assertTrue(items.get(0).getSaveFlags().has(ObjectFlag.OF_FEATHER), () -> "[" + line + "]");
+            assertEquals(line.contains("FREE_ACT"), items.get(0).getSaveFlags().has(ObjectFlag.OF_FREE_ACT),
+                    () -> "[" + line + "]");
+        }
+        for (String line : emptySave) {
+            List<TrapKind> items = load("save-last.txt", "name:a:b\n" + line).items();
+            assertEquals(1, items.size(), line);
+            assertTrue(items.get(0).getSaveFlags().isEmpty(), () -> "[" + line + "]");
+        }
+    }
+
+    /**
+     * C: {@code save} is registered as {@code "save str flags"}, a required {@code str}, so a bare
+     * {@code save:} is {@code PARSE_ERROR_MISSING_FIELD} and the load stops. Java's {@code save}
+     * rule takes the same shape as {@code flags}, so the bare line loads with no save flags, mid-file
+     * and as a last line with no final newline. This is the bare-against-blank item parked in
+     * {@code docs/Parked.md}.
+     *
+     * <p>Function aBareSaveLineLoadsWithNoSaveFlagsHereWhereCRefusesIt coded on 261120, commented in
+     * full on 261120.
+     *
+     * @throws IOException if a temporary file cannot be written
+     */
+    @Test
+    void aBareSaveLineLoadsWithNoSaveFlagsHereWhereCRefusesIt() throws IOException {
+        assertTrue(trapWithLineMidFile("save:").getSaveFlags().isEmpty());
+
+        List<TrapKind> items = load("save-bare-last.txt", "name:a:b\nsave:").items();
+        assertEquals(1, items.size());
+        assertTrue(items.get(0).getSaveFlags().isEmpty());
     }
 
     /** C: {@code parse_trap_effect_yx_xtra} sets the position of the last extra effect. */

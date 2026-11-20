@@ -112,8 +112,9 @@ flags
         @init {
             $flagsList = new ArrayList<>();
         }
-        :   FLAGS f1=FLAG { $flagsList.add($f1.getText()); }
-            (FLAG_OR f2=FLAG { $flagsList.add($f2.getText()); })*
+        :   FLAGS (FLAG_OR+
+        |   f1=FLAG { $flagsList.add($f1.getText()); })?
+            (FLAG_OR (f2=FLAG { $flagsList.add($f2.getText()); })?)*
         ;
 
 flagsOff
@@ -121,8 +122,9 @@ flagsOff
         @init {
             $flagsList = new ArrayList<>();
         }
-        :   FLAGS_OFF f1=FLAG { $flagsList.add($f1.getText()); }
-            (FLAG_OR f2=FLAG { $flagsList.add($f2.getText()); })*
+        :   FLAGS_OFF (FLAG_OR+
+        |   f1=FLAG { $flagsList.add($f1.getText()); })?
+            (FLAG_OR (f2=FLAG { $flagsList.add($f2.getText()); })?)*
         ;
 
 innateFreq
@@ -145,8 +147,9 @@ spells
         @init {
             $spellList = new ArrayList<>();
         }
-        :   SPELLS s1=FLAG { $spellList.add($s1.getText()); }
-            (FLAG_OR s2=FLAG { $spellList.add($s2.getText()); })*
+        :   SPELLS (FLAG_OR+
+        |   s1=FLAG { $spellList.add($s1.getText()); })?
+            (FLAG_OR (s2=FLAG { $spellList.add($s2.getText()); })?)*
         ;
 
 messageVis

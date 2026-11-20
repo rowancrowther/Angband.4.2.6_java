@@ -131,8 +131,13 @@ maxDepth
         ;
 
 /**
- * One {@code flags:} directive — a {@code |}-separated list of flag names, kept as one value per
- * name under the directive name {@code "flag"}. Optional and repeatable at the
+ * One {@code flags:} directive — a list of flag names split on any run of blanks and bars, as
+ * {@code strtok(s, " |")} splits it in {@code parse_vault_flags}, kept as one value per name
+ * under the directive name {@code "flag"}. A run of separators with no name, or a first name, may
+ * follow {@code FLAGS} directly, and the loop after it takes a separator with or without a name,
+ * so a leading run before the first name, a trailing run and two {@code OR} tokens in a row all
+ * load as in C. A bare {@code flags:} loads with no flags here, where C refuses it as a missing
+ * required {@code str} (parked in {@code docs/Parked.md}). Optional and repeatable at the
  * {@link #profileRecord} call site, like every directive after {@code name:}: most records carry
  * no {@code flags:} line at all, and the file's own header says as many may be used as are needed,
  * which matches C setting each line's flags in the same bitflag (generate.c, parse_vault_flags).
@@ -143,8 +148,9 @@ flag
         @after {
                 $flagDirective = new Directive("flag", flags, $start.getLine());
         }
-        :   FLAGS f1=FLAG { flags.add($f1.getText()); }
-            (OR f2=FLAG { flags.add($f2.getText()); })*
+        :   FLAGS (OR+ 
+        |   f1=FLAG { flags.add($f1.getText()); })?
+            (OR (f2=FLAG { flags.add($f2.getText()); })?)*
         ;
 
 /**

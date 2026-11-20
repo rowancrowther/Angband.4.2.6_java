@@ -977,16 +977,264 @@ class MonsterReaderTest {
         assertThrows(ParseCancellationException.class, () -> load("plural-empty.txt", rec("Solo", "plural:")));
     }
 
-    @Test
-    void anEmptyFlagsValueIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        // flags is ?str in C and parse_monster_flags returns when there is no value.
-        assertThrows(ParseCancellationException.class, () -> load("flags-empty.txt", rec("Solo", "flags:")));
+    // ---- flags:, flags-off: and spells: separators (Stage 7d) ----
+
+    /**
+     * The separators C's {@code strtok(s, " |")} treats as one: any run of blanks and bars. An
+     * interior tab is left out, as it is an accepted Stage 6 deviation.
+     *
+     * <p>Field LIST_SEPARATORS coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> LIST_SEPARATORS = List.of(
+            " ", "    ", "|", " |", "| ", " | ", " |  ", "  |  ", "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Shapes that put a delimiter before or after one name, each with a {@code %s} for the name. C's
+     * {@code strtok} skips a leading run and a trailing one, so every shape gives the one name.
+     *
+     * <p>Field EDGE_SHAPES coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> EDGE_SHAPES = List.of(
+            " %s", "| %s", " | | %s", "||%s", "%s ", "%s |", "%s | ", "%s||");
+
+    /**
+     * Values made only of delimiters. C hands {@code strtok} a non-empty string, which finds no
+     * name, so the handler sets nothing and returns {@code PARSE_ERROR_NONE}.
+     *
+     * <p>Field DELIMITER_ONLY coded on 261120, commented in full on 261120.
+     */
+    private static final List<String> DELIMITER_ONLY = List.of("|", "||", " | |", "|  |", " ");
+
+    /**
+     * Loads one {@code Solo} record built by {@link #rec}, with the given list line and a
+     * {@code speed:110} line after it. The speed shows that the list line's mode ended and the next
+     * directive was read.
+     *
+     * <p>Function soloWithList coded on 261120, commented in full on 261120.
+     *
+     * @param fileName the temporary file name
+     * @param listLine the list line, without its newline
+     * @return the {@code Solo} race
+     * @throws Exception if the file cannot be written or the speed field cannot be read
+     */
+    private MonsterRace soloWithList(String fileName, String listLine) throws Exception {
+        MonsterRace solo = byName(load(fileName, rec("Solo", listLine, "speed:110")), "Solo");
+        assertNotNull(solo, "[" + listLine + "]");
+        assertEquals(110, (int) field(solo, "speed"), "[" + listLine + "]");
+        return solo;
     }
 
+    /**
+     * Checks that {@code race} took nothing from its list line: its race flags are the same as
+     * {@code plain}'s (the {@code townsfolk} base's), and it has no spells. One check on
+     * {@code flags} covers both {@code flags:} and {@code flags-off:}, because, as in C, a
+     * {@code flags-off:} line removes the named flag from {@code flags} directly (the
+     * {@code flagsOff} field on {@link MonsterRace} is unused and always {@code null}).
+     *
+     * <p>Function assertNoListEntries coded on 261120, commented in full on 261120.
+     *
+     * @param race  the race under test
+     * @param plain a race with the same base and no list line
+     * @param shown the input, for the failure message
+     * @throws Exception if a field cannot be read
+     */
+    private static void assertNoListEntries(MonsterRace race, MonsterRace plain, String shown) throws Exception {
+        Flag<MonsterRaceFlag> flags = field(race, "flags");
+        Flag<MonsterRaceFlag> plainFlags = field(plain, "flags");
+        Flag<MonsterSpell> spells = field(race, "spells");
+
+        assertTrue(flags.isEqual(plainFlags), shown);
+        assertTrue(spells.isEmpty(), shown);
+    }
+
+    /**
+     * Checks {@code race} has both {@code SHRIEK} and {@code BLINK}, and no other spell.
+     *
+     * <p>Function assertShriekAndBlink coded on 261120, commented in full on 261120.
+     *
+     * @param race  the race under test
+     * @param shown the input, for the failure message
+     * @throws Exception if the spells field cannot be read
+     */
+    private static void assertShriekAndBlink(MonsterRace race, String shown) throws Exception {
+        Flag<MonsterSpell> spells = field(race, "spells");
+        assertTrue(spells.has(MonsterSpell.RSF_SHRIEK), shown);
+        assertTrue(spells.has(MonsterSpell.RSF_BLINK), shown);
+        assertEquals(2, spells.count(), shown);
+    }
+
+    /**
+     * {@code parse_monster_flags} in {@code mon-init.c} splits with {@code strtok(flags, " |")}, so
+     * any run of blanks and bars between two names is one separator: {@code MALE EVIL},
+     * {@code MALE||EVIL} and {@code MALE | | EVIL} all set both flags.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsAsInC coded on 261120, commented in full on
+     * 261120.
+     */
     @Test
-    void spaceSeparatedFlagsAreAHardErrorHereWhereCSplitsOnSpaceToo() throws IOException {
-        // strtok(flags, " |") splits on a space as well as a bar.
-        assertThrows(ParseCancellationException.class, () -> load("flags-space.txt", rec("Solo", "flags:MALE FEMALE")));
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() throws Exception {
+        int n = 0;
+        for (String sep : LIST_SEPARATORS) {
+            String line = "flags:MALE" + sep + "EVIL";
+            MonsterRace solo = soloWithList("flags-sep-" + n++ + ".txt", line);
+
+            assertTrue(solo.hasMonsterRaceFlag(MonsterRaceFlag.RF_MALE), "[" + line + "]");
+            assertTrue(solo.hasMonsterRaceFlag(MonsterRaceFlag.RF_EVIL), "[" + line + "]");
+        }
+    }
+
+    /**
+     * {@code parse_monster_flags_off} splits with {@code strtok(flags, " |")} as well. The
+     * {@code townsfolk} base carries {@code SPIRIT} and {@code CLEAR_WEB}, so naming both with any
+     * run of blanks and bars between them takes both off.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsOffAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesFlagsOffAsInC() throws Exception {
+        assertTrue(MonsterRegistry.lookupMonsterBase("townsfolk").getFlags().has(MonsterRaceFlag.RF_CLEAR_WEB),
+                "the base carries CLEAR_WEB, so there is something to turn off");
+        int n = 0;
+        for (String sep : LIST_SEPARATORS) {
+            String line = "flags-off:SPIRIT" + sep + "CLEAR_WEB";
+            MonsterRace solo = soloWithList("flagsoff-sep-" + n++ + ".txt", line);
+
+            assertFalse(solo.hasMonsterRaceFlag(MonsterRaceFlag.RF_SPIRIT), "[" + line + "]");
+            assertFalse(solo.hasMonsterRaceFlag(MonsterRaceFlag.RF_CLEAR_WEB), "[" + line + "]");
+        }
+    }
+
+    /**
+     * {@code parse_monster_spells} splits with {@code strtok(flags, " |")} too, so any run of blanks
+     * and bars between two spell names gives both spells.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesSpellsAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesSpellsAsInC() throws Exception {
+        int n = 0;
+        for (String sep : LIST_SEPARATORS) {
+            String line = "spells:SHRIEK" + sep + "BLINK";
+            assertShriekAndBlink(soloWithList("spells-sep-" + n++ + ".txt", line), "[" + line + "]");
+        }
+    }
+
+    /**
+     * C's {@code strtok} skips a run of delimiters before the first name and after the last, so
+     * {@code flags: MALE}, {@code flags:| MALE} and {@code flags:MALE |} each give one flag, and the
+     * same holds for {@code flags-off:} and {@code spells:}.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnFlagsFlagsOffAndSpellsLoadsAsInC coded on 261120,
+     * commented in full on 261120.
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnFlagsFlagsOffAndSpellsLoadsAsInC() throws Exception {
+        int n = 0;
+        for (String shape : EDGE_SHAPES) {
+            String flags = "flags:" + shape.formatted("MALE");
+            assertTrue(soloWithList("flags-edge-" + n + ".txt", flags).hasMonsterRaceFlag(MonsterRaceFlag.RF_MALE),
+                    "[" + flags + "]");
+
+            String flagsOff = "flags-off:" + shape.formatted("SPIRIT");
+            MonsterRace off = soloWithList("flagsoff-edge-" + n + ".txt", flagsOff);
+            assertFalse(off.hasMonsterRaceFlag(MonsterRaceFlag.RF_SPIRIT), "[" + flagsOff + "]");
+            assertTrue(off.hasMonsterRaceFlag(MonsterRaceFlag.RF_CLEAR_WEB), "[" + flagsOff + "]");
+
+            String spells = "spells:" + shape.formatted("SHRIEK");
+            Flag<MonsterSpell> spellFlags = field(soloWithList("spells-edge-" + n++ + ".txt", spells), "spells");
+            assertTrue(spellFlags.has(MonsterSpell.RSF_SHRIEK), "[" + spells + "]");
+            assertEquals(1, spellFlags.count(), "[" + spells + "]");
+        }
+    }
+
+    /**
+     * A value of delimiters only ({@code |}, {@code ||}, {@code  | |}, a lone blank) reaches the C
+     * handler as a non-empty string, and {@code strtok} finds no name in it, so the record loads
+     * with nothing from that line. That holds for {@code spells:} too, though it is a required
+     * {@code str}, because the value is not empty.
+     *
+     * <p>Function aDelimiterOrBlankOnlyFlagsFlagsOffAndSpellsLineLoadsEmptyAsInC coded on 261120,
+     * commented in full on 261120.
+     */
+    @Test
+    void aDelimiterOrBlankOnlyFlagsFlagsOffAndSpellsLineLoadsEmptyAsInC() throws Exception {
+        MonsterRace plain = soloWithList("plain-delim.txt", "hearing:20");
+        int n = 0;
+        for (String value : DELIMITER_ONLY) {
+            for (String directive : List.of("flags:", "flags-off:", "spells:")) {
+                String line = directive + value;
+                assertNoListEntries(soloWithList("delim-only-" + n++ + ".txt", line), plain, "[" + line + "]");
+            }
+        }
+    }
+
+    /**
+     * {@code flags} and {@code flags-off} are {@code ?str} in C's monster parser, so a bare
+     * {@code flags:} or {@code flags-off:} is legal and sets nothing.
+     *
+     * <p>Function aBareFlagsOrFlagsOffLineLoadsWithNoFlagsAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void aBareFlagsOrFlagsOffLineLoadsWithNoFlagsAsInC() throws Exception {
+        MonsterRace plain = soloWithList("plain-bare.txt", "hearing:20");
+
+        assertNoListEntries(soloWithList("flags-bare.txt", "flags:"), plain, "[flags:]");
+        assertNoListEntries(soloWithList("flagsoff-bare.txt", "flags-off:"), plain, "[flags-off:]");
+    }
+
+    /**
+     * C reads a last line that has no final newline, so a list line at the very end of the file
+     * gives the same answer as the same line followed by a newline: one name, whether the line ends
+     * on the name, on a trailing bar or after a leading one, and nothing for a bar alone.
+     *
+     * <p>Function aFlagsFlagsOffOrSpellsLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in
+     * full on 261120.
+     */
+    @Test
+    void aFlagsFlagsOffOrSpellsLineWithNoFinalNewlineLoadsAsInC() throws Exception {
+        MonsterRace plain = byName(load("plain-last.txt", rec("Solo")), "Solo");
+        int n = 0;
+        for (String shape : List.of("%s", "%s |", "| %s", "SHRIEK %s")) {
+            String flags = "flags:" + shape.formatted("MALE").replace("SHRIEK", "EVIL");
+            MonsterRace f = byName(load("flags-last-" + n + ".txt", rec("Solo") + flags), "Solo");
+            assertTrue(f.hasMonsterRaceFlag(MonsterRaceFlag.RF_MALE), "[" + flags + "]");
+
+            String flagsOff = "flags-off:" + shape.formatted("SPIRIT").replace("SHRIEK", "CLEAR_WEB");
+            MonsterRace off = byName(load("flagsoff-last-" + n + ".txt", rec("Solo") + flagsOff), "Solo");
+            assertFalse(off.hasMonsterRaceFlag(MonsterRaceFlag.RF_SPIRIT), "[" + flagsOff + "]");
+
+            String spells = "spells:" + shape.formatted("BLINK");
+            Flag<MonsterSpell> spellFlags =
+                    field(byName(load("spells-last-" + n++ + ".txt", rec("Solo") + spells), "Solo"), "spells");
+            assertTrue(spellFlags.has(MonsterSpell.RSF_BLINK), "[" + spells + "]");
+        }
+        for (String directive : List.of("flags:", "flags-off:", "spells:")) {
+            String line = directive + "|";
+            assertNoListEntries(byName(load("last-bar-" + n++ + ".txt", rec("Solo") + line), "Solo"),
+                    plain, "[" + line + " last line]");
+        }
+    }
+
+    /**
+     * {@code spells} is a required {@code str} in C's monster parser, so a bare {@code spells:} is
+     * {@code PARSE_ERROR_MISSING_FIELD} and stops the load. The grammar cannot tell a bare line from
+     * {@code spells: }, which C loads (the {@code NL} fragment takes the blanks before the newline),
+     * and treats both as a list with no spells, in the middle of a file and on its last line. Parked
+     * 2026-11-19 for every such list, in {@code docs/Parked.md} (the bare-against-blank item).
+     *
+     * <p>Function aBareSpellsLineLoadsWithNoSpellsHereWhereCRefusesIt coded on 261120, commented in
+     * full on 261120.
+     */
+    @Test
+    void aBareSpellsLineLoadsWithNoSpellsHereWhereCRefusesIt() throws Exception {
+        MonsterRace plain = soloWithList("plain-bare-spells.txt", "hearing:20");
+
+        assertNoListEntries(soloWithList("spells-bare.txt", "spells:"), plain, "[spells:]");
+        assertNoListEntries(byName(load("spells-bare-last.txt", rec("Solo") + "spells:"), "Solo"),
+                plain, "[spells: last line]");
     }
 
     @Test

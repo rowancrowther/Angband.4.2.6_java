@@ -134,11 +134,9 @@ flags
         @init {
             $flagList = new ArrayList<>();
         }
-        :   FLAGS f1=FLAG {
-                $flagList.add($f1.getText());
-            } (FLAG_OR f2=FLAG {
-                $flagList.add($f2.getText());
-            })* FLAG_OR?
+        :   FLAGS (FLAG_OR+
+        |   f1=FLAG { $flagList.add($f1.getText()); })?
+            (FLAG_OR+ (f2=FLAG { $flagList.add($f2.getText()); })? )*
         ;
 
 // "act:<name>" - the activation name, as written. The assembler looks it up.
@@ -178,13 +176,14 @@ values
         @init {
             $valueMap = new HashMap<>();
         }
-        :   VALUES k1=VALUES_STRING v1=VALUES_INTEGER {
+        :   VALUES (VALUES_INTRO_OR+
+        |   k1=VALUES_STRING v1=VALUES_INTEGER {
                 $valueMap.put($k1.getText(), $v1.getText());
-            }
-            (VALUES_OR k2=VALUES_STRING v2=VALUES_INTEGER
+            })
+            (VALUES_OR VALUES_INTRO_OR* (k2=VALUES_STRING v2=VALUES_INTEGER
             {
                 $valueMap.put($k2.getText(), $v2.getText());
-            })* VALUES_OR?
+            })?)*
         ;
 
 // "brand:<code>" - one brand code, as written. The line may be repeated; the artifact rule adds

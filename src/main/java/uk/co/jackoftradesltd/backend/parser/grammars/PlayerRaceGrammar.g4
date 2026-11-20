@@ -129,11 +129,12 @@ objFlags
         @init {
             $oFlags = new ArrayList<>();
         }
-        :   OBJ_FLAGS (f1=FLAG {
+        :   OBJ_FLAGS (FLAG_OR+
+        |   f1=FLAG {
                 $oFlags.add($f1.getText());
-            } (FLAG_OR f2=FLAG {
+            })? (FLAG_OR (f2=FLAG {
                 $oFlags.add($f2.getText());
-            })* )?
+            })?)*
         ;
 
 playerFlags
@@ -141,24 +142,33 @@ playerFlags
         @init {
                 $pFlags = new ArrayList<>();
         }
-        :   PLAYER_FLAGS (f1=FLAG {
+        :   PLAYER_FLAGS (FLAG_OR+
+        |   f1=FLAG {
                 $pFlags.add($f1.getText());
-            } (FLAG_OR f2=FLAG {
+            })? (FLAG_OR (f2=FLAG {
                 $pFlags.add($f2.getText());
-            })* )?
+            })?)*
         ;
 
 values
         returns[Map<String, String> valueMap]
         @init {
             $valueMap = new HashMap<>();
+            String valueName = "";
+            String intValue = "0";
         }
-        :   VALUES n1=VALUE_NAME VALUE_LBRACKET v1=VALUE_INT VALUE_RBRACKET {
-                $valueMap.put($n1.getText(), $v1.getText());
-            }
-            (VALUE_OR n2=VALUE_NAME VALUE_LBRACKET v2=VALUE_INT VALUE_RBRACKET{
-                $valueMap.put($n2.getText(), $v2.getText());
-            })*
+        :   VALUES (VALUE_OR+ 
+        |   (n1=VALUE_NAME { valueName = $n1.getText(); }) VALUE_LBRACKET 
+                (v1=VALUE_INT { intValue = $v1.getText(); })? VALUE_RBRACKET {
+                $valueMap.put(valueName, intValue);
+                intValue = "0";
+            })?
+            (VALUE_OR ((n2=VALUE_NAME { valueName = $n2.getText(); }) VALUE_LBRACKET 
+                (v2=VALUE_INT { intValue = $v2.getText(); })?
+                VALUE_RBRACKET {
+                $valueMap.put(valueName, intValue);
+                intValue = "0";
+            })?)*
         ;
 
 playerRace

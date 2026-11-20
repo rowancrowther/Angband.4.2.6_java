@@ -114,20 +114,23 @@ visMsg
 flags
         returns[List<String> flagList]
         :   { $flagList = new ArrayList<>(); }
-            FLAGS f1=FLAG { $flagList.add($f1.getText()); } (
-            FLAG_OR f2=FLAG { $flagList.add($f2.getText()); }
-            )* FLAG_OR?
+            FLAGS (FLAG_OR+
+        |   f1=FLAG { $flagList.add($f1.getText()); })?
+            (FLAG_OR (f2=FLAG { $flagList.add($f2.getText()); }
+            )?)*
         ;
 
 values
         returns[Map<String, String> valueMap]
         :   { $valueMap = new HashMap<>(); }
-            VALUES vt1=VALUE_TYPE VALUE_LBRACKET vi1=VALUE_INT VALUE_RBRACKET {
+            VALUES (VALUE_OR+
+        |   vt1=VALUE_TYPE VALUE_LBRACKET vi1=VALUE_INT VALUE_RBRACKET {
                 $valueMap.put($vt1.getText(), $vi1.getText());
-            }(VALUE_OR vt2=VALUE_TYPE VALUE_LBRACKET vi2=VALUE_INT VALUE_RBRACKET {
+            })? 
+            (VALUE_OR (vt2=VALUE_TYPE VALUE_LBRACKET vi2=VALUE_INT VALUE_RBRACKET {
                     $valueMap.put($vt2.getText(), $vi2.getText());
                 }
-            )*
+            )?)*
         ;
 
 brand

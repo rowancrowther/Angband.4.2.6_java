@@ -820,7 +820,9 @@ class VaultReaderTest {
 
     /**
      * C splits the flag list on spaces and bars alike ({@code strtok(s, " |")}), so spaces around
-     * the bar are separators. The lexer's {@code OR} rule takes an optional space either side.
+     * the bar are separators. The lexer's {@code OR} rule takes any run of blanks and bars, so the
+     * spaces and the bar make one separator. The other separator shapes are pinned by
+     * {@link #anyRunOfBlanksAndBarsSeparatesFlagsAsInC}.
      */
     @Test
     void spacesAroundTheBarSeparateFlags() throws IOException {
@@ -857,5 +859,166 @@ class VaultReaderTest {
 
         assertThrows(ParseCancellationException.class, () -> reader.parse(path));
         assertThrows(ParseCancellationException.class, () -> reader.parseWithResults(path));
+    }
+
+    // ---- flags: separators (Stage 7d) ---------------------------------------
+    // C: parse_vault_flags in generate.c splits the value with strtok(s, " |"), so any run of
+    // blanks and bars separates two names, and a run before the first name or after the last is
+    // skipped. It stops at the first name grab_flag refuses (PARSE_ERROR_INVALID_FLAG). flags is a
+    // required str in init_parse_vault, so an empty value is PARSE_ERROR_MISSING_FIELD, while a
+    // value of blanks and bars alone reaches the handler, where strtok finds no name and it loads
+    // with no flags.
+
+    /**
+     * Separators between two names, each one a run of blanks and bars that {@code strtok(s, " |")}
+     * collapses into a single break.
+     */
+    private static final List<String> SEPARATORS = List.of(" ", "    ", "|", " |", "| ", " | ", "  |  ",
+            "||", " | | ", "| |", " |  | ");
+
+    /**
+     * Runs of blanks and bars with no name in them, which {@code strtok} skips at either end of a
+     * list.
+     */
+    private static final List<String> DELIMITER_RUNS = List.of(" ", "  ", "|", " | ", "||", " | | ", "|  |");
+
+    /**
+     * Loads a {@link #GOOD_RECORD} carrying {@code flagsLine} (no line end of its own) after its
+     * {@code max-depth:} line, followed by a second, flagless record. Checks that both records
+     * loaded and that the flagged record kept all three {@code D:} lines, so the {@code flags:} line
+     * ended cleanly, then returns the flagged record. C prepends each record, so it is the last in
+     * the list.
+     */
+    private Vault withFlagsMidFile(String flagsLine) throws IOException {
+        String body = GOOD_RECORD.replace("max-depth:0", "max-depth:0\n" + flagsLine) + "\n"
+                + GOOD_RECORD.replace("Good vault", "Second vault") + "\n";
+
+        List<Vault> items = new VaultReader().parseWithResults(tempFile("flags-mid.txt", body)).items();
+
+        assertEquals(2, items.size(), flagsLine);
+        assertEquals("Second vault", items.getFirst().getName(), flagsLine);
+        assertTrue(items.getFirst().getFlags().isEmpty(), flagsLine);
+        assertEquals("Good vault", items.getLast().getName(), flagsLine);
+        assertEquals(List.of("###", "#.#", "###"), items.getLast().getMap(), flagsLine);
+        return items.getLast();
+    }
+
+    /**
+     * Loads a {@link #GOOD_RECORD} followed by {@code flagsLine} as the last line of the file, with
+     * no final newline, checks that the one record loaded, and returns it.
+     */
+    private Vault withFlagsAsLastLine(String flagsLine) throws IOException {
+        List<Vault> items = new VaultReader()
+                .parseWithResults(tempFile("flags-last.txt", GOOD_RECORD + "\n" + flagsLine)).items();
+
+        assertEquals(1, items.size(), flagsLine);
+        return items.getFirst();
+    }
+
+    /**
+     * C: {@code strtok(s, " |")} splits on any run of blanks and bars, so every separator in
+     * {@link #SEPARATORS} gives two names. {@code MAX} is a name C's {@code lookup_flag} finds, so
+     * both flags are set. {@code WIBBLE} is not, so a second name that is split off reaches
+     * {@code grab_flag} and stops the load as {@code PARSE_ERROR_INVALID_FLAG}, which an unsplit
+     * line could not do.
+     *
+     * <p>Function anyRunOfBlanksAndBarsSeparatesFlagsAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void anyRunOfBlanksAndBarsSeparatesFlagsAsInC() throws IOException {
+        for (String sep : SEPARATORS) {
+            Vault vault = withFlagsMidFile("flags:FEW_ENTRANCES" + sep + "MAX");
+            assertTrue(vault.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "sep=[" + sep + "]");
+            assertTrue(vault.getFlags().has(RoomFlags.MAX), () -> "sep=[" + sep + "]");
+
+            String split = GOOD_RECORD.replace("max-depth:0", "max-depth:0\nflags:FEW_ENTRANCES" + sep + "WIBBLE");
+            String path = tempFile("flags-split.txt", split + "\n");
+            DataFileParseException thrown = assertThrows(DataFileParseException.class,
+                    () -> new VaultReader().parseWithResults(path), () -> "sep=[" + sep + "]");
+            assertTrue(thrown.getMessage().contains("unknown room flag value: WIBBLE"),
+                    () -> "sep=[" + sep + "]: " + thrown.getMessage());
+        }
+    }
+
+    /**
+     * C: {@code strtok} skips delimiters before the first name and finds nothing after the last,
+     * so a run of blanks and bars at either end of the list adds nothing and loses nothing.
+     *
+     * <p>Function aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC coded on 261120, commented in full
+     * on 261120.
+     */
+    @Test
+    void aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC() throws IOException {
+        for (String run : DELIMITER_RUNS) {
+            for (String line : List.of("flags:" + run + "FEW_ENTRANCES", "flags:FEW_ENTRANCES" + run)) {
+                Vault vault = withFlagsMidFile(line);
+                assertTrue(vault.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "[" + line + "]");
+                assertFalse(vault.getFlags().has(RoomFlags.MAX), () -> "[" + line + "]");
+            }
+        }
+    }
+
+    /**
+     * C: a value of blanks and bars alone is present, so the required {@code str} reaches
+     * {@code parse_vault_flags}, where {@code strtok} finds no name and the handler returns
+     * {@code PARSE_ERROR_NONE}. The record loads with no flags.
+     *
+     * <p>Function aDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC coded on 261120, commented in full
+     * on 261120.
+     */
+    @Test
+    void aDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC() throws IOException {
+        for (String run : DELIMITER_RUNS) {
+            assertTrue(withFlagsMidFile("flags:" + run).getFlags().isEmpty(), () -> "run=[" + run + "]");
+        }
+    }
+
+    /**
+     * C: {@code flags} is a required {@code str}, so {@code parser_parse} finds nothing after the
+     * colon of a bare {@code flags:} and stops the load with {@code PARSE_ERROR_MISSING_FIELD}.
+     * The shared {@code NL} fragment takes any blanks before the newline, so the grammar cannot
+     * tell {@code flags:} from {@code flags: }, and both load with no flags. Parked in
+     * {@code docs/Parked.md} (a bare {@code X:} and a blank-only {@code X: }), direction undecided.
+     *
+     * <p>Function aBareFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt coded on 261120, commented in
+     * full on 261120.
+     */
+    @Test
+    void aBareFlagsLineLoadsWithNoFlagsHereWhereCRefusesIt() throws IOException {
+        assertTrue(withFlagsMidFile("flags:").getFlags().isEmpty());
+        assertTrue(withFlagsAsLastLine("flags:").getFlags().isEmpty());
+    }
+
+    /**
+     * C: {@code file_getl} hands an unterminated last line to the parser as it stands, so a
+     * {@code flags:} line with no final newline gives the same answer as the same line with one.
+     * {@code FLAG_EOL} pops the flag mode on a newline only, and end of file ends the parse
+     * cleanly without it.
+     *
+     * <p>Function aFlagsLineWithNoFinalNewlineLoadsAsInC coded on 261120, commented in full on
+     * 261120.
+     */
+    @Test
+    void aFlagsLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        List<String> one = List.of("flags:FEW_ENTRANCES", "flags: FEW_ENTRANCES", "flags:| FEW_ENTRANCES",
+                "flags:||FEW_ENTRANCES", "flags:FEW_ENTRANCES |", "flags:FEW_ENTRANCES ||");
+        List<String> two = List.of("flags:FEW_ENTRANCES MAX", "flags:FEW_ENTRANCES|MAX",
+                "flags:FEW_ENTRANCES | | MAX");
+        List<String> none = List.of("flags: ", "flags:|", "flags:||", "flags: | ", "flags:| |");
+
+        for (String line : one) {
+            Vault vault = withFlagsAsLastLine(line);
+            assertTrue(vault.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "[" + line + "]");
+            assertFalse(vault.getFlags().has(RoomFlags.MAX), () -> "[" + line + "]");
+        }
+        for (String line : two) {
+            Vault vault = withFlagsAsLastLine(line);
+            assertTrue(vault.getFlags().has(RoomFlags.FEW_ENTRANCES), () -> "[" + line + "]");
+            assertTrue(vault.getFlags().has(RoomFlags.MAX), () -> "[" + line + "]");
+        }
+        for (String line : none) {
+            assertTrue(withFlagsAsLastLine(line).getFlags().isEmpty(), () -> "[" + line + "]");
+        }
     }
 }

@@ -1159,23 +1159,105 @@ class ArtifactReaderTest {
 
     /**
      * {@code flags ?str flags} is optional, and {@code parse_artifact_flags} returns no error when
-     * {@code parser_hasval} is false.
+     * {@code parser_hasval} is false. A bare {@code flags:}, a lone blank and a line of only bars and
+     * blanks all load with no flags, since {@code strtok} finds no name.
+     *
+     * <p>Method anEmptyOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC coded on 261119, commented in
+     * full on 261119 (replaces anEmptyFlagsLineIsASyntaxErrorHereWhereCAcceptsIt).
      */
     @Test
-    void anEmptyFlagsLineIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("flags-empty.txt", "name:X\n" + BASE + "flags:\n");
+    void anEmptyOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC() throws IOException {
+        assertEquals("", flagNames(loadClean("flags-empty.txt", "flags:\n")));
+        assertEquals("", flagNames(loadClean("flags-blank.txt", "flags: \n")));
+        assertEquals("", flagNames(loadClean("flags-bar.txt", "flags:|\n")));
+        assertEquals("", flagNames(loadClean("flags-bars.txt", "flags: | |\n")));
+        assertEquals("", flagNames(loadClean("flags-bars-then-line.txt", "flags:|  |\nlevel:5\n")));
+        assertEquals("", flagNames(load("flags-empty-last.txt", "name:X\n" + BASE + "flags:").items().get(0)));
     }
 
     /**
      * Both handlers walk their text with {@code strtok(s, " |")}, so any run of spaces and bars is one
-     * separator. The lexer wants a single bar with at most one space either side.
+     * separator, with a leading or trailing run skipped. The three-flag and three-value lines are the
+     * shape most of the shipped file uses.
+     *
+     * <p>Method anyRunOfBlanksAndBarsSeparatesFlagsAndValuesAsInC coded on 261119, commented in full
+     * on 261119 (replaces
+     * flagsOrValuesSeparatedBySpaceAloneOrByOddBarsAreSyntaxErrorsHereWhereCAcceptsThem).
      */
     @Test
-    void flagsOrValuesSeparatedBySpaceAloneOrByOddBarsAreSyntaxErrorsHereWhereCAcceptsThem() throws IOException {
-        assertHardError("flags-space.txt", "name:X\n" + BASE + "flags:NO_FUEL SEE_INVIS\n");
-        assertHardError("flags-double-bar.txt", "name:X\n" + BASE + "flags:NO_FUEL || SEE_INVIS\n");
-        assertHardError("flags-leading-bar.txt", "name:X\n" + BASE + "flags:| NO_FUEL\n");
-        assertHardError("values-space.txt", "name:X\n" + BASE + "values:STR[1] DEX[2]\n");
+    void anyRunOfBlanksAndBarsSeparatesFlagsAndValuesAsInC() throws IOException {
+        String twoFlags = "NO_FUEL,SEE_INVIS";
+        String threeFlags = "HOLD_LIFE,NO_FUEL,SEE_INVIS";
+        String[] flagLines = {"NO_FUEL SEE_INVIS", "NO_FUEL    SEE_INVIS", "NO_FUEL|SEE_INVIS", "NO_FUEL |SEE_INVIS",
+                "NO_FUEL| SEE_INVIS", "NO_FUEL||SEE_INVIS", "NO_FUEL || SEE_INVIS", "NO_FUEL | | SEE_INVIS",
+                "NO_FUEL| |SEE_INVIS", "NO_FUEL |  | SEE_INVIS", "NO_FUEL | SEE_INVIS |", "NO_FUEL | SEE_INVIS "};
+        for (String line : flagLines) {
+            assertEquals(twoFlags, flagNames(loadClean("flags-run.txt", "flags:" + line + "\n")), line);
+        }
+        assertEquals(threeFlags, flagNames(loadClean("flags-three.txt", "flags:NO_FUEL | SEE_INVIS | HOLD_LIFE\n")));
+        assertEquals(threeFlags, flagNames(loadClean("flags-three-odd.txt", "flags:NO_FUEL | | SEE_INVIS | | HOLD_LIFE |\n")));
+
+        String[] valueLines = {"STR[1] DEX[2]", "STR[1]    DEX[2]", "STR[1]|DEX[2]", "STR[1] |DEX[2]",
+                "STR[1]| DEX[2]", "STR[1]||DEX[2]", "STR[1] || DEX[2]", "STR[1] | | DEX[2]",
+                "STR[1]| |DEX[2]", "STR[1] |  | DEX[2]", "STR[1] | DEX[2] |", "STR[1] | DEX[2] | |", "STR[1] | DEX[2] "};
+        for (String line : valueLines) {
+            assertEquals("DEX=2,STR=1", valueList(loadClean("values-run.txt", "values:" + line + "\n")), line);
+        }
+        assertEquals("CON=3,DEX=2,STR=1", valueList(loadClean("values-three.txt", "values:STR[1] | DEX[2] | CON[3]\n")));
+        assertEquals("CON=3,DEX=2,STR=1", valueList(loadClean("values-three-odd.txt", "values:STR[1] | | DEX[2] | | CON[3]\n")));
+    }
+
+    /**
+     * A leading blank or bar on {@code flags:} is skipped as {@code strtok} skips it, and a
+     * {@code values:} line of only bars loads with no values. An empty {@code values:} is
+     * {@code PARSE_ERROR_MISSING_FIELD} in C, because the directive is a {@code str}, and is refused.
+     *
+     * <p>Method aLeadingDelimiterOnFlagsAndADelimiterOnlyValuesLineLoadAsInC coded on 261119,
+     * commented in full on 261119.
+     */
+    @Test
+    void aLeadingDelimiterOnFlagsAndADelimiterOnlyValuesLineLoadAsInC() throws IOException {
+        assertEquals("NO_FUEL", flagNames(loadClean("flags-leading-blank.txt", "flags: NO_FUEL\n")));
+        assertEquals("NO_FUEL", flagNames(loadClean("flags-leading-bar.txt", "flags:| NO_FUEL\n")));
+        assertEquals("NO_FUEL", flagNames(loadClean("flags-leading-blank-bar.txt", "flags: | NO_FUEL\n")));
+
+        assertEquals("", valueList(loadClean("values-bar.txt", "values:|\n")));
+        assertEquals("", valueList(loadClean("values-bars.txt", "values: | |\n")));
+        assertEquals("", valueList(loadClean("values-bars-then-line.txt", "values:|  |\nlevel:5\n")));
+        assertEquals("", valueList(load("values-bar-last.txt", "name:X\n" + BASE + "values:|").items().get(0)));
+
+        assertHardError("values-empty.txt", "name:X\n" + BASE + "values:\n");
+        assertHardError("values-empty-then-line.txt", "name:X\n" + BASE + "values:\nlevel:5\n");
+    }
+
+    /**
+     * A delimiter before the first {@code values:} pair is skipped by {@code strtok} in C, so
+     * {@code values:| STR[1]} reads one pair; the grammar takes a delimiter-only run or a pair, not a
+     * delimiter and then a pair, so it is a syntax error. Parked with the other lists in
+     * {@code docs/Parked.md}.
+     *
+     * <p>Method aLeadingDelimiterBeforeTheFirstValueIsRefusedHereWhereCSkipsIt coded on 261119,
+     * commented in full on 261119.
+     */
+    @Test
+    void aLeadingDelimiterBeforeTheFirstValueIsRefusedHereWhereCSkipsIt() {
+        assertHardError("values-leading-blank.txt", "name:X\n" + BASE + "values: STR[1]\n");
+        assertHardError("values-leading-bar.txt", "name:X\n" + BASE + "values:| STR[1]\n");
+    }
+
+    /**
+     * {@code values:} followed by a lone blank is a value with no names in C ({@code values str
+     * values} is present, {@code strtok} finds nothing), so it loads. The lexer's {@code NL}
+     * fragment takes blanks before the newline, so {@code values: } reaches the grammar as a bare
+     * {@code values:}, which is refused. Parked in {@code docs/Parked.md}.
+     *
+     * <p>Method aBlanksOnlyValuesLineIsRefusedHereWhereCLoadsIt coded on 261119, commented in full
+     * on 261119.
+     */
+    @Test
+    void aBlanksOnlyValuesLineIsRefusedHereWhereCLoadsIt() {
+        assertHardError("values-lone-blank.txt", "name:X\n" + BASE + "values: \n");
+        assertHardError("values-two-blanks.txt", "name:X\n" + BASE + "values:  \n");
     }
 
     /**

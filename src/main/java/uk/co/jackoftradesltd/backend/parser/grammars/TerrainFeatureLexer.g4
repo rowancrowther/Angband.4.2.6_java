@@ -26,8 +26,9 @@
 //   - default mode reads the directive keywords and bare INTEGERs;
 //   - FREE_TEXT_MODE (entered by name:/*-msg:/desc:) grabs a whole line as one
 //     STRING, so punctuation in prose is never mistaken for a token;
-//   - FLAG_MODE (entered by code:/mimic:/flags:/resist-flag:) reads '|'-separated
-//     FLAG tokens.
+//   - FLAG_MODE (entered by code:/mimic:/flags:/resist-flag:) reads FLAG tokens
+//     and the blank-or-bar separators between them. Only flags: is a list; the
+//     other three take one FLAG, so a second name is a parser error.
 // A FLAG is letter-initial (imports/Flags.g4 FLAG_BODY), so it can never collide
 // with INTEGER even when its tail carries digits (e.g. RAND_50).
 //
@@ -111,9 +112,13 @@ STRING
         :   ~('\r' | '\n')+ -> popMode
         ;
 
-// A '|'-separated list of flag names (code/mimic/flags/resist-flag). FLAG wraps
-// the shared FLAG_BODY fragment; FLAG_OR is the separator (optional surrounding
-// spaces); FLAG_EOL ends the list and popModes back to the default mode.
+// Flag names for code/mimic/flags/resist-flag. FLAG wraps the shared FLAG_BODY
+// fragment. FLAG_OR is C's strtok(s, " |") separator: any run of blanks and bars,
+// split into two alternatives so each takes at least one character; a blank, a
+// bar, a blank and a bar arrive as two FLAG_OR tokens, which the flags rule's
+// (FLAG_OR FLAG?)* loop takes. FLAG_EOL is skipped as well as popping back to the
+// default mode, so no parser rule waits for it and a last line with no final
+// newline needs no EOF alternative.
 mode FLAG_MODE;
 
 FLAG
@@ -121,9 +126,10 @@ FLAG
         ;
 
 FLAG_OR
-        :   ' '? '|' ' '?
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
         ;
 
 FLAG_EOL
-        :   NL -> popMode
+        :   NL -> skip, popMode
         ;

@@ -353,7 +353,7 @@ Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="col
 
 ## `PitLexer.g4`: `color:` takes one letter, C also takes a name and never rejects a colour
 
-Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `COLOUR_LINE` in `PitLexer.g4` takes the whole value, and `PitAssembler` sends it through `ColourEnum.fromCode(String)` and makes a miss white, so `color:q`, `color:Mauve` and `color:Shade` load as white and a blank as dark, as in C. `Shade` is white because `COLOUR_SHADE` was removed from `ColourEnum` on 26-11-20: C's `color_table` has no row of that name. Pinned by `anUnknownColourCodeOrNameLoadsAsWhite`, `aColourNameIsMatchedCaseInsensitivelyAndACodeCaseSensitively` and `aColourOfOnlyABlankIsDarkAsInC` in `PitReaderTest`. Left over, parked 2026-11-20 for a later release (`Parked.md`): C cuts a `sym` at the next `:` and skips leading colons, but this lexer takes the rest of the line, so `color:r:junk` is red in C and white in Java. None of the shipped data is written that way. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -580,7 +580,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `MonsterLexer.g4`: `color:` takes one letter, C also takes a name
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `COLOUR_LINE` in `MonsterLexer.g4` takes the whole value, and `MonsterAssembler` sends it through `ColourEnum.fromCode(String)` and makes a miss white, so `color:white` is white, and `color:q`, `color:nonsense` and `color:Shade` are white as in C. `Shade` is white because `COLOUR_SHADE` was removed from `ColourEnum` on 26-11-20. Pinned by `aColourNameIsAcceptedAsInC` in `MonsterReaderTest` and the `color:q` and `color:nonsense` cases in `MonsterAssemblerColourTest`. Left over, parked 2026-11-20 for a later release (`Parked.md`): C cuts a `sym` at the next `:` and skips leading colons, but this lexer takes the rest of the line, so `color:r:junk` is red in C and white in Java. None of the shipped data is written that way. The bullets below describe the state before the fix.]
 
 - `parse_monster_color` reads `color` as a `sym` and, when it is longer than one character, passes it to
   `color_text_to_attr`, so `color:white` is accepted. A one-character value goes through `color_char_to_attr`.
@@ -790,7 +790,7 @@ Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span sty
 
 ## `imports/AngbandDisplayCharacter.g4`: an unknown `graphics:` colour is a lexer error, C falls back to white
 
-Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `COLOUR_VALUES` in `imports/AngbandDisplayCharacter.g4` takes the rest of the line, and the `ItemObject`, `Trap`, `TerrainFeature`, `Artifact` and `ClassSpellBook` assemblers each make a `ColourEnum.fromCode(String)` miss white, so `graphics:|:q`, `graphics:^:nonsense` and `graphics:^:Shade` give white as in C. `Shade` is white because `COLOUR_SHADE` was removed from `ColourEnum` on 26-11-20. Pinned by `anUnknownColourFallsBackToWhiteAsInC` in `ItemObjectReaderTest`, `anUnknownColourNameDrawsWhiteAsInC` in `TrapReaderTest` and `TerrainReaderTest`, and `theGraphicsColourIsMatchedAsCMatchesItAndAnUnknownOneIsWhite` in `ArtifactReaderTest`. Left over, parked 2026-11-20 for a later release (`Parked.md`): C cuts a `sym` at the next `:` and skips leading colons, but this lexer takes the rest of the line, so `graphics:^:r:junk` is red in C and white in Java. None of the shipped data is written that way. The bullets below describe the state before the fix.]
 
 - `parse_object_graphics` in `obj-init.c` calls `color_text_to_attr` for a colour longer than one character and
   `color_char_to_attr` for one character. Both answer white when nothing matches, so `graphics:|:q` is a white `|`.
@@ -2231,7 +2231,7 @@ Found 2026-10-19 during `/port RandomReader.java`. Not fixed, except the number 
 
 ## `VisualsGrammar.g4` and `VisualsLexer.g4`: a colour is one listed letter, `flicker-color:` and `cycle-color:` must follow their header at once, the name takes the rest of the line, and indented lines are refused
 
-Found 2026-10-19 during `/port VisualsReader.java`. Not fixed.
+Found 2026-10-19 during `/port VisualsReader.java`. Partly fixed. [The colour part is %s 26-11-20: `COLOUR_LINE` in `VisualsLexer.g4` takes any run up to a colon or the end of the line, and the flicker and cycle assemblers read only its first character, white for a miss and dark for a blank, as C does. So `cycle-color:q` is white, `cycle-color:red` is `r`, and `flicker:dd:name` keys on `d`. Pinned by `anUnlistedColourLetterOnACycleColourReadsAsWhiteAsInC`, `aColourWrittenAsAWordIsItsFirstLetterAsInC`, `aMultiLetterBaseColourOnAFlickerHeaderIsItsFirstLetterAsInC` and `aBlankAfterAColourLetterIsHarmlessAsInC` in `VisualsReaderTest`. Indented lines load as in C too (`anIndentedDirectiveLoadsAsInC`). Left over: `cycle-color::r`, which C reads as `r` (leading colons skipped) and Java refuses for want of a colour token, parked 2026-11-20 for a later release (`Parked.md`); and the three pins still named `...HereWhereC...` in `VisualsReaderTest` (the field after a cycle name, a `flicker-color:` after an intervening `cycle:` block, and a colour line before any header). The bullets below describe the state before the fix.]
 
 ### What C does
 

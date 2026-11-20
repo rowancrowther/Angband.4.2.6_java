@@ -489,6 +489,25 @@ class VisualsReaderTest {
             assertEquals(ColourEnum.COLOUR_WHITE, cycler.getByGroup("g").get("n").getColour(0));
         }
 
+        /**
+         * {@code visuals_parse_cycle_color} reads the colour as a {@code sym}, and
+         * {@code parser_parse} skips colons in front of a {@code sym} with {@code strtok}, so
+         * {@code cycle-color::r} is the colour {@code r} (red) in C. {@code COLOUR_LINE} cannot start
+         * with a colon, so no colour token follows {@code cycle-color:} and the load stops. Parked
+         * 2026-11-20 for a later release ({@code docs/Parked.md}); this pin flips when that work
+         * lands.
+         *
+         * <p>Function aLeadingColonOnACycleColourIsRefusedHereWhereCSkipsIt coded on 261120,
+         * commented in full on 261120.
+         */
+        @Test
+        void aLeadingColonOnACycleColourIsRefusedHereWhereCSkipsIt() throws IOException {
+            Path file = write("leading-colon.txt", "cycle:g:n\ncycle-color::r\n");
+
+            assertThrows(ParseCancellationException.class,
+                    () -> new VisualsReader().parseCyclerWithResults(file.toString()));
+        }
+
         @Test
         void aColourWrittenAsAWordIsItsFirstLetterAsInC() throws IOException {
             // The handlers pass only color_code[0] to color_char_to_attr, so "red" is r (red), "Red" is

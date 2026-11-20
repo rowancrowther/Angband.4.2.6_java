@@ -963,6 +963,31 @@ class TrapReaderTest {
     }
 
     /**
+     * C: {@code graphics} is {@code char glyph sym color}, and {@code parser_parse} cuts a
+     * {@code sym} at the next {@code ':'} with {@code strtok}, skipping colons in front of it and
+     * ignoring anything after the last field, so {@code graphics:^:r:junk} and
+     * {@code graphics:^::r} are both a red {@code ^}. {@code COLOUR_VALUES} in
+     * {@code imports/AngbandDisplayCharacter.g4} takes the rest of the line, so
+     * {@code TrapAssembler} sees an unknown name and makes it white. The import is shared, so
+     * {@code ItemObject}, {@code Artifact}, {@code TerrainFeature} and {@code PlayerClass} read it
+     * the same way. Parked 2026-11-20 for a later release ({@code docs/Parked.md}); this pin flips
+     * when that work lands.
+     *
+     * <p>Function aColonAfterTheGraphicsColourMakesItWhiteHereWhereCCutsTheValueThere coded on
+     * 261120, commented in full on 261120.
+     */
+    @Test
+    void aColonAfterTheGraphicsColourMakesItWhiteHereWhereCCutsTheValueThere() throws Exception {
+        for (String value : List.of("r:junk", ":r")) {
+            ParseResult<TrapKind> r = load("colour-colon.txt", "name:a:b\ngraphics:^:" + value + "\n");
+
+            AngbandDisplayCharacter adc = field(r.items().getFirst(), "angbandDisplayCharacter");
+            assertEquals('^', adc.getNarrowCharacter(), value);
+            assertEquals(ColourEnum.COLOUR_WHITE, adc.getAttributeColour(), value);
+        }
+    }
+
+    /**
      * C: {@code graphics:^:} has no value for the colour field, so {@code parser_parse} refuses the
      * line as a missing field. {@code COLOUR_VALUES} needs at least one character, so the lexer
      * errors at the newline, and the load must stop there: the lexer is still in colour mode, and

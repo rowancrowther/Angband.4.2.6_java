@@ -1023,6 +1023,26 @@ class PitReaderTest {
     }
 
     /**
+     * {@code parse_pit_color} reads the colour as a {@code sym}, which {@code parser_parse} cuts at
+     * the next {@code ':'} with {@code strtok}, skipping colons in front of it and ignoring anything
+     * after the last field. So {@code color:r:junk} and {@code color::r} are both red in C.
+     * {@code COLOUR_LINE} takes the rest of the line, so {@code PitAssembler} sees {@code r:junk} or
+     * {@code :r}, an unknown name, and makes it white. Parked 2026-11-20 for a later release
+     * ({@code docs/Parked.md}); this pin flips when that work lands.
+     *
+     * <p>Function aColonAfterTheColourMakesItWhiteHereWhereCCutsTheValueThere coded on 261120,
+     * commented in full on 261120.
+     */
+    @Test
+    void aColonAfterTheColourMakesItWhiteHereWhereCCutsTheValueThere() throws Exception {
+        for (String value : List.of("r:junk", ":r")) {
+            ParseResult<PitProfile> result = load("colour-colon.txt", "name:Colon", "color:" + value);
+
+            assertEquals(List.of(ColourEnum.COLOUR_WHITE), field(result.items().getFirst(), "colours"), value);
+        }
+    }
+
+    /**
      * {@code room}, {@code alloc} and {@code obj-rarity} are {@code uint} in {@code init_parse_pit}, and
      * {@code parser_parse} refuses a token that starts with '-'. The lexer takes a leading minus, and
      * the assembler stops the load on it, in each of the four fields.

@@ -1246,6 +1246,27 @@ class MonsterReaderTest {
         assertEquals(ColourEnum.COLOUR_WHITE, adc.getAttributeColour());
     }
 
+    /**
+     * {@code parse_monster_color} reads the colour as a {@code sym}, which {@code parser_parse} cuts
+     * at the next {@code ':'} with {@code strtok}, skipping colons in front of it and ignoring
+     * anything after the last field. So {@code color:r:junk} and {@code color::r} are both red in C.
+     * {@code COLOUR_LINE} takes the rest of the line, so {@code MonsterAssembler} sees an unknown name
+     * and makes it white. Parked 2026-11-20 for a later release ({@code docs/Parked.md}); this pin
+     * flips when that work lands.
+     *
+     * <p>Function aColonAfterTheColourMakesItWhiteHereWhereCCutsTheValueThere coded on 261120,
+     * commented in full on 261120.
+     */
+    @Test
+    void aColonAfterTheColourMakesItWhiteHereWhereCCutsTheValueThere() throws Exception {
+        for (String value : List.of("r:junk", ":r")) {
+            ParseResult<MonsterRace> r = load("colour-colon.txt",
+                    "name:Colon\nbase:townsfolk\nglyph:t\ncolor:" + value + "\n");
+            AngbandDisplayCharacter adc = field(byName(r, "Colon"), "adc");
+            assertEquals(ColourEnum.COLOUR_WHITE, adc.getAttributeColour(), value);
+        }
+    }
+
     @Test
     void aMessageWithNoTextIsAHardErrorHereWhereCTakesItAsEmpty() throws IOException {
         // message-vis is "sym spell ?str message" in C; a missing or blank message becomes "".

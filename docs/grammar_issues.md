@@ -257,6 +257,16 @@ Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
   the whole file loads as nothing. C accepts both through `message_lookup_by_name` (case-insensitive, and a number
   below `MSG_MAX`). `SummonReaderTest.lowerCaseMessageTypeIsAHardErrorHereWhereCMatchesCaseInsensitively` and
   `numericMessageTypeIsAHardErrorHereWhereCAcceptsAMessageNumber` pin this.
+  [<span style="color:#006400">**CLOSED**</span> 26-11-20: the `msgt:` half only. `msgt:` now pushes `MSGT_FREE_TEXT` in `SummonLexer.g4` and reads one `STRING_NO_COLON`
+  (the rest of the line), and `SummonAssembler.assemble` drops leading colons and cuts the value at the next colon before
+  `MessageType.lookupByName`, as `strtok(cline, ":")` does for a `sym`. Checked on 38 values in three layouts (mid-record, last
+  line with and without a final newline): `sum_monster`, `20`, `+20`, `-0`, `152`, `MAX`, `SUM_MONSTER:x`, `::SUM_MONSTER` and
+  `20:x` load; `153`, `-1`, `20x`, `0x14`, `NONE`, `SUM_MONSTER ` (blank kept), `:` and `:x` are refused. The two old pins were
+  rewritten as `lowerCaseOrNumericMessageTypesLoadAsInC` and `aMessageTypeAsTheLastLineWithNoFinalNewlineLoadsAsInC`, with
+  `aNumberOutsideTheMessageRangeOrWithTrailingTextIsRefusedAsInC`, `aBlankInsideAMessageTypeNameIsKeptAndRefusedAsInC`,
+  `aColonEndsTheMessageTypeAndTheRestOfTheLineIsIgnoredAsInC`, `leadingColonsBeforeAMessageTypeAreSkippedAsInC` and
+  `aMessageTypeWithNoTokenBetweenItsColonsIsRefusedAsInC` in `SummonReaderTest`. The `race-flag:` and `uniques:` bullets below
+  are unchanged and still open. The bullet above describes the state before the fix.]
 - C reads `uniques:` as `int`, with `strtol` in base 0. `SummonLexer.g4:89-90` `INTEGER` is `'-'? ('0'..'9')+`, so
   `uniques:0x1` is a lexer error, and a trailing field (`uniques:1:x`, which C ignores) is too. The meaning of the
   values the lexer does accept is in `docs/Assembler_Issues.md`.
@@ -1301,7 +1311,7 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
 
 ## `ProjectionLexer.g4`: `msgt:` values must be upper-case identifiers, and one bad value costs the rest of the file
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `msgt:` now pushes `MSGT_FREE_TEXT`, whose one token `STRING_TO_COLON` takes the rest of the line and pops, so a bad value no longer leaves the lexer in a mode that never pops (the 34 and 29 errors below are gone). `ProjectionAssembler.resolveMsgt` drops leading colons and cuts the value at the next colon before `MessageType.lookupByName`, as `strtok(cline, ":")` does for a `sym`, so the number and any-case handling is reachable from a data file. Checked on 38 values in the first and the last record: `br_acid`, `20`, `+20`, `-0`, `152`, `MAX`, `BR_ACID:x`, `::BR_ACID` and `20:x` load; `153`, `-1`, `20x`, `0x14`, `NONE`, `BR_ACID ` (blank kept), `:` and `:x` are refused. `aLowerCaseOrNumericMsgtIsAHardErrorWhereCAcceptsBoth` is rewritten as `aLowerCaseOrNumericMsgtLoadsAsInC`, with `aNumberOutsideTheMessageRangeOrWithTrailingTextIsRefusedAsInC`, `aColonEndsTheMsgtValueAndTheRestOfTheLineIsIgnoredAsInC`, `leadingColonsBeforeAMsgtValueAreSkippedAsInC` and `aMsgtWithNoTokenBetweenItsColonsIsRefusedAsInC` in `ProjectionReaderTest`. The bullets below describe the state before the fix.]
 
 - C reads `msgt:` as a `sym` and `message_lookup_by_name` in `message.c` matches it case-insensitively against the names in
   `list-message.h`, or takes a number below `MSG_MAX`.
@@ -1315,7 +1325,7 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
 
 ## `ProjectionLexer.g4`: a blank after the `code:` or `msgt:` value is dropped, C keeps it and rejects the line
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed for `code:`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: the `msgt:` half only. `msgt:BR_ACID `, ` BR_ACID`, `BR_ACID :x` and `: BR_ACID` are now refused as C refuses them, because `MSGT_FREE_TEXT` keeps the blank in the value; see `aBlankInsideAMsgtNameIsKeptAndRefusedAsInC`. `code:ACID ` still loads, because `code:` still reads through `FLAG_MODE`, and is pinned by `aBlankAfterTheCodeValueIsDroppedWhereCKeepsItAndRejectsTheLine` (the old `aBlankAfterCodeOrMsgtIsDroppedWhereCKeepsItAndRejectsTheLine` is split into the two). The bullets below describe both halves as they stood before the fix.]
 
 - C keeps a trailing blank in a `str` or `sym`. `code:ACID ` is not `element_names[0]` (`PARSE_ERROR_ELEMENT_NAME_MISMATCH`), and
   `msgt:BR_ACID ` matches no name (`PARSE_ERROR_INVALID_MESSAGE`).

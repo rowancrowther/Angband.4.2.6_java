@@ -469,6 +469,15 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
     @CheckReturnValue
     @Nullable
     private MessageType resolveMsgt(String msgt) {
+        if (msgt.contains(":")) {
+            while (!msgt.isEmpty() && msgt.charAt(0) == ':')
+                msgt = msgt.substring(1);
+            
+            if (msgt.contains(":")) {
+                msgt = msgt.split(":")[0];
+            }
+        }
+        
         return MessageType.lookupByName(msgt);
     }
 

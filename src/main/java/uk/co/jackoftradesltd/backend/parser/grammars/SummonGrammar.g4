@@ -47,7 +47,7 @@ name
 // "msgt:<TYPE>" - message type symbol (e.g. SUM_MONSTER).
 msgt
         returns[String msgtStr]
-        :   MSGT FLAG { $msgtStr = $FLAG.getText(); }
+        :   MSGT msg=STRING_NO_COLON { $msgtStr = $msg.getText(); }
         ;
 
 // "uniques:<number>" - whether uniques may be summoned. The text is kept raw;

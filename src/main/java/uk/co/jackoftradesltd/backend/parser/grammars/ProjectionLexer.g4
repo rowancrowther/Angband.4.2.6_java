@@ -142,7 +142,7 @@ DAMAGE_CAP
  * msgt directive
  * cf ProjectionGrammar.g4's 'msgt' rule
  */
-MSGT    :   'msgt:' -> pushMode(FLAG_MODE)
+MSGT    :   'msgt:' -> pushMode(MSGT_FREE_TEXT)
         ;
 
 /*
@@ -220,6 +220,12 @@ mode FREE_TEXT;
  * 'lashDesc' and 'colour' rules
  */
 STRING
+        :   ~('\r' | '\n')+ -> popMode
+        ;
+
+mode MSGT_FREE_TEXT;
+
+STRING_TO_COLON
         :   ~('\r' | '\n')+ -> popMode
         ;
 

@@ -535,22 +535,101 @@ class ProjectionReaderTest {
 
     // ---- Where the grammar differs from C (docs/grammar_issues.md) -----------------------------
 
+    /**
+     * Loads the shipped file with the first record's {@code msgt:} value replaced by {@code value}
+     * and returns the message type that record ends up with.
+     */
+    private MessageType firstRecordMsgt(String value) throws Exception {
+        ParseResult<Projection> result = load("msgt-probe.txt", shipped().replaceFirst("(?m)^msgt:BR_ACID", "msgt:" + value));
+        assertEquals(56, result.items().size(), "msgt:" + value);
+        return field(result.items().getFirst(), "msgt");
+    }
+
+    /**
+     * The load stops in the assembler, with a {@link DataFileParseException}, and not in the lexer.
+     */
+    private void assertMsgtRefused(String value) throws IOException {
+        assertThrows(DataFileParseException.class,
+                () -> load("msgt-bad.txt", shipped().replaceFirst("(?m)^msgt:BR_ACID", "msgt:" + value)), "msgt:" + value);
+    }
+
     @Test
-    void aLowerCaseOrNumericMsgtIsAHardErrorWhereCAcceptsBoth() throws IOException {
-        // message_lookup_by_name matches names with my_stricmp and takes a number below MSG_MAX.
-        for (String msgt : List.of("br_acid", "20")) {
-            assertHardError("msgt.txt", shipped().replaceFirst("msgt:BR_ACID", "msgt:" + msgt));
+    void aLowerCaseOrNumericMsgtLoadsAsInC() throws Exception {
+        // message_lookup_by_name matches names with my_stricmp, and takes a number below MSG_MAX
+        // (list-message.h counts from GENERIC at 0, so 20 is STORE3 and 152 is SCRAMBLE). The number
+        // may carry a sign, and blanks on either side of the digits (strtoul skips leading blanks;
+        // contains_only_spaces covers trailing ones). The value is read in MSGT_FREE_TEXT, not FLAG_MODE.
+        assertEquals(MessageType.MSG_BR_ACID, firstRecordMsgt("br_acid"));
+        assertEquals(MessageType.MSG_BR_ACID, firstRecordMsgt("Br_AcId"));
+        assertEquals(MessageType.MSG_STORE3, firstRecordMsgt("20"));
+        assertEquals(MessageType.MSG_STORE3, firstRecordMsgt("20 "));
+        assertEquals(MessageType.MSG_STORE3, firstRecordMsgt(" 20"));
+        assertEquals(MessageType.MSG_STORE3, firstRecordMsgt("+20"));
+        assertEquals(MessageType.MSG_SCRAMBLE, firstRecordMsgt("152"));
+        assertEquals(MessageType.MSG_GENERIC, firstRecordMsgt("0"));
+        assertEquals(MessageType.MSG_GENERIC, firstRecordMsgt("-0"));
+    }
+
+    @Test
+    void aNumberOutsideTheMessageRangeOrWithTrailingTextIsRefusedAsInC() throws IOException {
+        // 153 is MSG_MAX, which a number may not reach; -1 wraps in strtoul; "0x14" is read in base 10, so
+        // it stops at the x and leaves text behind; "MSG_" is not part of the names in list-message.h.
+        for (String value : List.of("153", "-1", "20x", "0x14", "MSG_BR_ACID", "NOT_A_MSG")) {
+            assertMsgtRefused(value);
         }
     }
 
     @Test
-    void aBlankAfterCodeOrMsgtIsDroppedWhereCKeepsItAndRejectsTheLine() throws IOException {
-        // C keeps the trailing blank in a str or sym: "ACID " is not element_names[0], and
-        // "BR_ACID " is not a message name.
-        for (String edit : List.of("code:ACID", "msgt:BR_ACID")) {
-            ParseResult<Projection> result = load("blank.txt", shipped().replaceFirst(edit, edit + " "));
-            assertEquals(56, result.items().size(), edit);
+    void aBlankInsideAMsgtNameIsKeptAndRefusedAsInC() throws IOException {
+        // sym keeps a blank: "BR_ACID " and " BR_ACID" are not message names, and a blank before the
+        // colon stays in the value that is looked up, while one after the colon is thrown away with the rest.
+        for (String value : List.of("BR_ACID ", " BR_ACID", "BR_ACID :x", ": BR_ACID")) {
+            assertMsgtRefused(value);
         }
+    }
+
+    @Test
+    void aColonEndsTheMsgtValueAndTheRestOfTheLineIsIgnoredAsInC() throws Exception {
+        // parser_parse tokenizes a sym on ':' and the msgt line has no later field, so everything from the
+        // first colon on is never read.
+        for (String value : List.of("BR_ACID:x", "BR_ACID:", "BR_ACID::x", "BR_ACID: x")) {
+            assertEquals(MessageType.MSG_BR_ACID, firstRecordMsgt(value), value);
+        }
+        assertEquals(MessageType.MSG_STORE3, firstRecordMsgt("20:x"));
+        assertEquals(MessageType.MSG_MAX, firstRecordMsgt("MAX:x"));
+        // What is before the colon is still looked up.
+        assertMsgtRefused("NOT_A_MSG:x");
+    }
+
+    @Test
+    void leadingColonsBeforeAMsgtValueAreSkippedAsInC() throws Exception {
+        // strtok(cline, ":") skips every leading delimiter, so the first token is the first run of
+        // non-colon characters.
+        for (String value : List.of(":BR_ACID", "::BR_ACID", ":BR_ACID:x")) {
+            assertEquals(MessageType.MSG_BR_ACID, firstRecordMsgt(value), value);
+        }
+        assertEquals(MessageType.MSG_STORE3, firstRecordMsgt(":20"));
+        assertMsgtRefused(":NOT_A_MSG");
+    }
+
+    @Test
+    void aMsgtWithNoTokenBetweenItsColonsIsRefusedAsInC() throws IOException {
+        // ":" and "::" leave strtok with no token, which is PARSE_ERROR_MISSING_FIELD in C. ":x" does have
+        // one, "x", which is not a message name. An empty value has no STRING token at all, so the lexer
+        // refuses it before the assembler is reached.
+        for (String value : List.of(":", "::", ":::", ":x")) {
+            assertMsgtRefused(value);
+        }
+        assertHardError("msgt-empty.txt", shipped().replaceFirst("(?m)^msgt:BR_ACID", "msgt:"));
+    }
+
+    @Test
+    void aBlankAfterTheCodeValueIsDroppedWhereCKeepsItAndRejectsTheLine() throws IOException {
+        // C keeps the trailing blank in a str or sym: "ACID " is not element_names[0]. code: is still
+        // read through FLAG_MODE, where the EOL rule takes the blank, so Java loads it. msgt: no longer
+        // has this fault; see aBlankInsideAMsgtNameIsKeptAndRefusedAsInC.
+        ParseResult<Projection> result = load("blank.txt", shipped().replaceFirst("code:ACID", "code:ACID "));
+        assertEquals(56, result.items().size());
     }
 
     @Test

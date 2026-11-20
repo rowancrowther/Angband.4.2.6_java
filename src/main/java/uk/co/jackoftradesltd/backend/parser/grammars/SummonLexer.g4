@@ -45,7 +45,7 @@ NAME
 // token in FLAG_MODE; the assembler resolves it to a message-type enum. It is
 // not a race flag despite sharing the token.
 MSGT
-        :   'msgt:' -> pushMode(FLAG_MODE)
+        :   'msgt:' -> mode(MSGT_FREE_TEXT)
         ;
 
 // "uniques:<0|1>" - whether the summon may include unique monsters. The one
@@ -99,4 +99,10 @@ mode FREE_TEXT_MODE;
 
 STRING
         :   ~('\r' | '\n')+ -> popMode
+        ;
+
+mode MSGT_FREE_TEXT;
+
+STRING_NO_COLON
+        :   ~('\n' | '\r')+ -> mode(DEFAULT_MODE)
         ;

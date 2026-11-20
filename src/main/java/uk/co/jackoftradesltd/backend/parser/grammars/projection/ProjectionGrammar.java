@@ -43,7 +43,7 @@ public class ProjectionGrammar extends Parser {
 		CODE=1, NAME=2, TYPE=3, DESC=4, PLAYER_DESC=5, BLIND_DESC=6, LASH_DESC=7, 
 		NUMERATOR=8, DENOMINATOR=9, DIVISOR=10, DAMAGE_CAP=11, MSGT=12, OBVIOUS=13, 
 		WAKE=14, COLOUR=15, INTEGER=16, COMMENT=17, INDENT=18, EOL=19, SIMPLE_DICE_STRING=20, 
-		COMPLEX_DICE_STRING=21, FLAG=22, STRING=23, SIMPLE_DICE=24;
+		COMPLEX_DICE_STRING=21, FLAG=22, STRING=23, STRING_TO_COLON=24, SIMPLE_DICE=25;
 	public static final int
 		RULE_code = 0, RULE_name = 1, RULE_type = 2, RULE_desc = 3, RULE_playerDesc = 4, 
 		RULE_blindDesc = 5, RULE_lashDesc = 6, RULE_numerator = 7, RULE_denominator = 8, 
@@ -71,7 +71,7 @@ public class ProjectionGrammar extends Parser {
 			null, "CODE", "NAME", "TYPE", "DESC", "PLAYER_DESC", "BLIND_DESC", "LASH_DESC", 
 			"NUMERATOR", "DENOMINATOR", "DIVISOR", "DAMAGE_CAP", "MSGT", "OBVIOUS", 
 			"WAKE", "COLOUR", "INTEGER", "COMMENT", "INDENT", "EOL", "SIMPLE_DICE_STRING", 
-			"COMPLEX_DICE_STRING", "FLAG", "STRING", "SIMPLE_DICE"
+			"COMPLEX_DICE_STRING", "FLAG", "STRING", "STRING_TO_COLON", "SIMPLE_DICE"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -689,9 +689,9 @@ public class ProjectionGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class MsgtContext extends ParserRuleContext {
 		public String projectionMsgt;
-		public Token FLAG;
+		public Token msg;
 		public TerminalNode MSGT() { return getToken(ProjectionGrammar.MSGT, 0); }
-		public TerminalNode FLAG() { return getToken(ProjectionGrammar.FLAG, 0); }
+		public TerminalNode STRING_TO_COLON() { return getToken(ProjectionGrammar.STRING_TO_COLON, 0); }
 		public MsgtContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -720,9 +720,9 @@ public class ProjectionGrammar extends Parser {
 			setState(78);
 			match(MSGT);
 			setState(79);
-			((MsgtContext)_localctx).FLAG = match(FLAG);
+			((MsgtContext)_localctx).msg = match(STRING_TO_COLON);
 
-			            ((MsgtContext)_localctx).projectionMsgt =  ((MsgtContext)_localctx).FLAG.getText();
+			            ((MsgtContext)_localctx).projectionMsgt =  ((MsgtContext)_localctx).msg.getText();
 			        
 			}
 		}
@@ -1235,7 +1235,7 @@ public class ProjectionGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0018\u009a\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u0019\u009a\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1281,11 +1281,11 @@ public class ProjectionGrammar extends Parser {
 		"\u0000;<\u0005\u0017\u0000\u0000<=\u0006\u0006\uffff\uffff\u0000=\r\u0001"+
 		"\u0000\u0000\u0000>?\u0005\b\u0000\u0000?@\u0005\u0010\u0000\u0000@A\u0006"+
 		"\u0007\uffff\uffff\u0000A\u000f\u0001\u0000\u0000\u0000BC\u0005\t\u0000"+
-		"\u0000CD\u0005\u0018\u0000\u0000DE\u0006\b\uffff\uffff\u0000E\u0011\u0001"+
+		"\u0000CD\u0005\u0019\u0000\u0000DE\u0006\b\uffff\uffff\u0000E\u0011\u0001"+
 		"\u0000\u0000\u0000FG\u0005\n\u0000\u0000GH\u0005\u0010\u0000\u0000HI\u0006"+
 		"\t\uffff\uffff\u0000I\u0013\u0001\u0000\u0000\u0000JK\u0005\u000b\u0000"+
 		"\u0000KL\u0005\u0010\u0000\u0000LM\u0006\n\uffff\uffff\u0000M\u0015\u0001"+
-		"\u0000\u0000\u0000NO\u0005\f\u0000\u0000OP\u0005\u0016\u0000\u0000PQ\u0006"+
+		"\u0000\u0000\u0000NO\u0005\f\u0000\u0000OP\u0005\u0018\u0000\u0000PQ\u0006"+
 		"\u000b\uffff\uffff\u0000Q\u0017\u0001\u0000\u0000\u0000RS\u0005\r\u0000"+
 		"\u0000ST\u0005\u0010\u0000\u0000TU\u0006\f\uffff\uffff\u0000U\u0019\u0001"+
 		"\u0000\u0000\u0000VW\u0005\u000e\u0000\u0000WX\u0005\u0010\u0000\u0000"+

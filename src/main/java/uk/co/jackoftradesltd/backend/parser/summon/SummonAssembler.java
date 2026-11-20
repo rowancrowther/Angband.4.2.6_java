@@ -166,6 +166,12 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
             MessageType messageType = MessageType.MSG_GENERIC;
             if (!record.msgType().isEmpty()) {
                 for (String msgType : record.msgType()) {
+                    if (msgType.contains(":")) {
+                        while (!msgType.isEmpty() && msgType.charAt(0) == ':')
+                            msgType = msgType.substring(1);
+                        if (msgType.contains(":"))
+                            msgType = msgType.split(":")[0];
+                    }
                     messageType = MessageType.lookupByName(msgType);
                     if (messageType == null) {
                         String message = "Summon starting at line: " + line + " of file: " + filename + " has " +

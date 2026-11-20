@@ -171,8 +171,8 @@ damageCap
  * "msgt:<MSG_TYPE>" - message type/sound used when this projection hits.
  */
 msgt    returns[String projectionMsgt]
-        :   MSGT FLAG {
-            $projectionMsgt = $FLAG.getText();
+        :   MSGT msg=STRING_TO_COLON {
+            $projectionMsgt = $msg.getText();
         }
         ;
 

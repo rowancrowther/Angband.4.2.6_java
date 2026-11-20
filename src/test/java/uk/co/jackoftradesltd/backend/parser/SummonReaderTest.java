@@ -651,20 +651,98 @@ class SummonReaderTest {
         assertTrue(load("comments-only.txt", "# a comment\n\n# another\n\n").items().isEmpty());
     }
 
-    @Test
-    void lowerCaseMessageTypeIsAHardErrorHereWhereCMatchesCaseInsensitively() throws IOException {
-        // message_lookup_by_name compares with my_stricmp. The lexer's FLAG token is upper-case only.
-        assertThrows(ParseCancellationException.class, () -> load("lower-msgt.txt",
-                summon("A", "sum_monster", "0", "", "a")));
+    /**
+     * Loads one record whose {@code msgt:} value is {@code value}, with more lines after it, and
+     * returns the message type it ends up with.
+     */
+    private MessageType msgtOf(String value) throws IOException {
+        ParseResult<Summon> result = load("msgt-probe.txt", summon("A", value, "0", "", "a"));
+        assertEquals(1, result.items().size(), "msgt:" + value);
+        return result.items().getFirst().getMessageType();
+    }
 
+    /** The load stops in the assembler, with a {@link DataFileParseException}, and not in the lexer. */
+    private void assertMsgtRefused(String value) {
+        assertThrows(DataFileParseException.class,
+                () -> load("msgt-bad.txt", summon("A", value, "0", "", "a")), "msgt:" + value);
     }
 
     @Test
-    void numericMessageTypeIsAHardErrorHereWhereCAcceptsAMessageNumber() throws IOException {
-        // message_lookup_by_name reads digits as a message number first.
-        assertThrows(ParseCancellationException.class, () -> load("num-msgt.txt",
-                summon("A", "12", "0", "", "a")));
+    void lowerCaseOrNumericMessageTypesLoadAsInC() throws IOException {
+        // message_lookup_by_name compares with my_stricmp and takes a number below MSG_MAX (list-message.h
+        // counts from GENERIC at 0, so 20 is STORE3 and 152 is SCRAMBLE). The number may carry a sign, and
+        // blanks either side of the digits. The value is read in MSGT_FREE_TEXT, not FLAG_MODE.
+        assertEquals(MessageType.MSG_SUM_MONSTER, msgtOf("sum_monster"));
+        assertEquals(MessageType.MSG_SUM_MONSTER, msgtOf("Sum_MoNsTeR"));
+        assertEquals(MessageType.MSG_STORE3, msgtOf("20"));
+        assertEquals(MessageType.MSG_STORE3, msgtOf("20 "));
+        assertEquals(MessageType.MSG_STORE3, msgtOf(" 20"));
+        assertEquals(MessageType.MSG_STORE3, msgtOf("+20"));
+        assertEquals(MessageType.MSG_SCRAMBLE, msgtOf("152"));
+        assertEquals(MessageType.MSG_GENERIC, msgtOf("0"));
+        assertEquals(MessageType.MSG_GENERIC, msgtOf("-0"));
+    }
 
+    @Test
+    void aMessageTypeAsTheLastLineWithNoFinalNewlineLoadsAsInC() throws IOException {
+        // The value is the last token in the file, so the lexer never sees a line ending after it.
+        ParseResult<Summon> result = load("msgt-last.txt", "name:A\nuniques:0\ndesc:a\nmsgt:sum_monster");
+        assertEquals(MessageType.MSG_SUM_MONSTER, result.items().getFirst().getMessageType());
+        ParseResult<Summon> colon = load("msgt-last-colon.txt", "name:A\nuniques:0\ndesc:a\nmsgt:20:x");
+        assertEquals(MessageType.MSG_STORE3, colon.items().getFirst().getMessageType());
+    }
+
+    @Test
+    void aNumberOutsideTheMessageRangeOrWithTrailingTextIsRefusedAsInC() {
+        // 153 is MSG_MAX, which a number may not reach; -1 wraps in strtoul; "0x14" is read in base 10, so
+        // it stops at the x and leaves text behind; "MSG_" is not part of the names in list-message.h.
+        for (String value : List.of("153", "-1", "20x", "0x14", "MSG_SUM_MONSTER", "NOT_A_MSG", "NONE")) {
+            assertMsgtRefused(value);
+        }
+    }
+
+    @Test
+    void aBlankInsideAMessageTypeNameIsKeptAndRefusedAsInC() {
+        // sym keeps a blank: "SUM_MONSTER " and " SUM_MONSTER" are not message names, and a blank before the
+        // colon stays in the value that is looked up, while one after the colon is thrown away with the rest.
+        for (String value : List.of("SUM_MONSTER ", " SUM_MONSTER", "SUM_MONSTER :x", ": SUM_MONSTER")) {
+            assertMsgtRefused(value);
+        }
+    }
+
+    @Test
+    void aColonEndsTheMessageTypeAndTheRestOfTheLineIsIgnoredAsInC() throws IOException {
+        // parser_parse tokenizes a sym on ':' and the msgt line has no later field, so everything from the
+        // first colon on is never read.
+        for (String value : List.of("SUM_MONSTER:x", "SUM_MONSTER:", "SUM_MONSTER::x", "SUM_MONSTER: x")) {
+            assertEquals(MessageType.MSG_SUM_MONSTER, msgtOf(value), value);
+        }
+        assertEquals(MessageType.MSG_STORE3, msgtOf("20:x"));
+        assertEquals(MessageType.MSG_MAX, msgtOf("MAX:x"));
+        // What is before the colon is still looked up.
+        assertMsgtRefused("NOT_A_MSG:x");
+    }
+
+    @Test
+    void leadingColonsBeforeAMessageTypeAreSkippedAsInC() throws IOException {
+        // strtok(cline, ":") skips every leading delimiter, so the first token is the first run of
+        // non-colon characters.
+        for (String value : List.of(":SUM_MONSTER", "::SUM_MONSTER", ":SUM_MONSTER:x")) {
+            assertEquals(MessageType.MSG_SUM_MONSTER, msgtOf(value), value);
+        }
+        assertEquals(MessageType.MSG_STORE3, msgtOf(":20"));
+        assertMsgtRefused(":NOT_A_MSG");
+    }
+
+    @Test
+    void aMessageTypeWithNoTokenBetweenItsColonsIsRefusedAsInC() {
+        // ":" and "::" leave strtok with no token, which is PARSE_ERROR_MISSING_FIELD in C. ":x" does have
+        // one, "x", which is not a message name. An empty value has no STRING_NO_COLON token at all, so the
+        // lexer refuses it before the assembler is reached.
+        for (String value : List.of(":", "::", ":::", ":x")) {
+            assertMsgtRefused(value);
+        }
+        assertThrows(ParseCancellationException.class, () -> load("msgt-empty.txt", summon("A", "", "0", "", "a")));
     }
 
     @Test

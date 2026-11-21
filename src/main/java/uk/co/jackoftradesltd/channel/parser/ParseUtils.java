@@ -1257,6 +1257,73 @@ public class ParseUtils {
     }
     
     /**
+     * Reads an sval as C's {@code lookup_sval} ({@code obj-util.c}) does, and says whether it is a
+     * number. C runs {@code strtoul} in base 10. If it reads any digits, the text is a number only
+     * when nothing but spaces and tabs follow them and the value is below {@code INT_MAX}; anything
+     * else with digits is refused outright, and C does not try the text as a name. If it reads no
+     * digits, the text is a name.
+     *
+     * <p>The same rules here:
+     * <ul>
+     *   <li>spaces and tabs before the digits are skipped, and spaces and tabs after them allowed
+     *   ({@code " 99\t"} is 99);</li>
+     *   <li>one {@code +} or {@code -} may come first. {@code strtoul} wraps a minus past
+     *   {@code INT_MAX}, so a minus passes only on zero: {@code "-0"} is 0, while {@code "-1"} and
+     *   {@code "-5"} are not numbers;</li>
+     *   <li>a second sign ({@code "+-5"}), a letter or other text after the digits
+     *   ({@code "12abc"}, {@code "0x10"}, {@code "99 x"}), a bare sign, and a value of
+     *   {@code 2147483647} or more are not numbers. A value too long for a {@code long} is not a
+     *   number either.</li>
+     * </ul>
+     *
+     * <p>The result is never negative when the text is a number, so -1 is free to mean "not a
+     * number". The caller then decides what a non-number means: {@code ObjectRegistry} matches it
+     * against kind names, and {@code ArtifactAssembler} makes a dummy kind if none matches. Both
+     * call this one method, so they cannot disagree about which text is a number.
+     * {@code ParseUtilsTextNumberTest} pins the readings above.
+     *
+     * <p>Function isTextNumber coded on 261121, commented in full on 261121.
+     *
+     * @param text the sval as it appears in the data file
+     * @return the number, from 0 to {@code INT_MAX - 1}, or -1 if C does not read the text as one
+     */
+    public static int isTextNumber(String text) {
+        boolean isNumber = true;
+        String sValCheck = text;
+        sValCheck = ParseUtils.trimFrontOnlySpaceAndTab(sValCheck);
+        int sign = ParseUtils.signFound(sValCheck);
+        if (sign != 0)
+            sValCheck = sValCheck.substring(1);
+        if (ParseUtils.signFound(sValCheck) != 0)
+            isNumber = false;
+        StringBuilder numberString = new StringBuilder();
+        while (!sValCheck.isEmpty() && sValCheck.charAt(0) >= '0' && sValCheck.charAt(0) <= '9') {
+            numberString.append(sValCheck.charAt(0));
+            sValCheck = sValCheck.substring(1);
+        }
+        sValCheck = ParseUtils.trimRearOnlySpaceAndTab(sValCheck);
+        BigInteger number = null;
+        try {
+            number = new BigInteger(numberString.toString());
+            if (!sValCheck.isEmpty()) {
+                isNumber = false;
+            } else {
+                if (number.longValueExact() >= Integer.MAX_VALUE)
+                    isNumber = false;
+            }
+            if (sign < 0 && number.intValueExact() != 0)
+                isNumber = false;
+        } catch (NumberFormatException | ArithmeticException e) {
+            isNumber = false;
+        }
+        
+        if (sign != 0 && isNumber) return number.intValueExact() * sign;
+        if (sign == 0 && isNumber) return number.intValueExact();
+        
+        return -1;
+    }
+    
+    /**
      * The bases the readers work in. {@code strtol} base 0 chooses between {@link #HEX},
      * {@link #OCTAL} and {@link #DECIMAL}; {@link #BINARY} is not a base C reads and is here for
      * {@link #nonDigitFound(String, Radix)} and the readers that take a {@code Radix}, which give

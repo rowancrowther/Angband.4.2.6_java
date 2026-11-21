@@ -424,26 +424,67 @@ recorded here as the summary states them; fill in the detail when you next touch
   path through the kind lookup, the special-kind test and the glyph handling that follow it in `assemble`.
 - **Accepted:** 2026-11-06. Marked in the `assemble` Javadoc.
 
-### A numeric `base-object:` sval that names no kind would fail on a `NullPointerException`, but the grammar never passes one
+### A numeric `base-object:` sval that names no kind would fail on a `NullPointerException`, but the grammar never passes one [<span style="color:#006400">**CLOSED**</span> 26-11-21]
 
-- **Java:** `ArtifactAssembler.assemble` (the base-object loop and the lookup after it), with
-  `ObjectRegistry.lookupObjectKind(TValue, String)` and `ObjectRegistry.addObjectKind`. **C:**
-  `parse_artifact_base_object` (`obj-init.c`) and `lookup_sval` (`obj-util.c`).
-- **Differs:** for `base-object:light:99`, `lookup_sval` reads an all-digit name as the sval itself and returns 99
-  without needing a kind. C sets `a->sval = 99`, makes no dummy kind and loads the artifact. Given the same sval,
-  Java's lookup returns `null` when no kind has sval 99, so the loop makes a dummy kind named `"99"`, which
-  `addObjectKind` registers under the next free sval. The lookup after the loop asks for sval 99 again, gets `null`,
-  and the special-kind test throws a `NullPointerException` rather than a `DataFileParseException`. A numeric sval that
-  does name a kind resolves to the same kind in both.
-- **Reach:** none from a file. The lexer reads a number between the colons as `DELIM_INTEGER`, which the `baseObject`
-  rule does not take, so a numeric sval is a syntax error before the assembler runs
-  (`ArtifactReaderTest.aNumericTvalOrSvalInBaseObjectIsASyntaxErrorHereWhereCAcceptsIt`; see `grammar_issues.md`). Only
-  an `ArtifactParseRecord` built by hand reaches the assembler with one. Shipped `artifact.txt` has one numeric line,
-  `#base-object:amulet:55`, and it is commented out (checked 2026-11-07).
-- **Revisit:** if the grammar is changed to take a numeric sval. Then a numeric reference that finds no kind ends the
-  load with a clear error, or is carried as a bare sval as C carries it.
-- **Accepted:** 2026-11-07. Marked in the `assemble` Javadoc. Found in the stage 1 check of `/port
-  ArtifactAssembler.java`, which first reported it as reachable from a modded file; the grammar had already closed it.
+- **Closed:** the difference is gone, so this is no longer a deviation. The grammar now passes a numeric sval, and
+  `ArtifactAssembler.assemble` reads it as C's `lookup_sval` does: an sval that is a whole number below `INT_MAX` is the
+  sval itself, and when no kind has it no kind is made, as C's `write_dummy_object_record` does not run. Anything else
+  is a name, and a name that matches no kind gets a dummy kind (`-1`, `2147483647`, `12abc` and `0x10` each make one).
+  `ObjectRegistry.lookupObjectKind(TValue, String)` applies the same test, so the kind made is the kind found afterwards.
+  The `NullPointerException` cannot happen: a null kind is now either skipped or refused by name, see "A numeric
+  `base-object:` sval that names no kind refuses a `weight:`, `cost:` or `graphics:` line" below.
+- **Pinned by:** `ArtifactNumericSvalTest` (twelve tests across the numbers C reads as svals, the ones it reads as names,
+  the dummy kind's directives, both tvals and a second parse) and `aNumericTvalOrSvalInBaseObjectLoadsAsInC` in
+  `ArtifactReaderTest`.
+- **Originally accepted:** 2026-11-07, when the lexer refused a number between the colons. Kept as a record of the change;
+  delete it whenever you tidy this file.
+
+### A numeric `base-object:` sval that names no kind refuses a `weight:`, `cost:` or `graphics:` line, where C crashes
+
+- **Java:** `ArtifactAssembler.assemble` (the weight, cost, activation, time and glyph blocks after the base-object
+  loop). **C:** `parse_artifact_weight`, `parse_artifact_cost`, `parse_artifact_graphics`, `parse_artifact_act` and
+  `parse_artifact_time` (`obj-init.c`), and `lookup_kind` (`obj-util.c`).
+- **Differs:** for `base-object:light:99`, `lookup_sval` returns 99 without needing a kind, so C stores `a->sval = 99`
+  and makes no dummy kind. `lookup_kind` then finds nothing, prints "No object" and returns `NULL`.
+  `parse_artifact_weight`, `parse_artifact_cost` and `parse_artifact_graphics` `assert(k)` and stop.
+  `parse_artifact_act` and `parse_artifact_time` read `k->kidx` only when the tval is a light, because the `&&` ahead of
+  it stops for any other tval, so on a light they read through the null pointer and on any other tval the record loads.
+  Java throws a `DataFileParseException` that names the directive and its value for exactly the cases where C crashes,
+  and only when the record has that line.
+- **Agrees:** a bare numeric sval loads in both, with no kind made. `act:` or `time:` on a tval that is not a light loads
+  in both. A numeric sval that names a kind, or a name that gets a dummy kind, takes all five directives in both.
+- **Why:** this is the standing rule for every place C crashes (see "Where C crashes, Java throws" below).
+- **Reach:** none from shipped data, which loads in C. `artifact.txt` has one numeric `base-object:` line,
+  `#base-object:amulet:55`, and it is commented out (checked 2026-11-07). A hand-edited file only.
+- **Revisit:** never expected. C cannot load such a file either.
+- **Pinned by:** `aWeightCostOrGraphicsLineOnANumericSvalWithNoKindIsRefusedHereWhereCCrashes` and
+  `anActOrTimeLineOnALightWithANumericSvalAndNoKindIsRefusedHereWhereCCrashes` in `ArtifactNumericSvalTest`, with
+  `anActOrTimeLineOnANonLightWithANumericSvalAndNoKindLoadsAsInC` for the agreeing case.
+- **Accepted:** 2026-11-21, found while closing Stage 7h for `base-object:`.
+
+### A second parse finds the dummy kind that `-1` or `12abc` made, where C makes another each time
+
+- **Java:** `ObjectRegistry.lookupObjectKind(TValue, String)`, called by `ArtifactAssembler.assemble` for each
+  `base-object:` line. **C:** `lookup_sval` (`obj-util.c`) and `write_dummy_object_record` (`obj-init.c`).
+- **Differs:** for an sval that `strtoul` reads digits from but that is not a whole number below `INT_MAX` (`-1`,
+  `2147483647`, `12abc`, `0x10`), `lookup_sval` answers -1 at once and never tries the kind names. So
+  `parse_artifact_base_object` calls `write_dummy_object_record`, which adds a new dummy kind every time the line is
+  parsed, and birth parses `artifact.txt` a second time to restore the standard artifacts (the second parse
+  `aSecondParseKeepsTheSpecialLightsActivationAndTimeOnTheKindAsInC` in `ArtifactReaderTest` models), so each such
+  line adds one more kind per new character. Java matches the text against the kind names, finds the dummy the first
+  parse made, and adds none.
+- **Agrees:** a name that starts with a letter, such as `Phial`, is matched by name in C too, so the second parse finds
+  the dummy and makes none. A number below `INT_MAX` makes no kind in either, on every parse.
+- **Why:** copying it would mean two changes, a lookup that skips the names for such text and an `Artifact` that keeps
+  the dummy's allocated sval as C's `art->sval` does, to reproduce a kind that is made again and never used again.
+  Java's one kind is the better behaviour.
+- **Reach:** none from shipped data, whose `base-object:` svals are all names that start with a letter (`Phial`,
+  `Star`, `Arkenstone` and the others) or kinds that exist. A hand-edited file only.
+- **Revisit:** if `Artifact` is changed to hold the sval number C holds, or if `makeFakeArtifact` and the birth
+  re-parse are ported and a test shows the kind count depending on it.
+- **Pinned by:** `aSecondParseOfADigitLedNonNumberFindsItsDummyKindHereWhereCMakesAnother` in
+  `ArtifactNumericSvalTest`, with `aSecondParseOfANameFindsItsDummyKindAsInC` for the agreeing case.
+- **Accepted:** 2026-11-21, raised while checking whether Java ever uses the dummy kind it makes.
 
 ## Chest trap
 
@@ -1588,7 +1629,8 @@ C reads with `strtol` or `strtoul` and the lexers read with a token rule, and ab
 - **Cases so far:** a directive ahead of the first `name:` in `quest.txt` (above); a `resist:` ahead of `effect-type:` in
   `blow_effects.txt` and a directive ahead of the first `name:` there (see "Blow effect"); a `cycle-color:` ahead of any
   `cycle:` in `visuals.txt`, which `docs/grammar_issues.md` says dereferences a null `cycles[0]` (not re-checked in
-  Java today).
+  Java today); a `weight:`, `cost:`, `graphics:` (and, on a light, `act:` or `time:`) line on a numeric `base-object:`
+  sval that names no kind in `artifact.txt` (see "Artifact").
 - **Not covered:** an unresolved `fallback:` in `summon.txt`, which is "Summon" above. C's `strcmp(name, NULL)` is
   undefined behaviour and Java keeps the record instead of throwing. That entry predates this rule; decide whether to
   make it throw.

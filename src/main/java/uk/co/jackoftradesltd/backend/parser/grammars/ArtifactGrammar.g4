@@ -34,13 +34,14 @@ name
         ;
 
 // "base-object:<tval>:<sval>" - the type and sub-type of the item the artifact is built on, kept
-// as the two names. Both are STRING_BETWEEN_COLONS, so a name the lexer calls a DELIM_INTEGER,
-// one made of nothing but digits or the hex letters a to f, is a syntax error here. C reads a
-// leading decimal number as an index (tval_find_idx and lookup_sval both use strtoul in base
-// 10), and reads a name of hex letters as an ordinary name. The level is left "" in this rule:
-// the artifact rule, which knows the level read so far, makes the finished record.
+// as the two names. Both are STRING_BETWEEN_COLONS whatever they hold, so a number reaches the
+// assembler as text, as does a name made of hex letters. C reads a leading decimal number as an
+// index (tval_find_idx and lookup_sval both use strtoul in base 10) and anything else as a name,
+// and the assembler makes that choice. The level is left "" in this rule: the artifact rule,
+// which knows the level read so far, makes the finished record.
 //
-// Rule baseObject coded before 261112, commented in full on 261112.
+// Rule baseObject coded before 261112, commented in full on 261112, rewritten on 261121 once
+// DELIM_INTEGER was taken out of the lexer.
 baseObject
         returns[ArtifactParseRecord.ArtifactBaseObjectParseRecord objectBase]
         :   BASE_OBJECT t=STRING_BETWEEN_COLONS
@@ -206,13 +207,14 @@ slay
 
 // "curse:<name>:<power>" - a curse name and its power, kept as text in a FullCurseDataParseRecord.
 // An artifact's curse has no timeout, so the record's timeout is the fixed text "0". The name
-// is a STRING_BETWEEN_COLONS, so a name the lexer calls a DELIM_INTEGER is refused here, as in
-// baseObject.
+// and the power are both STRING_BETWEEN_COLONS, so the power reaches the assembler as text, as
+// in baseObject, and the assembler reads it as strtol does in base 0.
 //
-// Rule curse coded before 261112, commented in full on 261112.
+// Rule curse coded before 261112, commented in full on 261112, rewritten on 261121 once
+// DELIM_INTEGER was taken out of the lexer.
 curse
         returns[FullCurseDataParseRecord curseData]
-        :   CURSE k=STRING_BETWEEN_COLONS DELIM_COLON v=DELIM_INTEGER {
+        :   CURSE k=STRING_BETWEEN_COLONS DELIM_COLON v=STRING_BETWEEN_COLONS {
             String curseName = $k.getText();
             String cursePower = $v.getText();
             $curseData = new FullCurseDataParseRecord(curseName, cursePower, "0"); }

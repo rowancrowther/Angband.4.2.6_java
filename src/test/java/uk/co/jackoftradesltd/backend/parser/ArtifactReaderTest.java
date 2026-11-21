@@ -1360,13 +1360,26 @@ class ArtifactReaderTest {
 
     /**
      * {@code tval_find_idx} and {@code lookup_sval} both accept a number, the tval's value or the
-     * sval itself. The lexer reads a number between the colons as {@code DELIM_INTEGER}, which the
-     * {@code baseObject} rule does not take.
+     * sval itself, and so does the port: the lexer gives the two names to the {@code baseObject} rule
+     * as {@code STRING_BETWEEN_COLONS} whatever they hold, and the assembler reads the number. The
+     * sword's own tval number and sword sval 1 both name kinds that exist, so no kind is made. The
+     * cases that make or skip a kind are in {@code ArtifactNumericSvalTest}, which keeps its minted
+     * kinds out of this class's kind counts.
+     *
+     * <p>Function aNumericTvalOrSvalInBaseObjectLoadsAsInC coded on 261121, commented in full on
+     * 261121. It replaces aNumericTvalOrSvalInBaseObjectIsASyntaxErrorHereWhereCAcceptsIt.
      */
     @Test
-    void aNumericTvalOrSvalInBaseObjectIsASyntaxErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("tval-number.txt", "name:X\nbase-object:23:Dagger\n");
-        assertHardError("sval-number.txt", "name:X\nbase-object:sword:1\n");
+    void aNumericTvalOrSvalInBaseObjectLoadsAsInC() throws IOException {
+        int kinds = ObjectRegistry.getObjectKindCount();
+
+        Artifact byTvalNumber = load("tval-number.txt",
+                "name:X\nbase-object:" + TValue.TV_SWORD.ordinal() + ":Dagger\n").items().get(0);
+        Artifact bySvalNumber = load("sval-number.txt", "name:X\nbase-object:sword:1\n").items().get(0);
+
+        assertSame(TValue.TV_SWORD, byTvalNumber.gettValue());
+        assertSame(TValue.TV_SWORD, bySvalNumber.gettValue());
+        assertEquals(kinds, ObjectRegistry.getObjectKindCount());
     }
 
     /**

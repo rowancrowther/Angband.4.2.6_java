@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.middle.game.globals.registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.*;
+import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.middle.Activation;
 import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
@@ -1188,9 +1189,10 @@ public class ObjectRegistry {
 
     /**
      * Look up an object kind by its tval and an sval <em>reference</em>, resolving the reference the
-     * way the data files use it (C's {@code lookup_sval}): if {@code ref} is all digits it is treated
-     * as a literal numeric sval and dispatched to {@link #lookupObjectKind(TValue, int)}; otherwise it
-     * is matched case-insensitively against each kind's {@link ObjectKind#getsValueName() sval name}.
+     * way the data files use it (C's {@code lookup_sval}): if {@code ref} is a number by C's rule it is
+     * treated as a literal numeric sval and dispatched to {@link #lookupObjectKind(TValue, int)};
+     * otherwise it is matched case-insensitively against each kind's
+     * {@link ObjectKind#getsValueName() sval name}.
      *
      * <p>C's {@code lookup_sval} returns the sval and leaves {@code lookup_kind} to fetch the kind;
      * this does both, so a miss at either step is {@code null}. The name it matches is the kind's
@@ -1199,15 +1201,26 @@ public class ObjectRegistry {
      * {@code object.txt} has one). Kinds with no name are skipped in C; here they simply never
      * match.
      *
-     * <p>The numeric test is looser than C's, which runs {@code strtoul} (so leading white space and
-     * a sign are allowed), takes the number if it is below {@code INT_MAX} and rejects the
-     * reference outright if anything but spaces or tabs follows it. Here only a reference that
-     * {@code Integer.parseInt} accepts after trimming counts as a number, and anything else falls
-     * through to the name match, so {@code "12abc"} is looked up as a name where C answers "none".
-     * No kind in {@code object.txt} begins with a digit, so the two give the same answer on the
-     * shipped data. A negative or out-of-range number finds no kind either way.
+     * <p>The numeric test follows C's, which runs {@code strtoul}: blanks and tabs are skipped before
+     * the digits, one sign is allowed, only blanks and tabs may follow the digits, and the value must
+     * be below {@code INT_MAX}. A minus sign passes only on zero, because {@code strtoul} wraps it past
+     * {@code INT_MAX}. So {@code 99}, {@code +99}, {@code -0} and {@code " 99 "} are numbers, and
+     * {@code -1}, {@code 2147483647}, {@code 12abc}, {@code 0x10} and {@code +-5} are names. The
+     * {@code ArtifactAssembler} decides whether a {@code base-object:} sval needs a dummy kind with
+     * the same test. Both call {@link ParseUtils#isTextNumber(String)}, so they agree by
+     * construction; the test lives there and is pinned by {@code ParseUtilsTextNumberTest}.
      *
-     * <p>Function lookupObjectKind coded before 261008, commented in full on 261107.
+     * <p>Where C differs: text that {@code strtoul} reads some digits from but that is not a whole
+     * number below {@code INT_MAX} ({@code -1}, {@code 12abc}) answers -1 at once in C, without
+     * trying the names, so a dummy kind made for it is never found again and each parse of the file
+     * makes another. Here such text is matched by name, so the kind made the first time is found the
+     * second. This is an accepted deviation, recorded under "Artifact" in
+     * {@code docs/Accepted_Deviations.md}. No kind in {@code object.txt} begins with a digit or a
+     * sign, so the two agree on the shipped data.
+     *
+     * <p>Function lookupObjectKind coded before 261008, commented in full on 261107, numeric test
+     * changed to follow C's on 261121, accepted deviation noted on 261121, numeric test moved to
+     * {@code ParseUtils.isTextNumber} on 261121.
      *
      * @param tval the object type value
      * @param ref  the sval reference — either a decimal sval or a sub-type name
@@ -1224,14 +1237,16 @@ public class ObjectRegistry {
             throw e;
         }
 
-        try {
+        int num = ParseUtils.isTextNumber(ref);
+
+        if (num != -1) {
             return lookupObjectKind(tval, Integer.parseInt(ref.trim()));
-        } catch (NumberFormatException NAN) {
-            return objectKinds.stream()
-                    .filter(k -> tval.equals(k.gettValue()) &&
-                            ref.equalsIgnoreCase(k.getsValueName()))
-                    .findFirst().orElse(null);
         }
+        
+        return objectKinds.stream()
+                .filter(k -> tval.equals(k.gettValue()) &&
+                        ref.equalsIgnoreCase(k.getsValueName()))
+                .findFirst().orElse(null);
     }
 
     /**

@@ -1105,7 +1105,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fi
 
 ## `ObjectPropertyGrammar.g4` and `ObjectPropertyLexer.g4`: a numeric tval in `type-mult:` is a syntax error, C accepts it
 
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-15: the `ObjectProperty2` rewrite reads the tval of `type-mult:` as one `DELIM_STRING` token, which takes a bare number as text, and `ObjectProperty2Assembler` resolves it through `TValue.fromName`. `type-mult:3:2` names tval 3. Pinned by `aNumericTvalInTypeMultLoadsAsInC` in `ObjectPropertyReaderTest`, which replaced `aNumericTvalInTypeMultIsAHardErrorHereWhereCAcceptsIt`. The bullets below describe the state before the fix.]
 
 - `parse_object_property_type_mult` in `obj-init.c` calls `tval_find_idx` in `obj-tval.c`. That function first reads the
   name with `strtoul`, and if digits were read it returns the number when only spaces follow and it is below `TV_MAX`. So
@@ -1260,7 +1260,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style
 
 ## `ArtifactLexer.g4` and `ArtifactGrammar.g4`: a number in `base-object:` is a syntax error, C accepts it
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-21: `DELIM_INTEGER` is out of the `DELIMITED_STRINGS` mode in `ArtifactLexer.g4`, so the tval and the sval of `base-object:` are both `STRING_BETWEEN_COLONS` whatever they hold, and `ArtifactGrammar.g4` takes a number as text. `curse:` takes its power as text the same way, so ` 30`, `30x`, `0x1e`, `+5` and `010` load as `strtol` reads them. `ArtifactAssembler.assemble` reads the sval as `lookup_sval` does and makes no kind for a number below `INT_MAX`; `ObjectRegistry.lookupObjectKind(TValue, String)` applies the same test. Both parsers were regenerated from their `.g4` and the full suite ran green (15,053 tests, 0 failures). Pinned by `aNumericTvalOrSvalInBaseObjectLoadsAsInC` in `ArtifactReaderTest` and by `ArtifactNumericSvalTest`. Left over, an accepted deviation: where C crashes on a numeric sval that names no kind, Java throws (`Accepted_Deviations.md`, "Artifact"). The bullets below describe the state before the fix.]
 
 - `tval_find_idx` returns a number as the tval, and `lookup_sval` returns a number as the sval.
 - `ArtifactGrammar.g4:26` takes `STRING_BETWEEN_COLONS` twice, but the lexer's `DELIM_INTEGER` wins for digits, so

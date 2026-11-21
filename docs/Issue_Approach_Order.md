@@ -753,7 +753,9 @@ Message names in `msgt:` [<span style="color:#006400">**CLOSED**</span> 26-11-20
 
 - G: `SummonLexer.g4` and `ProjectionLexer.g4`. The projection mode never pops after a bad value, so one lower-case `msgt:` costs the rest of the file; fix that with the case rule.
 
-### 7h. Numeric tval and sval names
+### 7h. ###
+
+Numeric tval and sval names [<span style="color:#006400">**CLOSED**</span> 26-11-21: both grammars take a number as text and both assemblers read it as `tval_find_idx` and `lookup_sval` do. `type-mult:` closed 26-11-15 with the `ObjectProperty2` rewrite (`aNumericTvalInTypeMultLoadsAsInC` in `ObjectPropertyReaderTest`). `base-object:` closed today: `DELIM_INTEGER` is out of `ArtifactLexer.g4`'s `DELIMITED_STRINGS` mode, `ArtifactAssembler` makes no kind for an sval that is a number below `INT_MAX` and a dummy kind for any other name, and `ObjectRegistry.lookupObjectKind(TValue, String)` applies the same test. The parsers were regenerated and the full suite ran green (15,053 tests, 0 failures). The pins are `aNumericTvalOrSvalInBaseObjectLoadsAsInC` in `ArtifactReaderTest` and `ArtifactNumericSvalTest`, and the two entries in `docs/grammar_issues.md` carry the detail. Left over, accepted: where C crashes on a numeric sval that names no kind, Java throws (`Accepted_Deviations.md`, "Artifact").]
 
 - G: `ObjectPropertyLexer.g4` `type-mult:`, `ArtifactLexer.g4` `base-object:`. `TValue.fromName(int)` already has the lookup.
 

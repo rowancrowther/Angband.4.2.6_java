@@ -49,11 +49,11 @@ public class ArtifactGrammar extends Parser {
 		GRAPHICS=21, COLOUR_ONLY=22, GLYPH_ONLY=23, COMMENT=24, INDENT=25, EOL=26, 
 		SIMPLE_DICE_STRING=27, COMPLEX_DICE_STRING=28, BASE_DICE_STRING=29, SIMPLE_DICE_TIME_STRING=30, 
 		ALLOC_COMMONNESS_INT=31, ALLOC_INT=32, ALLOC_COLON=33, ALLOC_TO=34, ALLOC_EOL=35, 
-		STRING=36, ARTIFACT_FREE_TEXT_EOL=37, DELIM_INTEGER=38, STRING_BETWEEN_COLONS=39, 
-		DELIM_COLON=40, END_SKIP=41, FLAG=42, FLAG_OR=43, FLAG_EOL=44, VALUES_INTRO_OR=45, 
-		VALUES_STRING=46, ANYTHING_ELSE=47, VALUES_INTRO_EOL=48, VALUES_LBRACKET=49, 
-		VALUES_RBRACKET=50, VALUES_INTEGER=51, VALUES_OR=52, VALUES_EOL=53, COLOUR_VALUES=54, 
-		GLYPH_VALUES=55, GLYPH_COLON_SWITCH=56, GLYPH_EOL=57;
+		STRING=36, ARTIFACT_FREE_TEXT_EOL=37, STRING_BETWEEN_COLONS=38, DELIM_COLON=39, 
+		END_SKIP=40, FLAG=41, FLAG_OR=42, FLAG_EOL=43, VALUES_INTRO_OR=44, VALUES_STRING=45, 
+		ANYTHING_ELSE=46, VALUES_INTRO_EOL=47, VALUES_LBRACKET=48, VALUES_RBRACKET=49, 
+		VALUES_INTEGER=50, VALUES_OR=51, VALUES_EOL=52, COLOUR_VALUES=53, GLYPH_VALUES=54, 
+		GLYPH_COLON_SWITCH=55, GLYPH_EOL=56;
 	public static final int
 		RULE_name = 0, RULE_baseObject = 1, RULE_graphics = 2, RULE_level = 3, 
 		RULE_weight = 4, RULE_cost = 5, RULE_alloc = 6, RULE_attack = 7, RULE_armour = 8, 
@@ -76,7 +76,7 @@ public class ArtifactGrammar extends Parser {
 			"'values:'", "'brand:'", "'slay:'", "'curse:'", "'desc:'", null, null, 
 			null, "'graphics:'", "'color:'", "'glyph:'", null, null, null, null, 
 			null, null, null, null, null, null, null, null, null, null, null, null, 
-			null, null, null, null, null, null, null, null, null, "'['", "']'"
+			null, null, null, null, null, null, null, null, "'['", "']'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -88,11 +88,11 @@ public class ArtifactGrammar extends Parser {
 			"GRAPHICS", "COLOUR_ONLY", "GLYPH_ONLY", "COMMENT", "INDENT", "EOL", 
 			"SIMPLE_DICE_STRING", "COMPLEX_DICE_STRING", "BASE_DICE_STRING", "SIMPLE_DICE_TIME_STRING", 
 			"ALLOC_COMMONNESS_INT", "ALLOC_INT", "ALLOC_COLON", "ALLOC_TO", "ALLOC_EOL", 
-			"STRING", "ARTIFACT_FREE_TEXT_EOL", "DELIM_INTEGER", "STRING_BETWEEN_COLONS", 
-			"DELIM_COLON", "END_SKIP", "FLAG", "FLAG_OR", "FLAG_EOL", "VALUES_INTRO_OR", 
-			"VALUES_STRING", "ANYTHING_ELSE", "VALUES_INTRO_EOL", "VALUES_LBRACKET", 
-			"VALUES_RBRACKET", "VALUES_INTEGER", "VALUES_OR", "VALUES_EOL", "COLOUR_VALUES", 
-			"GLYPH_VALUES", "GLYPH_COLON_SWITCH", "GLYPH_EOL"
+			"STRING", "ARTIFACT_FREE_TEXT_EOL", "STRING_BETWEEN_COLONS", "DELIM_COLON", 
+			"END_SKIP", "FLAG", "FLAG_OR", "FLAG_EOL", "VALUES_INTRO_OR", "VALUES_STRING", 
+			"ANYTHING_ELSE", "VALUES_INTRO_EOL", "VALUES_LBRACKET", "VALUES_RBRACKET", 
+			"VALUES_INTEGER", "VALUES_OR", "VALUES_EOL", "COLOUR_VALUES", "GLYPH_VALUES", 
+			"GLYPH_COLON_SWITCH", "GLYPH_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -1193,8 +1193,10 @@ public class ArtifactGrammar extends Parser {
 		public Token v;
 		public TerminalNode CURSE() { return getToken(ArtifactGrammar.CURSE, 0); }
 		public TerminalNode DELIM_COLON() { return getToken(ArtifactGrammar.DELIM_COLON, 0); }
-		public TerminalNode STRING_BETWEEN_COLONS() { return getToken(ArtifactGrammar.STRING_BETWEEN_COLONS, 0); }
-		public TerminalNode DELIM_INTEGER() { return getToken(ArtifactGrammar.DELIM_INTEGER, 0); }
+		public List<TerminalNode> STRING_BETWEEN_COLONS() { return getTokens(ArtifactGrammar.STRING_BETWEEN_COLONS); }
+		public TerminalNode STRING_BETWEEN_COLONS(int i) {
+			return getToken(ArtifactGrammar.STRING_BETWEEN_COLONS, i);
+		}
 		public CurseContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1227,7 +1229,7 @@ public class ArtifactGrammar extends Parser {
 			setState(164);
 			match(DELIM_COLON);
 			setState(165);
-			((CurseContext)_localctx).v = match(DELIM_INTEGER);
+			((CurseContext)_localctx).v = match(STRING_BETWEEN_COLONS);
 
 			            String curseName = ((CurseContext)_localctx).k.getText();
 			            String cursePower = ((CurseContext)_localctx).v.getText();
@@ -1715,7 +1717,7 @@ public class ArtifactGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u00019\u00f1\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u00018\u00f1\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002"+
@@ -1763,9 +1765,9 @@ public class ArtifactGrammar extends Parser {
 		"\u0000\u0000$\u00ac\u0001\u0000\u0000\u0000&\u00eb\u0001\u0000\u0000\u0000"+
 		"()\u0005\u0001\u0000\u0000)*\u0005$\u0000\u0000*+\u0006\u0000\uffff\uffff"+
 		"\u0000+\u0001\u0001\u0000\u0000\u0000,-\u0005\u0002\u0000\u0000-.\u0005"+
-		"\'\u0000\u0000./\u0005(\u0000\u0000/0\u0005\'\u0000\u000001\u0006\u0001"+
+		"&\u0000\u0000./\u0005\'\u0000\u0000/0\u0005&\u0000\u000001\u0006\u0001"+
 		"\uffff\uffff\u00001\u0003\u0001\u0000\u0000\u000023\u0005\u0015\u0000"+
-		"\u000034\u00057\u0000\u000045\u00058\u0000\u000056\u00056\u0000\u0000"+
+		"\u000034\u00056\u0000\u000045\u00057\u0000\u000056\u00055\u0000\u0000"+
 		"67\u0006\u0002\uffff\uffff\u00007\u0005\u0001\u0000\u0000\u000089\u0005"+
 		"\u0003\u0000\u00009:\u0005\u0013\u0000\u0000:;\u0006\u0003\uffff\uffff"+
 		"\u0000;\u0007\u0001\u0000\u0000\u0000<=\u0005\u0004\u0000\u0000=>\u0005"+
@@ -1780,13 +1782,13 @@ public class ArtifactGrammar extends Parser {
 		"\u0000S\u000f\u0001\u0000\u0000\u0000TU\u0005\b\u0000\u0000UV\u0005\u0013"+
 		"\u0000\u0000VW\u0005\u0012\u0000\u0000WX\u0005\u0013\u0000\u0000XY\u0006"+
 		"\b\uffff\uffff\u0000Y\u0011\u0001\u0000\u0000\u0000Zb\u0005\t\u0000\u0000"+
-		"[]\u0005+\u0000\u0000\\[\u0001\u0000\u0000\u0000]^\u0001\u0000\u0000\u0000"+
+		"[]\u0005*\u0000\u0000\\[\u0001\u0000\u0000\u0000]^\u0001\u0000\u0000\u0000"+
 		"^\\\u0001\u0000\u0000\u0000^_\u0001\u0000\u0000\u0000_c\u0001\u0000\u0000"+
-		"\u0000`a\u0005*\u0000\u0000ac\u0006\t\uffff\uffff\u0000b\\\u0001\u0000"+
+		"\u0000`a\u0005)\u0000\u0000ac\u0006\t\uffff\uffff\u0000b\\\u0001\u0000"+
 		"\u0000\u0000b`\u0001\u0000\u0000\u0000bc\u0001\u0000\u0000\u0000co\u0001"+
-		"\u0000\u0000\u0000df\u0005+\u0000\u0000ed\u0001\u0000\u0000\u0000fg\u0001"+
+		"\u0000\u0000\u0000df\u0005*\u0000\u0000ed\u0001\u0000\u0000\u0000fg\u0001"+
 		"\u0000\u0000\u0000ge\u0001\u0000\u0000\u0000gh\u0001\u0000\u0000\u0000"+
-		"hk\u0001\u0000\u0000\u0000ij\u0005*\u0000\u0000jl\u0006\t\uffff\uffff"+
+		"hk\u0001\u0000\u0000\u0000ij\u0005)\u0000\u0000jl\u0006\t\uffff\uffff"+
 		"\u0000ki\u0001\u0000\u0000\u0000kl\u0001\u0000\u0000\u0000ln\u0001\u0000"+
 		"\u0000\u0000me\u0001\u0000\u0000\u0000nq\u0001\u0000\u0000\u0000om\u0001"+
 		"\u0000\u0000\u0000op\u0001\u0000\u0000\u0000p\u0013\u0001\u0000\u0000"+
@@ -1795,17 +1797,17 @@ public class ArtifactGrammar extends Parser {
 		"\u000b\u0000\u0000wx\u0005\u001e\u0000\u0000xy\u0006\u000b\uffff\uffff"+
 		"\u0000y\u0017\u0001\u0000\u0000\u0000z{\u0005\f\u0000\u0000{|\u0005$\u0000"+
 		"\u0000|}\u0006\f\uffff\uffff\u0000}\u0019\u0001\u0000\u0000\u0000~\u0087"+
-		"\u0005\r\u0000\u0000\u007f\u0081\u0005-\u0000\u0000\u0080\u007f\u0001"+
+		"\u0005\r\u0000\u0000\u007f\u0081\u0005,\u0000\u0000\u0080\u007f\u0001"+
 		"\u0000\u0000\u0000\u0081\u0082\u0001\u0000\u0000\u0000\u0082\u0080\u0001"+
 		"\u0000\u0000\u0000\u0082\u0083\u0001\u0000\u0000\u0000\u0083\u0088\u0001"+
-		"\u0000\u0000\u0000\u0084\u0085\u0005.\u0000\u0000\u0085\u0086\u00053\u0000"+
+		"\u0000\u0000\u0000\u0084\u0085\u0005-\u0000\u0000\u0085\u0086\u00052\u0000"+
 		"\u0000\u0086\u0088\u0006\r\uffff\uffff\u0000\u0087\u0080\u0001\u0000\u0000"+
 		"\u0000\u0087\u0084\u0001\u0000\u0000\u0000\u0088\u0097\u0001\u0000\u0000"+
-		"\u0000\u0089\u008d\u00054\u0000\u0000\u008a\u008c\u0005-\u0000\u0000\u008b"+
+		"\u0000\u0089\u008d\u00053\u0000\u0000\u008a\u008c\u0005,\u0000\u0000\u008b"+
 		"\u008a\u0001\u0000\u0000\u0000\u008c\u008f\u0001\u0000\u0000\u0000\u008d"+
 		"\u008b\u0001\u0000\u0000\u0000\u008d\u008e\u0001\u0000\u0000\u0000\u008e"+
 		"\u0093\u0001\u0000\u0000\u0000\u008f\u008d\u0001\u0000\u0000\u0000\u0090"+
-		"\u0091\u0005.\u0000\u0000\u0091\u0092\u00053\u0000\u0000\u0092\u0094\u0006"+
+		"\u0091\u0005-\u0000\u0000\u0091\u0092\u00052\u0000\u0000\u0092\u0094\u0006"+
 		"\r\uffff\uffff\u0000\u0093\u0090\u0001\u0000\u0000\u0000\u0093\u0094\u0001"+
 		"\u0000\u0000\u0000\u0094\u0096\u0001\u0000\u0000\u0000\u0095\u0089\u0001"+
 		"\u0000\u0000\u0000\u0096\u0099\u0001\u0000\u0000\u0000\u0097\u0095\u0001"+
@@ -1815,7 +1817,7 @@ public class ArtifactGrammar extends Parser {
 		"\uffff\uffff\u0000\u009d\u001d\u0001\u0000\u0000\u0000\u009e\u009f\u0005"+
 		"\u000f\u0000\u0000\u009f\u00a0\u0005$\u0000\u0000\u00a0\u00a1\u0006\u000f"+
 		"\uffff\uffff\u0000\u00a1\u001f\u0001\u0000\u0000\u0000\u00a2\u00a3\u0005"+
-		"\u0010\u0000\u0000\u00a3\u00a4\u0005\'\u0000\u0000\u00a4\u00a5\u0005("+
+		"\u0010\u0000\u0000\u00a3\u00a4\u0005&\u0000\u0000\u00a4\u00a5\u0005\'"+
 		"\u0000\u0000\u00a5\u00a6\u0005&\u0000\u0000\u00a6\u00a7\u0006\u0010\uffff"+
 		"\uffff\u0000\u00a7!\u0001\u0000\u0000\u0000\u00a8\u00a9\u0005\u0011\u0000"+
 		"\u0000\u00a9\u00aa\u0005$\u0000\u0000\u00aa\u00ab\u0006\u0011\uffff\uffff"+

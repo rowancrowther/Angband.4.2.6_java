@@ -43,8 +43,8 @@ NAME
 
 // "base-object:<tval>:<sval>" - the type and sub-type of the item the artifact is built on. C
 // registers it as two "sym"s, each cut at the next ':'. The two names are lexed in
-// DELIMITED_STRINGS and resolved by the assembler, which makes a new special kind for an sval
-// that names no existing kind.
+// DELIMITED_STRINGS and resolved by the assembler, which makes a new special kind for a name
+// that matches no existing kind. An sval that C reads as a number makes none.
 //
 // Token BASE_OBJECT coded before 261112, commented in full on 261112.
 BASE_OBJECT
@@ -339,15 +339,17 @@ ARTIFACT_FREE_TEXT_EOL
 // Mode DELIMITED_STRINGS coded before 261112, commented in full on 261112.
 mode DELIMITED_STRINGS;
 
-// A number in a delimited field. It is the power of a curse:, and it is also what a tval or sval
-// made only of digits, or of the hex letters a to f, becomes: such a name is the same length as a
-// STRING_BETWEEN_COLONS match, and this rule is declared first, so it wins the tie. The grammar's
-// baseObject rule takes only STRING_BETWEEN_COLONS for the two names, so it refuses that name.
+// Token DELIM_INTEGER, left commented out, was a number in a delimited field: the power of a
+// curse:, and also what a tval or sval made only of digits, or of the hex letters a to f, became,
+// because such a name is the same length as a STRING_BETWEEN_COLONS match and this rule was
+// declared first, so it won the tie. The baseObject rule takes only STRING_BETWEEN_COLONS, so it
+// refused a numeric tval or sval that C accepts. With it gone every delimited field is a
+// STRING_BETWEEN_COLONS: the grammar keeps the text and the assembler reads the number.
 //
-// Token DELIM_INTEGER coded before 261112, commented in full on 261112.
-DELIM_INTEGER
-        :   INT_FRAGMENT
-        ;
+// Token DELIM_INTEGER coded before 261112, commented in full on 261112, taken out on 261121.
+// DELIM_INTEGER
+//        :   INT_FRAGMENT
+//        ;
 
 // A name between colons: the tval and sval of base-object:, and the curse name of curse:. It may
 // hold spaces.

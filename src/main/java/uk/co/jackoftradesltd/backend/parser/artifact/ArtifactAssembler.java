@@ -116,13 +116,23 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      * {@code docs/Accepted_Deviations.md} under "Artifact". Every record in the shipped
      * {@code artifact.txt} has the line, so only a modded file reaches the error.
      *
-     * <p>A numeric {@code base-object:} sval that names no kind is also an accepted deviation,
-     * recorded under "Artifact" in the same file. C's {@code lookup_sval} returns an all-digit name
-     * as the sval and loads the artifact with no kind. Here the kind lookup would miss, a kind would
-     * be made under the next free sval, and the lookup after the loop would miss again, so the
-     * special-kind test would throw a {@link NullPointerException} rather than a
-     * {@link DataFileParseException}. The grammar refuses a numeric sval first, so only a record
-     * built by hand reaches it.
+     * <p>A {@code base-object:} sval is read as C's {@code lookup_sval} reads it. Blanks and tabs
+     * may come before and after the digits, one sign is allowed, a minus sign only on zero (C's
+     * {@code strtoul} wraps it past {@code INT_MAX}), and the value must be below {@code INT_MAX}.
+     * Such an sval is the sval itself. It names a kind if one has it, and when none does no kind is
+     * made, as {@code write_dummy_object_record} does not run: the artifact keeps the text as its
+     * sval. Any other text is a name, and a name that matches no kind gets a dummy kind, so
+     * {@code -1}, {@code 2147483647}, {@code 12abc} and {@code 0x10} each make one. The same test
+     * decides the lookup in {@link ObjectRegistry#lookupObjectKind(TValue, String)}, so the kind
+     * made here is the kind found afterwards.
+     *
+     * <p>A directive that reads a kind which is not there stops C: {@code weight:}, {@code cost:}
+     * and {@code graphics:} assert, and {@code act:} and {@code time:} read the kind only when the
+     * tval is a light. Each is refused here with a {@link DataFileParseException} that names the
+     * directive and its value, and only when the record has that line, so a bare numeric sval loads
+     * and {@code act:} or {@code time:} on any other tval loads too. This is the accepted
+     * deviation for every place C crashes on a data file, recorded under "Artifact" in
+     * {@code docs/Accepted_Deviations.md}.
      *
      * <p>The {@code attack:} dice string is read by {@link Random#parseStr}, and its dice and
      * sides become the artifact's base damage, C's {@code dd} and {@code ds}. A record with no
@@ -151,7 +161,8 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
      * load-ending errors on 261023, special-kind level note added on 261023, absent-text,
      * zero-power curse and no-base-object notes added on 261106, rewritten for the per-line level
      * snapshot, the msg/desc null note and the numeric-sval deviation on 261107, attack, ignored
-     * elements and graphics notes added on 261112.
+     * elements and graphics notes added on 261112, numeric-sval and missing-kind notes rewritten on
+     * 261121 once the grammar let a numeric sval through.
      *
      * @param records  the raw artifact records from the grammar, in file order
      * @param filename the name of the data file, used in the error messages
@@ -433,30 +444,35 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }
-                kind = ObjectRegistry.lookupObjectKind(tVal, sValStr);
-                if (kind == null) {
-                    kind = new ObjectKind();
-                    kind.setBase(base);
-                    kind.setTval(tVal);
-                    kind.setsValueName(sValStr);
-                    Map<ElementEnum, ElementInfo> elementInfoMap = new HashMap<>();
-                    kind.setLevel(levelInt);
-                    for (ElementEnum elementEnum : base.getElementMap().keySet()) {
-                        elementInfoMap.put(elementEnum, base.getElementMap().get(elementEnum).copy());
+                
+                int sValInt = ParseUtils.isTextNumber(sValStr);
+
+                if (sValInt == -1) {
+                    kind = ObjectRegistry.lookupObjectKind(tVal, sValStr);
+                    if (kind == null) {
+                        kind = new ObjectKind();
+                        kind.setBase(base);
+                        kind.setTval(tVal);
+                        kind.setsValueName(sValStr);
+                        Map<ElementEnum, ElementInfo> elementInfoMap = new HashMap<>();
+                        kind.setLevel(levelInt);
+                        for (ElementEnum elementEnum : base.getElementMap().keySet()) {
+                            elementInfoMap.put(elementEnum, base.getElementMap().get(elementEnum).copy());
+                        }
+                        kind.setElInfo(elementInfoMap);
+                        Flag<ObjectFlag> oFlags = base.getFlags();
+                        for (ObjectFlag oFlag : oFlags) {
+                            kind.setFlag(oFlag);
+                        }
+                        Flag<ObjectKindFlag> kFlags = base.getKindFlags();
+                        for (ObjectKindFlag kFlag : kFlags) {
+                            kind.setKindFlag(kFlag);
+                        }
+                        kind.setCharacter(new AngbandDisplayCharacter('*', ColourEnum.COLOUR_RED));
+                        kind.setKindFlag(ObjectKindFlag.KF_INSTA_ART);
+                        ObjectRegistry.addObjectKind(kind);
+                        kind.setSpecialArtifactKind(kind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax());
                     }
-                    kind.setElInfo(elementInfoMap);
-                    Flag<ObjectFlag> oFlags = base.getFlags();
-                    for (ObjectFlag oFlag : oFlags) {
-                        kind.setFlag(oFlag);
-                    }
-                    Flag<ObjectKindFlag> kFlags = base.getKindFlags();
-                    for (ObjectKindFlag kFlag : kFlags) {
-                        kind.setKindFlag(kFlag);
-                    }
-                    kind.setCharacter(new AngbandDisplayCharacter('*', ColourEnum.COLOUR_RED));
-                    kind.setKindFlag(ObjectKindFlag.KF_INSTA_ART);
-                    ObjectRegistry.addObjectKind(kind);
-                    kind.setSpecialArtifactKind(kind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax());
                 }
             }
 
@@ -468,7 +484,12 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 lastTValue = TValue.TV_NONE;
             }
             kind = ObjectRegistry.lookupObjectKind(lastTValue, baseParseRecord.sValue());
-            boolean special = kind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax();
+            boolean special;
+            if (kind == null) {
+                special = false;
+            } else {
+                special = kind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax();
+            }
             boolean specialLight = special && lastTValue == TValue.TV_LIGHT;
 
             // Artifact activation & time initial values
@@ -493,25 +514,53 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     activationMsg, artTime);
             
             // Weight for special kinds
-            if (special && !record.weight().isEmpty())
-                kind.setWeight(weight);
+            if (kind == null && !record.weight().isEmpty()) {
+                String message = "Artifact beginning at line: " + line + " of file: " + filename
+                        + " has a null kind value used at weight: " + record.weight();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
+            if (!record.weight().isEmpty())
+                if (special)
+                    kind.setWeight(weight);
             
             // Cost for special kinds
-            if (special && !record.cost().isEmpty())
-                kind.setCost(cost);
+            if (kind == null && !record.cost().isEmpty()) {
+                String message = "Artifact beginning at line: " + line + " of file: " + filename
+                        + " has a null kind value used at cost: " + record.cost();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
+            if (!record.cost().isEmpty())
+                if (special)
+                    kind.setCost(cost);
 
             // Special kind activations list
-            if (specialLight && !record.activation().isEmpty()) {
-                List<Activation> kindActivations = kind.getActivations();
-                kindActivations.clear();
-                if (kindActivation != null)
-                    kindActivations.add(kindActivation);
+            if (kind == null && !record.activation().isEmpty() && lastTValue.isLight()) {
+                String message = "Artifact beginning at line: " + line + " of file: " + filename
+                        + " has a null kind value used at activation: " + record.activation();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
             }
+            if (!record.activation().isEmpty())
+                if (specialLight) {
+                    List<Activation> kindActivations = kind.getActivations();
+                    kindActivations.clear();
+                    if (kindActivation != null)
+                        kindActivations.add(kindActivation);
+                }
 
             // Special light recharge time on the kind, when the record has a time: line
-            if (kindTime != null) {
-                kind.setTime(kindTime);
-            }            
+            if (kind == null && !record.time().isEmpty() && lastTValue.isLight()) {
+                String message = "Artifact beginning at line: " + line + " of file: " + filename
+                        + " has a null kind value used at time: " + record.time();
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
+            
+            if (!record.time().isEmpty()) 
+                if (kindTime != null) 
+                    kind.setTime(kindTime);
 
             // Angband display character (graphics: line)
             if (!record.glyph().isEmpty() && !record.colour().isEmpty()) {
@@ -523,17 +572,24 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }
-
-                if (kind.getKindFlags().has(ObjectKindFlag.KF_INSTA_ART)) {
-                    ColourEnum colour = ColourEnum.fromCode(record.colour());
-                    if (colour == null) colour = ColourEnum.COLOUR_WHITE;
-                    if (glyphCharacter.wideGlyphChar() == 0)
-                        kind.setCharacter(new AngbandDisplayCharacter(glyphCharacter.glyphChar(), colour));
-                    else
-                        kind.setCharacter(new AngbandDisplayCharacter(glyphCharacter.wideGlyphChar(), colour));
+                
+                if (kind != null) {
+                    if (kind.getKindFlags().has(ObjectKindFlag.KF_INSTA_ART)) {
+                        ColourEnum colour = ColourEnum.fromCode(record.colour());
+                        if (colour == null) colour = ColourEnum.COLOUR_WHITE;
+                        if (glyphCharacter.wideGlyphChar() == 0)
+                            kind.setCharacter(new AngbandDisplayCharacter(glyphCharacter.glyphChar(), colour));
+                        else
+                            kind.setCharacter(new AngbandDisplayCharacter(glyphCharacter.wideGlyphChar(), colour));
+                    } else {
+                        String message = "Artifact beginning at line: " + line + " of file: " + filename
+                                + " has an unknown error with token glyph value: " + record.glyph();
+                        logger.fatal(message);
+                        throw new DataFileParseException(message);
+                    }
                 } else {
                     String message = "Artifact beginning at line: " + line + " of file: " + filename
-                            + " has an unknown error with token glyph value: " + record.glyph();
+                            + " has a null kind value used at glyph: " + record.glyph();
                     logger.fatal(message);
                     throw new DataFileParseException(message);
                 }

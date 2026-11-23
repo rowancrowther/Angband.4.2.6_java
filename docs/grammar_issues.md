@@ -605,7 +605,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `MonsterLexer.g4`: a bare number as the `friends:` or `friends-base:` count is a syntax error
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-23: `FRIEND_INTEGER` no longer exists. `FRIEND_CHANCE` mode reads the chance as `FRIEND_UINT`, then `FRIENDS_MODE` reads the count as `FRIEND_DICE`, which is `SIMPLE_DICE_STRING_BODY` and so takes a bare number as its base-only alternative. `friends:100:5:Somebody` loads with 0 dice and 0 sides, as C does. Pinned by `aBareNumberFriendCountLoadsAsInCWhereParseRandomAcceptsIt` in `MonsterReaderTest`, which replaces `aBareNumberFriendCountIsAHardErrorHereWhereCReadsItAsARandomValue` and passed on 26-11-23. The bullets below describe the state before the fix.]
 
 - Both directives are `uint chance rand number sym name ?sym role`. `parse_random` in `parser.c` accepts `5` (a base
   and no dice), and the handler keeps only `number.dice` and `number.sides`.
@@ -1501,8 +1501,10 @@ Found 2026-10-18 during `/port backend/parser/NamesReader.java`. Not fixed.
 
 - **A `word:` before any `section:`.** `init_parse_names` gives `names_parse` a running `section` that starts at 0, so
   `parse_names_word` in `init.c` files such a word under section 0. The `record` rule in `NamesGrammar.g4` starts with
-  `section`, so the same file is a hard error here and loads as nothing.
-  `NamesReaderTest.aWordBeforeAnySectionIsAHardErrorWhereCFilesItUnderSectionZero` pins it.
+  `section`, so the same file was a hard error here and loaded as nothing.
+  [<span style="color:#006400">**CLOSED**</span> 26-11-23: `file` in `NamesGrammar.g4` takes `word*` before the first record and discards it. C's
+  section 0 is a slot nothing reads, so the outcome matches. Pinned by `NamesReaderTest.aWordBeforeAnySectionIsDroppedAsInC`
+  and `aFileOfOnlyLeadingWordsLoadsEmptyAsInC`, which replace the old hard-error pin.]
 - **A negative section.** `section` is a `uint` in `init_parse_names`, and `parser_parse` in `parser.c` rejects a leading
   `-`. `INTEGER` in `NamesLexer.g4` takes an optional `-`, so `section:-1` reaches the assembler as `-1`.
   `NamesReaderTest.aNegativeSectionLoadsHereWhereCRejectsIt` pins it; the consequence is in `docs/Assembler_Issues.md`.
@@ -1512,7 +1514,8 @@ Found 2026-10-18 during `/port backend/parser/NamesReader.java`. Not fixed.
   `NamesReaderTest.leadingWhitespaceBeforeADirectiveIsAHardErrorWhereCSkipsIt` pins it for `NamesLexer`.
 - **Repeated sections.** C keeps one word list per section, so a second `section:1` adds to the first. The `file` rule
   makes one record per `section:` line, so the reader returns two records with section 1 and `MiscRegistry.setNames` joins
-  them. Not a loss of data, but `record-count:` counts blocks, not distinct sections.
+  them. Not a loss of data.
+  [<span style="color:#006400">**CLOSED**</span> 26-11-23: accepted, see `Accepted_Deviations.md`, "Names". The `record-count:` header no longer exists.]
   `NamesReaderTest.aRepeatedSectionGivesTwoRecordsWhereCJoinsThemIntoOneList` pins it.
 - None on the shipped data, which has two unindented sections in order and no word before the first.
 

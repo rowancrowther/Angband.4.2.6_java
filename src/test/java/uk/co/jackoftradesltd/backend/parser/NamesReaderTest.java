@@ -348,14 +348,23 @@ class NamesReaderTest {
     // ---- Hard errors (fail-closed) ---------------------------------------
 
     /**
-     * Where C and the grammar differ, written up in {@code docs/grammar_issues.md}: C keeps a running
-     * section that starts at 0, so a {@code word:} before any {@code section:} lands in section 0.
-     * The {@code record} rule starts with {@code section}, so the grammar rejects it.
+     * C keeps a running section that starts at 0, so a {@code word:} before any {@code section:}
+     * lands in section 0, a slot nothing reads. {@code NamesGrammar.g4} takes {@code word*} ahead of
+     * the first record and discards it, so the file loads and the later sections are unchanged.
      */
     @Test
-    void aWordBeforeAnySectionIsAHardErrorWhereCFilesItUnderSectionZero() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("orphan.txt", "word:orphan\nsection:1\nword:a\n"));
+    void aWordBeforeAnySectionIsDroppedAsInC() throws IOException {
+        ParseResult<Name> result = load("orphan.txt", "word:orphan\nword:other\nsection:1\nword:a\n");
 
+        assertEquals(1, result.items().size());
+        assertEquals(1, result.items().get(0).getSection());
+        assertEquals(List.of("a"), result.items().get(0).getWord());
+    }
+
+    /** A file of leading words and no {@code section:} at all loads empty, with no error. */
+    @Test
+    void aFileOfOnlyLeadingWordsLoadsEmptyAsInC() throws IOException {
+        assertTrue(load("onlyorphans.txt", "word:x\nword:y\n").items().isEmpty());
     }
 
     /**

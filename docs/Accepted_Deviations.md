@@ -1609,6 +1609,27 @@ C reads with `strtol` or `strtoul` and the lexers read with a token rule, and ab
 - **Pinned by:** `anEmptyColonFieldOnAnEffectLineIsRefusedWhereCSkipsIt` in `MonsterSpellReaderTest`.
 - **Accepted:** 2026-11-12, raised while checking `EFFECT_INTEGER` and `HIT_UINT` in `MonsterSpellLexer.g4`.
 
+## Names
+
+### A section written twice gives two records from the reader, where C keeps one list
+
+- **Java:** `NamesReader` (through `NamesGrammar.g4` and `NamesAssembler.assemble`), read back through
+  `MiscRegistry.getNames`. **C:** `parse_names_section`, `parse_names_word` and `finish_parse_names` (`init.c`).
+- **Differs:** C keeps one word list per section number, so a second `section:1` adds its words to the first. Java makes
+  one `Name` per `section:` line, so `section:1`, `section:2`, `section:1` is three records. `MiscRegistry.setNames`
+  appends the words of every record into one list per `RandnameType`, so `getNameSection` gives the joined list, as C does.
+  `setNames` also stores the records as it received them, so `getNames` shows the split.
+- **Why:** the joined list is where the words are used. `getNames` is documented as the unprocessed form and has no C
+  counterpart. Its only callers are two tests, `MiscDataLoaderNamesTest` and `MiscRegistryNameSectionsTest`, and nothing
+  in `src/main` calls it. Joining in the reader or the registry would change the records those tests read and the
+  line number each record carries, for no gain in play.
+- **Reach:** none from shipped data, which has `section:1` then `section:2`, each once. A modded `names.txt` only, and
+  even then the words land in the right list.
+- **Revisit:** if game code ever calls `MiscRegistry.getNames`, or a count of records is read as a count of sections.
+  The place to join would be `NamesAssembler.assemble`, not `setNames`, which is a port of `finish_parse_names`.
+- **Accepted:** 2026-11-23, while closing the `NamesGrammar.g4` entry in Stage 8. Pinned by
+  `NamesReaderTest.aRepeatedSectionGivesTwoRecordsWhereCJoinsThemIntoOneList`.
+
 ## Quest
 
 ### A `level:`, `race:` or `number:` line before the file's first `name:` is refused, where C crashes

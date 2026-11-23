@@ -26,12 +26,14 @@ record
         @after {
             $rec = new NamesParseRecord(sec, wordList, lineNo);
         }
-        :   section { sec = $section.sectionNum; lineNo = $section.line; }
+        :   
+            section { sec = $section.sectionNum; lineNo = $section.line; }
             (word { wordList.add($word.wordVal); })*
         ;
 
 file
     returns[List<NamesParseRecord> records]
     @init { $records = new ArrayList<>(); }
-    :   (record { $records.add($record.rec); })* EOF
+    :   word*
+        (record { $records.add($record.rec); })* EOF
     ;

@@ -795,14 +795,57 @@ Split into one bullet per file on 2026-11-21, each read against the current gram
 
 Each is specific to one file and independent of the rest.
 
-- G: `MonsterSpellGrammar.g4` lore and message lines split into extra levels.
-- G: `MonsterLexer.g4` a bare number as the `friends:` or `friends-base:` count.
+- G: `MonsterSpellGrammar.g4` lore and message lines split into extra levels. [<span style="color:#006400">**CLOSED**</span> 26-11-23: `MonsterSpellGrammar.g4` takes `levelDirectives` as an alternative of `monsterSpell` and makes the text run after `power-cutoff:` optional. `MonsterSpellLevelAssembler.java` merges a power-less record into the level before it, so `lore:one`, `hit:100`, `lore: two` is one level with `one two`, as C's last-level handlers give. `power-cutoff:10` then `power-cutoff:20` gives `[0, 10, 20]` with level 10 empty. `MonsterSpellReaderTest` passes (57 tests) with `loreAfterAnEffectIsAppendedToTheFirstLevelAsInC`, `aHitOrMsgtLineBetweenTwoLoreLinesAlsoLeavesOneLevelAsInC`, `loreAfterAnEffectInsideAPowerCutoffLevelJoinsThatLevelAsInC` and `twoPowerCutoffsInARowGiveAnEmptyLevelAsInC`.]
+
+- G: `MonsterLexer.g4` a bare number as the `friends:` or `friends-base:` count. [<span style="color:#006400">**CLOSED**</span> 26-11-23: found already fixed when the entry was re-checked. `FRIEND_INTEGER` no longer exists. `FRIEND_CHANCE` mode reads the chance as `FRIEND_UINT`, then `FRIENDS_MODE` reads the count as `FRIEND_DICE`, which is `SIMPLE_DICE_STRING_BODY` and so takes a bare number as its base-only alternative. `friends:100:5:Somebody` loads with 0 dice and 0 sides, as C keeps only `number.dice` and `number.sides`. Pinned by `aBareNumberFriendCountLoadsAsInCWhereParseRandomAcceptsIt` in `MonsterReaderTest`, which passed on 26-11-23. The bullets below describe the state before the fix.]
+
+  - **What C does:** `parse_random` accepts `5` as a base with no dice, so `friends:100:5:Somebody` loads.
+  - **What Java does:** `FRIEND_INTEGER` is declared before `FRIEND_DICE` in `FRIENDS_MODE`, so `5` lexes as the wrong token and the rule expects dice.
+  - **The fix:** let the count rule take either token, or reorder the lexer rules.
+  - **Shipped data:** unaffected, every count has a `d`.
+
 - G: `NamesGrammar.g4` a `word:` before the first `section:`, and repeated sections.
+
+  - **A word first:** C starts the running section at 0 and files the word under it. [<span style="color:#006400">**CLOSED**</span> 26-11-23: `file` in `NamesGrammar.g4` now takes `word*` ahead of the first record and discards it, so `word:orphan`, `section:1`, `word:a` loads one section-1 record holding `a`, and a file of only leading words loads empty. C files those words under section 0, which nothing reads, so the outcome matches. The leading words never reach `NamesAssembler`, so its refusal of section 0 (an accepted deviation) is not in the way. The parser was regenerated (the committed one predated the edit). Pinned by `aWordBeforeAnySectionIsDroppedAsInC` and `aFileOfOnlyLeadingWordsLoadsEmptyAsInC` in `NamesReaderTest`, which replace `aWordBeforeAnySectionIsAHardErrorWhereCFilesItUnderSectionZero`.]
+  - **Repeated sections:** C keeps one word list per section, so a second `section:1` adds to the first. Java makes one record per `section:` line. [<span style="color:#006400">**CLOSED**</span> 26-11-23: accepted, not changed. `MiscRegistry.setNames` joins the records into one list per section, so `getNameSection` matches C; only `getNames`, which has no caller in `src/main`, shows the split. Recorded in `Accepted_Deviations.md`, "Names". The `record-count:` header this entry used to cite no longer exists.]
+  - **Shipped data:** unaffected, two unindented sections in order.
+
 - G: `PlayerClassGrammar.g4` a second `magic:` replaces the first (the one that is silently accepted).
+
+  - **What C does:** a second `magic:` in one class is `PARSE_ERROR_REPEATED_DIRECTIVE`, so the load stops.
+  - **What Java does:** each `magicBlock` overwrites `magicInit`, so the second block quietly replaces the first.
+  - **Why it is listed alone:** the other class-file differences are hard errors that refuse the file. This is the only one that loads wrong without telling anyone.
+  - **The fix:** reject a second `magic:` in a class.
+
 - G: `PlayerTimedGrammar.g4` effect directives (per the Stage 0 answer).
+
+  - **What C does:** `effect-yx:`, `effect-expr:` and `effect-msg:` fill the effect just opened by `on-begin-effect:` or `on-end-effect:`. `effect-dice:` takes a dice string such as `1d4`.
+  - **What Java does:** those three are not tokens at all. `effect-dice:` takes a bare integer, so `effect-dice:1d4` is an error, and it is refused after `on-begin-effect:`.
+  - **Related:** `onBeginEffect` refuses the radius and `other` fields, and a second effect replaces the first where C chains them.
+  - **The decision:** the Stage 0 answer is to support all three, reusing the fields `EffectParseRecord` already carries.
+
 - G: `BlowMethodGrammar.g4` `name:` is trimmed.
+
+  - **What C does:** `parse_meth_name` keeps the rest of the line as it comes, so `name:HIT ` is a method called `"HIT "`, which `findmeth("HIT")` never matches.
+  - **What Java does:** the `blow` rule runs `.trim()` on the name, so it matches.
+  - **Why it matters:** Java forgives a typo C punishes. It is the one trimmed field in the grammar, so the fix is to remove the `.trim()`.
+  - **Shipped data:** unaffected.
+
 - G: `Random.g4` the remaining differences (lower-case `m`, `$` variables, blanks, repeated `d` or `M`), once the `INT_MAX` decision is in.
+
+  - **The `INT_MAX` part:** done, a number above `INT_MAX` returns `null`. What is left is the rest of the entry.
+  - **Java accepts, C refuses:** `2d6m3`, `5M3`, `$` variables in the base and sides slots, and `--1` through `Random.parseStr`.
+  - **Java refuses, C accepts:** blanks at either end, `dd1`, `MM1`, `M1M2` and `2d-0`.
+  - **Care:** `dice_parse_string` in C does take `$` variables for effect `dice:` lines, so `$` is only wrong where `parse_random` is the reader.
+
 - G: `TerrainFeatureGrammar.g4`, `GameConstantsGrammar.g4`, `WorldGrammar.g4`, `QuestGrammar.g4`, `VaultGrammar.g4`: anything left after Stages 6 and 7 (indent, base 0, trailing field, negative depth).
+
+  - **What this bullet is:** a sweep, not a fix. Stages 6 and 7 close the shared causes, and these five files each keep a few differences of their own.
+  - **Indent:** an indented line is refused where C skips the indent (`GameConstantsGrammar.g4` and the Quest and Vault lexers).
+  - **Base 0:** C reads numbers with `strtol` or `strtoul` in base 0, so `0x10` is 16 and `010` is 8, where `rows:0x3` in `VaultGrammar.g4` is a syntax error.
+  - **Trailing field:** `level:0:Town:None:Angband 1:extra` is a syntax error in `WorldGrammar.g4` where C ignores `extra`.
+  - **Negative depth:** `min-depth:` and `max-depth:` take a minus sign in `VaultGrammar.g4` where C refuses it.
+  - **How to work it:** re-check each file's entry in `docs/grammar_issues.md` first, since the shared fixes may already have covered it.
 
 ## Stage 9: comment and Javadoc sweep
 

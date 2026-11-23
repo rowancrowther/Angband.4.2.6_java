@@ -945,22 +945,91 @@ class PlayerClassReaderTest {
         }
     }
 
-    /** C: {@code parse_class_magic} returns {@code PARSE_ERROR_REPEATED_DIRECTIVE}. */
-    @Test
-    void aRepeatedMagicLineReplacesTheFirstHereWhereCRejectsIt() throws Exception {
-        ParseResult<PlayerClass> r = load("two-magic.txt", "name:Caster\n"
-                        + "magic:1:100:1\n"
-                        + "book:magic book:town:[First]:1:arcane\n"
-                        + "spell:A:1:1:1:1\n"
-                        + "effect:BOLT:MISSILE\ndice:1\n"
-                        + "magic:2:200:1\n"
-                        + "book:magic book:town:[Second]:1:arcane\n"
-                        + "spell:B:1:1:1:1\n"
-                        + "effect:BOLT:MISSILE\ndice:1\n");
+    private static final String FIRST_BOOK = "book:magic book:town:[First]:1:arcane\n"
+            + "spell:A:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n";
+    private static final String SECOND_BOOK = "book:magic book:town:[Second]:1:arcane\n"
+            + "spell:B:1:1:1:1\neffect:BOLT:MISSILE\ndice:1\n";
 
-        ClassMagic magic = castMagic(r);
-        assertEquals(2, (int) field(magic, ClassMagic.class, "firstSpellLevel"));
-        assertEquals(200, (int) field(magic, ClassMagic.class, "spellWeight"));
+    /**
+     * C: {@code parse_class_magic} returns {@code PARSE_ERROR_REPEATED_DIRECTIVE} for a second
+     * {@code magic:} in one class once the first declared a book, so the load stops. The message
+     * names the second line.
+     */
+    @Test
+    void aRepeatedMagicLineIsRefusedAsInC() throws Exception {
+        String file = "name:Caster\n"
+                + "magic:1:100:1\n" + FIRST_BOOK
+                + "magic:2:200:1\n" + SECOND_BOOK;
+
+        DataFileParseException e = loadAndStop("two-magic.txt", file);
+
+        assertTrue(e.getMessage().contains("Class magic starting at line: " + lineOf(file, "magic:2:200:1")),
+                e.getMessage());
+        assertTrue(e.getMessage().contains("illegal multiple defined 'magic' blocks"), e.getMessage());
+    }
+
+    /** C: a first {@code magic:} that declared a book is repeated even if no {@code book:} line followed it. */
+    @Test
+    void aRepeatedMagicLineAfterNoBookLineIsRefusedAsInC() throws Exception {
+        String file = "name:Caster\nmagic:1:100:1\nmagic:2:200:1\n" + SECOND_BOOK;
+
+        DataFileParseException e = loadAndStop("magic-magic-book.txt", file);
+
+        assertTrue(e.getMessage().contains("Class magic starting at line: " + lineOf(file, "magic:2:200:1")),
+                e.getMessage());
+    }
+
+    /** C: another directive between the two {@code magic:} lines does not make the second a first. */
+    @Test
+    void aRepeatedMagicLineAfterAnotherDirectiveIsRefusedAsInC() throws Exception {
+        String file = "name:Caster\nmagic:1:100:1\n" + FIRST_BOOK
+                + "title:Wizard\nmagic:2:200:1\n" + SECOND_BOOK;
+
+        DataFileParseException e = loadAndStop("magic-title-magic.txt", file);
+
+        assertTrue(e.getMessage().contains("Class magic starting at line: " + lineOf(file, "magic:2:200:1")),
+                e.getMessage());
+    }
+
+    /** C: a repeat of {@code magic:} that declares 0 books is still a repeat when the first declared one. */
+    @Test
+    void aZeroBookMagicLineAfterABookedOneIsRefusedAsInC() throws Exception {
+        String file = "name:Caster\nmagic:1:100:1\n" + FIRST_BOOK + "magic:2:200:0\n";
+
+        DataFileParseException e = loadAndStop("magic-then-zero.txt", file);
+
+        assertTrue(e.getMessage().contains("Class magic starting at line: " + lineOf(file, "magic:2:200:0")),
+                e.getMessage());
+    }
+
+    /**
+     * C: each class has its own {@code magic:}, so one per class is no repeat. The check is
+     * per class, not per file, and a class with no {@code magic:} between two casters does not
+     * disturb it.
+     */
+    @Test
+    void oneMagicLinePerClassLoadsAsInC() throws Exception {
+        ParseResult<PlayerClass> r = load("magic-per-class.txt", "name:First\nmagic:1:100:1\n" + FIRST_BOOK
+                + "name:Fighter\ntitle:Rookie\n"
+                + "name:Second\nmagic:2:200:1\n" + SECOND_BOOK);
+
+        assertEquals(3, r.items().size());
+    }
+
+    /**
+     * C: {@code magic:1:100:0} allocates nothing, so {@code c->magic.books} stays NULL and a later
+     * {@code magic:} is not a repeat; it loads and replaces the first. Java refuses it, because
+     * the grammar notes only that a {@code magic:} was seen. No shipped class declares 0 books.
+     * Flip this pin if the grammar is changed to follow C.
+     */
+    @Test
+    void aMagicLineAfterAZeroBookOneIsRefusedHereWhereCLoadsIt() throws Exception {
+        String file = "name:Caster\nmagic:1:100:0\nmagic:2:200:1\n" + SECOND_BOOK;
+
+        DataFileParseException e = loadAndStop("zero-then-magic.txt", file);
+
+        assertTrue(e.getMessage().contains("Class magic starting at line: " + lineOf(file, "magic:2:200:1")),
+                e.getMessage());
     }
 
     /** C: a class may have a {@code magic:} line declaring books and then no {@code book:} lines. */

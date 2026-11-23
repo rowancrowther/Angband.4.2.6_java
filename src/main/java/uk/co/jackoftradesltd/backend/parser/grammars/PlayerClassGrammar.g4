@@ -20,16 +20,18 @@ import EffectBlock;
 }
 
 @members {
-             // EffectParseRecord is a record, so "updating" the last effect means
-             // swapping in a copy with one or more fields changed
-             void replaceLast(List<EffectParseRecord> list, EffectParseRecord updated) {
+            private boolean magicFound = false;
+
+            // EffectParseRecord is a record, so "updating" the last effect means
+            // swapping in a copy with one or more fields changed
+            void replaceLast(List<EffectParseRecord> list, EffectParseRecord updated) {
                  list.set(list.size() - 1, updated);
-             }
+            }
          }
 
 name
         returns[String nameStr, int lineNo]
-        :   NAME STRING { $nameStr = $STRING.getText(); $lineNo = $start.getLine(); }
+        :   NAME STRING { $nameStr = $STRING.getText(); $lineNo = $start.getLine(); magicFound = false; }
         ;
 
 stats
@@ -194,21 +196,29 @@ exp
 magic
         returns[String firstSpell, String spellWeight, String noOfBooks, int line]
         :   MAGIC f=EFFECT_INTEGER COLON s=EFFECT_INTEGER COLON n=EFFECT_INTEGER {
-                $firstSpell  = $f.getText();
-                $spellWeight = $s.getText();
-                $noOfBooks   = $n.getText();
-                $line        = $start.getLine();
+                if (!magicFound) {
+                    $firstSpell  = $f.getText();
+                    $spellWeight = $s.getText();
+                    $noOfBooks   = $n.getText();
+                    $line        = $start.getLine();
+                    magicFound   = true;
+                } else {
+                    $firstSpell  = null;
+                    $spellWeight = null;
+                    $noOfBooks   = null;
+                    $line        = $start.getLine();
+                }
             }
         ;
 
 magicBlock[List<ClassEquipParseRecord> equipInit]
         returns[String firstSpell, String spellWeight, String noOfBooks, int line,
                 List<ClassSpellBookParseRecord> spellBooks]
-        :   magic { $firstSpell = $magic.firstSpell;
+        :   magic { $firstSpell  = $magic.firstSpell;
                     $spellWeight = $magic.spellWeight;
-                    $noOfBooks = $magic.noOfBooks;
-                    $line = $magic.line;
-                    $spellBooks = new ArrayList<>(); }
+                    $noOfBooks   = $magic.noOfBooks;
+                    $line        = $magic.line;
+                    $spellBooks  = new ArrayList<>(); }
             (bookBlock[equipInit] { $spellBooks.add(new ClassSpellBookParseRecord(
                     $bookBlock.oBase, $bookBlock.locFrom, $bookBlock.nameStr,
                     $bookBlock.noOfSpells, $bookBlock.realm, $bookBlock.glyph,

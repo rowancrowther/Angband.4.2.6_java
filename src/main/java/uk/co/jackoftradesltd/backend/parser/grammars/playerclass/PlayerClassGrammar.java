@@ -163,11 +163,13 @@ public class PlayerClassGrammar extends Parser {
 	public ATN getATN() { return _ATN; }
 
 
-	             // EffectParseRecord is a record, so "updating" the last effect means
-	             // swapping in a copy with one or more fields changed
-	             void replaceLast(List<EffectParseRecord> list, EffectParseRecord updated) {
+	            private boolean magicFound = false;
+
+	            // EffectParseRecord is a record, so "updating" the last effect means
+	            // swapping in a copy with one or more fields changed
+	            void replaceLast(List<EffectParseRecord> list, EffectParseRecord updated) {
 	                 list.set(list.size() - 1, updated);
-	             }
+	            }
 	         
 	public PlayerClassGrammar(TokenStream input) {
 		super(input);
@@ -210,7 +212,7 @@ public class PlayerClassGrammar extends Parser {
 			match(NAME);
 			setState(81);
 			((NameContext)_localctx).STRING = match(STRING);
-			 ((NameContext)_localctx).nameStr =  ((NameContext)_localctx).STRING.getText(); ((NameContext)_localctx).lineNo =  _localctx.start.getLine(); 
+			 ((NameContext)_localctx).nameStr =  ((NameContext)_localctx).STRING.getText(); ((NameContext)_localctx).lineNo =  _localctx.start.getLine(); magicFound = false; 
 			}
 		}
 		catch (RecognitionException re) {
@@ -1616,10 +1618,18 @@ public class PlayerClassGrammar extends Parser {
 			setState(239);
 			((MagicContext)_localctx).n = match(EFFECT_INTEGER);
 
-			                ((MagicContext)_localctx).firstSpell =  ((MagicContext)_localctx).f.getText();
-			                ((MagicContext)_localctx).spellWeight =  ((MagicContext)_localctx).s.getText();
-			                ((MagicContext)_localctx).noOfBooks =  ((MagicContext)_localctx).n.getText();
-			                ((MagicContext)_localctx).line =  _localctx.start.getLine();
+			                if (!magicFound) {
+			                    ((MagicContext)_localctx).firstSpell =  ((MagicContext)_localctx).f.getText();
+			                    ((MagicContext)_localctx).spellWeight =  ((MagicContext)_localctx).s.getText();
+			                    ((MagicContext)_localctx).noOfBooks =  ((MagicContext)_localctx).n.getText();
+			                    ((MagicContext)_localctx).line =  _localctx.start.getLine();
+			                    magicFound   = true;
+			                } else {
+			                    ((MagicContext)_localctx).firstSpell =  null;
+			                    ((MagicContext)_localctx).spellWeight =  null;
+			                    ((MagicContext)_localctx).noOfBooks =  null;
+			                    ((MagicContext)_localctx).line =  _localctx.start.getLine();
+			                }
 			            
 			}
 		}

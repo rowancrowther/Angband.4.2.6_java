@@ -57,13 +57,15 @@ import java.util.List;
  *       surplus book is itself bad.</li>
  *   <li>The declared count is not stored on the result, which holds the number of books actually
  *       read (see {@link ClassMagic}). C keeps it only as the parser's limit.</li>
- *   <li>Outside this class, {@code PlayerClassGrammar.g4} lets a second {@code magic:} block
- *       replace the first, where C refuses it with {@code PARSE_ERROR_REPEATED_DIRECTIVE}; this
- *       class only ever sees the last one.</li>
+ *   <li>Outside this class, {@code PlayerClassGrammar.g4} hands a second {@code magic:} block of
+ *       one class on as a record with all three scalars null, which this class refuses (C:
+ *       {@code PARSE_ERROR_REPEATED_DIRECTIVE}). C tests whether the first block allocated any
+ *       books, so a second {@code magic:} after a first that declared 0 books loads in C and
+ *       replaces it; the grammar refuses it here. No shipped {@code class.txt} declares 0 books.</li>
  * </ul>
  *
  * <p>Class ClassMagicAssembler coded before 260915, commented in full on 261028, updated on 261105
- * for the removal of the soft-error path.
+ * for the removal of the soft-error path and on 261123 for the repeated {@code magic:} block.
  *
  * @author Rowan Crowther
  */
@@ -121,6 +123,12 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
         
         for (ClassMagicParseRecord record : records) {
             int line = record.line();
+            if (record.firstSpell() == null && record.spellWeight() == null && record.numBooks() == null) {
+                String msg = "Class magic starting at line: " + line + " of file: " + filename + " has " +
+                        "illegal multiple defined 'magic' blocks";
+                logger.fatal(msg);
+                throw new DataFileParseException(msg);
+            }
             if (ParseUtils.minusFound(record.firstSpell())) {
                 String msg = "Class magic starting at line: " + line + " of file: " + filename + " has " +
                         "an illegal negative first spell value: " + record.firstSpell();

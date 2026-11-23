@@ -40,7 +40,7 @@ public class GameConstantsGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		GC_NAME=1, GC_MSG=2, COLON=3, INTEGER=4, COMMENT=5, INDENT=6, EOL=7;
+		GC_NAME=1, COMMENT=2, INDENT=3, EOL=4, GC_MSG=5, MSG_EOL=6, COLON=7, COLON_EOL=8;
 	public static final int
 		RULE_field = 0, RULE_line = 1, RULE_file = 2;
 	private static String[] makeRuleNames() {
@@ -52,13 +52,14 @@ public class GameConstantsGrammar extends Parser {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, null, null, "':'"
+			null, null, null, null, null, null, null, "':'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "GC_NAME", "GC_MSG", "COLON", "INTEGER", "COMMENT", "INDENT", "EOL"
+			null, "GC_NAME", "COMMENT", "INDENT", "EOL", "GC_MSG", "MSG_EOL", "COLON", 
+			"COLON_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -115,11 +116,7 @@ public class GameConstantsGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class FieldContext extends ParserRuleContext {
 		public String fieldValue;
-		public Token GC_NAME;
-		public Token INTEGER;
 		public Token GC_MSG;
-		public TerminalNode GC_NAME() { return getToken(GameConstantsGrammar.GC_NAME, 0); }
-		public TerminalNode INTEGER() { return getToken(GameConstantsGrammar.INTEGER, 0); }
 		public TerminalNode GC_MSG() { return getToken(GameConstantsGrammar.GC_MSG, 0); }
 		public FieldContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -144,35 +141,11 @@ public class GameConstantsGrammar extends Parser {
 		FieldContext _localctx = new FieldContext(_ctx, getState());
 		enterRule(_localctx, 0, RULE_field);
 		try {
-			setState(12);
-			_errHandler.sync(this);
-			switch (_input.LA(1)) {
-			case GC_NAME:
-				enterOuterAlt(_localctx, 1);
-				{
-				setState(6);
-				((FieldContext)_localctx).GC_NAME = match(GC_NAME);
-				 ((FieldContext)_localctx).fieldValue =  ((FieldContext)_localctx).GC_NAME.getText(); 
-				}
-				break;
-			case INTEGER:
-				enterOuterAlt(_localctx, 2);
-				{
-				setState(8);
-				((FieldContext)_localctx).INTEGER = match(INTEGER);
-				 ((FieldContext)_localctx).fieldValue =  ((FieldContext)_localctx).INTEGER.getText(); 
-				}
-				break;
-			case GC_MSG:
-				enterOuterAlt(_localctx, 3);
-				{
-				setState(10);
-				((FieldContext)_localctx).GC_MSG = match(GC_MSG);
-				 ((FieldContext)_localctx).fieldValue =  ((FieldContext)_localctx).GC_MSG.getText(); 
-				}
-				break;
-			default:
-				throw new NoViableAltException(this);
+			enterOuterAlt(_localctx, 1);
+			{
+			setState(6);
+			((FieldContext)_localctx).GC_MSG = match(GC_MSG);
+			 ((FieldContext)_localctx).fieldValue =  ((FieldContext)_localctx).GC_MSG.getText(); 
 			}
 		}
 		catch (RecognitionException re) {
@@ -234,23 +207,23 @@ public class GameConstantsGrammar extends Parser {
 			enterOuterAlt(_localctx, 1);
 			{
 			 ((LineContext)_localctx).lineNo =  _localctx.start.getLine(); 
-			setState(15);
+			setState(10);
 			((LineContext)_localctx).GC_NAME = match(GC_NAME);
 			 ((LineContext)_localctx).category =  ((LineContext)_localctx).GC_NAME.getText(); 
-			setState(21); 
+			setState(16); 
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			do {
 				{
 				{
-				setState(17);
+				setState(12);
 				match(COLON);
-				setState(18);
+				setState(13);
 				((LineContext)_localctx).f = field();
 				 _localctx.fields.add(((LineContext)_localctx).f.fieldValue); 
 				}
 				}
-				setState(23); 
+				setState(18); 
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			} while ( _la==COLON );
@@ -307,13 +280,13 @@ public class GameConstantsGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(30);
+			setState(25);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==GC_NAME) {
 				{
 				{
-				setState(25);
+				setState(20);
 				((FileContext)_localctx).line = line();
 
 				                        _localctx.results.add(new GameConstantsParseRecord(((FileContext)_localctx).line.category,
@@ -322,11 +295,11 @@ public class GameConstantsGrammar extends Parser {
 				                  
 				}
 				}
-				setState(32);
+				setState(27);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(33);
+			setState(28);
 			match(EOF);
 			}
 		}
@@ -342,31 +315,27 @@ public class GameConstantsGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0007$\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
-		"\u0002\u0007\u0002\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
-		"\u0000\u0001\u0000\u0003\u0000\r\b\u0000\u0001\u0001\u0001\u0001\u0001"+
-		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0004\u0001\u0016"+
-		"\b\u0001\u000b\u0001\f\u0001\u0017\u0001\u0002\u0001\u0002\u0001\u0002"+
-		"\u0005\u0002\u001d\b\u0002\n\u0002\f\u0002 \t\u0002\u0001\u0002\u0001"+
-		"\u0002\u0001\u0002\u0000\u0000\u0003\u0000\u0002\u0004\u0000\u0000$\u0000"+
-		"\f\u0001\u0000\u0000\u0000\u0002\u000e\u0001\u0000\u0000\u0000\u0004\u001e"+
-		"\u0001\u0000\u0000\u0000\u0006\u0007\u0005\u0001\u0000\u0000\u0007\r\u0006"+
-		"\u0000\uffff\uffff\u0000\b\t\u0005\u0004\u0000\u0000\t\r\u0006\u0000\uffff"+
-		"\uffff\u0000\n\u000b\u0005\u0002\u0000\u0000\u000b\r\u0006\u0000\uffff"+
-		"\uffff\u0000\f\u0006\u0001\u0000\u0000\u0000\f\b\u0001\u0000\u0000\u0000"+
-		"\f\n\u0001\u0000\u0000\u0000\r\u0001\u0001\u0000\u0000\u0000\u000e\u000f"+
-		"\u0006\u0001\uffff\uffff\u0000\u000f\u0010\u0005\u0001\u0000\u0000\u0010"+
-		"\u0015\u0006\u0001\uffff\uffff\u0000\u0011\u0012\u0005\u0003\u0000\u0000"+
-		"\u0012\u0013\u0003\u0000\u0000\u0000\u0013\u0014\u0006\u0001\uffff\uffff"+
-		"\u0000\u0014\u0016\u0001\u0000\u0000\u0000\u0015\u0011\u0001\u0000\u0000"+
-		"\u0000\u0016\u0017\u0001\u0000\u0000\u0000\u0017\u0015\u0001\u0000\u0000"+
-		"\u0000\u0017\u0018\u0001\u0000\u0000\u0000\u0018\u0003\u0001\u0000\u0000"+
-		"\u0000\u0019\u001a\u0003\u0002\u0001\u0000\u001a\u001b\u0006\u0002\uffff"+
-		"\uffff\u0000\u001b\u001d\u0001\u0000\u0000\u0000\u001c\u0019\u0001\u0000"+
-		"\u0000\u0000\u001d \u0001\u0000\u0000\u0000\u001e\u001c\u0001\u0000\u0000"+
-		"\u0000\u001e\u001f\u0001\u0000\u0000\u0000\u001f!\u0001\u0000\u0000\u0000"+
-		" \u001e\u0001\u0000\u0000\u0000!\"\u0005\u0000\u0000\u0001\"\u0005\u0001"+
-		"\u0000\u0000\u0000\u0003\f\u0017\u001e";
+		"\u0004\u0001\b\u001f\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0002\u0007\u0002\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001"+
+		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0004"+
+		"\u0001\u0011\b\u0001\u000b\u0001\f\u0001\u0012\u0001\u0002\u0001\u0002"+
+		"\u0001\u0002\u0005\u0002\u0018\b\u0002\n\u0002\f\u0002\u001b\t\u0002\u0001"+
+		"\u0002\u0001\u0002\u0001\u0002\u0000\u0000\u0003\u0000\u0002\u0004\u0000"+
+		"\u0000\u001d\u0000\u0006\u0001\u0000\u0000\u0000\u0002\t\u0001\u0000\u0000"+
+		"\u0000\u0004\u0019\u0001\u0000\u0000\u0000\u0006\u0007\u0005\u0005\u0000"+
+		"\u0000\u0007\b\u0006\u0000\uffff\uffff\u0000\b\u0001\u0001\u0000\u0000"+
+		"\u0000\t\n\u0006\u0001\uffff\uffff\u0000\n\u000b\u0005\u0001\u0000\u0000"+
+		"\u000b\u0010\u0006\u0001\uffff\uffff\u0000\f\r\u0005\u0007\u0000\u0000"+
+		"\r\u000e\u0003\u0000\u0000\u0000\u000e\u000f\u0006\u0001\uffff\uffff\u0000"+
+		"\u000f\u0011\u0001\u0000\u0000\u0000\u0010\f\u0001\u0000\u0000\u0000\u0011"+
+		"\u0012\u0001\u0000\u0000\u0000\u0012\u0010\u0001\u0000\u0000\u0000\u0012"+
+		"\u0013\u0001\u0000\u0000\u0000\u0013\u0003\u0001\u0000\u0000\u0000\u0014"+
+		"\u0015\u0003\u0002\u0001\u0000\u0015\u0016\u0006\u0002\uffff\uffff\u0000"+
+		"\u0016\u0018\u0001\u0000\u0000\u0000\u0017\u0014\u0001\u0000\u0000\u0000"+
+		"\u0018\u001b\u0001\u0000\u0000\u0000\u0019\u0017\u0001\u0000\u0000\u0000"+
+		"\u0019\u001a\u0001\u0000\u0000\u0000\u001a\u001c\u0001\u0000\u0000\u0000"+
+		"\u001b\u0019\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0000\u0000\u0001"+
+		"\u001d\u0005\u0001\u0000\u0000\u0000\u0002\u0012\u0019";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

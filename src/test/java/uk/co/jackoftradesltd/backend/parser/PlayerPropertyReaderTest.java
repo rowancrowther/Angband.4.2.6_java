@@ -850,24 +850,96 @@ class PlayerPropertyReaderTest {
         assertHardError("type:thing\nname:A\n");
     }
 
-    @Test
-    void anUpperCaseBindingNameIsAHardErrorHereWhereCTakesAnySymbol() throws IOException {
-        assertHardError("type:player\ncode:ROCK\nbindui:A_B:0:1\nname:A\n");
+    // ---- bindui: name, tag, aux and value as C reads them (Stage 7i) ----------------------------
+
+    /** The one binding of the one player record that {@code binduiLine} follows {@code code:ROCK} in. */
+    private PlayerProperty.BindUI onlyBinding(String binduiLine) throws IOException {
+        PlayerProperty p = load("type:player\ncode:ROCK\n" + binduiLine + "name:A\n").items().get(0);
+        assertEquals(1, p.getEntries().size());
+        return p.getEntries().get(0);
     }
 
     @Test
-    void aBindingNameWithAHyphenIsAHardErrorHereWhereCTakesAnySymbol() throws IOException {
-        assertHardError("type:player\ncode:ROCK\nbindui:a-b:0:1\nname:A\n");
+    void anUpperCaseBindingNameLoadsAsInC() throws IOException {
+        // C: the first field is a sym, so any text with no colon is the name.
+        assertEquals("A_B", onlyBinding("bindui:A_B:0:1\n").uiEntry());
     }
 
     @Test
-    void aBindingTagWithAnUnderscoreIsAHardErrorHereWhereCTakesAnySymbol() throws IOException {
-        assertHardError("type:player\ncode:ROCK\nbindui:a_b<HOLY_ORB>:0:1\nname:A\n");
+    void aBindingNameWithAHyphenLoadsAsInC() throws IOException {
+        assertEquals("Shots-UI", onlyBinding("bindui:Shots-UI:0:1\n").uiEntry());
     }
 
     @Test
-    void aLowerCaseBindingTagIsAHardErrorHereWhereCTakesAnySymbol() throws IOException {
-        assertHardError("type:player\ncode:ROCK\nbindui:a_b<dark>:0:1\nname:A\n");
+    void aBindingTagWithAnUnderscoreLoadsAsInC() throws IOException {
+        // HOLY_ORB is a real element; the name and tag stay one string, as C keeps them.
+        assertEquals("a_b<HOLY_ORB>", onlyBinding("bindui:a_b<HOLY_ORB>:0:1\n").uiEntry());
+    }
+
+    @Test
+    void aLowerCaseBindingTagLoadsAsInC() throws IOException {
+        assertEquals("a_b<dark>", onlyBinding("bindui:a_b<dark>:0:1\n").uiEntry());
+    }
+
+    @Test
+    void aBindingWithNoTagKeepsItsNameWithoutBrackets() throws IOException {
+        assertEquals("a_b", onlyBinding("bindui:a_b:0:1\n").uiEntry());
+    }
+
+    @Test
+    void aHexadecimalAuxLoadsAsInC() throws IOException {
+        // C: aux is an int read with strtol(tok, &z, 0), so 0x1 is 1 (true) and 0x0 is 0 (false).
+        assertTrue(onlyBinding("bindui:a:0x1:1\n").aux());
+        assertFalse(onlyBinding("bindui:a:0x0:1\n").aux());
+    }
+
+    @Test
+    void aHexadecimalAuxWithLetterDigitsLoadsAsInC() throws IOException {
+        assertTrue(onlyBinding("bindui:a:0XA:1\n").aux());
+        assertTrue(onlyBinding("bindui:a:0xfF:1\n").aux());
+    }
+
+    @Test
+    void anOctalAuxLoadsAsInC() throws IOException {
+        // strtol base 0: a leading 0 is octal, so 010 is 8, which is non-zero.
+        assertTrue(onlyBinding("bindui:a:010:1\n").aux());
+    }
+
+    @Test
+    void anAuxOfLettersWithNo0xPrefixIsRefusedAsInC() {
+        // strtol base 0 reads "ab" as no number at all (z == tok): PARSE_ERROR_NOT_NUMBER.
+        assertAssemblerRefuses("type:player\ncode:ROCK\nbindui:a:ab:1\nname:A\n",
+                "starting at line: 1", "invalid bindui auxiliary value: ab");
+    }
+
+    @Test
+    void aHexadecimalBindingValueIsRefusedAsInC() {
+        // C: the value is read with strtol(value, &end, 10) and *end must be 0, so 0x1 is refused.
+        assertAssemblerRefuses("type:player\ncode:ROCK\nbindui:a:1:0x1\nname:A\n",
+                "starting at line: 1", "invalid bindui value: 0x1");
+    }
+
+    @Test
+    void aSignedBindingValueLoadsAsInC() throws IOException {
+        assertEquals(3, onlyBinding("bindui:a:1:+3\n").value());
+        assertEquals(-3, onlyBinding("bindui:a:1:-3\n").value());
+    }
+
+    @Test
+    void trailingBlanksOnTheBindingValueAreRefusedAsInC() {
+        // C: strtol stops at the blank, *end is not 0, so PARSE_ERROR_NOT_NUMBER.
+        assertAssemblerRefuses("type:player\ncode:ROCK\nbindui:a:1:1  \nname:A\n",
+                "starting at line: 1", "invalid bindui value");
+    }
+
+    @Test
+    void aBindingLineEndingInCarriageReturnAndNewlineLoadsAsInC() throws IOException {
+        PlayerProperty p = load("type:player\r\ncode:ROCK\r\nbindui:a_b<DARK>:1:2\r\nname:A\r\n").items().get(0);
+
+        assertEquals("a_b<DARK>", p.getEntries().get(0).uiEntry());
+        assertTrue(p.getEntries().get(0).aux());
+        assertEquals(2, p.getEntries().get(0).value());
+        assertEquals("A", p.getName());
     }
 
     @Test

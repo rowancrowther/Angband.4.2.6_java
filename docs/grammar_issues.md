@@ -984,15 +984,15 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
 
 ## `ActivationsLexer.g4`: `name:` takes only upper case, digits and underscore, and trailing blanks are dropped
 
-Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-22: `NAME_STRING` takes `~('\r' | '\n')+`, so lower case, inner blanks and trailing blanks all load as in C; the bullets below describe the old behaviour.]
 
 - `init_parse_act` registers `name str name`, and a `str` field takes the whole rest of the line, so `name:lower`,
   `name:TWO WORDS` and `name:T  ` are accepted and the last keeps its trailing blanks.
 - `ActivationsLexer.g4:121-122`: `NAME_STRING` is `('A'..'Z' | '0'..'9' | '_')+`. A lower-case letter or an inner space has
   no lexer rule, so it is a hard error and the file loads as nothing. Trailing blanks are swallowed by the `EOL` rule, so
   `T  ` loads as `T`.
-- `ActivationReaderTest.aLowerCaseNameIsAHardErrorHereWhereCTakesAnyString` and
-  `aNameWithTrailingBlanksIsTrimmedHereWhereCKeepsThem` pin both.
+- `ActivationReaderTest.aNameOfLowerCaseLettersOrBlanksLoadsAsInC` and
+  `aNameKeepsItsTrailingBlanksAsInC` now pin the C behaviour.
 - None on the shipped data: all 163 names are upper case with underscores and digits. A modded name written in lower case
   would fail the whole file here. Same family as the `BlowMethodGrammar.g4` `name:` entry above.
 
@@ -1487,16 +1487,11 @@ Found 2026-10-18 during `/port backend/parser/FlavourReader.java`. Not fixed.
 - The `section` rule in `FlavourGrammar.g4` is `kind` then `fixedOrFlavourBlock`, which is one or more flavours, and the `file`
   rule is one or more sections after the header. A bare `kind:`, a leading `flavor:` and `record-count:0` with no sections are
   hard errors, and so the whole file gives no items.
-- `STRING` in `FlavourLexer.g4` stops at a colon, and the `flavour` rule takes `COLON STRING` only once, so a colon in the
-  description, a trailing colon after the colour and any text after the glyph's colon each leave a `COLON` the grammar has no place
-  for. All three are hard errors.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-22] The colon in a description and the trailing colon: `FlavourLexer.g4` now has a mode per field, so the description is read from the last colon to the end of the line and the `flavour` rule takes it as optional. Text after the glyph's colon is no longer a syntax error either: the glyph is read to the end of the line and `FlavourKindAssembler` refuses `=:extra`, which is accepted (`Accepted_Deviations.md`, "Flavour").
 - `CommentsAndEol.g4` is shared, and does not skip indentation. The gap is written up under `RealmGrammar.g4` and `RealmLexer.g4`.
 - Both `.g4` headers cite `src/init.c:4242-4249` for the directive table; `init_parse_flavor` has moved since, and no line number
   should be recorded.
-- `FlavourReaderTest.aKindWithNoFlavoursIsAHardErrorHereWhereCAcceptsIt`, `aFlavourBeforeAnyKindIsAHardErrorHereWhereCAcceptsIt`,
-  `aColonInTheDescriptionIsAHardErrorHereWhereCKeepsItInTheText`, `aTrailingColonAfterTheColourIsAHardErrorHereWhereCAcceptsIt`,
-  `textAfterTheGlyphIsAHardErrorHereWhereCIgnoresIt`, `anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace` and
-  `anEmptyFileWithAZeroCountIsAHardErrorHereWhereCAcceptsIt` pin them.
+- `FlavourReaderTest.aFlavourBeforeAnyKindIsAHardErrorHereWhereCAcceptsIt` pins the one that is still open. The bare-`kind:`, indented-line and empty-file pins are now `aKindWithNoFlavoursLoadsAsInC`, `anIndentedLineLoadsAsInC` and `anEmptyFileLoadsNothingAsInC`. `aColonInTheDescriptionIsKeptInTheTextAsInC`, `aTrailingColonAfterTheColourLoadsWithNoTextAsInC` and `textAfterTheGlyphIsRefusedByTheAssemblerHereWhereCIgnoresIt` pin the colon and glyph cases.
 - None on the shipped data: eight blocks, each with flavours, no colon in any description, no indentation. A description with a
   colon is the one most likely to be written by hand.
 
@@ -1853,9 +1848,9 @@ Found 2026-10-19 during `/port TerrainReader.java`. Updated 2026-11-18: the reco
 - `.idea/misc.xml`: the `TerrainFeatureLexer.g4` and `TerrainFeatureGrammar.g4` entries have an empty `outputDir` and `pkg`, though the
   generated parser sits in `grammars/terrainfeature`. The committed parser has the same ATN as a fresh generation.
 
-## `WorldGrammar.g4` and `WorldLexer.g4`: at least one level, no fields after `down`, digit-only names and base-10 depths differ from C
+## `WorldGrammar.g4` and `WorldLexer.g4`: no fields after `down` and base-10 depths differ from C
 
-Found 2026-10-19 during `/port WorldReader.java`; updated 2026-11-09 after the `record-count:` header and the name restriction were removed. Not fixed.
+Found 2026-10-19 during `/port WorldReader.java`; updated 2026-11-09 after the `record-count:` header and the name restriction were removed. The digit-only name was closed on 2026-11-22; the rest is not fixed.
 
 ### What C does
 
@@ -1867,27 +1862,25 @@ Found 2026-10-19 during `/port WorldReader.java`; updated 2026-11-09 after the `
 
 ### What Java does
 
-- `WorldGrammar.g4`: `file` is `(line)+ EOF`. An empty file, or one of only comments, is a syntax error. Nothing loads.
-- `line` ends at `upAndDown`, so `level:0:Town:None:Angband 1:extra` is a syntax error where C ignores `extra`.
-- `WorldLexer.g4`: `NAME` is `~('\r' | '\n' | ':')+`, so a hyphen or apostrophe in a name now loads, as in C. `INTEGER` is listed before `NAME`
-  and wins a tie on length, so a name made only of digits (`level:5:7:None:None`) lexes as `INTEGER` and is a syntax error where C keeps it.
+- `WorldGrammar.g4`: `line` ends at `upAndDown`, so `level:0:Town:None:Angband 1:extra` is a syntax error where C ignores `extra`.
+- `WorldLexer.g4`: `NAME` is `~('\r' | '\n' | ':')+`, so a hyphen or apostrophe in a name loads, as in C.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-22] A name, up or down made only of digits. `INTEGER` is listed before `NAME` and wins a tie on length, so `level:5:7:None:None`
+  lexes the `7` as `INTEGER`. `levelName` and `upAndDown` in `WorldGrammar.g4` now take `NAME | INTEGER` and read `getText()`, so `7`, `-5` and `007` load
+  as written, as C's `sym` does. `WorldLexer.g4` is unchanged. Pinned by `aNameOfOnlyDigitsLoadsAsInC`, `aSignedOrZeroPaddedNameLoadsAsWrittenAsInC`,
+  `anUpOrDownNameOfOnlyDigitsLoadsAsInC` and `aDigitOnlyNameBeyondIntRangeLoadsAsInC` in `WorldReaderTest`.
 - `INTEGER` is `'-'? ('0'..'9')+`, so `level:0x10:...` is a syntax error and `010` is 10, not 8.
 - A depth outside `int` is a hard error from `WorldReader`; C clamps it to a `long` and truncates it to `int`.
-- `WorldReaderTest.anEmptyFileIsHardHereWhereCLoadsAnEmptyWorld`, `aFileOfOnlyCommentsIsHardHereWhereCLoadsAnEmptyWorld`,
-  `aFieldAfterTheDownNameIsHardHereWhereCIgnoresIt`, `aNameOfOnlyDigitsIsHardHereWhereCTakesAnySymExceptColon`,
-  `aHexadecimalDepthIsHardHereWhereCReadsBaseZero` and `aLeadingZeroDepthIsReadAsDecimalWhereCReadsItAsOctal` pin them.
-  `aHyphenInANameIsKeptAsInC` pins the case that now matches C.
-- The digit-only name is accepted for now and put off: see "Put off until later, accepted for now" in
-  `docs/Accepted_Deviations.md`.
+- `WorldReaderTest.aFieldAfterTheDownNameIsHardHereWhereCIgnoresIt`, `aHexadecimalDepthIsHardHereWhereCReadsBaseZero` and
+  `aLeadingZeroDepthIsReadAsDecimalWhereCReadsItAsOctal` pin the three that remain. `aHyphenInANameIsKeptAsInC` pins a case that matches C.
 
 ### Impact
 
 - None on the shipped data: all 128 levels have plain decimal depths, names of letters, digits and spaces, and four fields.
-- A modded file that names a level with digits alone, or ends up with no levels, loses the whole file.
+- A modded file with a field after `down`, or a hexadecimal depth, loses the whole file.
 
-## `GameConstantsGrammar.g4` and `GameConstantsLexer.g4`: lines with a field after the value, indents, hex and octal values, lower-case message names and a last-line comment differ from C
+## `GameConstantsGrammar.g4` and `GameConstantsLexer.g4`: an indented line is refused where C skips the indent
 
-Found 2026-10-19 during `/port GameConstantsReader.java`. Not fixed.
+Found 2026-10-19 during `/port GameConstantsReader.java`; rewritten 2026-11-22 after `GC_MSG` took any text up to a colon and `INTEGER` was removed. Everything but the indent is closed.
 
 ### What C does
 
@@ -1902,28 +1895,31 @@ Found 2026-10-19 during `/port GameConstantsReader.java`. Not fixed.
 
 ### What Java does
 
-- `GameConstantsGrammar.g4`: `line` is a name followed by `(COLON field)+`, and `GameConstantsAssembler` then insists on an exact field
-  count, so `world:max-depth:5:6` is a soft error where C loads 5.
-- `CommentsAndEol.g4`: `EOL` skips spaces only before the newline, so a line that starts with spaces or a tab is a lexer error, and
-  `COMMENT` needs a closing `\n`, so a comment on the last line with no newline is a lexer error.
-- `GameConstantsLexer.g4`: `INTEGER` is `'-'? ('0'..'9')+`, so `0x10` is a syntax error and `010` is 10, not 8. A run of digits too long
-  for an `int` passes the lexer and fails in `GameConstantsAssembler.coerceInt`.
-- `GC_MSG` is upper-case letters and underscores, so `hit_good` is a syntax error and a numeric message such as `12` is read as an
-  `INTEGER` and then fails the `MessageType` lookup.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-22] A field after the value is ignored, as in C (`aFieldAfterTheValueIsIgnored`).
+- [<span style="color:#006400">**CLOSED**</span> 26-11-22] A comment on the last line with no newline loads (`aFinalCommentWithoutANewlineLoadsAsInC`).
+- [<span style="color:#006400">**CLOSED**</span> 26-11-22] Values. `GC_MSG` is `~('\r' | '\n' | ':')+` and there is no `INTEGER` token, so every value is text up to the colon and
+  `GameConstantsAssembler` reads it as C's `strtol(tok, &z, 0)` does: `0x10` is 16, `010` is 8, `1.5` is 1, `7x` is 7, and an empty value
+  is refused. A run of digits too long for an `int` clamps (`anOverflowingValueIsClampedWhereCTruncatesIt`). Pinned by
+  `aHexadecimalValueLoadsAsInC`, `aLeadingZeroValueIsReadAsOctalAsInC` and `aValueWithTrailingTextLoadsTheLeadingNumberAsInC`.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-22] Message names. `hit_good`, `HIT_good`, `STORE3` and the number `12` load as `message_lookup_by_name` reads them, and `153`, `-1`, `12x`
+  and a name with a trailing blank are refused. Pinned by `aMessageNameOfAnyCaseLoadsAsInC`, `aMessageNameWithADigitLoadsAsInC` and
+  `aNumericMessageLoadsBelowMsgMaxAsInC`.
 - `GC_NAME` is lower-case letters and hyphens only, so an upper-case category is a syntax error where C reports an undefined directive;
   both refuse the file.
-- `GameConstantsReaderTest.aFieldAfterTheValueIsRefusedHereWhereCIgnoresIt`, `aHexadecimalValueIsRefusedHereWhereCReadsBaseZero`,
-  `aLeadingZeroValueIsReadAsDecimalWhereCReadsItAsOctal`, `anIndentedLineIsRefusedHereWhereCSkipsTheIndent`,
-  `aLowerCaseMessageNameIsRefusedHereWhereCIsCaseBlind` and `aFinalCommentWithoutANewlineIsRefusedHereWhereCSkipsIt` pin them.
+- Open, a regression from the `GC_MSG` change. An indented line is a syntax error. The imported `INDENT` rule skips blanks at column 0, but
+  `GC_MSG` takes blanks too, so `  world` is the longer match and the token is `GC_MSG=  world`, where `line` wants a `GC_NAME`. The assembler
+  trims the category, but the parser refuses the line first. Red: `anIndentedLineLoadsAsInC` in `GameConstantsReaderTest` and
+  `anIndentBeforeTheCategoryIsSkipped` in `GameConstantsLexerTest`.
+- Open, a second regression (21:35 edit on 2026-11-22). `field` takes only `GC_MSG`, but `GC_NAME` is listed first and wins the tie for a field of
+  only lower-case letters and hyphens, so `level-max:monsters:1024` fails with "missing GC_MSG at 'monsters'". The shipped file is refused.
 
 ### Impact
 
-- None on the shipped data: `lib/gamedata/constants.txt` has no indented lines, no hex or octal values, upper-case message names, and a
-  newline after every comment.
-- A hand-edited or modded file that indents a line, ends on a comment with no newline, or writes a message name in lower case loses the
-  whole file, and the lexer message does not say why.
-- The header comments of both grammars still cite C line numbers (`init.c:1051`, `init.c:949-980`), and the lexer's `GC_MSG` comment
-  names `GameConstantsReader` as the place that checks the message, which is `GameConstantsAssembler`.
+- The shipped data: `lib/gamedata/constants.txt` has no indented lines, but the second regression refuses every line of it while the grammar
+  stands as edited at 21:35.
+- A hand-edited or modded file that indents a line loses the whole file, and the lexer message does not say why.
+- Left in the grammars: the lexer's header and `GC_MSG` comments still describe `INTEGER` and an upper-case pattern, and the header comments of
+  both grammars cite C line numbers (`init.c:1051`, `init.c:949-980`).
 
 ## `QuestGrammar.g4` and `QuestLexer.g4`: the grammar fixes the directive order and count, and the lexer shares the comment, indent and number differences
 

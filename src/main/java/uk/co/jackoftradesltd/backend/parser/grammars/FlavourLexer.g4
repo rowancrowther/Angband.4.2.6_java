@@ -42,14 +42,14 @@ import CommentsAndEol;
 // display glyph its flavours use. Enters DELIM to read the two ':'-separated
 // values.
 KIND
-        :   'kind:' -> pushMode(DELIM)
+        :   'kind:' -> pushMode(KIND_MODE)
         ;
 
 // "fixed:<index>:<sval>:<colour>:<text>" - a flavour pinned to one specific
 // sub-type (e.g. the One Ring always looks like "Plain Gold"). The extra sval
 // field is what distinguishes it from a plain flavor: line.
 FIXED
-        :   'fixed:' -> pushMode(DELIM)
+        :   'fixed:' -> mode(FIXED_FIRST)
         ;
 
 // "flavor:<index>:<colour>:<text?>" - a randomly-assigned flavour. Spelt the
@@ -65,6 +65,66 @@ INTEGER
         :   '-'? ('0'..'9')+
         ;
 
+mode KIND_MODE;
+
+TVALUE
+        :   ~('\n' | '\r' | ':')+
+        ;
+
+KIND_COLON
+        :   ':' -> mode(KIND_GLYPH)
+        ;
+
+mode KIND_GLYPH;
+
+GLYPH
+        :   ~('\n' | '\r')+
+        ;
+
+KIND_GLYPH_EOL
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+mode FIXED_LAST;
+
+FL_STRING
+        :   ~('\n' | '\r')+
+        ;
+
+FL_EOL
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+mode FIXED_THIRD;
+
+FT_STRING
+        :   ~('\n' | '\r' | ':')+
+        ;
+
+FT_COLON
+        :   ':' -> mode(FIXED_LAST)
+        ;
+
+mode FIXED_SECOND;
+
+FS_STRING
+        :   ~('\n' | '\r' | ':')+
+        ;
+
+FS_COLON
+        :   ':' -> mode(FIXED_THIRD)
+        ;
+
+mode FIXED_FIRST;
+
+FF_STRING
+        :   ~('\n' | '\r' | ':')+
+        ;
+
+FF_COLON
+        :   ':' -> mode(FIXED_SECOND)
+        ;
+
 // Value mode entered after any kind:/fixed:/flavor: keyword. It reads the
 // ':'-separated fields of one line and pops back at end-of-line so the next
 // line's keyword is recognized in the default mode.
@@ -75,17 +135,41 @@ mode DELIM;
 // and description - which are told apart by the parser, not here. Note this
 // out-greedies a bare integer, so the index is lexed as STRING and parsed to an
 // int in the assembler.
-STRING
+FIRST_STRING
         :   ~('\r' | '\n' | ':')+
         ;
 
 // The field separator within a kind:/fixed:/flavor: line.
-COLON
-        :   ':'
+FIRST_COLON
+        :   ':' -> mode(SECOND_DELIM)
         ;
 
 // End-of-line closes the value line: pop back to the default mode and discard the
 // newline (records are delimited structurally by the next keyword).
-DELIM_EOL
+FIRST_DELIM_EOL
+        :   NL -> popMode, skip
+        ;
+
+mode SECOND_DELIM;
+
+SECOND_COLON
+        :   ':' -> mode(THIRD_DELIM)
+        ;
+
+SECOND_STRING
+        :   ~('\r' | '\n' | ':')+
+        ;
+
+SECOND_DELIM_EOL
+        :   NL -> popMode, skip
+        ;
+
+mode THIRD_DELIM;
+
+THIRD_STRING
+        :   ~('\r' | '\n')+
+        ;
+
+THIRD_DELIM_EOL
         :   NL -> popMode, skip
         ;

@@ -823,16 +823,80 @@ class RoomProfileReaderTest {
     }
 
     /**
-     * C: {@code tval} is a {@code sym}, tokenized on {@code :}, so {@code tval:rod:junk} reads
-     * {@code rod}. The lexer hands the whole rest of the line to the assembler, which cannot resolve
-     * {@code rod:junk}, so the load stops.
+     * Loads {@code GOOD_RECORD} with its {@code tval:} line replaced by {@code tvalLine} and returns
+     * the one template's tval.
+     */
+    private TValue tvalOf(String fileName, String tvalLine) throws IOException {
+        String record = GOOD_RECORD.replace("tval:0", tvalLine);
+        ParseResult<RoomTemplate> result = new RoomProfileReader().parseWithResults(tempFile(fileName, record + "\n"));
+
+        assertEquals(1, result.items().size());
+        return result.items().getFirst().getTval();
+    }
+
+    /**
+     * C: {@code tval} is a {@code sym}, tokenized with {@code strtok(sp, ":")}, so the value is cut
+     * at the first colon that follows text and whatever follows the colon is ignored:
+     * {@code tval:rod:junk} reads {@code rod}, as do {@code tval:rod:} and {@code tval:rod:junk:more};
+     * {@code tval:0:junk} reads 0, and a name with a blank in it ({@code magic book}) is cut the same way.
+     *
+     * <p>Function textAfterATvalNameIsDroppedAsInC coded on 261123, commented in full on 261123. It
+     * replaces textAfterATvalNameIsTreatedAsPartOfTheNameHereWhereCDropsIt.
      */
     @Test
-    void textAfterATvalNameIsTreatedAsPartOfTheNameHereWhereCDropsIt() {
-        String extra = GOOD_RECORD.replace("tval:0", "tval:rod:junk");
+    void textAfterATvalNameIsDroppedAsInC() throws IOException {
+        assertEquals(TValue.TV_ROD, tvalOf("tval-extra.txt", "tval:rod:junk"));
+        assertEquals(TValue.TV_ROD, tvalOf("tval-trailing-colon.txt", "tval:rod:"));
+        assertEquals(TValue.TV_ROD, tvalOf("tval-two-extras.txt", "tval:rod:junk:more"));
+        assertEquals(TValue.TV_NONE, tvalOf("tval-number-extra.txt", "tval:0:junk"));
+        assertEquals(TValue.TV_MAGIC_BOOK, tvalOf("tval-book-extra.txt", "tval:magic book:x"));
+        assertEquals(TValue.TV_PRAYER_BOOK, tvalOf("tval-book-colon.txt", "tval:prayer book:"));
+    }
 
-        assertStopsTheLoad("tval-extra.txt", extra + "\n",
-                "illegal tValue value: rod:junk");
+    /**
+     * C: {@code strtok(sp, ":")} skips leading colons before the first piece, so {@code tval::rod}
+     * and {@code tval:::rod:x} read {@code rod}.
+     *
+     * <p>Function leadingColonsBeforeATvalNameAreSkippedAsInC coded on 261123, commented in full on
+     * 261123.
+     */
+    @Test
+    void leadingColonsBeforeATvalNameAreSkippedAsInC() throws IOException {
+        assertEquals(TValue.TV_ROD, tvalOf("tval-one-lead.txt", "tval::rod"));
+        assertEquals(TValue.TV_ROD, tvalOf("tval-three-lead.txt", "tval:::rod:x"));
+        assertEquals(TValue.TV_NONE, tvalOf("tval-lead-number.txt", "tval::0"));
+    }
+
+    /**
+     * C: with nothing but colons after {@code tval:}, {@code strtok} finds no piece and the missing
+     * required {@code sym} is a parse error, so {@code tval:}, {@code tval::} and {@code tval:::} each
+     * stop the load, here as a grammar error.
+     *
+     * <p>Function aTvalOfOnlyColonsIsRefusedAsInC coded on 261123, commented in full on 261123.
+     */
+    @Test
+    void aTvalOfOnlyColonsIsRefusedAsInC() {
+        for (String tvalLine : List.of("tval:", "tval::", "tval:::")) {
+            String record = GOOD_RECORD.replace("tval:0", tvalLine);
+
+            assertThrows(ParseCancellationException.class,
+                    () -> new RoomProfileReader().parseWithResults(tempFile("tval-only-colons.txt", record + "\n")),
+                    tvalLine);
+        }
+    }
+
+    /**
+     * The text after a colon on a {@code tval:} line is ignored to the end of the line only: the
+     * next directive on the following line is still read, with LF and with CRLF line ends.
+     *
+     * <p>Function aTvalCutAtAColonStillReadsTheNextDirective coded on 261123, commented in full on
+     * 261123.
+     */
+    @Test
+    void aTvalCutAtAColonStillReadsTheNextDirective() throws IOException {
+        assertEquals(TValue.TV_WAND, tvalOf("tval-then-flags.txt", "tval:wand:junk\nflags:FEW_ENTRANCES"));
+        assertEquals(TValue.TV_WAND, tvalOf("tval-then-flags-crlf.txt", "tval:wand:junk\r\nflags:FEW_ENTRANCES"));
+        assertEquals(TValue.TV_WAND, tvalOf("tval-lead-then-flags.txt", "tval::wand\nflags:FEW_ENTRANCES"));
     }
 
     /**

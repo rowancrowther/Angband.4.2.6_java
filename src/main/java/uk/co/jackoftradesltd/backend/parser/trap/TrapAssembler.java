@@ -148,6 +148,12 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
             String trapKindName = record.name();
             String trapText = record.text();
             String trapDescription = record.description();
+            if (trapDescription == null) {
+                String message = "Trap starting at line: " + line + " of file: " + filename + " has " +
+                        "an illegal blank description in its name value, name:" + record.name() + ":";
+                logger.fatal(message);
+                throw new DataFileParseException(message);
+            }
             String trapMessage = record.message();
             String saveMessage = record.saveMessage();
             String failMessage = record.failMessage();

@@ -96,11 +96,11 @@ binduiEntry
         @init {
             String tagText = "";
         }
-        :   BINDUI LCASE (TAG { tagText = $TAG.getText(); })?
-            COLON aux = INTEGER
-            COLON val = (INTEGER | LCASE)
+        :   BINDUI FIRST_STRING (TAG_START t=BINDUI_TAG TAG_END { tagText = $t.getText(); })?
+            BINDUI_COLON aux=AUX_HEX
+            AUX_COLON val=AUX_TO_EOL
             {
-                $entry = List.of($LCASE.getText(), tagText, $aux.getText(),
+                $entry = List.of($FIRST_STRING.getText(), tagText, $aux.getText(),
                     $val.getText());
             }
         ;

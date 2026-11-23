@@ -4,7 +4,7 @@ import CommentsAndEol, EffectBlockLexer, AngbandDisplayCharacter, Flags;
 
 
 NAME
-        :   'name:' -> pushMode(DELIMITED_MODE)
+        :   'name:' -> pushMode(NAME_MODE)
         ;
 
 APPEAR
@@ -57,6 +57,16 @@ EXPR_XTRA
 
 MSG_XTRA
         :   'msg-xtra:' -> pushMode(REST_OF_LINE)
+        ;
+
+mode NAME_MODE;
+
+NAME_STRING
+        :   ~('\r' | '\n' | ':')+
+        ;
+
+NAME_COLON
+        :   ':' -> mode(REST_OF_LINE)
         ;
 
 mode EFFECT_XTRA_MODE;
@@ -191,7 +201,7 @@ STRING
         ;
 
 REST_OF_LINE_EOL
-        :   NL -> skip, popMode
+        :   NEWLINE -> skip, popMode
         ;
 
 mode FLAGS_MODE;

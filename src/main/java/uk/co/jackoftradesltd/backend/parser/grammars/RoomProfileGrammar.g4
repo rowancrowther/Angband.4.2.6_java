@@ -71,7 +71,7 @@ doors
  * RoomProfileAssembler's job, not the grammar's.
  */
 tval    returns[String tvalStr]
-        :   TVAL t=STRING { $tvalStr = $t.getText(); }
+        :   TVAL t=TVAL_TO_COLON { $tvalStr = $t.getText(); }
         ;
 
 /**

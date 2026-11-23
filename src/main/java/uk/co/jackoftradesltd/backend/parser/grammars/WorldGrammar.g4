@@ -56,9 +56,9 @@ levelNum
  */
 levelName
         returns[String name]
-        :   NAME COLON
+        :   n=(NAME | INTEGER) COLON
             {
-                $name = $NAME.getText();
+                $name = $n.getText();
             }
         ;
 
@@ -70,7 +70,7 @@ levelName
  */
 upAndDown
         returns[String up, String down]
-        :   (u=NAME) COLON (d=NAME)
+        :   (u=(NAME | INTEGER)) COLON (d=(NAME | INTEGER))
             {
                 $up = $u.getText();
                 $down = $d.getText();

@@ -48,7 +48,7 @@ DOORS
  * RoomProfileAssembler's job, mirroring C's tval_find_idx.
  */
 TVAL
-        :   'tval:' -> pushMode(REST_OF_LINE)
+        :   'tval:' -> pushMode(TVAL_MODE)
         ;
 
 FLAGS
@@ -118,3 +118,28 @@ STRING
 END_OF_LINE
         :   NL -> skip, popMode
         ;
+
+mode TVAL_MODE;
+
+TVAL_TO_COLON
+        :   ~('\r' | '\n' | ':')+ -> mode(FIRST_COLON)
+        ;
+
+TVAL_EOL
+        :   NL -> skip, popMode
+        ;
+
+TVAL_COLON
+        :   ':' -> skip
+        ;
+
+mode FIRST_COLON;
+
+TVAL_TO_END
+        :   ~('\n' | '\r')+ -> skip
+        ;
+
+TVAL_AFTER_COLON_EOL
+        :   NL -> skip, popMode
+        ;
+ 

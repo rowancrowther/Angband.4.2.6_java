@@ -56,7 +56,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * file lists the Town (depth 0, up {@code None}) then {@code Angband 1} to {@code Angband 127}, each
  * level's up and down being its neighbours, and the last level's down being {@code None}.
  *
- * <p>Test class WorldReaderTest coded before 261014, commented in full on 261019.
+ * <p>Test class WorldReaderTest coded before 261014, commented in full on 261019, and updated on
+ * 261122 once a name, up or down made only of digits loaded as in C.
  *
  * @author Rowan Crowther
  */
@@ -254,12 +255,72 @@ class WorldReaderTest {
         assertEquals(List.of(new World(0, "Hell-hole", "None", "None")), result.items());
     }
 
+    /**
+     * A {@code sym} is any text without a colon, so {@code parse_world_level} keeps {@code 7} as a
+     * level name. The lexer still gives {@code 7} as an {@code INTEGER}, because that rule is listed
+     * before {@code NAME} and wins the tie on length, so {@code levelName} takes
+     * {@code NAME | INTEGER} and reads the token's text.
+     *
+     * <p>Function aNameOfOnlyDigitsLoadsAsInC coded on 261122, commented in full on 261122. It
+     * replaces {@code aNameOfOnlyDigitsIsHardHereWhereCTakesAnySymExceptColon}, which asserted the
+     * refusal.
+     */
     @Test
-    void aNameOfOnlyDigitsIsHardHereWhereCTakesAnySymExceptColon() {
-        // A sym is any text without a colon, so C keeps "7" as a name. In Java the lexer's
-        // INTEGER rule is listed before NAME and wins the tie on length, so the parser sees an
-        // INTEGER where it wants a NAME.
-        assertThrows(ParseCancellationException.class, () -> read("level:5:7:None:None\n"));
+    void aNameOfOnlyDigitsLoadsAsInC() throws IOException {
+        ParseResult<World> result = read("level:5:7:None:None\n");
+
+        assertEquals(List.of(new World(5, "7", "None", "None")), result.items());
+    }
+
+    /**
+     * A minus sign or leading zeros make no difference to a {@code sym}: {@code -5} and {@code 007}
+     * are kept as written, not read as numbers. Both lex as {@code INTEGER}.
+     *
+     * <p>Function aSignedOrZeroPaddedNameLoadsAsWrittenAsInC coded on 261122, commented in full on
+     * 261122.
+     */
+    @Test
+    void aSignedOrZeroPaddedNameLoadsAsWrittenAsInC() throws IOException {
+        assertEquals(List.of(new World(5, "-5", "None", "None")), read("level:5:-5:None:None\n").items());
+        assertEquals(List.of(new World(5, "007", "None", "None")), read("level:5:007:None:None\n").items());
+    }
+
+    /**
+     * The up and down fields are {@code sym}s too, so each may be made only of digits. In C the
+     * pair is cut at the colon like the name, so {@code -3} and {@code 007} load as written.
+     *
+     * <p>Function anUpOrDownNameOfOnlyDigitsLoadsAsInC coded on 261122, commented in full on 261122.
+     */
+    @Test
+    void anUpOrDownNameOfOnlyDigitsLoadsAsInC() throws IOException {
+        assertEquals(List.of(new World(5, "Name", "7", "None")), read("level:5:Name:7:None\n").items());
+        assertEquals(List.of(new World(5, "Name", "None", "7")), read("level:5:Name:None:7\n").items());
+        assertEquals(List.of(new World(5, "Name", "-3", "007")), read("level:5:Name:-3:007\n").items());
+        assertEquals(List.of(new World(5, "1", "2", "3")), read("level:5:1:2:3\n").items());
+    }
+
+    /**
+     * A name that is too long for an {@code int} is still just a {@code sym}. Only the depth field
+     * is read as a number, so only it can overflow.
+     *
+     * <p>Function aDigitOnlyNameBeyondIntRangeLoadsAsInC coded on 261122, commented in full on
+     * 261122.
+     */
+    @Test
+    void aDigitOnlyNameBeyondIntRangeLoadsAsInC() throws IOException {
+        assertEquals(List.of(new World(5, "99999999999", "None", "None")),
+                read("level:5:99999999999:None:None\n").items());
+    }
+
+    /**
+     * An empty down field is a missing field, which C refuses with {@code PARSE_ERROR_MISSING_FIELD}.
+     * Letting {@code INTEGER} stand in for {@code NAME} must not let an empty field through.
+     *
+     * <p>Function anEmptyDownNameIsHardAsInC coded on 261122, commented in full on 261122.
+     */
+    @Test
+    void anEmptyDownNameIsHardAsInC() {
+        assertThrows(ParseCancellationException.class, () -> read("level:5:Name:None:\n"));
     }
 
     @Test

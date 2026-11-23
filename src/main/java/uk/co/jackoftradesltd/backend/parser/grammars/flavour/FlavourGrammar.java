@@ -41,8 +41,11 @@ public class FlavourGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		KIND=1, FIXED=2, FLAVOUR=3, INTEGER=4, COMMENT=5, INDENT=6, EOL=7, STRING=8, 
-		COLON=9, DELIM_EOL=10;
+		KIND=1, FIXED=2, FLAVOUR=3, INTEGER=4, COMMENT=5, INDENT=6, EOL=7, TVALUE=8, 
+		KIND_COLON=9, GLYPH=10, KIND_GLYPH_EOL=11, FL_STRING=12, FL_EOL=13, FT_STRING=14, 
+		FT_COLON=15, FS_STRING=16, FS_COLON=17, FF_STRING=18, FF_COLON=19, FIRST_STRING=20, 
+		FIRST_COLON=21, FIRST_DELIM_EOL=22, SECOND_COLON=23, SECOND_STRING=24, 
+		SECOND_DELIM_EOL=25, THIRD_STRING=26, THIRD_DELIM_EOL=27;
 	public static final int
 		RULE_kind = 0, RULE_fixed = 1, RULE_flavour = 2, RULE_fixedOrFlavourBlock = 3, 
 		RULE_section = 4, RULE_file = 5;
@@ -55,15 +58,17 @@ public class FlavourGrammar extends Parser {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'kind:'", "'fixed:'", "'flavor:'", null, null, null, null, null, 
-			"':'"
+			null, "'kind:'", "'fixed:'", "'flavor:'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "KIND", "FIXED", "FLAVOUR", "INTEGER", "COMMENT", "INDENT", "EOL", 
-			"STRING", "COLON", "DELIM_EOL"
+			"TVALUE", "KIND_COLON", "GLYPH", "KIND_GLYPH_EOL", "FL_STRING", "FL_EOL", 
+			"FT_STRING", "FT_COLON", "FS_STRING", "FS_COLON", "FF_STRING", "FF_COLON", 
+			"FIRST_STRING", "FIRST_COLON", "FIRST_DELIM_EOL", "SECOND_COLON", "SECOND_STRING", 
+			"SECOND_DELIM_EOL", "THIRD_STRING", "THIRD_DELIM_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -124,11 +129,9 @@ public class FlavourGrammar extends Parser {
 		public Token t;
 		public Token g;
 		public TerminalNode KIND() { return getToken(FlavourGrammar.KIND, 0); }
-		public TerminalNode COLON() { return getToken(FlavourGrammar.COLON, 0); }
-		public List<TerminalNode> STRING() { return getTokens(FlavourGrammar.STRING); }
-		public TerminalNode STRING(int i) {
-			return getToken(FlavourGrammar.STRING, i);
-		}
+		public TerminalNode KIND_COLON() { return getToken(FlavourGrammar.KIND_COLON, 0); }
+		public TerminalNode TVALUE() { return getToken(FlavourGrammar.TVALUE, 0); }
+		public TerminalNode GLYPH() { return getToken(FlavourGrammar.GLYPH, 0); }
 		public KindContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -157,11 +160,11 @@ public class FlavourGrammar extends Parser {
 			setState(12);
 			match(KIND);
 			setState(13);
-			((KindContext)_localctx).t = match(STRING);
+			((KindContext)_localctx).t = match(TVALUE);
 			setState(14);
-			match(COLON);
+			match(KIND_COLON);
 			setState(15);
-			((KindContext)_localctx).g = match(STRING);
+			((KindContext)_localctx).g = match(GLYPH);
 			 ((KindContext)_localctx).tVal =  ((KindContext)_localctx).t.getText(); ((KindContext)_localctx).glyph =  ((KindContext)_localctx).g.getText(); 
 			}
 		}
@@ -187,14 +190,13 @@ public class FlavourGrammar extends Parser {
 		public Token c;
 		public Token t;
 		public TerminalNode FIXED() { return getToken(FlavourGrammar.FIXED, 0); }
-		public List<TerminalNode> COLON() { return getTokens(FlavourGrammar.COLON); }
-		public TerminalNode COLON(int i) {
-			return getToken(FlavourGrammar.COLON, i);
-		}
-		public List<TerminalNode> STRING() { return getTokens(FlavourGrammar.STRING); }
-		public TerminalNode STRING(int i) {
-			return getToken(FlavourGrammar.STRING, i);
-		}
+		public TerminalNode FF_COLON() { return getToken(FlavourGrammar.FF_COLON, 0); }
+		public TerminalNode FS_COLON() { return getToken(FlavourGrammar.FS_COLON, 0); }
+		public TerminalNode FT_COLON() { return getToken(FlavourGrammar.FT_COLON, 0); }
+		public TerminalNode FF_STRING() { return getToken(FlavourGrammar.FF_STRING, 0); }
+		public TerminalNode FS_STRING() { return getToken(FlavourGrammar.FS_STRING, 0); }
+		public TerminalNode FT_STRING() { return getToken(FlavourGrammar.FT_STRING, 0); }
+		public TerminalNode FL_STRING() { return getToken(FlavourGrammar.FL_STRING, 0); }
 		public FixedContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -223,19 +225,19 @@ public class FlavourGrammar extends Parser {
 			setState(18);
 			match(FIXED);
 			setState(19);
-			((FixedContext)_localctx).i = match(STRING);
+			((FixedContext)_localctx).i = match(FF_STRING);
 			setState(20);
-			match(COLON);
+			match(FF_COLON);
 			setState(21);
-			((FixedContext)_localctx).s = match(STRING);
+			((FixedContext)_localctx).s = match(FS_STRING);
 			setState(22);
-			match(COLON);
+			match(FS_COLON);
 			setState(23);
-			((FixedContext)_localctx).c = match(STRING);
+			((FixedContext)_localctx).c = match(FT_STRING);
 			setState(24);
-			match(COLON);
+			match(FT_COLON);
 			setState(25);
-			((FixedContext)_localctx).t = match(STRING);
+			((FixedContext)_localctx).t = match(FL_STRING);
 			 ((FixedContext)_localctx).index =  ((FixedContext)_localctx).i.getText(); ((FixedContext)_localctx).sval =  ((FixedContext)_localctx).s.getText();
 			              ((FixedContext)_localctx).colour =  ((FixedContext)_localctx).c.getText(); ((FixedContext)_localctx).text =  ((FixedContext)_localctx).t.getText(); 
 			}
@@ -260,14 +262,11 @@ public class FlavourGrammar extends Parser {
 		public Token c;
 		public Token t;
 		public TerminalNode FLAVOUR() { return getToken(FlavourGrammar.FLAVOUR, 0); }
-		public List<TerminalNode> COLON() { return getTokens(FlavourGrammar.COLON); }
-		public TerminalNode COLON(int i) {
-			return getToken(FlavourGrammar.COLON, i);
-		}
-		public List<TerminalNode> STRING() { return getTokens(FlavourGrammar.STRING); }
-		public TerminalNode STRING(int i) {
-			return getToken(FlavourGrammar.STRING, i);
-		}
+		public TerminalNode FIRST_COLON() { return getToken(FlavourGrammar.FIRST_COLON, 0); }
+		public TerminalNode FIRST_STRING() { return getToken(FlavourGrammar.FIRST_STRING, 0); }
+		public TerminalNode SECOND_STRING() { return getToken(FlavourGrammar.SECOND_STRING, 0); }
+		public TerminalNode SECOND_COLON() { return getToken(FlavourGrammar.SECOND_COLON, 0); }
+		public TerminalNode THIRD_STRING() { return getToken(FlavourGrammar.THIRD_STRING, 0); }
 		public FlavourContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -298,23 +297,31 @@ public class FlavourGrammar extends Parser {
 			setState(28);
 			match(FLAVOUR);
 			setState(29);
-			((FlavourContext)_localctx).i = match(STRING);
+			((FlavourContext)_localctx).i = match(FIRST_STRING);
 			setState(30);
-			match(COLON);
+			match(FIRST_COLON);
 			setState(31);
-			((FlavourContext)_localctx).c = match(STRING);
+			((FlavourContext)_localctx).c = match(SECOND_STRING);
 			 ((FlavourContext)_localctx).index =  ((FlavourContext)_localctx).i.getText();
 			                       ((FlavourContext)_localctx).colour =  ((FlavourContext)_localctx).c.getText(); 
-			setState(36);
+			setState(38);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==COLON) {
+			if (_la==SECOND_COLON) {
 				{
 				setState(33);
-				match(COLON);
-				setState(34);
-				((FlavourContext)_localctx).t = match(STRING);
-				 ((FlavourContext)_localctx).text =  ((FlavourContext)_localctx).t.getText(); 
+				match(SECOND_COLON);
+				setState(36);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+				if (_la==THIRD_STRING) {
+					{
+					setState(34);
+					((FlavourContext)_localctx).t = match(THIRD_STRING);
+					 ((FlavourContext)_localctx).text =  ((FlavourContext)_localctx).t.getText(); 
+					}
+				}
+
 				}
 			}
 
@@ -375,19 +382,19 @@ public class FlavourGrammar extends Parser {
 			int _alt;
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(44); 
+			setState(46); 
 			_errHandler.sync(this);
 			_alt = 1;
 			do {
 				switch (_alt) {
 				case 1:
 					{
-					setState(44);
+					setState(46);
 					_errHandler.sync(this);
 					switch (_input.LA(1)) {
 					case FIXED:
 						{
-						setState(38);
+						setState(40);
 						((FixedOrFlavourBlockContext)_localctx).fixed = fixed();
 						 _localctx.flavours.add(new FlavourParseRecord(((FixedOrFlavourBlockContext)_localctx).fixed.index,
 						                    ((FixedOrFlavourBlockContext)_localctx).fixed.sval, ((FixedOrFlavourBlockContext)_localctx).fixed.colour, ((FixedOrFlavourBlockContext)_localctx).fixed.text,
@@ -396,7 +403,7 @@ public class FlavourGrammar extends Parser {
 						break;
 					case FLAVOUR:
 						{
-						setState(41);
+						setState(43);
 						((FixedOrFlavourBlockContext)_localctx).flavour = flavour();
 						 _localctx.flavours.add(new FlavourParseRecord(((FixedOrFlavourBlockContext)_localctx).flavour.index,
 						                    null, ((FixedOrFlavourBlockContext)_localctx).flavour.colour, ((FixedOrFlavourBlockContext)_localctx).flavour.text,
@@ -411,9 +418,9 @@ public class FlavourGrammar extends Parser {
 				default:
 					throw new NoViableAltException(this);
 				}
-				setState(46); 
+				setState(48); 
 				_errHandler.sync(this);
-				_alt = getInterpreter().adaptivePredict(_input,2,_ctx);
+				_alt = getInterpreter().adaptivePredict(_input,3,_ctx);
 			} while ( _alt!=2 && _alt!=org.antlr.v4.runtime.atn.ATN.INVALID_ALT_NUMBER );
 			}
 		}
@@ -468,25 +475,25 @@ public class FlavourGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(48);
+			setState(50);
 			((SectionContext)_localctx).kind = kind();
 			((SectionContext)_localctx).kinds =  new FlavourKindParseRecord(((SectionContext)_localctx).kind.tVal, ((SectionContext)_localctx).kind.glyph,
 			                                                      new ArrayList<>(),
 			                                                      (((SectionContext)_localctx).kind!=null?(((SectionContext)_localctx).kind.start):null).getLine());
-			setState(55);
+			setState(57);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==FIXED || _la==FLAVOUR) {
 				{
 				{
-				setState(50);
+				setState(52);
 				((SectionContext)_localctx).fixedOrFlavourBlock = fixedOrFlavourBlock();
 
 				                ((SectionContext)_localctx).kinds =  _localctx.kinds.appendFlavours(((SectionContext)_localctx).fixedOrFlavourBlock.flavours);
 				            
 				}
 				}
-				setState(57);
+				setState(59);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -541,22 +548,22 @@ public class FlavourGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(63);
+			setState(65);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==KIND) {
 				{
 				{
-				setState(58);
+				setState(60);
 				((FileContext)_localctx).section = section();
 				 _localctx.sections.add(((FileContext)_localctx).section.kinds); 
 				}
 				}
-				setState(65);
+				setState(67);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(66);
+			setState(68);
 			match(EOF);
 			}
 		}
@@ -572,46 +579,48 @@ public class FlavourGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\nE\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u001bG\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001"+
 		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
 		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
 		"\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001"+
-		"\u0002\u0001\u0002\u0003\u0002%\b\u0002\u0001\u0003\u0001\u0003\u0001"+
-		"\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0004\u0003-\b\u0003\u000b"+
-		"\u0003\f\u0003.\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001"+
-		"\u0004\u0005\u00046\b\u0004\n\u0004\f\u00049\t\u0004\u0001\u0005\u0001"+
-		"\u0005\u0001\u0005\u0005\u0005>\b\u0005\n\u0005\f\u0005A\t\u0005\u0001"+
-		"\u0005\u0001\u0005\u0001\u0005\u0000\u0000\u0006\u0000\u0002\u0004\u0006"+
-		"\b\n\u0000\u0000C\u0000\f\u0001\u0000\u0000\u0000\u0002\u0012\u0001\u0000"+
-		"\u0000\u0000\u0004\u001c\u0001\u0000\u0000\u0000\u0006,\u0001\u0000\u0000"+
-		"\u0000\b0\u0001\u0000\u0000\u0000\n?\u0001\u0000\u0000\u0000\f\r\u0005"+
-		"\u0001\u0000\u0000\r\u000e\u0005\b\u0000\u0000\u000e\u000f\u0005\t\u0000"+
-		"\u0000\u000f\u0010\u0005\b\u0000\u0000\u0010\u0011\u0006\u0000\uffff\uffff"+
-		"\u0000\u0011\u0001\u0001\u0000\u0000\u0000\u0012\u0013\u0005\u0002\u0000"+
-		"\u0000\u0013\u0014\u0005\b\u0000\u0000\u0014\u0015\u0005\t\u0000\u0000"+
-		"\u0015\u0016\u0005\b\u0000\u0000\u0016\u0017\u0005\t\u0000\u0000\u0017"+
-		"\u0018\u0005\b\u0000\u0000\u0018\u0019\u0005\t\u0000\u0000\u0019\u001a"+
-		"\u0005\b\u0000\u0000\u001a\u001b\u0006\u0001\uffff\uffff\u0000\u001b\u0003"+
-		"\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0003\u0000\u0000\u001d\u001e"+
-		"\u0005\b\u0000\u0000\u001e\u001f\u0005\t\u0000\u0000\u001f \u0005\b\u0000"+
-		"\u0000 $\u0006\u0002\uffff\uffff\u0000!\"\u0005\t\u0000\u0000\"#\u0005"+
-		"\b\u0000\u0000#%\u0006\u0002\uffff\uffff\u0000$!\u0001\u0000\u0000\u0000"+
-		"$%\u0001\u0000\u0000\u0000%\u0005\u0001\u0000\u0000\u0000&\'\u0003\u0002"+
-		"\u0001\u0000\'(\u0006\u0003\uffff\uffff\u0000(-\u0001\u0000\u0000\u0000"+
-		")*\u0003\u0004\u0002\u0000*+\u0006\u0003\uffff\uffff\u0000+-\u0001\u0000"+
-		"\u0000\u0000,&\u0001\u0000\u0000\u0000,)\u0001\u0000\u0000\u0000-.\u0001"+
-		"\u0000\u0000\u0000.,\u0001\u0000\u0000\u0000./\u0001\u0000\u0000\u0000"+
-		"/\u0007\u0001\u0000\u0000\u000001\u0003\u0000\u0000\u000017\u0006\u0004"+
-		"\uffff\uffff\u000023\u0003\u0006\u0003\u000034\u0006\u0004\uffff\uffff"+
-		"\u000046\u0001\u0000\u0000\u000052\u0001\u0000\u0000\u000069\u0001\u0000"+
-		"\u0000\u000075\u0001\u0000\u0000\u000078\u0001\u0000\u0000\u00008\t\u0001"+
-		"\u0000\u0000\u000097\u0001\u0000\u0000\u0000:;\u0003\b\u0004\u0000;<\u0006"+
-		"\u0005\uffff\uffff\u0000<>\u0001\u0000\u0000\u0000=:\u0001\u0000\u0000"+
-		"\u0000>A\u0001\u0000\u0000\u0000?=\u0001\u0000\u0000\u0000?@\u0001\u0000"+
-		"\u0000\u0000@B\u0001\u0000\u0000\u0000A?\u0001\u0000\u0000\u0000BC\u0005"+
-		"\u0000\u0000\u0001C\u000b\u0001\u0000\u0000\u0000\u0005$,.7?";
+		"\u0002\u0001\u0002\u0003\u0002%\b\u0002\u0003\u0002\'\b\u0002\u0001\u0003"+
+		"\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0004\u0003"+
+		"/\b\u0003\u000b\u0003\f\u00030\u0001\u0004\u0001\u0004\u0001\u0004\u0001"+
+		"\u0004\u0001\u0004\u0005\u00048\b\u0004\n\u0004\f\u0004;\t\u0004\u0001"+
+		"\u0005\u0001\u0005\u0001\u0005\u0005\u0005@\b\u0005\n\u0005\f\u0005C\t"+
+		"\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0000\u0000\u0006\u0000\u0002"+
+		"\u0004\u0006\b\n\u0000\u0000F\u0000\f\u0001\u0000\u0000\u0000\u0002\u0012"+
+		"\u0001\u0000\u0000\u0000\u0004\u001c\u0001\u0000\u0000\u0000\u0006.\u0001"+
+		"\u0000\u0000\u0000\b2\u0001\u0000\u0000\u0000\nA\u0001\u0000\u0000\u0000"+
+		"\f\r\u0005\u0001\u0000\u0000\r\u000e\u0005\b\u0000\u0000\u000e\u000f\u0005"+
+		"\t\u0000\u0000\u000f\u0010\u0005\n\u0000\u0000\u0010\u0011\u0006\u0000"+
+		"\uffff\uffff\u0000\u0011\u0001\u0001\u0000\u0000\u0000\u0012\u0013\u0005"+
+		"\u0002\u0000\u0000\u0013\u0014\u0005\u0012\u0000\u0000\u0014\u0015\u0005"+
+		"\u0013\u0000\u0000\u0015\u0016\u0005\u0010\u0000\u0000\u0016\u0017\u0005"+
+		"\u0011\u0000\u0000\u0017\u0018\u0005\u000e\u0000\u0000\u0018\u0019\u0005"+
+		"\u000f\u0000\u0000\u0019\u001a\u0005\f\u0000\u0000\u001a\u001b\u0006\u0001"+
+		"\uffff\uffff\u0000\u001b\u0003\u0001\u0000\u0000\u0000\u001c\u001d\u0005"+
+		"\u0003\u0000\u0000\u001d\u001e\u0005\u0014\u0000\u0000\u001e\u001f\u0005"+
+		"\u0015\u0000\u0000\u001f \u0005\u0018\u0000\u0000 &\u0006\u0002\uffff"+
+		"\uffff\u0000!$\u0005\u0017\u0000\u0000\"#\u0005\u001a\u0000\u0000#%\u0006"+
+		"\u0002\uffff\uffff\u0000$\"\u0001\u0000\u0000\u0000$%\u0001\u0000\u0000"+
+		"\u0000%\'\u0001\u0000\u0000\u0000&!\u0001\u0000\u0000\u0000&\'\u0001\u0000"+
+		"\u0000\u0000\'\u0005\u0001\u0000\u0000\u0000()\u0003\u0002\u0001\u0000"+
+		")*\u0006\u0003\uffff\uffff\u0000*/\u0001\u0000\u0000\u0000+,\u0003\u0004"+
+		"\u0002\u0000,-\u0006\u0003\uffff\uffff\u0000-/\u0001\u0000\u0000\u0000"+
+		".(\u0001\u0000\u0000\u0000.+\u0001\u0000\u0000\u0000/0\u0001\u0000\u0000"+
+		"\u00000.\u0001\u0000\u0000\u000001\u0001\u0000\u0000\u00001\u0007\u0001"+
+		"\u0000\u0000\u000023\u0003\u0000\u0000\u000039\u0006\u0004\uffff\uffff"+
+		"\u000045\u0003\u0006\u0003\u000056\u0006\u0004\uffff\uffff\u000068\u0001"+
+		"\u0000\u0000\u000074\u0001\u0000\u0000\u00008;\u0001\u0000\u0000\u0000"+
+		"97\u0001\u0000\u0000\u00009:\u0001\u0000\u0000\u0000:\t\u0001\u0000\u0000"+
+		"\u0000;9\u0001\u0000\u0000\u0000<=\u0003\b\u0004\u0000=>\u0006\u0005\uffff"+
+		"\uffff\u0000>@\u0001\u0000\u0000\u0000?<\u0001\u0000\u0000\u0000@C\u0001"+
+		"\u0000\u0000\u0000A?\u0001\u0000\u0000\u0000AB\u0001\u0000\u0000\u0000"+
+		"BD\u0001\u0000\u0000\u0000CA\u0001\u0000\u0000\u0000DE\u0005\u0000\u0000"+
+		"\u0001E\u000b\u0001\u0000\u0000\u0000\u0006$&.09A";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

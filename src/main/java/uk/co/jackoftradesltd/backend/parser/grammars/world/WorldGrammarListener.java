@@ -18,9 +18,6 @@
 // Generated from WorldGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.world;
 
-            import java.util.ArrayList;
-            import java.util.List;
-        
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**

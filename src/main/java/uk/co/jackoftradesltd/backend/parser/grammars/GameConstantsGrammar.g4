@@ -54,14 +54,13 @@ options { tokenVocab = GameConstantsLexer; }
 /*
  * @author Rowan Crowther
  *
- * A 'field' value, either a name stored in a String, an integer stored in
- * a String, or a MessageType stored in a String
+ * A 'field' value: the text of a GC_MSG, stored in a String whatever it is.
+ * A label, a number and a MessageType name are all one GC_MSG, so the reader
+ * decides which it is and whether it is valid.
  */
 field
         returns[String fieldValue]
-        :   GC_NAME { $fieldValue = $GC_NAME.getText(); }
-        |   INTEGER { $fieldValue = $INTEGER.getText(); }
-        |   GC_MSG { $fieldValue = $GC_MSG.getText(); }
+        :   GC_MSG { $fieldValue = $GC_MSG.getText(); }
         ;
 
 /*

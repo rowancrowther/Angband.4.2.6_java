@@ -619,6 +619,19 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Accepted:** 2026-10-25, during the `FlavourKindAssembler` port pass. Pinned by
   `FlavourKindAssemblerNumericSvalTest.aTailOfSpacesOrTabsMakesTheSymbolANameNotANumber`.
 
+### Text after the glyph's colon on a `kind:` line is refused by the assembler, where C ignores it
+
+- **Java:** `FlavourKindAssembler` (the glyph check), fed by the `GLYPH` token in `FlavourLexer.g4`. **C:**
+  `parse_flavor_kind` in `init.c`, with `parser_parse` in `parser.c` reading the `char` field.
+- **Differs:** C takes one character, skips a colon after it and ignores the rest of the line, so `kind:ring:=:extra` has
+  the glyph `=`. Java reads the whole rest of the line as the glyph, so the assembler sees `=:extra` and throws "illegal
+  glyph value". A second character that is not a colon is refused by both.
+- **Reach:** none from shipped data. All 8 `kind:` lines in `flavor.txt` end at the glyph.
+- **Revisit:** if a modded `flavor.txt` ever puts a note after the glyph.
+- **Accepted:** 2026-11-22, closing the Flavour bullet of Stage 7i of `docs/Issue_Approach_Order.md`; the exception comes
+  from the assembler, not the parser. Pinned by `textAfterTheGlyphIsRefusedByTheAssemblerHereWhereCIgnoresIt` in
+  `FlavourReaderTest`.
+
 ## History
 
 ### A chart repeated with a different successor stops the load, where C accepts it
@@ -1644,26 +1657,8 @@ to close, not a permanent choice, so it is worth a line in `docs/ROADMAP.md` too
 above, and **Later** says what the fix is. When one is fixed, delete the entry and its pinning test's `WhereC` name.
 Move an entry up into its own section instead if you decide to keep the deviation for good.
 
-### World: a level, up or down name made only of digits is refused, where C keeps it
-
-- **Java:** `WorldLexer.g4` (the `INTEGER` and `NAME` rules) and `WorldGrammar.g4` (the `levelName` and `upAndDown`
-  rules). **C:** `parse_world_level` (`init.c`), registered as `level int depth sym name sym up sym down`.
-- **Differs:** a `sym` in C is any text without a colon, so `level:5:7:None:None` loads a level named `7`. Java's `NAME`
-  is `~('\r' | '\n' | ':')+`, which matches `7`, but `INTEGER` (`'-'? ('0'..'9')+`) matches it too, at the same length,
-  and is listed first, so the lexer returns `INTEGER`. The grammar wants `NAME` in the name, up and down fields, so the
-  line is a syntax error and the whole file is refused. The same goes for `-5`, `007` and any other name that is only an
-  optional minus and digits, in any of the three fields. The depth field is not affected: it wants `INTEGER`.
-- **Agrees:** a name with any other character in it (`Hell-hole`, `Angband 7`, `7th`), which lexes as `NAME`.
-- **Reach:** none from shipped data. Every name in `world.txt` is `Town` or `Angband N`, with a word in it. A modded
-  `world.txt` that names a level with a bare number only.
-- **Later:** make `NAME` win for the name fields. The options are a lexer mode that switches after the depth field's
-  colon, or a parser rule that takes `NAME | INTEGER` in `levelName` and `upAndDown` and reads `getText()`. The second
-  needs no lexer change. Then flip the pinning test to expect `World(5, "7", "None", "None")`, rename it, and update
-  the `WorldGrammar.g4` / `WorldLexer.g4` entry in `docs/grammar_issues.md`.
-- **Pinned by:** `aNameOfOnlyDigitsIsHardHereWhereCTakesAnySymExceptColon` in `WorldReaderTest`. It goes red when the
-  lexer is changed, which is the prompt to take this entry out.
-- **Accepted:** 2026-11-09, found while bringing `WorldReaderTest` up to date after the `record-count:` header and the
-  name restriction were removed. Written up in `docs/grammar_issues.md`.
+No entries at present. The World entry (a level, up or down name made only of digits) was closed on 2026-11-22 and
+taken out; see `docs/Issue_Approach_Order.md`, 7i.
 
 ## Pending your decision
 

@@ -111,7 +111,7 @@ DROP_BASE
         ;
 
 MIMIC
-        :   'mimic:' -> pushMode(DELIMITED)
+        :   'mimic:' -> pushMode(NOT_MSG)
         ;
 
 FRIENDS
@@ -131,7 +131,7 @@ SHAPE
         ;
 
 COLOUR_CYCLE
-        :   'color-cycle:' -> pushMode(DELIMITED)
+        :   'color-cycle:' -> pushMode(NOT_MSG)
         ;
 
 MON_UINT
@@ -187,14 +187,38 @@ FLAG_EOL
         :   NL -> skip, popMode
         ;
 
+mode NOT_MSG;
+
+NOT_MSG_COLON
+        :   ':'
+        ;
+        
+NOT_MSG_STRING
+        :   ~('\r' | '\n' | ':')+
+        ;
+
+NOT_MSG_EOL
+        :   NEWLINE -> skip, popMode
+        ;
+
 mode DELIMITED;
 
 COLON
-        :   ':'
+        :   ':' -> mode(DELIMITED_NEXT)
         ;
 
 DELIMITED_STRING
         :   ~('\r' | '\n' | ':')+
+        ;
+
+FIRST_DELIMITED_EOL
+        :   NEWLINE -> skip, popMode
+        ;
+
+mode DELIMITED_NEXT;
+
+SECOND_DELIMITED_STRING
+        :   ~('\r' | '\n')+
         ;
 
 DELIMITED_EOL

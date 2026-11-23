@@ -158,7 +158,7 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param b      The builder to build the records from
      */
     private void dispatch(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b) {
-        switch (rec.getCategory()) {
+        switch (ParseUtils.trimFrontOnlySpaceAndTab(rec.getCategory())) {
             case "level-max" -> levelMax(rec, b);
             case "mon-gen" -> monGen(rec, b);
             case "mon-play" -> monPlay(rec, b);

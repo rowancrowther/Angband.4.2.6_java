@@ -500,18 +500,18 @@ class ActivationReaderTest {
     }
 
     @Test
-    void aLowerCaseNameIsAHardErrorHereWhereCTakesAnyString() throws IOException {
-        // name is "str name" in C; the lexer takes only upper case, digits and underscore.
-        assertHardError("name:lower\neffect:CURE:POISONED\n");
-        assertHardError("name:TWO WORDS\neffect:CURE:POISONED\n");
+    void aNameOfLowerCaseLettersOrBlanksLoadsAsInC() throws IOException {
+        // name is "str name" in C, so any text to the end of the line is the name.
+        assertEquals("lower", loadOne("name:lower\neffect:CURE:POISONED\n").getName());
+        assertEquals("TWO WORDS", loadOne("name:TWO WORDS\neffect:CURE:POISONED\n").getName());
     }
 
     @Test
-    void aNameWithTrailingBlanksIsTrimmedHereWhereCKeepsThem() throws IOException {
-        // C keeps "T  " as the name; the lexer stops at the blank and the end-of-line rule eats it.
+    void aNameKeepsItsTrailingBlanksAsInC() throws IOException {
+        // C keeps "T  " as the name, both blanks included.
         Activation a = loadOne("name:T  \neffect:CURE:POISONED\n");
 
-        assertEquals("T", a.getName());
+        assertEquals("T  ", a.getName());
     }
 
     @Test

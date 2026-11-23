@@ -374,12 +374,63 @@ class RealmReaderTest {
         assertEquals(Stats.STAT_INT, field(result.items().get(0), "stat"));
     }
 
-    @Test
-    void textAfterASecondColonOnTheStatLineIsPartOfTheStatHereWhereCIgnoresIt() throws IOException {
-        // C: stat is a sym, tokenized on ':', so "stat:INT:extra" reads INT and drops the rest.
-        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("stat-colon.txt",
-                realm("weird", "INT:extra", "magic book")));
+    // ---- stat: is a sym in C, so it is cut at the first colon ------------------------
 
-        assertTrue(e.getMessage().endsWith("has an illegal stat value: INT:extra"), e::getMessage);
+    /** The stat each value loads as; C reads {@code stat} with {@code strtok(sp, ":")}. */
+    private Stats statLoaded(String fileName, String statValue) throws Exception {
+        return field(load(fileName, realm("weird", statValue, "magic book")).items().get(0), "stat");
+    }
+
+    @Test
+    void textAfterASecondColonOnTheStatLineIsDroppedAsInC() throws Exception {
+        // C: stat is a sym, tokenized on ':', so "stat:INT:extra" reads INT and drops the rest.
+        assertEquals(Stats.STAT_INT, statLoaded("stat-colon.txt", "INT:extra"));
+        assertEquals(Stats.STAT_INT, statLoaded("stat-trailing-colon.txt", "INT:"));
+    }
+
+    @Test
+    void leadingColonsBeforeTheStatAreSkippedAsInC() throws Exception {
+        // C: strtok skips leading delimiters, so "stat::INT" and "stat:::INT" both read INT.
+        assertEquals(Stats.STAT_INT, statLoaded("stat-lead-1.txt", ":INT"));
+        assertEquals(Stats.STAT_INT, statLoaded("stat-lead-2.txt", "::INT"));
+    }
+
+    @Test
+    void theFirstPieceOfTheStatLineDecidesAsInC() throws Exception {
+        // C: only the text before the first colon reaches stat_name_to_idx.
+        assertEquals(Stats.STAT_INT, statLoaded("stat-lower-colon.txt", "int:x"));
+        assertEquals(Stats.STAT_MAX, statLoaded("stat-max-colon.txt", "MAX:x"));
+        for (String value : new String[]{"ZZZ:INT", "NONE:INT"}) {
+            DataFileParseException e = assertThrows(DataFileParseException.class,
+                    () -> statLoaded("stat-bad-first.txt", value), value);
+            assertTrue(e.getMessage().endsWith("has an illegal stat value: " + value), e::getMessage);
+        }
+    }
+
+    @Test
+    void aStatWithABlankBesideTheColonIsRefusedAsInC() {
+        // C: strtok keeps the blank, so " INT" and "INT " are not in stat_name_list.
+        for (String value : new String[]{" INT", "INT :x"}) {
+            assertThrows(DataFileParseException.class, () -> statLoaded("stat-blank.txt", value), value);
+        }
+    }
+
+    @Test
+    void aStatLineWithNoNameIsRefusedAsInC() {
+        // C: strtok finds no token for "stat:", "stat::" or "stat:::", so parser_parse returns
+        // PARSE_ERROR_MISSING_FIELD. A record with no stat: line at all is a different case and loads.
+        for (String value : new String[]{"", ":", "::", ":::"}) {
+            DataFileParseException e = assertThrows(DataFileParseException.class,
+                    () -> statLoaded("stat-no-name.txt", value), "stat:" + value);
+            assertTrue(e.getMessage().contains("stat value"), e::getMessage);
+        }
+    }
+
+    @Test
+    void aStatLineWithNoNameNamesTheRecordLineAsInC() {
+        DataFileParseException e = assertThrows(DataFileParseException.class, () -> load("second-no-name.txt",
+                realm("one", "INT", "magic book") + realm("two", "::", "magic book")));
+
+        assertTrue(e.getMessage().startsWith("Realm starting at line: 6 of file: "), e::getMessage);
     }
 }

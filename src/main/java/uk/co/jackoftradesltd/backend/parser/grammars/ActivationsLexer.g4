@@ -101,21 +101,22 @@ DESC
 /*
  * @author Rowan Crowther
  *
- * NAME_MODE a mode to pull in a NAME_STRING which consists of uppercase letters
- * numbers, and the underscore character ('_'). Once that has been pulled in the
- * mode-stack is popped back to DEFAULT_MODE
+ * NAME_MODE a mode to pull in a NAME_STRING which consists of everything up to,
+ * but not including, the end of the line, as C reads name as a str. Once that
+ * has been pulled in the mode-stack is popped back to DEFAULT_MODE
  */
 mode NAME_MODE;
 
 /*
  * @author Rowan Crowther
  *
- * NAME_STRING, a token which consists of uppercase letters
- * numbers, and the underscore character ('_'). Once that has been pulled in the
- * mode-stack is popped back to DEFAULT_MODE. cf Activations.g4 name rule
+ * NAME_STRING, a token which consists of everything up to, but not including,
+ * the end of the line: lower case, inner blanks and trailing blanks all stay in
+ * the name. Once that has been pulled in the mode-stack is popped back to
+ * DEFAULT_MODE. cf Activations.g4 name rule
  */
 NAME_STRING
-        :   ('A'..'Z' | '0'..'9' | '_')+ -> popMode
+        :   ~('\r' | '\n')+ -> popMode
         ;
 
 /*

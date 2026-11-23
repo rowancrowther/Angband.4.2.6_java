@@ -1267,16 +1267,53 @@ class MonsterReaderTest {
         }
     }
 
+    /**
+     * {@code message-vis:}, {@code message-invis:} and {@code message-miss:} are {@code sym spell
+     * ?str message} in C, and {@code add_alternate_spell_message} stores {@code ""} when the message
+     * is missing or holds only spaces and tabs. So a line with no second colon, a second colon with
+     * nothing after it, and a message of blanks all load, each with the text {@code ""}.
+     *
+     * <p>Function aMessageWithNoTextLoadsAsEmptyAsInC coded on 261121, commented in full on 261121.
+     */
     @Test
-    void aMessageWithNoTextIsAHardErrorHereWhereCTakesItAsEmpty() throws IOException {
-        // message-vis is "sym spell ?str message" in C; a missing or blank message becomes "".
-        assertThrows(ParseCancellationException.class, () -> load("msg-notext.txt", rec("Solo", "spells:SHRIEK", "message-vis:SHRIEK")));
+    void aMessageWithNoTextLoadsAsEmptyAsInC() throws Exception {
+        record Directive(String keyword, MonsterSpellText.MonsterSpellMessageType type) { }
+        List<Directive> directives = List.of(
+                new Directive("message-vis", MonsterSpellText.MonsterSpellMessageType.VIS),
+                new Directive("message-invis", MonsterSpellText.MonsterSpellMessageType.INVIS),
+                new Directive("message-miss", MonsterSpellText.MonsterSpellMessageType.MISS));
+        for (Directive d : directives) {
+            for (String tail : List.of("", ":", ":   ", ":\t ", ": \t")) {
+                String line = d.keyword() + ":SHRIEK" + tail;
+                ParseResult<MonsterRace> r = load("msg-notext.txt", rec("Solo", "spells:SHRIEK", line));
+                List<MonsterSpellText> messages = field(byName(r, "Solo"), "spellMessages");
+                assertEquals(1, messages.size(), line);
+                assertEquals(d.type(), messages.get(0).getSpellType(), line);
+                assertEquals(MonsterSpell.RSF_SHRIEK, messages.get(0).getDamageType(), line);
+                assertEquals("", messages.get(0).getSpellMessage(), line);
+            }
+        }
     }
 
+    /**
+     * The message is the last field, so {@code parser_parse} hands the whole rest of the line to
+     * {@code parser_getstr}, colons included: {@code message-vis:SHRIEK:It says: hello} stores
+     * {@code It says: hello}. The same holds for {@code message-invis:} and {@code message-miss:}.
+     *
+     * <p>Function aMessageContainingAColonKeepsTheRestOfTheLineAsInC coded on 261121, commented in
+     * full on 261121.
+     */
     @Test
-    void aMessageContainingAColonIsAHardErrorHereWhereCKeepsTheRestOfTheLine() throws IOException {
-        // The last field of a directive takes the rest of the line in C, colons included.
-        assertThrows(ParseCancellationException.class, () -> load("msg-colon.txt", rec("Solo", "spells:SHRIEK", "message-vis:SHRIEK:It says: hello")));
+    void aMessageContainingAColonKeepsTheRestOfTheLineAsInC() throws Exception {
+        for (String keyword : List.of("message-vis", "message-invis", "message-miss")) {
+            for (String text : List.of("It says: hello", "a:b:c", ":leading", "trailing:")) {
+                String line = keyword + ":SHRIEK:" + text;
+                ParseResult<MonsterRace> r = load("msg-colon.txt", rec("Solo", "spells:SHRIEK", line));
+                List<MonsterSpellText> messages = field(byName(r, "Solo"), "spellMessages");
+                assertEquals(1, messages.size(), line);
+                assertEquals(text, messages.get(0).getSpellMessage(), line);
+            }
+        }
     }
 
     @Test

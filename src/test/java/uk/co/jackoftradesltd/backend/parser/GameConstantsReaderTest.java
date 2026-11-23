@@ -60,7 +60,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>Class GameConstantsReaderTest coded before 261002, updated on 261002 once missing constants
  * defaulted to 0 and duplicates overwrote, as in C, and on 261025 once {@code GameConstantsAssembler}
  * was brought in line with the C handlers (sign rules, message lookup, extra fields, base 0 numbers),
- * and on 261104 for the removal of the soft-error path and of {@code GameConstantsParseResult}.
+ * and on 261104 for the removal of the soft-error path and of {@code GameConstantsParseResult}, and on
+ * 261122 once the lexer took any text up to a colon as a value, so hexadecimal values and mixed-case
+ * or numeric message names load.
  *
  * @author Rowan Crowther
  */
@@ -444,15 +446,32 @@ class GameConstantsReaderTest {
     }
 
     /**
-     * A hexadecimal value is hard here. C reads an {@code int} with {@code strtol(tok, &z, 0)}, so
-     * {@code 0x10} is 16.
+     * A hexadecimal value loads. C reads an {@code int} with {@code strtol(tok, &z, 0)}, so
+     * {@code 0x10} is 16 and {@code 0X1f} is 31. The lexer takes the value as text up to the colon and
+     * {@code ParseUtils} reads it with the base-zero rules.
      *
-     * <p>Function aHexadecimalValueIsRefusedHereWhereCReadsBaseZero coded on 261019, commented in full
-     * on 261019.
+     * <p>Function aHexadecimalValueLoadsAsInC coded on 261122, commented in full on 261122. It
+     * replaces aHexadecimalValueIsRefusedHereWhereCReadsBaseZero.
      */
     @Test
-    void aHexadecimalValueIsRefusedHereWhereCReadsBaseZero() throws IOException {
-        grammarRefusal("world:max-depth:0x10\n");
+    void aHexadecimalValueLoadsAsInC() throws IOException {
+        assertEquals(16, load("world:max-depth:0x10\n").world().maxDepth());
+        assertEquals(31, load("world:max-depth:0X1f\n").world().maxDepth());
+    }
+
+    /**
+     * Text after the digits of a value is ignored, as {@code strtol} ignores it: {@code 1.5} is 1 and
+     * {@code 7x} is 7. A value with no digits at all is still refused.
+     *
+     * <p>Function aValueWithTrailingTextLoadsTheLeadingNumberAsInC coded on 261122, commented in full
+     * on 261122.
+     */
+    @Test
+    void aValueWithTrailingTextLoadsTheLeadingNumberAsInC() throws IOException {
+        assertEquals(1, load("world:max-depth:1.5\n").world().maxDepth());
+        assertEquals(7, load("world:max-depth:7x\n").world().maxDepth());
+        assertEquals(7, load("world:max-depth:7 \n").world().maxDepth());
+        assertThrows(ParseCancellationException.class, () -> load("world:max-depth:\n"));
     }
 
     /**
@@ -484,15 +503,56 @@ class GameConstantsReaderTest {
     }
 
     /**
-     * A lower-case message name is hard here. C's {@code message_lookup_by_name()} compares with
-     * {@code my_stricmp()}, so {@code hit_good} resolves.
+     * A message name is matched without regard to case, as C's {@code message_lookup_by_name()}
+     * compares with {@code my_stricmp()}: {@code hit_good} and {@code HIT_good} both resolve to
+     * {@code HIT_GOOD}.
      *
-     * <p>Function aLowerCaseMessageNameIsRefusedHereWhereCIsCaseBlind coded on 261019, commented in
-     * full on 261019.
+     * <p>Function aMessageNameOfAnyCaseLoadsAsInC coded on 261122, commented in full on 261122. It
+     * replaces aLowerCaseMessageNameIsRefusedHereWhereCIsCaseBlind.
      */
     @Test
-    void aLowerCaseMessageNameIsRefusedHereWhereCIsCaseBlind() throws IOException {
-        grammarRefusal("melee-critical-level:10:2:5:hit_good\n");
+    void aMessageNameOfAnyCaseLoadsAsInC() throws IOException {
+        for (String name : List.of("hit_good", "HIT_good", "HIT_GOOD")) {
+            GameConstantsData data = load("melee-critical-level:10:2:5:" + name + "\n");
+
+            assertEquals(MessageType.MSG_HIT_GOOD, data.meleeCriticalLevel().get(0).messageType(), name);
+        }
+    }
+
+    /**
+     * A message name with a digit loads: {@code STORE3} and {@code store3} are one name, not a name
+     * and a number.
+     *
+     * <p>Function aMessageNameWithADigitLoadsAsInC coded on 261122, commented in full on 261122.
+     */
+    @Test
+    void aMessageNameWithADigitLoadsAsInC() throws IOException {
+        assertEquals(MessageType.MSG_STORE3,
+                load("melee-critical-level:10:2:5:STORE3\n").meleeCriticalLevel().get(0).messageType());
+        assertEquals(MessageType.MSG_STORE3,
+                load("melee-critical-level:10:2:5:store3\n").meleeCriticalLevel().get(0).messageType());
+    }
+
+    /**
+     * A message may be given as a number below {@code MSG_MAX}, with only blanks after it, as C's
+     * {@code message_lookup_by_name()} reads it: {@code 12} is {@code QUAFF}. {@code 153} is
+     * {@code MSG_MAX} itself, {@code -1} is not below it, and {@code 12x} has text after the number,
+     * so all three are refused. A name with a blank after it ({@code HIT_GOOD }) is refused too, as
+     * {@code my_stricmp()} sees the blank.
+     *
+     * <p>Function aNumericMessageLoadsBelowMsgMaxAsInC coded on 261122, commented in full on 261122.
+     */
+    @Test
+    void aNumericMessageLoadsBelowMsgMaxAsInC() throws IOException {
+        assertEquals(MessageType.MSG_QUAFF,
+                load("melee-critical-level:10:2:5:12\n").meleeCriticalLevel().get(0).messageType());
+        assertEquals(MessageType.MSG_QUAFF,
+                load("melee-critical-level:10:2:5:12  \n").meleeCriticalLevel().get(0).messageType());
+        for (String bad : List.of("153", "154", "-1", "12x", "NOT_A_MSG", "hit good", "HIT_GOOD ")) {
+            String message = refusal("melee-critical-level:10:2:5:" + bad + "\n");
+
+            assertTrue(message.contains("illegal message type"), bad + ": " + message);
+        }
     }
 
     /**

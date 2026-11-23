@@ -42,7 +42,7 @@ options { tokenVocab = FlavourLexer; }
 // every flavour in the block that follows.
 kind
         returns[String tVal, String glyph]
-        :   KIND t=STRING COLON g=STRING
+        :   KIND t=TVALUE KIND_COLON g=GLYPH
             { $tVal = $t.getText(); $glyph = $g.getText(); }
         ;
 
@@ -50,8 +50,8 @@ kind
 // sub-type. Unlike flavour, it carries an sval symbol and always a description.
 fixed
         returns[String index, String sval, String colour, String text]
-        :   FIXED i=STRING COLON s=STRING COLON
-            c=STRING COLON t=STRING
+        :   FIXED i=FF_STRING FF_COLON s=FS_STRING FS_COLON
+            c=FT_STRING FT_COLON t=FL_STRING
             { $index = $i.getText(); $sval = $s.getText();
               $colour = $c.getText(); $text = $t.getText(); }
         ;
@@ -61,11 +61,10 @@ fixed
 flavour
         returns[String index, String colour, String text]
         @init { $text = null; }
-        :   FLAVOUR i=STRING COLON
-            c=STRING { $index = $i.getText();
+        :   FLAVOUR i=FIRST_STRING FIRST_COLON
+            c=SECOND_STRING { $index = $i.getText();
                        $colour = $c.getText(); }
-            (COLON t=STRING { $text = $t.getText(); })?
-
+            (SECOND_COLON (t=THIRD_STRING { $text = $t.getText(); })?)?
         ;
 
 // The run of flavour/fixed lines under one kind: header, collected in file order.

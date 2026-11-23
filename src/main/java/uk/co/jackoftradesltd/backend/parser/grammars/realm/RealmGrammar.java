@@ -41,7 +41,7 @@ public class RealmGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		NAME=1, STAT=2, VERB=3, SPELL_NOUN=4, BOOK_NOUN=5, INTEGER=6, COMMENT=7, 
-		INDENT=8, EOL=9, STRING=10, FREE_TEXT_EOL=11;
+		INDENT=8, EOL=9, COLON=10, STRING=11, FREE_TEXT_EOL=12;
 	public static final int
 		RULE_name = 0, RULE_stat = 1, RULE_verb = 2, RULE_spellNoun = 3, RULE_bookNoun = 4, 
 		RULE_realm = 5, RULE_file = 6;
@@ -54,14 +54,15 @@ public class RealmGrammar extends Parser {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'name:'", "'stat:'", "'verb:'", "'spell-noun:'", "'book-noun:'"
+			null, "'name:'", "'stat:'", "'verb:'", "'spell-noun:'", "'book-noun:'", 
+			null, null, null, null, "':'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "NAME", "STAT", "VERB", "SPELL_NOUN", "BOOK_NOUN", "INTEGER", "COMMENT", 
-			"INDENT", "EOL", "STRING", "FREE_TEXT_EOL"
+			"INDENT", "EOL", "COLON", "STRING", "FREE_TEXT_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -170,6 +171,10 @@ public class RealmGrammar extends Parser {
 		public String statStr;
 		public Token STRING;
 		public TerminalNode STAT() { return getToken(RealmGrammar.STAT, 0); }
+		public List<TerminalNode> COLON() { return getTokens(RealmGrammar.COLON); }
+		public TerminalNode COLON(int i) {
+			return getToken(RealmGrammar.COLON, i);
+		}
 		public TerminalNode STRING() { return getToken(RealmGrammar.STRING, 0); }
 		public StatContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -193,14 +198,38 @@ public class RealmGrammar extends Parser {
 	public final StatContext stat() throws RecognitionException {
 		StatContext _localctx = new StatContext(_ctx, getState());
 		enterRule(_localctx, 2, RULE_stat);
+		 ((StatContext)_localctx).statStr =  null; 
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(18);
 			match(STAT);
-			setState(19);
-			((StatContext)_localctx).STRING = match(STRING);
-			 ((StatContext)_localctx).statStr =  ((StatContext)_localctx).STRING.getText(); 
+			setState(22);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			while (_la==COLON) {
+				{
+				{
+				setState(19);
+				match(COLON);
+				}
+				}
+				setState(24);
+				_errHandler.sync(this);
+				_la = _input.LA(1);
+			}
+			setState(27);
+			_errHandler.sync(this);
+			_la = _input.LA(1);
+			if (_la==STRING) {
+				{
+				setState(25);
+				((StatContext)_localctx).STRING = match(STRING);
+				 ((StatContext)_localctx).statStr =  ((StatContext)_localctx).STRING.getText(); 
+				}
+			}
+
 			}
 		}
 		catch (RecognitionException re) {
@@ -245,9 +274,9 @@ public class RealmGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(22);
+			setState(29);
 			match(VERB);
-			setState(23);
+			setState(30);
 			((VerbContext)_localctx).STRING = match(STRING);
 			 ((VerbContext)_localctx).verbStr =  ((VerbContext)_localctx).STRING.getText(); 
 			}
@@ -294,9 +323,9 @@ public class RealmGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(26);
+			setState(33);
 			match(SPELL_NOUN);
-			setState(27);
+			setState(34);
 			((SpellNounContext)_localctx).STRING = match(STRING);
 			 ((SpellNounContext)_localctx).spellNounStr =  ((SpellNounContext)_localctx).STRING.getText(); 
 			}
@@ -343,9 +372,9 @@ public class RealmGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(30);
+			setState(37);
 			match(BOOK_NOUN);
-			setState(31);
+			setState(38);
 			((BookNounContext)_localctx).STRING = match(STRING);
 			 ((BookNounContext)_localctx).bookNounStr =  ((BookNounContext)_localctx).STRING.getText(); 
 			}
@@ -430,42 +459,42 @@ public class RealmGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(34);
+			setState(41);
 			((RealmContext)_localctx).name = name();
 			 lineInit = ((RealmContext)_localctx).name.line;
 			                   nameInit = ((RealmContext)_localctx).name.nameStr; 
-			setState(50);
+			setState(57);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 60L) != 0)) {
 				{
-				setState(48);
+				setState(55);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case STAT:
 					{
-					setState(36);
+					setState(43);
 					((RealmContext)_localctx).stat = stat();
 					 statInit = ((RealmContext)_localctx).stat.statStr; 
 					}
 					break;
 				case VERB:
 					{
-					setState(39);
+					setState(46);
 					((RealmContext)_localctx).verb = verb();
 					 verbInit = ((RealmContext)_localctx).verb.verbStr; 
 					}
 					break;
 				case SPELL_NOUN:
 					{
-					setState(42);
+					setState(49);
 					((RealmContext)_localctx).spellNoun = spellNoun();
 					 spellNounInit = ((RealmContext)_localctx).spellNoun.spellNounStr; 
 					}
 					break;
 				case BOOK_NOUN:
 					{
-					setState(45);
+					setState(52);
 					((RealmContext)_localctx).bookNoun = bookNoun();
 					 bookNounInit = ((RealmContext)_localctx).bookNoun.bookNounStr; 
 					}
@@ -474,7 +503,7 @@ public class RealmGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(52);
+				setState(59);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -536,22 +565,22 @@ public class RealmGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(58);
+			setState(65);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==NAME) {
 				{
 				{
-				setState(53);
+				setState(60);
 				((FileContext)_localctx).realm = realm();
 				 _localctx.realms.add(((FileContext)_localctx).realm.record); 
 				}
 				}
-				setState(60);
+				setState(67);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(61);
+			setState(68);
 			match(EOF);
 			}
 		}
@@ -567,44 +596,49 @@ public class RealmGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000b@\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\fG\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0001\u0000\u0001\u0000\u0001"+
-		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001"+
-		"\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001"+
-		"\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001"+
+		"\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0005\u0001\u0015\b\u0001\n"+
+		"\u0001\f\u0001\u0018\t\u0001\u0001\u0001\u0001\u0001\u0003\u0001\u001c"+
+		"\b\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001"+
+		"\u0003\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001"+
+		"\u0004\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001"+
 		"\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001"+
-		"\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001"+
-		"\u0005\u0001\u0005\u0005\u00051\b\u0005\n\u0005\f\u00054\t\u0005\u0001"+
-		"\u0006\u0001\u0006\u0001\u0006\u0005\u00069\b\u0006\n\u0006\f\u0006<\t"+
-		"\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0000\u0000\u0007\u0000\u0002"+
-		"\u0004\u0006\b\n\f\u0000\u0000=\u0000\u000e\u0001\u0000\u0000\u0000\u0002"+
-		"\u0012\u0001\u0000\u0000\u0000\u0004\u0016\u0001\u0000\u0000\u0000\u0006"+
-		"\u001a\u0001\u0000\u0000\u0000\b\u001e\u0001\u0000\u0000\u0000\n\"\u0001"+
-		"\u0000\u0000\u0000\f:\u0001\u0000\u0000\u0000\u000e\u000f\u0005\u0001"+
-		"\u0000\u0000\u000f\u0010\u0005\n\u0000\u0000\u0010\u0011\u0006\u0000\uffff"+
-		"\uffff\u0000\u0011\u0001\u0001\u0000\u0000\u0000\u0012\u0013\u0005\u0002"+
-		"\u0000\u0000\u0013\u0014\u0005\n\u0000\u0000\u0014\u0015\u0006\u0001\uffff"+
-		"\uffff\u0000\u0015\u0003\u0001\u0000\u0000\u0000\u0016\u0017\u0005\u0003"+
-		"\u0000\u0000\u0017\u0018\u0005\n\u0000\u0000\u0018\u0019\u0006\u0002\uffff"+
-		"\uffff\u0000\u0019\u0005\u0001\u0000\u0000\u0000\u001a\u001b\u0005\u0004"+
-		"\u0000\u0000\u001b\u001c\u0005\n\u0000\u0000\u001c\u001d\u0006\u0003\uffff"+
-		"\uffff\u0000\u001d\u0007\u0001\u0000\u0000\u0000\u001e\u001f\u0005\u0005"+
-		"\u0000\u0000\u001f \u0005\n\u0000\u0000 !\u0006\u0004\uffff\uffff\u0000"+
-		"!\t\u0001\u0000\u0000\u0000\"#\u0003\u0000\u0000\u0000#2\u0006\u0005\uffff"+
-		"\uffff\u0000$%\u0003\u0002\u0001\u0000%&\u0006\u0005\uffff\uffff\u0000"+
-		"&1\u0001\u0000\u0000\u0000\'(\u0003\u0004\u0002\u0000()\u0006\u0005\uffff"+
-		"\uffff\u0000)1\u0001\u0000\u0000\u0000*+\u0003\u0006\u0003\u0000+,\u0006"+
-		"\u0005\uffff\uffff\u0000,1\u0001\u0000\u0000\u0000-.\u0003\b\u0004\u0000"+
-		"./\u0006\u0005\uffff\uffff\u0000/1\u0001\u0000\u0000\u00000$\u0001\u0000"+
-		"\u0000\u00000\'\u0001\u0000\u0000\u00000*\u0001\u0000\u0000\u00000-\u0001"+
-		"\u0000\u0000\u000014\u0001\u0000\u0000\u000020\u0001\u0000\u0000\u0000"+
-		"23\u0001\u0000\u0000\u00003\u000b\u0001\u0000\u0000\u000042\u0001\u0000"+
-		"\u0000\u000056\u0003\n\u0005\u000067\u0006\u0006\uffff\uffff\u000079\u0001"+
-		"\u0000\u0000\u000085\u0001\u0000\u0000\u00009<\u0001\u0000\u0000\u0000"+
-		":8\u0001\u0000\u0000\u0000:;\u0001\u0000\u0000\u0000;=\u0001\u0000\u0000"+
-		"\u0000<:\u0001\u0000\u0000\u0000=>\u0005\u0000\u0000\u0001>\r\u0001\u0000"+
-		"\u0000\u0000\u000302:";
+		"\u0005\u0001\u0005\u0001\u0005\u0005\u00058\b\u0005\n\u0005\f\u0005;\t"+
+		"\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0005\u0006@\b\u0006\n\u0006"+
+		"\f\u0006C\t\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0000\u0000\u0007"+
+		"\u0000\u0002\u0004\u0006\b\n\f\u0000\u0000F\u0000\u000e\u0001\u0000\u0000"+
+		"\u0000\u0002\u0012\u0001\u0000\u0000\u0000\u0004\u001d\u0001\u0000\u0000"+
+		"\u0000\u0006!\u0001\u0000\u0000\u0000\b%\u0001\u0000\u0000\u0000\n)\u0001"+
+		"\u0000\u0000\u0000\fA\u0001\u0000\u0000\u0000\u000e\u000f\u0005\u0001"+
+		"\u0000\u0000\u000f\u0010\u0005\u000b\u0000\u0000\u0010\u0011\u0006\u0000"+
+		"\uffff\uffff\u0000\u0011\u0001\u0001\u0000\u0000\u0000\u0012\u0016\u0005"+
+		"\u0002\u0000\u0000\u0013\u0015\u0005\n\u0000\u0000\u0014\u0013\u0001\u0000"+
+		"\u0000\u0000\u0015\u0018\u0001\u0000\u0000\u0000\u0016\u0014\u0001\u0000"+
+		"\u0000\u0000\u0016\u0017\u0001\u0000\u0000\u0000\u0017\u001b\u0001\u0000"+
+		"\u0000\u0000\u0018\u0016\u0001\u0000\u0000\u0000\u0019\u001a\u0005\u000b"+
+		"\u0000\u0000\u001a\u001c\u0006\u0001\uffff\uffff\u0000\u001b\u0019\u0001"+
+		"\u0000\u0000\u0000\u001b\u001c\u0001\u0000\u0000\u0000\u001c\u0003\u0001"+
+		"\u0000\u0000\u0000\u001d\u001e\u0005\u0003\u0000\u0000\u001e\u001f\u0005"+
+		"\u000b\u0000\u0000\u001f \u0006\u0002\uffff\uffff\u0000 \u0005\u0001\u0000"+
+		"\u0000\u0000!\"\u0005\u0004\u0000\u0000\"#\u0005\u000b\u0000\u0000#$\u0006"+
+		"\u0003\uffff\uffff\u0000$\u0007\u0001\u0000\u0000\u0000%&\u0005\u0005"+
+		"\u0000\u0000&\'\u0005\u000b\u0000\u0000\'(\u0006\u0004\uffff\uffff\u0000"+
+		"(\t\u0001\u0000\u0000\u0000)*\u0003\u0000\u0000\u0000*9\u0006\u0005\uffff"+
+		"\uffff\u0000+,\u0003\u0002\u0001\u0000,-\u0006\u0005\uffff\uffff\u0000"+
+		"-8\u0001\u0000\u0000\u0000./\u0003\u0004\u0002\u0000/0\u0006\u0005\uffff"+
+		"\uffff\u000008\u0001\u0000\u0000\u000012\u0003\u0006\u0003\u000023\u0006"+
+		"\u0005\uffff\uffff\u000038\u0001\u0000\u0000\u000045\u0003\b\u0004\u0000"+
+		"56\u0006\u0005\uffff\uffff\u000068\u0001\u0000\u0000\u00007+\u0001\u0000"+
+		"\u0000\u00007.\u0001\u0000\u0000\u000071\u0001\u0000\u0000\u000074\u0001"+
+		"\u0000\u0000\u00008;\u0001\u0000\u0000\u000097\u0001\u0000\u0000\u0000"+
+		"9:\u0001\u0000\u0000\u0000:\u000b\u0001\u0000\u0000\u0000;9\u0001\u0000"+
+		"\u0000\u0000<=\u0003\n\u0005\u0000=>\u0006\u0006\uffff\uffff\u0000>@\u0001"+
+		"\u0000\u0000\u0000?<\u0001\u0000\u0000\u0000@C\u0001\u0000\u0000\u0000"+
+		"A?\u0001\u0000\u0000\u0000AB\u0001\u0000\u0000\u0000BD\u0001\u0000\u0000"+
+		"\u0000CA\u0001\u0000\u0000\u0000DE\u0005\u0000\u0000\u0001E\r\u0001\u0000"+
+		"\u0000\u0000\u0005\u0016\u001b79A";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

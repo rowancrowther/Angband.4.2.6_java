@@ -41,7 +41,9 @@ public class PlayerPropertyGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		TYPE=1, CODE=2, BINDUI=3, NAME=4, DESC=5, VALUE=6, INTEGER=7, TYPE_VALUE=8, 
-		LCASE=9, TAG=10, COLON=11, COMMENT=12, INDENT=13, EOL=14, STRING=15, FLAG=16;
+		LCASE=9, TAG=10, COLON=11, COMMENT=12, INDENT=13, EOL=14, FIRST_STRING=15, 
+		TAG_START=16, BINDUI_COLON=17, AUX_HEX=18, AUX_COLON=19, AUX_TO_EOL=20, 
+		AUX_EOL=21, BINDUI_TAG=22, TAG_END=23, STRING=24, FLAG=25;
 	public static final int
 		RULE_type = 0, RULE_code = 1, RULE_binduiEntry = 2, RULE_bindUI = 3, RULE_name = 4, 
 		RULE_desc = 5, RULE_value = 6, RULE_property = 7, RULE_file = 8;
@@ -56,14 +58,17 @@ public class PlayerPropertyGrammar extends Parser {
 	private static String[] makeLiteralNames() {
 		return new String[] {
 			null, "'type:'", "'code:'", "'bindui:'", "'name:'", "'desc:'", "'value:'", 
-			null, null, null, null, "':'"
+			null, null, null, null, null, null, null, null, null, "'<'", null, null, 
+			null, null, null, null, "'>'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "TYPE", "CODE", "BINDUI", "NAME", "DESC", "VALUE", "INTEGER", "TYPE_VALUE", 
-			"LCASE", "TAG", "COLON", "COMMENT", "INDENT", "EOL", "STRING", "FLAG"
+			"LCASE", "TAG", "COLON", "COMMENT", "INDENT", "EOL", "FIRST_STRING", 
+			"TAG_START", "BINDUI_COLON", "AUX_HEX", "AUX_COLON", "AUX_TO_EOL", "AUX_EOL", 
+			"BINDUI_TAG", "TAG_END", "STRING", "FLAG"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -222,24 +227,19 @@ public class PlayerPropertyGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class BinduiEntryContext extends ParserRuleContext {
 		public List<String> entry;
-		public Token LCASE;
-		public Token TAG;
+		public Token FIRST_STRING;
+		public Token t;
 		public Token aux;
 		public Token val;
 		public TerminalNode BINDUI() { return getToken(PlayerPropertyGrammar.BINDUI, 0); }
-		public List<TerminalNode> LCASE() { return getTokens(PlayerPropertyGrammar.LCASE); }
-		public TerminalNode LCASE(int i) {
-			return getToken(PlayerPropertyGrammar.LCASE, i);
-		}
-		public List<TerminalNode> COLON() { return getTokens(PlayerPropertyGrammar.COLON); }
-		public TerminalNode COLON(int i) {
-			return getToken(PlayerPropertyGrammar.COLON, i);
-		}
-		public List<TerminalNode> INTEGER() { return getTokens(PlayerPropertyGrammar.INTEGER); }
-		public TerminalNode INTEGER(int i) {
-			return getToken(PlayerPropertyGrammar.INTEGER, i);
-		}
-		public TerminalNode TAG() { return getToken(PlayerPropertyGrammar.TAG, 0); }
+		public TerminalNode FIRST_STRING() { return getToken(PlayerPropertyGrammar.FIRST_STRING, 0); }
+		public TerminalNode BINDUI_COLON() { return getToken(PlayerPropertyGrammar.BINDUI_COLON, 0); }
+		public TerminalNode AUX_COLON() { return getToken(PlayerPropertyGrammar.AUX_COLON, 0); }
+		public TerminalNode AUX_HEX() { return getToken(PlayerPropertyGrammar.AUX_HEX, 0); }
+		public TerminalNode AUX_TO_EOL() { return getToken(PlayerPropertyGrammar.AUX_TO_EOL, 0); }
+		public TerminalNode TAG_START() { return getToken(PlayerPropertyGrammar.TAG_START, 0); }
+		public TerminalNode TAG_END() { return getToken(PlayerPropertyGrammar.TAG_END, 0); }
+		public TerminalNode BINDUI_TAG() { return getToken(PlayerPropertyGrammar.BINDUI_TAG, 0); }
 		public BinduiEntryContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -272,37 +272,32 @@ public class PlayerPropertyGrammar extends Parser {
 			setState(26);
 			match(BINDUI);
 			setState(27);
-			((BinduiEntryContext)_localctx).LCASE = match(LCASE);
-			setState(30);
+			((BinduiEntryContext)_localctx).FIRST_STRING = match(FIRST_STRING);
+			setState(32);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if (_la==TAG) {
+			if (_la==TAG_START) {
 				{
 				setState(28);
-				((BinduiEntryContext)_localctx).TAG = match(TAG);
-				 tagText = ((BinduiEntryContext)_localctx).TAG.getText(); 
+				match(TAG_START);
+				setState(29);
+				((BinduiEntryContext)_localctx).t = match(BINDUI_TAG);
+				setState(30);
+				match(TAG_END);
+				 tagText = ((BinduiEntryContext)_localctx).t.getText(); 
 				}
 			}
 
-			setState(32);
-			match(COLON);
-			setState(33);
-			((BinduiEntryContext)_localctx).aux = match(INTEGER);
 			setState(34);
-			match(COLON);
+			match(BINDUI_COLON);
 			setState(35);
-			((BinduiEntryContext)_localctx).val = _input.LT(1);
-			_la = _input.LA(1);
-			if ( !(_la==INTEGER || _la==LCASE) ) {
-				((BinduiEntryContext)_localctx).val = (Token)_errHandler.recoverInline(this);
-			}
-			else {
-				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
-				_errHandler.reportMatch(this);
-				consume();
-			}
+			((BinduiEntryContext)_localctx).aux = match(AUX_HEX);
+			setState(36);
+			match(AUX_COLON);
+			setState(37);
+			((BinduiEntryContext)_localctx).val = match(AUX_TO_EOL);
 
-			                ((BinduiEntryContext)_localctx).entry =  List.of(((BinduiEntryContext)_localctx).LCASE.getText(), tagText, ((BinduiEntryContext)_localctx).aux.getText(),
+			                ((BinduiEntryContext)_localctx).entry =  List.of(((BinduiEntryContext)_localctx).FIRST_STRING.getText(), tagText, ((BinduiEntryContext)_localctx).aux.getText(),
 			                    ((BinduiEntryContext)_localctx).val.getText());
 			            
 			}
@@ -353,7 +348,7 @@ public class PlayerPropertyGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(38);
+			setState(40);
 			((BindUIContext)_localctx).binduiEntry = binduiEntry();
 			 _localctx.bindUIs.add(((BindUIContext)_localctx).binduiEntry.entry); 
 			}
@@ -400,9 +395,9 @@ public class PlayerPropertyGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(41);
+			setState(43);
 			match(NAME);
-			setState(42);
+			setState(44);
 			((NameContext)_localctx).STRING = match(STRING);
 			((NameContext)_localctx).nameStr =  ((NameContext)_localctx).STRING.getText(); 
 			}
@@ -449,9 +444,9 @@ public class PlayerPropertyGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(45);
+			setState(47);
 			match(DESC);
-			setState(46);
+			setState(48);
 			((DescContext)_localctx).STRING = match(STRING);
 			 ((DescContext)_localctx).descStr =  ((DescContext)_localctx).STRING.getText(); 
 			}
@@ -498,9 +493,9 @@ public class PlayerPropertyGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(49);
+			setState(51);
 			match(VALUE);
-			setState(50);
+			setState(52);
 			((ValueContext)_localctx).INTEGER = match(INTEGER);
 
 			            ((ValueContext)_localctx).valueInt =  ((ValueContext)_localctx).INTEGER.getText();
@@ -595,23 +590,23 @@ public class PlayerPropertyGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(53);
+			setState(55);
 			((PropertyContext)_localctx).type = type();
 
 			                line = ((PropertyContext)_localctx).type.lineNo;
 			                typeInit = ((PropertyContext)_localctx).type.propertyType;
 			            
-			setState(72);
+			setState(74);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 124L) != 0)) {
 				{
-				setState(70);
+				setState(72);
 				_errHandler.sync(this);
 				switch (_input.LA(1)) {
 				case CODE:
 					{
-					setState(55);
+					setState(57);
 					((PropertyContext)_localctx).code = code();
 
 					                codeInit = ((PropertyContext)_localctx).code.codeName;
@@ -620,7 +615,7 @@ public class PlayerPropertyGrammar extends Parser {
 					break;
 				case BINDUI:
 					{
-					setState(58);
+					setState(60);
 					((PropertyContext)_localctx).bindUI = bindUI();
 
 					                bindUIInit.addAll(((PropertyContext)_localctx).bindUI.bindUIs);
@@ -629,21 +624,21 @@ public class PlayerPropertyGrammar extends Parser {
 					break;
 				case NAME:
 					{
-					setState(61);
+					setState(63);
 					((PropertyContext)_localctx).name = name();
 					 nameInit = ((PropertyContext)_localctx).name.nameStr; 
 					}
 					break;
 				case DESC:
 					{
-					setState(64);
+					setState(66);
 					((PropertyContext)_localctx).desc = desc();
 					 descInit = descInit + ((PropertyContext)_localctx).desc.descStr; 
 					}
 					break;
 				case VALUE:
 					{
-					setState(67);
+					setState(69);
 					((PropertyContext)_localctx).value = value();
 					 valueInit = ((PropertyContext)_localctx).value.valueInt; 
 					}
@@ -652,7 +647,7 @@ public class PlayerPropertyGrammar extends Parser {
 					throw new NoViableAltException(this);
 				}
 				}
-				setState(74);
+				setState(76);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
@@ -714,24 +709,24 @@ public class PlayerPropertyGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(80);
+			setState(82);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
 			while (_la==TYPE) {
 				{
 				{
-				setState(75);
+				setState(77);
 				((FileContext)_localctx).property = property();
 
 				                _localctx.properties.add(((FileContext)_localctx).property.playerProp);
 				            
 				}
 				}
-				setState(82);
+				setState(84);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
 			}
-			setState(83);
+			setState(85);
 			match(EOF);
 			}
 		}
@@ -747,56 +742,56 @@ public class PlayerPropertyGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0010V\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0019X\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001"+
 		"\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002"+
-		"\u0001\u0002\u0003\u0002\u001f\b\u0002\u0001\u0002\u0001\u0002\u0001\u0002"+
-		"\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003"+
-		"\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005"+
-		"\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006"+
+		"\u0001\u0002\u0001\u0002\u0001\u0002\u0003\u0002!\b\u0002\u0001\u0002"+
+		"\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0003"+
+		"\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004"+
+		"\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006"+
+		"\u0001\u0006\u0001\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007"+
 		"\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007"+
 		"\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007"+
-		"\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0005\u0007"+
-		"G\b\u0007\n\u0007\f\u0007J\t\u0007\u0001\b\u0001\b\u0001\b\u0005\bO\b"+
-		"\b\n\b\f\bR\t\b\u0001\b\u0001\b\u0001\b\u0000\u0000\t\u0000\u0002\u0004"+
-		"\u0006\b\n\f\u000e\u0010\u0000\u0001\u0002\u0000\u0007\u0007\t\tS\u0000"+
-		"\u0012\u0001\u0000\u0000\u0000\u0002\u0016\u0001\u0000\u0000\u0000\u0004"+
-		"\u001a\u0001\u0000\u0000\u0000\u0006&\u0001\u0000\u0000\u0000\b)\u0001"+
-		"\u0000\u0000\u0000\n-\u0001\u0000\u0000\u0000\f1\u0001\u0000\u0000\u0000"+
-		"\u000e5\u0001\u0000\u0000\u0000\u0010P\u0001\u0000\u0000\u0000\u0012\u0013"+
-		"\u0005\u0001\u0000\u0000\u0013\u0014\u0005\b\u0000\u0000\u0014\u0015\u0006"+
-		"\u0000\uffff\uffff\u0000\u0015\u0001\u0001\u0000\u0000\u0000\u0016\u0017"+
-		"\u0005\u0002\u0000\u0000\u0017\u0018\u0005\u0010\u0000\u0000\u0018\u0019"+
-		"\u0006\u0001\uffff\uffff\u0000\u0019\u0003\u0001\u0000\u0000\u0000\u001a"+
-		"\u001b\u0005\u0003\u0000\u0000\u001b\u001e\u0005\t\u0000\u0000\u001c\u001d"+
-		"\u0005\n\u0000\u0000\u001d\u001f\u0006\u0002\uffff\uffff\u0000\u001e\u001c"+
-		"\u0001\u0000\u0000\u0000\u001e\u001f\u0001\u0000\u0000\u0000\u001f \u0001"+
-		"\u0000\u0000\u0000 !\u0005\u000b\u0000\u0000!\"\u0005\u0007\u0000\u0000"+
-		"\"#\u0005\u000b\u0000\u0000#$\u0007\u0000\u0000\u0000$%\u0006\u0002\uffff"+
-		"\uffff\u0000%\u0005\u0001\u0000\u0000\u0000&\'\u0003\u0004\u0002\u0000"+
-		"\'(\u0006\u0003\uffff\uffff\u0000(\u0007\u0001\u0000\u0000\u0000)*\u0005"+
-		"\u0004\u0000\u0000*+\u0005\u000f\u0000\u0000+,\u0006\u0004\uffff\uffff"+
-		"\u0000,\t\u0001\u0000\u0000\u0000-.\u0005\u0005\u0000\u0000./\u0005\u000f"+
-		"\u0000\u0000/0\u0006\u0005\uffff\uffff\u00000\u000b\u0001\u0000\u0000"+
-		"\u000012\u0005\u0006\u0000\u000023\u0005\u0007\u0000\u000034\u0006\u0006"+
-		"\uffff\uffff\u00004\r\u0001\u0000\u0000\u000056\u0003\u0000\u0000\u0000"+
-		"6H\u0006\u0007\uffff\uffff\u000078\u0003\u0002\u0001\u000089\u0006\u0007"+
-		"\uffff\uffff\u00009G\u0001\u0000\u0000\u0000:;\u0003\u0006\u0003\u0000"+
-		";<\u0006\u0007\uffff\uffff\u0000<G\u0001\u0000\u0000\u0000=>\u0003\b\u0004"+
-		"\u0000>?\u0006\u0007\uffff\uffff\u0000?G\u0001\u0000\u0000\u0000@A\u0003"+
-		"\n\u0005\u0000AB\u0006\u0007\uffff\uffff\u0000BG\u0001\u0000\u0000\u0000"+
-		"CD\u0003\f\u0006\u0000DE\u0006\u0007\uffff\uffff\u0000EG\u0001\u0000\u0000"+
-		"\u0000F7\u0001\u0000\u0000\u0000F:\u0001\u0000\u0000\u0000F=\u0001\u0000"+
-		"\u0000\u0000F@\u0001\u0000\u0000\u0000FC\u0001\u0000\u0000\u0000GJ\u0001"+
-		"\u0000\u0000\u0000HF\u0001\u0000\u0000\u0000HI\u0001\u0000\u0000\u0000"+
-		"I\u000f\u0001\u0000\u0000\u0000JH\u0001\u0000\u0000\u0000KL\u0003\u000e"+
-		"\u0007\u0000LM\u0006\b\uffff\uffff\u0000MO\u0001\u0000\u0000\u0000NK\u0001"+
-		"\u0000\u0000\u0000OR\u0001\u0000\u0000\u0000PN\u0001\u0000\u0000\u0000"+
-		"PQ\u0001\u0000\u0000\u0000QS\u0001\u0000\u0000\u0000RP\u0001\u0000\u0000"+
-		"\u0000ST\u0005\u0000\u0000\u0001T\u0011\u0001\u0000\u0000\u0000\u0004"+
-		"\u001eFHP";
+		"\u0001\u0007\u0005\u0007I\b\u0007\n\u0007\f\u0007L\t\u0007\u0001\b\u0001"+
+		"\b\u0001\b\u0005\bQ\b\b\n\b\f\bT\t\b\u0001\b\u0001\b\u0001\b\u0000\u0000"+
+		"\t\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0000\u0000U\u0000\u0012"+
+		"\u0001\u0000\u0000\u0000\u0002\u0016\u0001\u0000\u0000\u0000\u0004\u001a"+
+		"\u0001\u0000\u0000\u0000\u0006(\u0001\u0000\u0000\u0000\b+\u0001\u0000"+
+		"\u0000\u0000\n/\u0001\u0000\u0000\u0000\f3\u0001\u0000\u0000\u0000\u000e"+
+		"7\u0001\u0000\u0000\u0000\u0010R\u0001\u0000\u0000\u0000\u0012\u0013\u0005"+
+		"\u0001\u0000\u0000\u0013\u0014\u0005\b\u0000\u0000\u0014\u0015\u0006\u0000"+
+		"\uffff\uffff\u0000\u0015\u0001\u0001\u0000\u0000\u0000\u0016\u0017\u0005"+
+		"\u0002\u0000\u0000\u0017\u0018\u0005\u0019\u0000\u0000\u0018\u0019\u0006"+
+		"\u0001\uffff\uffff\u0000\u0019\u0003\u0001\u0000\u0000\u0000\u001a\u001b"+
+		"\u0005\u0003\u0000\u0000\u001b \u0005\u000f\u0000\u0000\u001c\u001d\u0005"+
+		"\u0010\u0000\u0000\u001d\u001e\u0005\u0016\u0000\u0000\u001e\u001f\u0005"+
+		"\u0017\u0000\u0000\u001f!\u0006\u0002\uffff\uffff\u0000 \u001c\u0001\u0000"+
+		"\u0000\u0000 !\u0001\u0000\u0000\u0000!\"\u0001\u0000\u0000\u0000\"#\u0005"+
+		"\u0011\u0000\u0000#$\u0005\u0012\u0000\u0000$%\u0005\u0013\u0000\u0000"+
+		"%&\u0005\u0014\u0000\u0000&\'\u0006\u0002\uffff\uffff\u0000\'\u0005\u0001"+
+		"\u0000\u0000\u0000()\u0003\u0004\u0002\u0000)*\u0006\u0003\uffff\uffff"+
+		"\u0000*\u0007\u0001\u0000\u0000\u0000+,\u0005\u0004\u0000\u0000,-\u0005"+
+		"\u0018\u0000\u0000-.\u0006\u0004\uffff\uffff\u0000.\t\u0001\u0000\u0000"+
+		"\u0000/0\u0005\u0005\u0000\u000001\u0005\u0018\u0000\u000012\u0006\u0005"+
+		"\uffff\uffff\u00002\u000b\u0001\u0000\u0000\u000034\u0005\u0006\u0000"+
+		"\u000045\u0005\u0007\u0000\u000056\u0006\u0006\uffff\uffff\u00006\r\u0001"+
+		"\u0000\u0000\u000078\u0003\u0000\u0000\u00008J\u0006\u0007\uffff\uffff"+
+		"\u00009:\u0003\u0002\u0001\u0000:;\u0006\u0007\uffff\uffff\u0000;I\u0001"+
+		"\u0000\u0000\u0000<=\u0003\u0006\u0003\u0000=>\u0006\u0007\uffff\uffff"+
+		"\u0000>I\u0001\u0000\u0000\u0000?@\u0003\b\u0004\u0000@A\u0006\u0007\uffff"+
+		"\uffff\u0000AI\u0001\u0000\u0000\u0000BC\u0003\n\u0005\u0000CD\u0006\u0007"+
+		"\uffff\uffff\u0000DI\u0001\u0000\u0000\u0000EF\u0003\f\u0006\u0000FG\u0006"+
+		"\u0007\uffff\uffff\u0000GI\u0001\u0000\u0000\u0000H9\u0001\u0000\u0000"+
+		"\u0000H<\u0001\u0000\u0000\u0000H?\u0001\u0000\u0000\u0000HB\u0001\u0000"+
+		"\u0000\u0000HE\u0001\u0000\u0000\u0000IL\u0001\u0000\u0000\u0000JH\u0001"+
+		"\u0000\u0000\u0000JK\u0001\u0000\u0000\u0000K\u000f\u0001\u0000\u0000"+
+		"\u0000LJ\u0001\u0000\u0000\u0000MN\u0003\u000e\u0007\u0000NO\u0006\b\uffff"+
+		"\uffff\u0000OQ\u0001\u0000\u0000\u0000PM\u0001\u0000\u0000\u0000QT\u0001"+
+		"\u0000\u0000\u0000RP\u0001\u0000\u0000\u0000RS\u0001\u0000\u0000\u0000"+
+		"SU\u0001\u0000\u0000\u0000TR\u0001\u0000\u0000\u0000UV\u0005\u0000\u0000"+
+		"\u0001V\u0011\u0001\u0000\u0000\u0000\u0004 HJR";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

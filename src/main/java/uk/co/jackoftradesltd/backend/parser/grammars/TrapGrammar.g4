@@ -22,9 +22,10 @@ import EffectBlock;
 
 name
         returns[String nameStr, String textStr, int line]
-        :   NAME n=DELIMITED_STRING
-            DELIMITER_COLON t=DELIMITED_STRING
-            { $nameStr = $n.getText(); $textStr = $t.getText(); $line = $start.getLine(); }
+        :   { $textStr = null; }
+            NAME n=NAME_STRING
+            NAME_COLON (t=STRING { $textStr = $t.getText(); })?
+            { $nameStr = $n.getText(); $line = $start.getLine(); }
         ;
 
 graphics

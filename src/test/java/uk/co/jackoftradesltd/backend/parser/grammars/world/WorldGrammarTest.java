@@ -39,7 +39,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * rather than in {@link WorldLexer}.
  *
  * <p>Class WorldGrammarTest coded before 261104, updated on 261104 once the {@code record-count:}
- * header was removed, and its Javadoc brought into line with the grammar on 261109.
+ * header was removed, its Javadoc brought into line with the grammar on 261109, and updated on
+ * 261122 once the name, up and down fields took an {@code INTEGER} token.
  *
  * @author Rowan Crowther
  */
@@ -79,6 +80,23 @@ class WorldGrammarTest {
         // [depth, name, up, down, lineNumber]; "None" is verbatim (not null), and the level sits on
         // source line 1.
         assertEquals(List.of("0", "Town", "None", "Angband 1", "1"), ctx.levels.get(0));
+    }
+
+    /**
+     * Pins that the name, up and down fields take an {@code INTEGER} token as well as a
+     * {@code NAME}. A field made only of digits (with or without a minus) lexes as {@code INTEGER},
+     * which is listed before {@code NAME}, and C keeps any {@code sym} as written.
+     *
+     * <p>Function digitOnlyNameUpAndDownAreExtractedVerbatim coded on 261122, commented in full on
+     * 261122.
+     */
+    @Test
+    void digitOnlyNameUpAndDownAreExtractedVerbatim() {
+        Errors errors = new Errors();
+        WorldGrammar.FileContext ctx = parser("level:5:7:-3:007\n", errors).file();
+
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals(List.of(List.of("5", "7", "-3", "007", "1")), ctx.levels);
     }
 
     @Test

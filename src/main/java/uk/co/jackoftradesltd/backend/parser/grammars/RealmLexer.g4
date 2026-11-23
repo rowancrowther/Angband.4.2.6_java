@@ -49,6 +49,10 @@ INTEGER
 // Free-text value mode: entered after a directive colon, left at end of line.
 mode FREE_TEXT;
 
+COLON
+        :   ':'
+        ;
+
 // The whole remainder of the directive line, captured verbatim - interior
 // spaces and case preserved. One-or-more, so an empty value yields no token.
 STRING

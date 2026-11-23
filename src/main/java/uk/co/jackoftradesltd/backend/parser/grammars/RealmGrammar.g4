@@ -7,8 +7,11 @@
  *
  * Mirrors C's realm_parser (src/init.c): the same five directives registered by
  * init_parse_realm(), which - like the (alt|...)+ body here - accepts them in any
- * order. Presence of the fields beyond name: is enforced softly downstream (an
- * empty stat or book-noun fails to resolve and the assembler drops the record).
+ * order. Presence of the fields beyond name: is not enforced here. A record that
+ * lacks a directive carries "" for it, and the one field RealmAssembler checks is
+ * the stat, which it cuts at the first colon and looks up there; a bad stat stops
+ * the whole load, no record is dropped. verb:, spell-noun: and book-noun: need a
+ * value (no value is a syntax error here); stat: does not, see the stat rule.
  *
  * @author Rowan Crowther
  */
@@ -30,10 +33,24 @@ name
         :   NAME STRING { $nameStr = $STRING.getText(); $line = $start.getLine(); }
         ;
 
-// stat:<STAT> - the primary spellcasting stat, as raw text (e.g. "INT").
+// stat:<STAT> - the primary spellcasting stat, as raw text (e.g. "INT"). C reads
+// it as a sym, cut at the first colon with leading colons skipped, but the cut is
+// RealmAssembler's job: the text is kept raw here, so "INT:extra" and "::INT"
+// arrive as they were written.
+//
+// Unlike verb/spell-noun/book-noun the value is optional, so that a stat: line with
+// nothing after it reaches the assembler as null, which it refuses with a message
+// naming the record (C: MISSING_FIELD). COLON* only ever matches when the rest of
+// the line is exactly one colon: in FREE_TEXT a lone ':' ties with STRING on length
+// and COLON is listed first, while any longer run, "::" or ":INT", is one STRING.
+//
+// The three cases the record's stat field can hold: null (a stat: line with no
+// name), "" (no stat: line at all, seeded by the realm rule, read as STAT_STR as C's
+// zero-filled realm is), or the raw text.
 stat
         returns[String statStr]
-        :   STAT STRING { $statStr = $STRING.getText(); }
+        @init { $statStr = null; }
+        :   STAT COLON* (STRING { $statStr = $STRING.getText(); })?
         ;
 
 // verb:<text> - the casting verb (e.g. "cast", "recite").
@@ -58,7 +75,8 @@ bookNoun
 // One realm record: name: opens it, then any mix of the four flavour directives
 // in any order (each stored into its own @init var - last write wins on repeats).
 // @after gathers them into a single RealmParseRecord; @init seeds the vars so a
-// directive that is absent is read as "" rather than null.
+// directive that is absent is read as "" rather than null. The one exception is a
+// stat: line with no name, whose null overwrites the seed (see the stat rule).
 realm
         returns[RealmParseRecord record]
         @init {

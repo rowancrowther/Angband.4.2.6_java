@@ -69,7 +69,7 @@ shape
 
 colourCycle
         returns[String groupStr, String nameStr]
-        :   COLOUR_CYCLE g=DELIMITED_STRING COLON n=DELIMITED_STRING {
+        :   COLOUR_CYCLE g=NOT_MSG_STRING NOT_MSG_COLON n=NOT_MSG_STRING {
             $groupStr = $g.getText(); $nameStr = $n.getText();
         };
 
@@ -154,20 +154,29 @@ spells
 
 messageVis
         returns[String spell, String line]
+        @init {
+            $line = null;
+        }
         :   MESSAGE_VIS s=DELIMITED_STRING { $spell = $s.getText(); }
-            COLON l=DELIMITED_STRING { $line = $l.getText(); }
+            (COLON (l=SECOND_DELIMITED_STRING { $line = $l.getText(); })?)?
         ;
 
 messageInvis
         returns[String spell, String line]
+        @init {
+            $line = null;
+        }
         :   MESSAGE_INVIS s=DELIMITED_STRING { $spell = $s.getText(); }
-            COLON l=DELIMITED_STRING { $line = $l.getText(); }
+            (COLON (l=SECOND_DELIMITED_STRING { $line = $l.getText(); })?)?
         ;
 
 messageMiss
         returns[String spell, String line]
+        @init {
+            $line = null;
+        }
         :   MESSAGE_MISS s=DELIMITED_STRING { $spell = $s.getText(); }
-            COLON l=DELIMITED_STRING { $line = $l.getText(); }
+            (COLON (l=SECOND_DELIMITED_STRING { $line = $l.getText(); })?)?
         ;
 
 desc
@@ -201,7 +210,7 @@ dropBase
 
 mimic
         returns[String tVal, String sVal]
-        :   MIMIC t=DELIMITED_STRING COLON s=DELIMITED_STRING {
+        :   MIMIC t=NOT_MSG_STRING NOT_MSG_COLON s=NOT_MSG_STRING {
             $tVal = $t.getText();
             $sVal = $s.getText(); }
         ;

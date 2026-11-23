@@ -474,22 +474,26 @@ class FlavourReaderTest {
 
     /**
      * {@code desc} is a {@code str}, which {@code parser_parse} does not split on {@code :}, so C
-     * keeps {@code A: B} whole; {@code STRING} stops at the colon and the rule then sees a stray
-     * {@code COLON}.
+     * keeps {@code A: B} whole; the lexer now reads everything after the third field to the end of
+     * the line, so Java does too.
      */
     @Test
-    void aColonInTheDescriptionIsAHardErrorHereWhereCKeepsItInTheText() throws IOException {
-        assertHardError("colontext.txt", "kind:ring:=\nflavor:2:Green:A: B\n");
+    void aColonInTheDescriptionIsKeptInTheTextAsInC() throws IOException {
+        ParseResult<FlavourKind> result = load("colontext.txt", "kind:ring:=\nflavor:2:Green:A: B\n");
+
+        assertEquals("A: B", result.items().getFirst().getFlavours().getFirst().getText());
     }
 
     /**
      * With nothing after the last colon {@code parser_parse} finds no token for the optional
      * {@code desc} and stops, so C reads {@code flavor:2:Green:} as a flavour with no description;
-     * the {@code flavour} rule wants a {@code STRING} after the colon.
+     * the {@code flavour} rule now takes the colon alone and leaves the text {@code null}.
      */
     @Test
-    void aTrailingColonAfterTheColourIsAHardErrorHereWhereCAcceptsIt() throws IOException {
-        assertHardError("trailingcolon.txt", "kind:ring:=\nflavor:2:Green:\n");
+    void aTrailingColonAfterTheColourLoadsWithNoTextAsInC() throws IOException {
+        ParseResult<FlavourKind> result = load("trailingcolon.txt", "kind:ring:=\nflavor:2:Green:\n");
+
+        assertNull(result.items().getFirst().getFlavours().getFirst().getText());
     }
 
     /**
@@ -509,11 +513,15 @@ class FlavourReaderTest {
     /**
      * The {@code glyph} is a {@code char}: {@code parser_parse} takes one character and, if a colon
      * follows, skips it and ignores the rest of the line, so C reads {@code kind:ring:=:extra} as
-     * glyph {@code =}. {@code FlavourGrammar} sees a stray {@code COLON STRING}.
+     * glyph {@code =}. The lexer takes the whole {@code =:extra} as the glyph and
+     * {@code FlavourKindAssembler} refuses it, as it does {@code ==}. Decided 261122: the assembler
+     * raises the exception, not the parser.
      */
     @Test
-    void textAfterTheGlyphIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError("glyphextra.txt", "kind:ring:=:extra\nflavor:2:Green:Foo\n");
+    void textAfterTheGlyphIsRefusedByTheAssemblerHereWhereCIgnoresIt() {
+        DataFileParseException e = assertThrows(DataFileParseException.class,
+                () -> load("glyphextra.txt", "kind:ring:=:extra\nflavor:2:Green:Foo\n"));
+        assertTrue(e.getMessage().contains("illegal glyph value: =:extra"), e.getMessage());
     }
 
     /**

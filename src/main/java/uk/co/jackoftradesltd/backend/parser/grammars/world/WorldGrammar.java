@@ -166,9 +166,10 @@ public class WorldGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class LevelNameContext extends ParserRuleContext {
 		public String name;
-		public Token NAME;
-		public TerminalNode NAME() { return getToken(WorldGrammar.NAME, 0); }
+		public Token n;
 		public TerminalNode COLON() { return getToken(WorldGrammar.COLON, 0); }
+		public TerminalNode NAME() { return getToken(WorldGrammar.NAME, 0); }
+		public TerminalNode INTEGER() { return getToken(WorldGrammar.INTEGER, 0); }
 		public LevelNameContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -191,15 +192,25 @@ public class WorldGrammar extends Parser {
 	public final LevelNameContext levelName() throws RecognitionException {
 		LevelNameContext _localctx = new LevelNameContext(_ctx, getState());
 		enterRule(_localctx, 2, RULE_levelName);
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			setState(14);
-			((LevelNameContext)_localctx).NAME = match(NAME);
+			((LevelNameContext)_localctx).n = _input.LT(1);
+			_la = _input.LA(1);
+			if ( !(_la==INTEGER || _la==NAME) ) {
+				((LevelNameContext)_localctx).n = (Token)_errHandler.recoverInline(this);
+			}
+			else {
+				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+				_errHandler.reportMatch(this);
+				consume();
+			}
 			setState(15);
 			match(COLON);
 
-			                ((LevelNameContext)_localctx).name =  ((LevelNameContext)_localctx).NAME.getText();
+			                ((LevelNameContext)_localctx).name =  ((LevelNameContext)_localctx).n.getText();
 			            
 			}
 		}
@@ -225,6 +236,10 @@ public class WorldGrammar extends Parser {
 		public TerminalNode NAME(int i) {
 			return getToken(WorldGrammar.NAME, i);
 		}
+		public List<TerminalNode> INTEGER() { return getTokens(WorldGrammar.INTEGER); }
+		public TerminalNode INTEGER(int i) {
+			return getToken(WorldGrammar.INTEGER, i);
+		}
 		public UpAndDownContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -247,18 +262,37 @@ public class WorldGrammar extends Parser {
 	public final UpAndDownContext upAndDown() throws RecognitionException {
 		UpAndDownContext _localctx = new UpAndDownContext(_ctx, getState());
 		enterRule(_localctx, 4, RULE_upAndDown);
+		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
 			{
 			setState(18);
-			((UpAndDownContext)_localctx).u = match(NAME);
+			((UpAndDownContext)_localctx).u = _input.LT(1);
+			_la = _input.LA(1);
+			if ( !(_la==INTEGER || _la==NAME) ) {
+				((UpAndDownContext)_localctx).u = (Token)_errHandler.recoverInline(this);
+			}
+			else {
+				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+				_errHandler.reportMatch(this);
+				consume();
+			}
 			}
 			setState(19);
 			match(COLON);
 			{
 			setState(20);
-			((UpAndDownContext)_localctx).d = match(NAME);
+			((UpAndDownContext)_localctx).d = _input.LT(1);
+			_la = _input.LA(1);
+			if ( !(_la==INTEGER || _la==NAME) ) {
+				((UpAndDownContext)_localctx).d = (Token)_errHandler.recoverInline(this);
+			}
+			else {
+				if ( _input.LA(1)==Token.EOF ) matchedEOF = true;
+				_errHandler.reportMatch(this);
+				consume();
+			}
 			}
 
 			                ((UpAndDownContext)_localctx).up =  ((UpAndDownContext)_localctx).u.getText();
@@ -427,24 +461,24 @@ public class WorldGrammar extends Parser {
 		"\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001"+
 		"\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0005\u0004!\b\u0004\n\u0004"+
 		"\f\u0004$\t\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0000\u0000\u0005"+
-		"\u0000\u0002\u0004\u0006\b\u0000\u0000#\u0000\n\u0001\u0000\u0000\u0000"+
-		"\u0002\u000e\u0001\u0000\u0000\u0000\u0004\u0012\u0001\u0000\u0000\u0000"+
-		"\u0006\u0017\u0001\u0000\u0000\u0000\b\"\u0001\u0000\u0000\u0000\n\u000b"+
-		"\u0005\u0003\u0000\u0000\u000b\f\u0005\u0002\u0000\u0000\f\r\u0006\u0000"+
-		"\uffff\uffff\u0000\r\u0001\u0001\u0000\u0000\u0000\u000e\u000f\u0005\u0004"+
-		"\u0000\u0000\u000f\u0010\u0005\u0002\u0000\u0000\u0010\u0011\u0006\u0001"+
-		"\uffff\uffff\u0000\u0011\u0003\u0001\u0000\u0000\u0000\u0012\u0013\u0005"+
-		"\u0004\u0000\u0000\u0013\u0014\u0005\u0002\u0000\u0000\u0014\u0015\u0005"+
-		"\u0004\u0000\u0000\u0015\u0016\u0006\u0002\uffff\uffff\u0000\u0016\u0005"+
-		"\u0001\u0000\u0000\u0000\u0017\u0018\u0005\u0001\u0000\u0000\u0018\u0019"+
-		"\u0003\u0000\u0000\u0000\u0019\u001a\u0003\u0002\u0001\u0000\u001a\u001b"+
-		"\u0003\u0004\u0002\u0000\u001b\u001c\u0006\u0003\uffff\uffff\u0000\u001c"+
-		"\u0007\u0001\u0000\u0000\u0000\u001d\u001e\u0003\u0006\u0003\u0000\u001e"+
-		"\u001f\u0006\u0004\uffff\uffff\u0000\u001f!\u0001\u0000\u0000\u0000 \u001d"+
-		"\u0001\u0000\u0000\u0000!$\u0001\u0000\u0000\u0000\" \u0001\u0000\u0000"+
-		"\u0000\"#\u0001\u0000\u0000\u0000#%\u0001\u0000\u0000\u0000$\"\u0001\u0000"+
-		"\u0000\u0000%&\u0005\u0000\u0000\u0001&\t\u0001\u0000\u0000\u0000\u0001"+
-		"\"";
+		"\u0000\u0002\u0004\u0006\b\u0000\u0001\u0001\u0000\u0003\u0004#\u0000"+
+		"\n\u0001\u0000\u0000\u0000\u0002\u000e\u0001\u0000\u0000\u0000\u0004\u0012"+
+		"\u0001\u0000\u0000\u0000\u0006\u0017\u0001\u0000\u0000\u0000\b\"\u0001"+
+		"\u0000\u0000\u0000\n\u000b\u0005\u0003\u0000\u0000\u000b\f\u0005\u0002"+
+		"\u0000\u0000\f\r\u0006\u0000\uffff\uffff\u0000\r\u0001\u0001\u0000\u0000"+
+		"\u0000\u000e\u000f\u0007\u0000\u0000\u0000\u000f\u0010\u0005\u0002\u0000"+
+		"\u0000\u0010\u0011\u0006\u0001\uffff\uffff\u0000\u0011\u0003\u0001\u0000"+
+		"\u0000\u0000\u0012\u0013\u0007\u0000\u0000\u0000\u0013\u0014\u0005\u0002"+
+		"\u0000\u0000\u0014\u0015\u0007\u0000\u0000\u0000\u0015\u0016\u0006\u0002"+
+		"\uffff\uffff\u0000\u0016\u0005\u0001\u0000\u0000\u0000\u0017\u0018\u0005"+
+		"\u0001\u0000\u0000\u0018\u0019\u0003\u0000\u0000\u0000\u0019\u001a\u0003"+
+		"\u0002\u0001\u0000\u001a\u001b\u0003\u0004\u0002\u0000\u001b\u001c\u0006"+
+		"\u0003\uffff\uffff\u0000\u001c\u0007\u0001\u0000\u0000\u0000\u001d\u001e"+
+		"\u0003\u0006\u0003\u0000\u001e\u001f\u0006\u0004\uffff\uffff\u0000\u001f"+
+		"!\u0001\u0000\u0000\u0000 \u001d\u0001\u0000\u0000\u0000!$\u0001\u0000"+
+		"\u0000\u0000\" \u0001\u0000\u0000\u0000\"#\u0001\u0000\u0000\u0000#%\u0001"+
+		"\u0000\u0000\u0000$\"\u0001\u0000\u0000\u0000%&\u0005\u0000\u0000\u0001"+
+		"&\t\u0001\u0000\u0000\u0000\u0001\"";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

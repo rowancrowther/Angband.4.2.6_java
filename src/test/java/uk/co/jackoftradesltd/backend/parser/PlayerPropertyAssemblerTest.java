@@ -194,7 +194,7 @@ class PlayerPropertyAssemblerTest {
     @Test
     void theTagAndTheNameJoinIntoOneEntryName() {
         List<PlayerProperty> items = assemble(player("player", "",
-                List.of(List.of("stat_mod_ui_compact_0", "<STR>", "0", "2")), ""));
+                List.of(List.of("stat_mod_ui_compact_0", "STR", "0", "2")), ""));
 
         assertEquals("stat_mod_ui_compact_0<STR>", items.get(0).getEntries().get(0).uiEntry());
         assertEquals(2, items.get(0).getEntries().get(0).value());

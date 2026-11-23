@@ -73,7 +73,7 @@ CODE
         ;
 
 BINDUI
-        :   'bindui:'
+        :   'bindui:' -> mode(BINDUI_MODE)
         ;
 
 NAME
@@ -107,6 +107,50 @@ TAG
 
 COLON
         :   ':'
+        ;
+
+mode BINDUI_MODE;
+
+FIRST_STRING
+        :   ~('\r' | '\n' | ':' | '<')+
+        ;
+
+TAG_START
+        :   '<' -> mode(TAG_MODE)
+        ;
+
+BINDUI_COLON
+        :   ':' -> mode(AUX_MODE)
+        ;
+
+mode AUX_MODE;
+
+AUX_HEX
+        :   ('-' | '+')? ('0' ('X' | 'x')?)? ('0'..'9' | 'a'..'f' | 'A'..'F')+
+        ;
+
+AUX_COLON
+        :   ':' -> mode(VAL_MODE)
+        ;
+
+mode VAL_MODE;
+
+AUX_TO_EOL
+        :   ~('\r' | '\n')+
+        ;
+
+AUX_EOL
+        :   NL -> skip, mode(DEFAULT_MODE)
+        ;
+
+mode TAG_MODE;
+
+BINDUI_TAG
+        :   ~('\n' | '\r' | '>')+
+        ;
+
+TAG_END
+        :   '>' -> mode(BINDUI_MODE)
         ;
 
 mode FREE_TEXT_MODE;

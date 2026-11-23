@@ -269,8 +269,10 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
                     logger.fatal(msg);
                     throw new DataFileParseException(msg);
                 }
-
-                bindings.add(new PlayerProperty.BindUI(b.get(0) + b.get(1), value, special, aux));
+                String bindui = b.get(0);
+                if (!b.get(1).isEmpty())
+                    bindui = bindui + "<" + b.get(1) + ">";
+                bindings.add(new PlayerProperty.BindUI(bindui, value, special, aux));
             }
             String name = record.name();
             String desc = record.desc();

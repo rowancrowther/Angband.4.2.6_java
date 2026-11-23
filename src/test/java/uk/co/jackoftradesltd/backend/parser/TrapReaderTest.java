@@ -580,10 +580,96 @@ class TrapReaderTest {
         assertTrue(load("no-records.txt", "").items().isEmpty());
     }
 
-    /** C: the second field of {@code name:} is a {@code str}, which takes the rest of the line. */
+    /**
+     * C: {@code name} is {@code sym name str desc} ({@code init_parse_trap}), and a {@code str} takes the rest
+     * of the line, so {@code name:a:b: c} stores the description {@code b: c}. {@code NAME_COLON} in
+     * {@code TrapLexer.g4} moves to {@code REST_OF_LINE}, which reads to the end of the line.
+     *
+     * <p>Function aColonInTheNameDescriptionLoadsAsInC coded on 261122, commented in full on 261122.
+     * Replaces the pin {@code aColonInTheNameDescriptionIsAHardErrorHereWhereCTakesTheRestOfTheLine}.
+     */
     @Test
-    void aColonInTheNameDescriptionIsAHardErrorHereWhereCTakesTheRestOfTheLine() throws IOException {
-        assertHardError("name-colon.txt", "name:a:b: c\ngraphics:^:w\n");
+    void aColonInTheNameDescriptionLoadsAsInC() throws IOException {
+        ParseResult<TrapKind> r = load("name-colon.txt", "name:a:b: c\ngraphics:^:w\n");
+
+        assertEquals(1, r.items().size());
+        assertEquals("a", r.items().getFirst().getTrapKindName());
+        assertEquals("b: c", r.items().getFirst().getDescription());
+    }
+
+    /**
+     * C: {@code desc} on the {@code name:} line is a required {@code str}. With nothing after the second colon
+     * {@code strtok(NULL, "")} in {@code parser_parse} returns NULL, so the line fails as
+     * {@code PARSE_ERROR_MISSING_FIELD} and the load stops. The grammar lets the text be absent and leaves it
+     * {@code null}, and {@code TrapAssembler} refuses the record, naming its line. The three fixtures cover the
+     * line ending ahead of another directive, a CRLF line ending, and the last line of the file with no newline.
+     * The second record's line number shows that the count is the record's own line, not the first one.
+     *
+     * <p>Function aNameWithNoDescriptionIsRefusedAsInC coded on 261122, commented in full on 261122.
+     */
+    @Test
+    void aNameWithNoDescriptionIsRefusedAsInC() throws IOException {
+        DataFileParseException lf = assertThrows(DataFileParseException.class,
+                () -> load("no-desc-lf.txt", "name:a:\ngraphics:^:w\n"));
+        assertTrue(lf.getMessage().contains("line: 1"), lf::getMessage);
+        assertTrue(lf.getMessage().contains("name:a:"), lf::getMessage);
+
+        DataFileParseException crlf = assertThrows(DataFileParseException.class,
+                () -> load("no-desc-crlf.txt", "name:a:\r\ngraphics:^:w\r\n"));
+        assertTrue(crlf.getMessage().contains("name:a:"), crlf::getMessage);
+
+        DataFileParseException last = assertThrows(DataFileParseException.class,
+                () -> load("no-desc-last.txt", "name:a:"));
+        assertTrue(last.getMessage().contains("name:a:"), last::getMessage);
+
+        DataFileParseException second = assertThrows(DataFileParseException.class,
+                () -> load("no-desc-second.txt", "name:a:b\nname:c:\n"));
+        assertTrue(second.getMessage().contains("line: 2"), second::getMessage);
+        assertTrue(second.getMessage().contains("name:c:"), second::getMessage);
+    }
+
+    /**
+     * C: a description of blanks only is a present {@code str}. {@code parser_parse} skips leading blanks only
+     * to find the directive, and then {@code strtok(NULL, "")} takes everything after the second colon, so
+     * {@code name:a: } stores {@code " "}, {@code name:a:<two blanks>} stores both and {@code name:a:<tab>}
+     * stores the tab. {@code REST_OF_LINE_EOL} in {@code TrapLexer.g4} ends at the line break alone, so the
+     * blanks reach the {@code STRING} token instead of being swallowed with it. The fixtures cover each
+     * kind of blank, a CRLF line ending and the last line of the file with no newline.
+     *
+     * <p>Function aBlankOnlyNameDescriptionLoadsAsInC coded on 261122, commented in full on 261122.
+     */
+    @Test
+    void aBlankOnlyNameDescriptionLoadsAsInC() throws IOException {
+        String[][] cases = {
+                {"one blank", "name:a: \ngraphics:^:w\n", " "},
+                {"two blanks", "name:a:  \ngraphics:^:w\n", "  "},
+                {"a tab", "name:a:\t\ngraphics:^:w\n", "\t"},
+                {"a CRLF line ending", "name:a: \r\ngraphics:^:w\r\n", " "},
+                {"the last line with no newline", "name:a: ", " "},
+        };
+        for (String[] c : cases) {
+            ParseResult<TrapKind> r = load("blank-desc.txt", c[1]);
+
+            assertEquals(1, r.items().size(), c[0]);
+            assertEquals("a", r.items().getFirst().getTrapKindName(), c[0]);
+            assertEquals(c[2], r.items().getFirst().getDescription(), c[0]);
+        }
+    }
+
+    /**
+     * C: a {@code str} keeps its trailing blanks, so {@code name:a:b<two blanks>} stores {@code "b  "} and
+     * {@code desc:hello<two blanks>} stores {@code "hello  "}. Both go through {@code REST_OF_LINE}, whose
+     * line-ending rule used to swallow the blanks with the line break. Not pinned: trailing blanks on
+     * {@code msg:}, {@code msg-good:}, {@code msg-bad:} and {@code msg-xtra:}, which share the mode.
+     *
+     * <p>Function trailingBlanksOnADescriptionAreKeptAsInC coded on 261122, commented in full on 261122.
+     */
+    @Test
+    void trailingBlanksOnADescriptionAreKeptAsInC() throws IOException {
+        TrapKind t = load("trailing-blanks.txt", "name:a:b  \ndesc:hello  \ngraphics:^:w\n").items().getFirst();
+
+        assertEquals("b  ", t.getDescription());
+        assertEquals("hello  ", t.getText());
     }
 
     /** C: a colon in a {@code msg:} line is part of the text, and the port agrees. */

@@ -42,7 +42,8 @@ public class RoomProfileGrammar extends Parser {
 	public static final int
 		NAME=1, TYPE=2, RATING=3, ROWS=4, COLUMNS=5, DOORS=6, TVAL=7, FLAGS=8, 
 		DLINE=9, INTEGER=10, COMMENT=11, INDENT=12, EOL=13, FLAG=14, FLAG_OR=15, 
-		FLAG_EOF=16, STRING=17, END_OF_LINE=18;
+		FLAG_EOF=16, STRING=17, END_OF_LINE=18, TVAL_TO_COLON=19, TVAL_EOL=20, 
+		TVAL_COLON=21, TVAL_TO_END=22, TVAL_AFTER_COLON_EOL=23;
 	public static final int
 		RULE_name = 0, RULE_type = 1, RULE_rating = 2, RULE_rows = 3, RULE_columns = 4, 
 		RULE_doors = 5, RULE_tval = 6, RULE_flags = 7, RULE_dLine = 8, RULE_roomMap = 9, 
@@ -58,7 +59,8 @@ public class RoomProfileGrammar extends Parser {
 	private static String[] makeLiteralNames() {
 		return new String[] {
 			null, "'name:'", "'type:'", "'rating:'", "'rows:'", "'columns:'", "'doors:'", 
-			"'tval:'", "'flags:'", "'D:'"
+			"'tval:'", "'flags:'", "'D:'", null, null, null, null, null, null, null, 
+			null, null, null, null, "':'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -66,7 +68,8 @@ public class RoomProfileGrammar extends Parser {
 		return new String[] {
 			null, "NAME", "TYPE", "RATING", "ROWS", "COLUMNS", "DOORS", "TVAL", "FLAGS", 
 			"DLINE", "INTEGER", "COMMENT", "INDENT", "EOL", "FLAG", "FLAG_OR", "FLAG_EOF", 
-			"STRING", "END_OF_LINE"
+			"STRING", "END_OF_LINE", "TVAL_TO_COLON", "TVAL_EOL", "TVAL_COLON", "TVAL_TO_END", 
+			"TVAL_AFTER_COLON_EOL"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -420,7 +423,7 @@ public class RoomProfileGrammar extends Parser {
 		public String tvalStr;
 		public Token t;
 		public TerminalNode TVAL() { return getToken(RoomProfileGrammar.TVAL, 0); }
-		public TerminalNode STRING() { return getToken(RoomProfileGrammar.STRING, 0); }
+		public TerminalNode TVAL_TO_COLON() { return getToken(RoomProfileGrammar.TVAL_TO_COLON, 0); }
 		public TvalContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -449,7 +452,7 @@ public class RoomProfileGrammar extends Parser {
 			setState(48);
 			match(TVAL);
 			setState(49);
-			((TvalContext)_localctx).t = match(STRING);
+			((TvalContext)_localctx).t = match(TVAL_TO_COLON);
 			 ((TvalContext)_localctx).tvalStr =  ((TvalContext)_localctx).t.getText(); 
 			}
 		}
@@ -987,7 +990,7 @@ public class RoomProfileGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0012}\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u0017}\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0001"+
@@ -1021,7 +1024,7 @@ public class RoomProfileGrammar extends Parser {
 		"\u0000\u0000\u0000()\u0005\u0005\u0000\u0000)*\u0005\n\u0000\u0000*+\u0006"+
 		"\u0004\uffff\uffff\u0000+\t\u0001\u0000\u0000\u0000,-\u0005\u0006\u0000"+
 		"\u0000-.\u0005\n\u0000\u0000./\u0006\u0005\uffff\uffff\u0000/\u000b\u0001"+
-		"\u0000\u0000\u000001\u0005\u0007\u0000\u000012\u0005\u0011\u0000\u0000"+
+		"\u0000\u0000\u000001\u0005\u0007\u0000\u000012\u0005\u0013\u0000\u0000"+
 		"23\u0006\u0006\uffff\uffff\u00003\r\u0001\u0000\u0000\u00004<\u0005\b"+
 		"\u0000\u000057\u0005\u000f\u0000\u000065\u0001\u0000\u0000\u000078\u0001"+
 		"\u0000\u0000\u000086\u0001\u0000\u0000\u000089\u0001\u0000\u0000\u0000"+

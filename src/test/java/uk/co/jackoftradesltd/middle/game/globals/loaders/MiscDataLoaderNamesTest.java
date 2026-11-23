@@ -141,11 +141,14 @@ class MiscDataLoaderNamesTest {
     }
 
     @Test
-    @DisplayName("a word: line before any section: line stays a hard error, though C files it under section 0")
-    void wordBeforeSectionThrows() throws IOException {
+    @DisplayName("a word: line before any section: line is dropped, as C files it under section 0, which nothing reads")
+    void wordBeforeSectionIsDropped() throws IOException {
         writeNames("word:orphan\nsection:1\nword:beleg\n");
 
-        assertThrows(ParseCancellationException.class, MiscDataLoader::loadNames);
+        MiscDataLoader.loadNames();
+
+        assertEquals(List.of("beleg"), MiscRegistry.getNameSection(RandnameType.RANDNAME_TOLKIEN));
+        assertEquals(List.of(), MiscRegistry.getNameSection(RandnameType.RANDNAME_SCROLL));
     }
 
     @Test

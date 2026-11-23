@@ -810,12 +810,12 @@ Each is specific to one file and independent of the rest.
   - **Repeated sections:** C keeps one word list per section, so a second `section:1` adds to the first. Java makes one record per `section:` line. [<span style="color:#006400">**CLOSED**</span> 26-11-23: accepted, not changed. `MiscRegistry.setNames` joins the records into one list per section, so `getNameSection` matches C; only `getNames`, which has no caller in `src/main`, shows the split. Recorded in `Accepted_Deviations.md`, "Names". The `record-count:` header this entry used to cite no longer exists.]
   - **Shipped data:** unaffected, two unindented sections in order.
 
-- G: `PlayerClassGrammar.g4` a second `magic:` replaces the first (the one that is silently accepted).
+- G: ~~`PlayerClassGrammar.g4` a second `magic:` replaces the first (the one that is silently accepted).~~ [<span style="color:#006400">**CLOSED**</span> 26-11-23: `magicFound` in `PlayerClassGrammar.g4` is cleared in the `name` rule, so each class starts clean, and set by the first `magic:` of the class. A second `magic:` in the same class is handed on as a record with all three scalars null, which `ClassMagicAssembler` refuses with "illegal multiple defined 'magic' blocks", naming the second line. One `magic:` per class still loads, including a class with none between two casters, so the real `class.txt` loads. The parser was regenerated (the committed one predated the edit). Pinned by `aRepeatedMagicLineIsRefusedAsInC`, `aRepeatedMagicLineAfterNoBookLineIsRefusedAsInC`, `aRepeatedMagicLineAfterAnotherDirectiveIsRefusedAsInC`, `aZeroBookMagicLineAfterABookedOneIsRefusedAsInC` and `oneMagicLinePerClassLoadsAsInC` in `PlayerClassReaderTest`; the first replaces `aRepeatedMagicLineReplacesTheFirstHereWhereCRejectsIt`. `PlayerClassReaderTest` passes. One difference is left, below.]
 
-  - **What C does:** a second `magic:` in one class is `PARSE_ERROR_REPEATED_DIRECTIVE`, so the load stops.
-  - **What Java does:** each `magicBlock` overwrites `magicInit`, so the second block quietly replaces the first.
-  - **Why it is listed alone:** the other class-file differences are hard errors that refuse the file. This is the only one that loads wrong without telling anyone.
-  - **The fix:** reject a second `magic:` in a class.
+  - **What C does:** a second `magic:` in one class is `PARSE_ERROR_REPEATED_DIRECTIVE`, so the load stops, but only when the first one allocated books. `magic:1:100:0` allocates nothing, `c->magic.books` stays NULL, and a later `magic:` loads and replaces it.
+  - **What Java did:** each `magicBlock` overwrote `magicInit`, so the second block quietly replaced the first.
+  - **Why it was listed alone:** the other class-file differences are hard errors that refuse the file. This was the only one that loaded wrong without telling anyone.
+  - **Left open, zero-book first `magic:`:** the grammar notes only that a `magic:` was seen, so `magic:1:100:0` followed by `magic:2:200:1` is refused where C loads it. No shipped class declares 0 books. Pinned by `aMagicLineAfterAZeroBookOneIsRefusedHereWhereCLoadsIt`, which flips if the grammar is changed to follow C. Direction undecided; parked 26-11-23, see `Parked.md`.
 
 - G: `PlayerTimedGrammar.g4` effect directives (per the Stage 0 answer).
 

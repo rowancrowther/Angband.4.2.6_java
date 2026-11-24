@@ -116,15 +116,15 @@ public interface PlayerTimedGrammarListener extends ParseTreeListener {
 	 */
 	void exitOnBeginEffect(PlayerTimedGrammar.OnBeginEffectContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link PlayerTimedGrammar#onEndEffectBlock}.
+	 * Enter a parse tree produced by {@link PlayerTimedGrammar#onEndEffect}.
 	 * @param ctx the parse tree
 	 */
-	void enterOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx);
+	void enterOnEndEffect(PlayerTimedGrammar.OnEndEffectContext ctx);
 	/**
-	 * Exit a parse tree produced by {@link PlayerTimedGrammar#onEndEffectBlock}.
+	 * Exit a parse tree produced by {@link PlayerTimedGrammar#onEndEffect}.
 	 * @param ctx the parse tree
 	 */
-	void exitOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx);
+	void exitOnEndEffect(PlayerTimedGrammar.OnEndEffectContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PlayerTimedGrammar#effectDice}.
 	 * @param ctx the parse tree
@@ -135,6 +135,36 @@ public interface PlayerTimedGrammarListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitEffectDice(PlayerTimedGrammar.EffectDiceContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PlayerTimedGrammar#effectMsg}.
+	 * @param ctx the parse tree
+	 */
+	void enterEffectMsg(PlayerTimedGrammar.EffectMsgContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PlayerTimedGrammar#effectMsg}.
+	 * @param ctx the parse tree
+	 */
+	void exitEffectMsg(PlayerTimedGrammar.EffectMsgContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PlayerTimedGrammar#effectYX}.
+	 * @param ctx the parse tree
+	 */
+	void enterEffectYX(PlayerTimedGrammar.EffectYXContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PlayerTimedGrammar#effectYX}.
+	 * @param ctx the parse tree
+	 */
+	void exitEffectYX(PlayerTimedGrammar.EffectYXContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link PlayerTimedGrammar#effectExpr}.
+	 * @param ctx the parse tree
+	 */
+	void enterEffectExpr(PlayerTimedGrammar.EffectExprContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link PlayerTimedGrammar#effectExpr}.
+	 * @param ctx the parse tree
+	 */
+	void exitEffectExpr(PlayerTimedGrammar.EffectExprContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link PlayerTimedGrammar#resist}.
 	 * @param ctx the parse tree

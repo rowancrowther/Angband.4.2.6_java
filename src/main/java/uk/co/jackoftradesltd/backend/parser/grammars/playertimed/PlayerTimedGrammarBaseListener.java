@@ -18,16 +18,6 @@
 // Generated from PlayerTimedGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.playertimed;
 
-    import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.PlayerTimedGradeParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.playertimed.PlayerTimedParseRecord.FailureParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecord;
-    import uk.co.jackoftradesltd.backend.parser.grammars.EffectParseRecordType;
-
-    import java.util.List;
-    import java.util.ArrayList;
-
-
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -152,13 +142,13 @@ public class PlayerTimedGrammarBaseListener implements PlayerTimedGrammarListene
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx) { }
+	@Override public void enterOnEndEffect(PlayerTimedGrammar.OnEndEffectContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx) { }
+	@Override public void exitOnEndEffect(PlayerTimedGrammar.OnEndEffectContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
@@ -171,6 +161,42 @@ public class PlayerTimedGrammarBaseListener implements PlayerTimedGrammarListene
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitEffectDice(PlayerTimedGrammar.EffectDiceContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterEffectMsg(PlayerTimedGrammar.EffectMsgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEffectMsg(PlayerTimedGrammar.EffectMsgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterEffectYX(PlayerTimedGrammar.EffectYXContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEffectYX(PlayerTimedGrammar.EffectYXContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterEffectExpr(PlayerTimedGrammar.EffectExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEffectExpr(PlayerTimedGrammar.EffectExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

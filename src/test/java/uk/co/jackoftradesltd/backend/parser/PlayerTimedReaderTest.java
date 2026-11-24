@@ -520,11 +520,147 @@ class PlayerTimedReaderTest {
 
     }
 
+    /**
+     * C's {@code effect-yx:} handler sets {@code y} and {@code x} on {@code ps->e}, the effect opened
+     * last, so the two numbers land on the effect line before it, with or without other directives
+     * in between.
+     *
+     * <p>Function effectYxFillsTheOpenEffectAsInC coded on 261124, commented in full on 261124
+     * (replaces the pin that refused it).
+     */
     @Test
-    void effectYxEffectExprAndEffectMsgAreRefusedHereWhereCReadsThem() throws IOException {
-        for (String line : List.of("effect-yx:1:2", "effect-expr:A:B:C", "effect-msg:Hello")) {
-            assertThrows(ParseCancellationException.class, () -> load("effect-line.txt", "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n" + line + "\n"), line);
+    void effectYxFillsTheOpenEffectAsInC() throws Exception {
+        PlayerTimedEffect straight = load("yx.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\neffect-yx:2:3\n")
+                .items().get(0);
+        assertEquals("2,3,", EffectProbe.yxBase(straight.getOnEndEffect().getFirst()));
 
+        PlayerTimedEffect later = load("yx-later.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\nmsgt:SPEED\n"
+                        + "on-end:Done\neffect-yx:4:5\n").items().get(0);
+        assertEquals("4,5,", EffectProbe.yxBase(later.getOnEndEffect().getFirst()));
+        assertEquals("Done", later.getOnEnd());
+    }
+
+    /**
+     * C's {@code effect-msg:} handler uses {@code string_append} on the message of {@code ps->e}, so
+     * the text lands on the open effect and a second line is joined on with no separator.
+     *
+     * <p>Function effectMsgFillsTheOpenEffectAndRepeatedLinesJoinAsInC coded on 261124, commented in
+     * full on 261124 (replaces the pin that refused it).
+     */
+    @Test
+    void effectMsgFillsTheOpenEffectAndRepeatedLinesJoinAsInC() throws Exception {
+        PlayerTimedEffect one = load("msg.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\neffect-msg:Hello\n")
+                .items().get(0);
+        assertEquals("Hello", EffectProbe.message(one.getOnEndEffect().getFirst()));
+
+        PlayerTimedEffect two = load("msg-twice.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n"
+                        + "effect-msg:Hello\nmsgt:SPEED\neffect-msg:World\n").items().get(0);
+        assertEquals("HelloWorld", EffectProbe.message(two.getOnEndEffect().getFirst()));
+    }
+
+    /**
+     * C's {@code effect-expr:} handler binds a variable to the dice already on {@code ps->e}, and
+     * any number of them may follow, each bound to the current dice. The directive is spelled with a
+     * hyphen.
+     *
+     * <p>Function effectExprBindsToTheDiceOfTheOpenEffectAsInC coded on 261124, commented in full on
+     * 261124 (replaces the pin that refused it).
+     */
+    @Test
+    void effectExprBindsToTheDiceOfTheOpenEffectAsInC() throws Exception {
+        PlayerTimedEffect fast = load("expr.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n"
+                        + "effect-dice:$B+d$S\neffect-expr:B:PLAYER_LEVEL:+ 1\n"
+                        + "msgt:SPEED\neffect-expr:S:PLAYER_LEVEL:* 2\n").items().get(0);
+
+        Effect effect = fast.getOnEndEffect().getFirst();
+        assertEquals("0,0,$B+d$S", EffectProbe.yxBase(effect));
+        String bound = EffectProbe.expressions(effect);
+        assertTrue(bound.startsWith("B:"), bound);
+        assertTrue(bound.contains("|S:"), bound);
+        assertTrue(bound.contains(":+ 1|"), bound);
+        assertTrue(bound.endsWith(":* 2"), bound);
+    }
+
+    /**
+     * {@code effect-expr:} does nothing useful without dice to bind to, and C's handler refuses it
+     * when {@code ps->e->dice} is not set. The underscore spelling is not a directive in C either.
+     *
+     * <p>Function anEffectExprWithNoDiceOrWithAnUnderscoreIsRefusedAsInC coded on 261124, commented in
+     * full on 261124.
+     */
+    @Test
+    void anEffectExprWithNoDiceOrWithAnUnderscoreIsRefusedAsInC() {
+        String head = "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n";
+        assertThrows(ParseCancellationException.class,
+                () -> load("expr-no-dice.txt", head + "effect-expr:B:PLAYER_LEVEL:+ 1\n"));
+        assertThrows(ParseCancellationException.class,
+                () -> load("expr-underscore.txt", head + "effect-dice:5\neffect_expr:B:PLAYER_LEVEL:+ 1\n"));
+    }
+
+    /**
+     * Each effect line opens its own effect, so the {@code y}/{@code x} and message lines after it
+     * belong to it alone, whichever chain it is on.
+     *
+     * <p>Function eachEffectKeepsItsOwnYxAndMessageAsInC coded on 261124, commented in full on
+     * 261124.
+     */
+    @Test
+    void eachEffectKeepsItsOwnYxAndMessageAsInC() throws Exception {
+        PlayerTimedEffect fast = load("own-yx.txt",
+                "name:FAST\ngrade:G:100:Test:Message\n"
+                        + "on-begin-effect:SCRAMBLE_STATS\neffect-yx:1:2\neffect-msg:Begin\n"
+                        + "on-end-effect:TIMED_INC_NO_RES:SLOW\neffect-yx:3:4\n"
+                        + "on-end-effect:UNSCRAMBLE_STATS\neffect-dice:7\n").items().get(0);
+
+        assertEquals("1,2,", EffectProbe.yxBase(fast.getOnBeginEffect().getFirst()));
+        assertEquals("Begin", EffectProbe.message(fast.getOnBeginEffect().getFirst()));
+        assertEquals("3,4,", EffectProbe.yxBase(fast.getOnEndEffect().get(0)));
+        assertEquals("0,0,7", EffectProbe.yxBase(fast.getOnEndEffect().get(1)));
+    }
+
+    /**
+     * Pins a difference. C's effect starts zeroed, so its {@code msg} is NULL until an
+     * {@code effect-msg:} line appends to it. {@code PlayerTimedGrammar.g4} seeds the message with an
+     * empty string and {@code EffectAssembler} passes it through unchanged, so an effect with no
+     * {@code effect-msg:} line holds {@code ""} here.
+     *
+     * <p>Function anEffectWithNoMessageHoldsAnEmptyStringHereWhereCHoldsNull coded on 261124,
+     * commented in full on 261124.
+     */
+    @Test
+    void anEffectWithNoMessageHoldsAnEmptyStringHereWhereCHoldsNull() throws Exception {
+        PlayerTimedEffect fast = load("no-msg.txt",
+                "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n").items().get(0);
+
+        assertEquals("", EffectProbe.message(fast.getOnEndEffect().getFirst()));
+    }
+
+    /**
+     * All four effect directives return {@code PARSE_ERROR_MISSING_RECORD_HEADER} in C when no effect
+     * is open: straight after {@code name:}, before the effect line, or after a new {@code name:}
+     * (which clears {@code ps->e}).
+     *
+     * <p>Function anEffectDirectiveWithNoEffectOpenIsRefusedAsInC coded on 261124, commented in full
+     * on 261124 (replaces the two pins that dropped it).
+     */
+    @Test
+    void anEffectDirectiveWithNoEffectOpenIsRefusedAsInC() {
+        String head = "name:FAST\ngrade:G:100:Test:Message\n";
+        for (String line : List.of("effect-dice:5", "effect-yx:1:2", "effect-msg:Hello",
+                "effect-expr:B:PLAYER_LEVEL:+ 1")) {
+            assertThrows(ParseCancellationException.class,
+                    () -> load("no-effect.txt", head + line + "\n"), line + " straight after name:");
+            assertThrows(ParseCancellationException.class,
+                    () -> load("before-effect.txt", head + line + "\non-end-effect:TIMED_INC_NO_RES:SLOW\n"),
+                    line + " before its effect line");
+            assertThrows(ParseCancellationException.class,
+                    () -> load("after-name.txt", head + "on-end-effect:TIMED_INC_NO_RES:SLOW\nname:SLOW\n" + line + "\n"),
+                    line + " after a new name:");
         }
     }
 
@@ -691,44 +827,23 @@ class PlayerTimedReaderTest {
     }
 
     /**
-     * Parked 2026-11-19 (see {@code docs/Parked.md}). C's handler returns
-     * {@code PARSE_ERROR_MISSING_RECORD_HEADER} and stops the load when {@code effect-dice:} comes
-     * with no effect open; the grammar drops the dice and loads the record.
+     * C's {@code dice_parse_string} reads the dice of an {@code effect-dice:} line, so any dice string
+     * loads: a plain number, a count and sides, a base and a die, a bonus only, a negated string, or
+     * one with {@code $} variables that {@code effect-expr:} binds. Junk is refused.
      *
-     * <p>Function anEffectDiceWithNoEffectOpenIsDroppedHereWhereCRefusesIt coded on 261119, commented
-     * in full on 261119.
+     * <p>Function aDiceStringInEffectDiceLoadsAsInC coded on 261124, commented in full on 261124
+     * (replaces the pin that refused it). The text is kept as written; checking it is parked until
+     * the roll engine exists (see {@code docs/Parked.md}).
      */
     @Test
-    void anEffectDiceWithNoEffectOpenIsDroppedHereWhereCRefusesIt() throws Exception {
-        PlayerTimedEffect fast = load("dice-no-effect.txt",
-                "name:FAST\ngrade:G:100:Test:Message\neffect-dice:5\n").items().get(0);
+    void aDiceStringInEffectDiceLoadsAsInC() throws Exception {
+        String head = "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\n";
+        for (String dice : List.of("5", "-3", "1d4", "2d8", "1+1d3", "M80", "-3d5", "$B+d$S")) {
+            PlayerTimedEffect fast = load("dice-string.txt", head + "effect-dice:" + dice + "\n").items().get(0);
+            assertEquals("0,0," + dice, EffectProbe.yxBase(fast.getOnEndEffect().getFirst()), dice);
+        }
 
-        assertTrue(fast.getOnBeginEffect().isEmpty());
-        assertTrue(fast.getOnEndEffect().isEmpty());
-    }
-
-    /**
-     * Parked 2026-11-19 (see {@code docs/Parked.md}). The same refusal in C when {@code effect-dice:}
-     * comes before the effect line it belongs to: {@code ps->e} is not yet set, so C stops the load.
-     * The grammar drops that dice and the later effect loads with none.
-     *
-     * <p>Function anEffectDiceBeforeItsEffectLineIsDroppedHereWhereCRefusesIt coded on 261119,
-     * commented in full on 261119.
-     */
-    @Test
-    void anEffectDiceBeforeItsEffectLineIsDroppedHereWhereCRefusesIt() throws Exception {
-        PlayerTimedEffect fast = load("dice-first.txt",
-                "name:FAST\ngrade:G:100:Test:Message\neffect-dice:5\non-end-effect:TIMED_INC_NO_RES:SLOW\n")
-                .items().get(0);
-
-        assertEquals(1, fast.getOnEndEffect().size());
-        assertEquals("0,0,", EffectProbe.yxBase(fast.getOnEndEffect().getFirst()));
-    }
-
-    @Test
-    void aDiceStringInEffectDiceIsRefusedHereWhereCParsesIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("dice-string.txt", "name:FAST\ngrade:G:100:Test:Message\non-end-effect:TIMED_INC_NO_RES:SLOW\neffect-dice:1d4\n"));
-
+        assertThrows(ParseCancellationException.class, () -> load("dice-junk.txt", head + "effect-dice:abc\n"));
     }
 
     // ---- flags: reads C's separator (Stage 7d) -----------------------------

@@ -83,17 +83,35 @@ public interface PlayerTimedGrammarVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitOnBeginEffect(PlayerTimedGrammar.OnBeginEffectContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link PlayerTimedGrammar#onEndEffectBlock}.
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#onEndEffect}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx);
+	T visitOnEndEffect(PlayerTimedGrammar.OnEndEffectContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlayerTimedGrammar#effectDice}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitEffectDice(PlayerTimedGrammar.EffectDiceContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#effectMsg}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEffectMsg(PlayerTimedGrammar.EffectMsgContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#effectYX}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEffectYX(PlayerTimedGrammar.EffectYXContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link PlayerTimedGrammar#effectExpr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEffectExpr(PlayerTimedGrammar.EffectExprContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link PlayerTimedGrammar#resist}.
 	 * @param ctx the parse tree

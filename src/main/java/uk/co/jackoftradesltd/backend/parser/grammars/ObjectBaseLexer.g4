@@ -20,7 +20,8 @@
 // max stack size, base-level flags like HATES_ACID/SHOW_DICE) into the directive
 // keywords, integers, flag names and free text that its paired parser
 // ObjectBaseGrammar assembles. Cf. src/obj-init.c struct file_parser
-// object_base_parser, whose parse_object_base_default_*/_name/_graphics/_break/
+// object_base_parser, whose parse_object_base_defaults (the default:break-chance
+// and default:max-stack lines) and parse_object_base_name/_graphics/_break/
 // _max_stack/_flags handlers this pipeline ports.
 //
 // Four lexical modes keep otherwise-ambiguous payloads apart:

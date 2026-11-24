@@ -59,8 +59,9 @@ public record MonsterSpellParseRecord(String name,
      * <p>
      * {@code power} is null for the first tier of a record when no {@code power-cutoff:}
      * directive preceded it. That is not a defect: the C original allocates a level at
-     * {@code name:} time ({@code mon-init.c:596}), so the lore and messages before the first
-     * cutoff belong to an implicit tier whose power is zero. Every shipped record has one.
+     * {@code name:} time ({@code parse_mon_spell_name} in {@code mon-init.c}), so the lore and
+     * messages before the first cutoff belong to an implicit tier whose power is zero. Every
+     * shipped record has one.
      * <p>
      * The free-text fields arrive already concatenated where a directive was repeated, matching
      * the C original's {@code string_append} rather than an overwrite.

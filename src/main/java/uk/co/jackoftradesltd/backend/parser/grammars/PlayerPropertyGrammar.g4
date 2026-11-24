@@ -55,8 +55,10 @@
 //      the one C passes to bind_player_ability_to_ui_entry_by_name. Nothing at
 //      this stage looks the name up in the UI-entry registry.
 //
-//   Not yet matched: the order of a record's bindings (above) and C's NULL for
-//   an absent name or desc, which Java holds as the empty string.
+//   Accepted deviations, recorded in the class Javadoc of
+//   PlayerPropertyAssembler.java: the order of a record's bindings (note 1),
+//   and C's NULL for an absent name or desc, which Java holds as the empty
+//   string.
 //
 // @author Rowan Crowther
 

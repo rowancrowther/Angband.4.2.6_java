@@ -162,9 +162,11 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
             // record's source line even after its individual fields have been consumed.
             int line = record.line();
             String name = record.name();
-            // room: is a number in the file (C's room_type 1/2/3); map it to the enum. An absent
-            // room: leaves PIT_TYPE_NONE, and any other number falls through to NONE rather than
-            // erroring (the lexer takes any integer, so 4 or 99 get this far).
+            // room: is a number in the file, which C keeps as written in room_type (a uint, so a
+            // leading '-' is refused just below). Map it to the enum: 1 is PIT and 2 is NEST, the
+            // two values set_pit_type ever asks for, and 3 is OTHER, which pit.txt uses but nothing
+            // asks for. An absent room: and 0 are NONE, and so is any other number (4 or 99): it is
+            // not an error, it is only eligible when set_pit_type is asked for type 0.
             String roomType = record.pitRoomType();
             if (ParseUtils.minusFound(roomType)) {
                 String msg = "Pit record starting at line: " + line + " of file: " + filename + " has " +

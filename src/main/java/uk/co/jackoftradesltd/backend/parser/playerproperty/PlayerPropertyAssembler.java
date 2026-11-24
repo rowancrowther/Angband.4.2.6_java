@@ -108,7 +108,9 @@ import java.util.Optional;
  *       The order is only observable when one property binds the same UI entry twice, and no
  *       shipped record does;</li>
  *   <li>a record with no {@code desc:} line has the empty string for its description, where C
- *       has {@code NULL}.</li>
+ *       has {@code NULL};</li>
+ *   <li>a record with no {@code name:} line has the empty string for its name, where C has
+ *       {@code NULL}.</li>
  * </ul>
  * <p>
  * The {@code default} arm of the {@code type} switch, which builds a

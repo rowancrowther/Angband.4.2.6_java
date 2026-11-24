@@ -48,13 +48,22 @@ import java.util.Optional;
  * assembler: a bad value is logged and thrown as a {@link DataFileParseException}, and no
  * record is skipped.
  * <p>
+ * Two lists come out in <em>reverse</em> file order, as they do in C, and the order is
+ * observable. The list of blow methods itself is reversed: C's {@code parse_meth_name}
+ * pushes each new record onto the head of a linked list and {@code finish_parse_meth}
+ * copies that list into the {@code blow_methods} array head first, so the last method in
+ * {@code blow_methods.txt} sits at the lowest index. Each method's {@code act:} strings are
+ * reversed too, because {@code parse_meth_act_msg} pushes onto the head of
+ * {@code meth->messages} in the same way. Anything that indexes either list - by position, or
+ * by a random pick along it - must expect the reversed order, not the file's.
+ * <p>
  * Accepted deviation (decided 261009): C's {@code blow_methods} array keeps slot 0 blank
  * and starts its records at 1, so {@code z_info->blow_methods_max} is one more than the
  * record count. The list returned here holds only the real records, from index 0.
  *
  * <p>Class BlowMethodAssembler coded before 260915, commented in full on 261107, updated on 261105
  * for the removal of the soft-error path and on 261107 for the optional flags and the
- * {@code act:} order.
+ * {@code act:} order, and on 261124 for the reversed lists.
  *
  * @author Rowan Crowther
  */
@@ -217,12 +226,15 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
                 }
             }
             
-            // Act flavour text narrating the blows
+            // Act flavour text narrating the blows - reversed, as C's list of messages is
+            // (parse_meth_act_msg pushes each one onto the head)
             List<String> act = record.act().reversed();
             
             // Description
             String desc = record.desc();
 
+            // addFirst, not add: the list comes out in reverse file order, as C's blow_methods
+            // array does (parse_meth_name pushes each record onto the head of its list)
             methods.addFirst(new BlowMethod(name, cut, stun, miss, phys, msgT, act, desc));
         }
 

@@ -28,8 +28,10 @@
  * (obj-init.c) which assigns each activation a sequential index
  * used for array-based lookups elsewhere in the engine.
  *
- * This index is removed, as in Java we are using the object itself from
- * a fixed List, not an array index to a [] array.
+ * The index is kept: ActivationAssembler numbers each Activation by its place
+ * in the finished list (Activation.setIndex), from 0 where C counts from 1, and
+ * the list is in reverse file order as C's is. Lookups elsewhere use the
+ * Activation object from that List, not the index into a [] array.
  */
 lexer grammar ActivationsLexer;
 import EffectBlockLexer, CommentsAndEol;

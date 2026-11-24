@@ -278,6 +278,31 @@ class BlowMethodReaderTest {
     }
 
     @Test
+    void aTrailingBlankInTheNameIsKeptAsInC() throws IOException {
+        // [C] mon-init.c parse_meth_name keeps the rest of the line as it comes, so "name:HIT "
+        // is a method called "HIT " (trailing blank included) which findmeth("HIT") never
+        // matches.
+        ParseResult<BlowMethod> result = load("name-trailing-blank.txt", "name:HIT \ncut:1\n");
+
+        assertEquals(List.of("HIT "), names(result.items()));
+    }
+
+    @Test
+    void aLeadingBlankInTheNameIsKeptAsInC() throws IOException {
+        // [C] as above: "name: HIT" is a method called " HIT".
+        ParseResult<BlowMethod> result = load("name-leading-blank.txt", "name: HIT\ncut:1\n");
+
+        assertEquals(List.of(" HIT"), names(result.items()));
+    }
+
+    @Test
+    void aNameWithNoBlanksIsUnchangedByKeepingBlanksAsInC() throws IOException {
+        ParseResult<BlowMethod> result = load("name-plain.txt", "name:HIT\ncut:1\n");
+
+        assertEquals(List.of("HIT"), names(result.items()));
+    }
+
+    @Test
     void nameOnlyRecordLoadsWithEveryFlagFalseAsInC() throws IOException {
         // [C] src/tests/parse/blowm.c test_name0: a bare name: leaves every flag false, msgt 0
         // and no messages, and parses without error.

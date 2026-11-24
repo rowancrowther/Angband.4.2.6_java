@@ -26,7 +26,6 @@ import uk.co.jackoftradesltd.middle.numerics.Random;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -37,21 +36,23 @@ import static org.junit.jupiter.api.Assertions.*;
  * cases were taken from {@code parse_random} in {@code parser.c}, compiled on its own and fed the
  * same strings. The sweep tests rest on {@link #parseRandomInC}, a line-for-line transliteration of
  * that function, and compare it with the reader over every string up to five characters drawn from
- * {@code 0 1 2 d M + -}. Where the two disagree the sweep insists the string falls into one of the
- * named differences below and fails on anything else, so a new divergence cannot hide among them.
+ * {@code 0 1 2 d M + -}, a blank and a tab. They allow no differences at all: for every string the
+ * reader and C must both refuse it, or both accept it and build the same four terms.
  *
- * <p>The differences pinned here are the ones written up for {@code Random.g4} in
- * {@code docs/grammar_issues.md}. The reader is a superset of {@code parse_random} in that it
- * accepts a lower-case {@code m}, a base straight into {@code M} and {@code $} variables (the last
- * two because {@code z-dice.c} reads them). It is stricter in that it refuses blanks, a repeated
- * {@code d} or {@code M}, and a signed zero such as {@code 2d-0}. A number above {@code INT_MAX} is
- * a rejection in C and a {@code null} here, in every slot, including a number too long for a
- * {@code long}; it is no longer a difference.
+ * <p>The reader agrees with {@code parse_random} on those strings, including blanks (allowed only
+ * directly before a number and at the end), a repeated {@code d} or {@code M}, a signed zero such as
+ * {@code 2d-0}, and a leading {@code -}, which negates the whole value even in front of a zero. A
+ * number above {@code INT_MAX} is a rejection in C and a {@code null} here, in every slot. Three
+ * differences are pinned by their own tests, because the sweeps cannot reach them: a lower-case
+ * {@code m} is read here (see "Random" in {@code docs/Accepted_Deviations.md}); {@code $} variables
+ * are refused, as {@code parse_random} refuses them, though {@code z-dice.c} reads them; and an
+ * oversized bonus that a later bonus overwrites is loaded here and refused by C.
  *
  * <p>Logging is switched off for the class: the sweeps reject thousands of strings, and each one
  * would otherwise write an error with a stack trace.
  *
- * <p>Class RandomReaderTest coded on 261019, commented in full on 261019.
+ * <p>Class RandomReaderTest coded on 261019, commented in full on 261019; updated on 261124 once the
+ * grammar read blanks, repeats, signed zeros and a leading minus as C does.
  *
  * @author Rowan Crowther
  */
@@ -60,16 +61,11 @@ class RandomReaderTest {
     /**
      * The characters the sweeps build their strings from.
      */
-    private static final String SWEEP_ALPHABET = "012dM+-";
+    private static final String SWEEP_ALPHABET = "012dM+- \t";
     /**
-     * The longest string the sweeps try, 19,607 strings in all.
+     * The longest string the sweeps try, 66,429 strings in all.
      */
     private static final int SWEEP_LENGTH = 5;
-    /**
-     * Strings that, once an optional leading {@code -} is gone, are a number, {@code M}, a number:
-     * C's loop sees the first number, finds neither {@code d} nor {@code +} after it and refuses.
-     */
-    private static final Pattern BASE_THEN_BONUS = Pattern.compile("\\d+M\\d+");
 
     private final RandomReader reader = new RandomReader();
 
@@ -117,6 +113,22 @@ class RandomReaderTest {
     private void assertRefused(String text) {
         assertDoesNotThrow(() -> assertNull(reader.parse(text), "reader accepted '" + text + "'"));
         assertDoesNotThrow(() -> assertNull(Random.parseStr(text), "parseStr accepted '" + text + "'"));
+    }
+
+    /**
+     * Asserts the reader does with {@code text} what {@link #parseRandomInC} does: it refuses the
+     * string where C refuses it, and otherwise builds the same base, dice, sides and
+     * {@code m_bonus}.
+     *
+     * <p>Function assertAgreesWithC coded on 261124, commented in full on 261124.
+     */
+    private void assertAgreesWithC(String text) throws Exception {
+        int[] c = parseRandomInC(text);
+        if (c == null) {
+            assertRefused(text);
+        } else {
+            assertReads(text, c[0], c[1], c[2], c[3]);
+        }
     }
 
     /**
@@ -324,66 +336,143 @@ class RandomReaderTest {
     }
 
     @Test
+    void aSecondSignAfterTheFirstIsRefusedByBothParsers() {
+        for (String text : List.of("--1", "-+1", "+-1", "++1", "--1d4")) {
+            assertNull(parseRandomInC(text), "C should refuse '" + text + "'");
+            assertRefused(text);
+        }
+    }
+
+    @Test
     void aMissingNumberAfterTheMarkerIsRefusedNotThrown() {
         for (String text : List.of("M", "5M", "2d6M", "1+M", "1+2d3M", "d6M", "5+dM", "-1d", "$S+dM", "$D+dm")) {
             assertRefused(text);
         }
     }
 
-    // ---- where Java accepts and C refuses --------------------------------
+    // ---- blanks: allowed before a number and at the end, as C allows -------
+
+    @Test
+    void blanksAtEitherEndAndBeforeANumberAreReadAsCReadsThem() throws Exception {
+        for (String text : List.of(" 2d6", "2d6 ", "5 ", "5\t", "\t5", "M 3", "2d 6", "- 5", "2d6M 3",
+                "1+ 2d3", "2d6 5", "5+3 4", "5+3 4 ")) {
+            assertNotNull(parseRandomInC(text), "C should accept '" + text + "'");
+            assertAgreesWithC(text);
+        }
+        assertReads("2d6 5", 0, 2, 6, 5);
+        assertReads("5+3 4", 5, 3, 4, 0);
+    }
+
+    @Test
+    void blanksInAnyOtherPlaceAreRefusedAsCRefusesThem() {
+        for (String text : List.of(" ", "\t", "- ", "2 d6", "2 6", "1 +2d3", " d1", " M1", " -5", "2d6 M3", "5 +3")) {
+            assertNull(parseRandomInC(text), "C should refuse '" + text + "'");
+            assertRefused(text);
+        }
+    }
+
+    @Test
+    void aPlusAfterABlankIsReadAsCReadsIt() throws Exception {
+        for (String text : List.of(" +1", "2d +6", "- +1")) {
+            assertNotNull(parseRandomInC(text), "C should accept '" + text + "'");
+            assertAgreesWithC(text);
+        }
+        assertReads(" +1", 1, 0, 0, 0);
+        for (String text : List.of("+1", "2d+6", "d+1")) {
+            assertNull(parseRandomInC(text), "C should refuse '" + text + "'");
+            assertRefused(text);
+        }
+    }
+
+    // ---- repeats: C's loop lets them through -------------------------------
+
+    @Test
+    void aRepeatedDOrMIsReadAsCsLoopReadsIt() throws Exception {
+        assertReads("dd1", 0, 1, 1, 0);
+        assertReads("MM1", 0, 0, 0, 1);
+        assertReads("M1M2", 0, 0, 0, 2);
+        assertReads("1+2d3M4M5", 1, 2, 3, 5);
+        for (String text : List.of("dd1", "MM1", "M1M2", "1+2d3M4M5")) {
+            assertAgreesWithC(text);
+        }
+    }
+
+    // ---- signs inside the string: a signed zero, and a leading minus before a zero ----
+
+    @Test
+    void aSignedZeroInsideTheStringIsReadAsStrtoulReadsIt() throws Exception {
+        assertReads("2d-0", 0, 2, 0, 0);
+        assertReads("d-0", 0, 1, 0, 0);
+        assertReads(" -0", 0, 0, 0, 0);
+        assertAgreesWithC("2d-0");
+        for (String text : List.of("2d-1", "d-1", "d-01", "1+-0", "--1")) {
+            assertNull(parseRandomInC(text), "C should refuse '" + text + "'");
+            assertRefused(text);
+        }
+    }
+
+    @Test
+    void aLeadingMinusNegatesEvenInFrontOfAZero() throws Exception {
+        assertReads("-0+d00", -1, 1, 0, 0);
+        assertReads("-0+2d3", -8, 2, 3, 0);
+        assertReads("-01", -1, 0, 0, 0);
+        assertParsesStr("-0+d00", -1, 1, 0, 0);
+        for (String text : List.of("-0+d00", "-0+2d3", "-01")) {
+            assertAgreesWithC(text);
+        }
+    }
+
+    @Test
+    void aSecondMinusBeforeAZeroIsReadByParseStrAsCReadsIt() throws Exception {
+        assertArrayEquals(new int[]{0, 0, 0, 0}, parseRandomInC("--0"));
+        assertArrayEquals(new int[]{0, 0, 2, 0}, parseRandomInC("--0d2"));
+        assertArrayEquals(new int[]{-2, 1, 1, 0}, parseRandomInC("--0+d1"));
+        assertParsesStr("--0", 0, 0, 0, 0);
+        assertParsesStr("--00", 0, 0, 0, 0);
+        assertParsesStr("--0d2", 0, 0, 2, 0);
+        assertParsesStr("--0+d1", -2, 1, 1, 0);
+        assertReads("--0", 0, 0, 0, 0);
+        assertReads("--0d2", 0, 0, 2, 0);
+    }
+
+    // ---- both refuse what the old grammar took: 5M3 and $ ------------------
+
+    @Test
+    void aBaseStraightIntoMIsRefusedAsBothCReadersRefuseIt() {
+        for (String text : List.of("5M3", "11M22")) {
+            assertNull(parseRandomInC(text), "C should refuse '" + text + "'");
+            assertRefused(text);
+        }
+    }
+
+    @Test
+    void dollarVariablesAreRefusedAsParseRandomRefusesThem() {
+        for (String text : List.of("$S", "4d$S", "$B+d$S", "$Dd5")) {
+            assertNull(parseRandomInC(text), "parse_random should refuse '" + text + "'");
+            assertRefused(text);
+        }
+    }
+
+    // ---- where Java and C still differ -------------------------------------
 
     @Test
     void aLowerCaseMIsAcceptedHereWhereParseRandomRefusesIt() throws Exception {
         assertReads("2d6m3", 0, 2, 6, 3);
+        assertNull(parseRandomInC("2d6m3"));
     }
 
     @Test
-    void aBaseStraightIntoMIsAcceptedHereWhereParseRandomRefusesIt() throws Exception {
-        assertReads("5M3", 5, 0, 0, 3);
-        assertReads("11M22", 11, 0, 0, 22);
-    }
-
-    @Test
-    void dollarVariablesAreAcceptedHereWhereParseRandomHasNone() throws Exception {
-        assertReads("$S", 0, 0, 0, 0);
-        assertReads("4d$S", 0, 4, 0, 0);
-    }
-
-    @Test
-    void aDoubleMinusIsAcceptedByParseStrWhereCRefusesIt() {
-        assertParsesStr("--1", -1, 0, 0, 0);
-    }
-
-    // ---- where C accepts and Java refuses --------------------------------
-
-    @Test
-    void blanksAreRefusedHereWhereCAllowsThemAtTheEnds() {
-        for (String text : List.of(" 2d6", "2d6 ", "5 ", "5\t", "M 3")) {
-            assertNotNull(parseRandomInC(text), "C should accept '" + text + "'");
+    void anOversizedBonusThatALaterBonusOverwritesIsLoadedHereWhereCRefusesIt() throws Exception {
+        assertReads("2d6M3000000000M1", 0, 2, 6, 1);
+        assertReads("M3000000000M1", 0, 0, 0, 1);
+        assertReads("1+M3000000000M1", 1, 0, 0, 1);
+        for (String text : List.of("2d6M3000000000M1", "M3000000000M1", "1+M3000000000M1")) {
+            assertNull(parseRandomInC(text), "C should refuse '" + text + "'");
+        }
+        for (String text : List.of("2d6M1M3000000000", "2d6M3000000000")) {
+            assertNull(parseRandomInC(text), "C should refuse '" + text + "'");
             assertRefused(text);
         }
-    }
-
-    @Test
-    void aRepeatedDOrMIsRefusedHereWhereCsLoopLetsItThrough() {
-        assertArrayEquals(new int[]{0, 1, 1, 0}, parseRandomInC("dd1"));
-        assertArrayEquals(new int[]{0, 0, 0, 1}, parseRandomInC("MM1"));
-        assertArrayEquals(new int[]{0, 0, 0, 2}, parseRandomInC("M1M2"));
-        for (String text : List.of("dd1", "MM1", "M1M2")) {
-            assertRefused(text);
-        }
-    }
-
-    @Test
-    void aSignedZeroInsideTheStringIsRefusedHereWhereStrtoulReadsIt() {
-        assertArrayEquals(new int[]{0, 2, 0, 0}, parseRandomInC("2d-0"));
-        assertRefused("2d-0");
-    }
-
-    @Test
-    void aVariableDiceCountIsRefusedHereWhereZDiceReadsIt() {
-        assertRefused("$Dd5");
-        assertRefused("$B+d$S");
     }
 
     // ---- the oracle itself -----------------------------------------------
@@ -405,34 +494,27 @@ class RandomReaderTest {
     // ---- sweeps: every short string against the transliteration ----------
 
     /**
-     * Compares one string. Returns a description of anything that is not a known difference, or
-     * {@code null} when the reader and C agree or differ in a named way. {@code counts} gets one
-     * tick for each named difference seen: lenient, strict.
+     * Compares one string. Returns a description of any difference between the reader and C, or
+     * {@code null} when they agree: both refuse the string, or both accept it and build the same four
+     * terms. No difference is allowed.
+     *
+     * <p>Function compare coded before 261124, commented in full on 261124 when the named differences
+     * were removed.
      */
-    private static String compare(String text, boolean viaParseStr, Random java, int[] c, int[] counts) {
+    private static String compare(String text, Random java, int[] c) {
         if (c != null && java != null) {
             return List.of(c[0], c[1], c[2], c[3]).equals(terms(java)) ? null
                     : "values differ for '" + text + "': C " + List.of(c[0], c[1], c[2], c[3]) + " Java " + terms(java);
         }
-        if (java != null) {
-            String rest = viaParseStr && text.startsWith("-") ? text.substring(1) : text;
-            boolean known = BASE_THEN_BONUS.matcher(rest).matches() || (viaParseStr && text.startsWith("--"));
-            counts[0]++;
-            return known ? null : "Java accepts '" + text + "' but C refuses it";
-        }
-        if (c != null) {
-            boolean known = text.contains("dd") || text.chars().filter(ch -> ch == 'M').count() >= 2
-                    || Pattern.compile(".-0").matcher(text).find();
-            counts[1]++;
-            return known ? null : "C accepts '" + text + "' but Java refuses it";
-        }
+        if (java != null) return "Java accepts '" + text + "' but C refuses it";
+        if (c != null) return "C accepts '" + text + "' but Java refuses it";
         return null;
     }
 
     @Test
-    void sweepThroughParseStrAgreesWithCExceptForTheNamedDifferences() {
+    void sweepThroughParseStrAgreesWithC() {
         List<String> problems = new ArrayList<>();
-        int[] counts = new int[2];
+        int agreed = 0;
         for (String text : sweepStrings()) {
             Random java;
             try {
@@ -441,18 +523,20 @@ class RandomReaderTest {
                 problems.add("'" + text + "' threw " + e);
                 continue;
             }
-            String problem = compare(text, true, java, parseRandomInC(text), counts);
+            int[] c = parseRandomInC(text);
+            String problem = compare(text, java, c);
             if (problem != null) problems.add(problem);
+            else if (java != null) agreed++;
         }
         assertTrue(problems.isEmpty(), () -> problems.size() + " problems, first: "
                 + problems.subList(0, Math.min(10, problems.size())));
-        assertTrue(counts[0] > 0 && counts[1] > 0, "the sweep should meet both kinds of named difference");
+        assertTrue(agreed > 0, "some strings should be accepted by both");
     }
 
     @Test
-    void sweepThroughTheReaderAgreesWithCExceptForTheNamedDifferences() throws Exception {
+    void sweepThroughTheReaderAgreesWithC() {
         List<String> problems = new ArrayList<>();
-        int[] counts = new int[2];
+        int agreed = 0;
         for (String text : sweepStrings()) {
             if (text.startsWith("-")) continue;
             Random java;
@@ -462,12 +546,14 @@ class RandomReaderTest {
                 problems.add("'" + text + "' threw " + e);
                 continue;
             }
-            String problem = compare(text, false, java, parseRandomInC(text), counts);
+            int[] c = parseRandomInC(text);
+            String problem = compare(text, java, c);
             if (problem != null) problems.add(problem);
+            else if (java != null) agreed++;
         }
         assertTrue(problems.isEmpty(), () -> problems.size() + " problems, first: "
                 + problems.subList(0, Math.min(10, problems.size())));
-        assertTrue(counts[0] > 0 && counts[1] > 0, "the sweep should meet both kinds of named difference");
+        assertTrue(agreed > 0, "some strings should be accepted by both");
     }
 
     @Test

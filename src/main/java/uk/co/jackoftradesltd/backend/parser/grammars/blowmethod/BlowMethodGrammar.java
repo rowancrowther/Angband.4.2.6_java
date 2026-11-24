@@ -16,6 +16,7 @@
  */
 
 // Generated from BlowMethodGrammar.g4 by ANTLR 4.13.2
+// Generated from BlowMethodGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.blowmethod;
 
 import org.antlr.v4.runtime.*;
@@ -614,7 +615,7 @@ public class BlowMethodGrammar extends Parser {
 			{
 			setState(53);
 			((BlowContext)_localctx).name = name();
-			 line     = ((BlowContext)_localctx).name.line; nameInit = ((BlowContext)_localctx).name.nameStr.trim(); 
+			 line     = ((BlowContext)_localctx).name.line; nameInit = ((BlowContext)_localctx).name.nameStr; 
 			setState(78);
 			_errHandler.sync(this);
 			_la = _input.LA(1);

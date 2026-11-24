@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/Random.g4 by ANTLR 4.13.2
+// Generated from Random.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.random;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
@@ -28,6 +28,12 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * operations with no return type.
  */
 public interface RandomVisitor<T> extends ParseTreeVisitor<T> {
+	/**
+	 * Visit a parse tree produced by {@link RandomParser#bonus}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBonus(RandomParser.BonusContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link RandomParser#dice}.
 	 * @param ctx the parse tree

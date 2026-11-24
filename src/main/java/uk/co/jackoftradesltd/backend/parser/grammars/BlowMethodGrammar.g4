@@ -28,8 +28,9 @@ options { tokenVocab = BlowMethodLexer; }
 
 // name: opens a record. The line number is captured here (rather than anywhere else in
 // the block) so that an error raised later by the assembler can point at the line
-// the reader would recognize as the start of the offending method. The name is
-// trimmed where the blow rule stores it, so blanks around the code do not reach the record.
+// the reader would recognize as the start of the offending method. The name is kept
+// exactly as written, as C's parse_meth_name does: "name:HIT " is a method called "HIT ",
+// which the lookup for "HIT" never matches.
 name
         returns[String nameStr, int line]
         :   NAME STRING { $nameStr = $STRING.getText(); $line = $start.getLine(); }
@@ -124,7 +125,7 @@ blow
                 cutInit, stunInit, missInit, physInit,
                 msgInit, actInit, descInit.toString(), line);
         }
-        :   name { line     = $name.line; nameInit = $name.nameStr.trim(); }
+        :   name { line     = $name.line; nameInit = $name.nameStr; }
         (   cut  { cutInit  = $cut.cutVal; }
         |   stun { stunInit = $stun.stunVal; }
         |   miss { missInit = $miss.missVal; }

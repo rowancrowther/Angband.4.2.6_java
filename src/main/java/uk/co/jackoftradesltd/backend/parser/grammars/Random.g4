@@ -15,36 +15,53 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Combined lexer+parser for Angband's dice-string mini-language (e.g. "2d8",
-// "1+1d3", "M80", "4d$S", "$Dd5"). Unlike the other grammars in this
-// directory, this one isn't tied to a single lib/gamedata file or a single
-// C file_parser - it's a shared building block. Every other grammar reaches
-// it indirectly: uk.co.jackoftradesltd.middle.numerics.Random.parseStr(String)
-// (Random.java:95) constructs a RandomReader, which drives this grammar's
-// generated RandomLexer/RandomParser (see RandomReader.java) and is itself
-// called from dice:/visibility:/radius-style fields all over the other
-// grammars (e.g. TrapGrammar.g4's `dice`/`visibility` rules). The C
-// equivalent is the dice_t/dice_parse_string() state machine in
-// src/z-dice.c (doc comment at z-dice.c:294-308) - note its own comment
-// admits "the parser isn't complex", i.e. it deliberately avoided a formal
-// grammar for this because the base/dice/sides/bonus permutation space (each
-// independently a literal, a variable, or absent) gets unwieldy fast. This
-// grammar enumerates that permutation space by hand as ~25 alternatives,
-// which is exactly where the gaps below come from.
+// Combined lexer+parser for the dice-string notation that Angband's data files use for every
+// `rand` field, e.g. "2d8", "1+1d3", "M80", "-5" or " 2d6 ". It is not tied to one lib/gamedata
+// file or to one C file_parser; it is a shared building block. The other readers reach it through
+// Random.parseStr(String) in middle/numerics/Random.java, which hands the whole string, a leading
+// '-' included, to a RandomReader (see RandomReader.java). The dice rule below reads that '-' and
+// flags the value as negated. The RandomReader drives this grammar's generated RandomLexer and
+// RandomParser. Callers include ArtifactAssembler (the
+// attack: dice), MonsterAssembler (a blow's damage and a friends number), EgoItemAssembler (to-h,
+// to-d, to-a and the timeout), TrapAssembler (a trap's power) and LoreGrammar.
 //
-// POTENTIAL PROBLEMS:
+// The C equivalent is parse_random() in parser.c. It reads the string once, left to right, with
+// a counter that says which of base, dice, sides and bonus the next number belongs to. The notation
+// it reads is:
 //
-//   1. No alternative allows a DOLLAR_LETTER as the *dice count* (only as
-//      base or sides) - every alt with `diceNum=` binds it to NUMBER. But
-//      "$Dd4", "$Dd6", "$Dd7", "$Dd8", "$Dd12" (dice count given as a bound
-//      variable, fixed integer sides) appear repeatedly in class.txt and
-//      monster_spell.txt, and trap.txt itself uses "dice:$Dd5" (line ~466).
-//      None of these can be parsed by this grammar today.
+//     '-'?  [base '+']  [dice] 'd' sides  ['M' bonus]
 //
-//   2. "$Dd$S" (both dice count AND sides as variables, no literal numbers
-//      at all) appears in class.txt (e.g. line 1021) and is unsupported for
-//      the same reason - there's no diceNum=DOLLAR_LETTER alternative to
-//      pair with sides=DOLLAR_LETTER.
+// where a bare number is the base, a number straight before 'd' is the dice count, 'd' with no count
+// is one die, and the whole string may be just a base ("5"), just a bonus ("M4"), or any mix of the
+// three parts. C is looser than that notation, and this grammar follows C where it is:
+//
+//   - 'd' and 'M' may be repeated: "dd1" is one die with 1 side, and in "1+2d3M4M5" the last
+//     bonus wins, so the value is base 1, dice 2, sides 3, bonus 5.
+//   - after the sides, a second number separated from them by blanks is the bonus even with no
+//     'M': "2d6 5" is bonus 5. In the same way "5+3 4" is base 5, 3 dice and 4 sides, with no 'd'.
+//   - a run of blanks is allowed directly before any number, and at the very end of the string,
+//     and nowhere else. "2d 6", "M 3" and " 2d6 " are read; "2 d6", "1 +2d3" and "2d6 M3" are
+//     refused. C gets this from strtoul(), which skips blanks in front of the digits.
+//   - the leading '-' negates the whole value. C consumes it before it reads any number, so "-01"
+//     is a minus followed by 01. A '-' anywhere else is read only as a signed zero, such as the
+//     "-0" in "2d-0", because strtoul() reads "-0" as 0. See the SPACE_NUMBER token below.
+//   - a number above INT_MAX is refused, with one exception listed below.
+//
+// Where this grammar differs from C today (checked on 261124 by comparing every string up to six
+// characters over the characters 1 2 0 d M + - and a blank or tab with a copy of parse_random() in
+// RandomReaderTest, for acceptance and for all four values):
+//
+//   - a lower-case 'm' is read as 'M'. parse_random() refuses it; dice_parse_string() in z-dice.c
+//     takes it, and this one grammar serves both. See "Random" in docs/Accepted_Deviations.md.
+//   - '$' variables are not read. parse_random() has none either. dice_parse_string() does read
+//     them, for the dice: and time: lines of an effect, but in this project those lines are read by
+//     the effect-block lexers through the DiceStrings import, not by this grammar.
+//   - a number above INT_MAX that is followed by a later bonus is lost. "2d6M3000000000M1" is
+//     refused by C, which stops at the first number, and read here as bonus 1, because each bonus
+//     in the bonus rule overwrites the last one. "M3000000000M1" and "1+M3000000000M1" do the same.
+//     Accepted on 261124; see "Random" in docs/Accepted_Deviations.md.
+//
+// Grammar commented in full on 261124.
 
 grammar Random;
 
@@ -53,12 +70,28 @@ grammar Random;
 }
 
 @parser::members {
-    /** The value of a NUMBER token, or -1 if ANTLR conjured it during     
-      error recovery, or if the digits are above INT_MAX (or too long to read as a
-      long), which parse_random in parser.c refuses. The dice rule's @after turns
-      any -1 into a null Random. */
+    /**
+     * Reads the number held in a SPACE_NUMBER token, or returns -1 to mark it as unusable.
+     *
+     * <p>The token text is trimmed first, because a SPACE_NUMBER carries the blanks in front of its
+     * digits. A signed zero such as {@code -0} reads as 0, and a {@code +} in front of the digits is
+     * accepted by {@code Long.parseLong}. The result is -1 when the digits are above
+     * {@code INT_MAX}, which {@code parse_random} in {@code parser.c} refuses, or too long to read
+     * as a {@code long}, and when the token is one that ANTLR conjured during error recovery. A
+     * conjured token has text such as {@code <missing SPACE_NUMBER>}, which is not a number, so it
+     * reaches the {@code NumberFormatException} branch. The first test, for the text
+     * {@code <missing NUMBER>}, names a token this grammar no longer produces and never matches. The
+     * {@code l < 0} test cannot fire either: no SPACE_NUMBER has a negative value. The
+     * {@code dice} rule's {@code @after} turns any -1 into a null {@code Random}.
+     *
+     * <p>Function numberOrMissing coded before 261124, commented in full on 261124 after the trim
+     * was added.
+     *
+     * @param t the SPACE_NUMBER token to read
+     * @return the value as an {@code int}, or -1 if it cannot be used
+     */
     private static int numberOrMissing(Token t) {
-        String text = t.getText();
+        String text = t.getText().trim();
         if (text.equals("<missing NUMBER>"))
             return -1;
         
@@ -77,13 +110,44 @@ grammar Random;
     }
 }
 
-// The only rule in this grammar: parses one whole dice string as
-// base/dice/sides/bonus, where each of the 4 fields is independently
-// absent, a literal NUMBER, or (base/sides only - see problems 1/2/4/5) a
-// DOLLAR_LETTER variable. The ~25 alternatives below are every currently-
-// supported (presence x literal-or-variable) combination of those 4 fields,
-// built by hand rather than via a state machine like z-dice.c's C
-// equivalent - see top-of-file comment for why that matters.
+// The bonus tail that may follow the sides in the dice rule: M* number (M+ number)*.
+//
+// The first number may follow any number of M markers, including none. With none, it is the blank-
+// separated number of "2d6 5", and the blank is part of its SPACE_NUMBER token. Every later number
+// needs at least one M in front of it, so "2d6M1M2" is read and "2d6M1 2" is not. Each number
+// overwrites the one before, so the last number is the bonus, as in C, where each M N pair writes the
+// same m_bonus slot. bonusVal is the value of the last number, or -1 if that number is unusable;
+// see numberOrMissing, and the note in the header about an oversized number that a later one
+// overwrites.
+bonus
+        returns[int bonusVal]
+        :   M* m1=SPACE_NUMBER { $bonusVal = numberOrMissing($m1); } (M+ m2=SPACE_NUMBER { $bonusVal = numberOrMissing($m2); })*
+        ;
+
+// The entry rule: parses one whole dice string and builds a Random from it. It is followed by
+// EOF, so the rule must use up the string, and the string may end in a run of blanks.
+//
+// Seven alternatives, one for each shape C reads. In the sketches, b is the base, n the dice count,
+// s the sides and m a bonus, and the leading '-' is optional in front of every one and sets negated:
+//
+//     1.  b                       a bare base
+//     2.  b + n [d..] s [bonus]   base, dice count and sides; the d may be a blank instead
+//     3.  b + d.. s [bonus]       base and one die
+//     4.  b + M.. m [M.. m]...    base and a bonus only
+//     5.  n d.. s [bonus]         dice count and sides
+//     6.  d.. s [bonus]           one die
+//     7.  M.. m [M.. m]...        a bonus only
+//
+// Alternatives 3 and 6 set the dice count to 1, for a 'd' with no count in front of it.
+//
+// The locals in @init hold the four values as they are read:
+//   baseInit, diceInit, sidesInit, mBonusInit   the numbers, each -1 if it could not be used
+//   negated                                     set by a leading '-'
+//   bonusInit                                   a scratch value for alternatives 4 and 7
+//   baseStr, sidesStr                           the text of a '$' variable base or sides. No
+//                                               alternative sets them any more, so both stay empty
+// The @after block builds the Random, or leaves it null if any of the four numbers is -1. Because
+// baseStr and sidesStr are always empty, it always takes the first constructor, with negated.
 dice
         returns[Random random]
         @init {
@@ -94,6 +158,7 @@ dice
             int sidesInit = 0;
             int mBonusInit = 0;
             boolean negated = false;
+            int bonusInit = 0;
         }
         @after {
             if (mBonusInit == -1 || diceInit == -1 || sidesInit == -1 || baseInit == -1)
@@ -105,182 +170,101 @@ dice
             else
                 $random = new Random(baseStr, mBonusInit, diceInit, sidesInit);
         }
-        :   (base=DOLLAR_LETTER PLUS diceNum=NUMBER D sides=NUMBER M m_bonus=NUMBER {
-                baseStr = $base.getText();
-                diceInit = numberOrMissing($diceNum);
-                sidesInit = numberOrMissing($sides);
-                mBonusInit = numberOrMissing($m_bonus);
-            }
-        |   base=DOLLAR_LETTER PLUS diceNum=NUMBER D sides=NUMBER {
-                baseStr = $base.getText();
-                diceInit = numberOrMissing($diceNum);
-                sidesInit = numberOrMissing($sides);
-            }
-        |   MINUS base=NUMBER PLUS diceNum=NUMBER D sides=NUMBER M m_bonus=NUMBER {
-                negated = true;
-                baseInit = numberOrMissing($base);
-                diceInit = numberOrMissing($diceNum);
-                sidesInit = numberOrMissing($sides);
-                mBonusInit = numberOrMissing($m_bonus);
-            }
-        |   base=NUMBER PLUS diceNum=NUMBER D sides=NUMBER M m_bonus=NUMBER {
-                baseInit = numberOrMissing($base);
-                diceInit = numberOrMissing($diceNum);
-                sidesInit = numberOrMissing($sides);
-                mBonusInit = numberOrMissing($m_bonus);
-            }
-        |   MINUS base=NUMBER PLUS D sides=NUMBER M m_bonus=NUMBER {
-                negated = true;
-                baseInit = numberOrMissing($base);
+        :   (MINUS { negated = true; })? (b=SPACE_NUMBER { baseInit = numberOrMissing($b); }
+        |   b=SPACE_NUMBER PLUS d=SPACE_NUMBER D* s=SPACE_NUMBER 
+            (bonus {mBonusInit = $bonus.bonusVal; })? 
+                { baseInit = numberOrMissing($b);
+                diceInit = numberOrMissing($d);
+                sidesInit = numberOrMissing($s); }
+        |   b=SPACE_NUMBER PLUS D+ s=SPACE_NUMBER {
+                baseInit = numberOrMissing($b);
+                sidesInit = numberOrMissing($s);
                 diceInit = 1;
-                sidesInit = numberOrMissing($sides);
-                mBonusInit = numberOrMissing($m_bonus);
             }
-        |   base=DOLLAR_LETTER PLUS D sides=NUMBER M m_bonus=NUMBER {
-                baseStr=$base.getText();
-                diceInit = 1;
-                sidesInit = numberOrMissing($sides);
-                mBonusInit = numberOrMissing($m_bonus);
+            (bonus {mBonusInit = $bonus.bonusVal; })? 
+        |   b=SPACE_NUMBER PLUS M+ m1=SPACE_NUMBER { bonusInit = numberOrMissing($m1); } (M+ m2=SPACE_NUMBER { bonusInit = numberOrMissing($m2); })*
+            {
+                baseInit = numberOrMissing($b);
+                mBonusInit = bonusInit;
             }
-        |   base=NUMBER PLUS D sides=NUMBER M m_bonus=NUMBER {
-                baseInit = numberOrMissing($base);
-                diceInit = 1;
-                sidesInit = numberOrMissing($sides);
-                mBonusInit = numberOrMissing($m_bonus);
+        |   d=SPACE_NUMBER D+ s=SPACE_NUMBER
+            (bonus {mBonusInit = $bonus.bonusVal; })? 
+            {
+                diceInit = numberOrMissing($d);
+                sidesInit = numberOrMissing($s);
             }
-        |   diceNum=NUMBER D sides=NUMBER M m_bonus=NUMBER {
-                diceInit = numberOrMissing($diceNum);
-                sidesInit = numberOrMissing($sides);
-                mBonusInit = numberOrMissing($m_bonus);
+        |   D+ s=SPACE_NUMBER { sidesInit = numberOrMissing($s); diceInit = 1; }
+            (bonus {mBonusInit = $bonus.bonusVal; })? 
+        |   M+ m1=SPACE_NUMBER { bonusInit = numberOrMissing($m1); } (M+ m2=SPACE_NUMBER { bonusInit = numberOrMissing($m2); })*
+            {
+                mBonusInit = bonusInit;
+                bonusInit = 0;
             }
-        |   D sides=NUMBER M m_bonus=NUMBER {
-                diceInit = 1;
-                sidesInit = numberOrMissing($sides);
-                mBonusInit = numberOrMissing($m_bonus);
-            }
-        |   base=NUMBER M m_bonus=NUMBER {
-                baseInit = numberOrMissing($base);
-                mBonusInit = numberOrMissing($m_bonus);
-            }
-        |   base=NUMBER PLUS M m_bonus=NUMBER {
-                baseInit = numberOrMissing($base);
-                mBonusInit = numberOrMissing($m_bonus);
-            }
-        |   base=DOLLAR_LETTER M m_bonus=NUMBER {
-                baseStr = $base.getText();
-                mBonusInit = numberOrMissing($m_bonus);
-            }
-        |   MINUS base=NUMBER PLUS diceNum=NUMBER D sides=NUMBER {
-                negated = true;
-                baseInit = numberOrMissing($base);
-                diceInit = numberOrMissing($diceNum);
-                sidesInit = numberOrMissing($sides);
-            }
-        |   base=NUMBER PLUS diceNum=NUMBER D sides=NUMBER {
-                baseInit = numberOrMissing($base);
-                diceInit = numberOrMissing($diceNum);
-                sidesInit = numberOrMissing($sides);
-            }
-        |   MINUS base=NUMBER PLUS D sides=NUMBER {
-                negated = true;
-                baseInit = numberOrMissing($base);
-                diceInit = 1;
-                sidesInit = numberOrMissing($sides);
-            }
-        |   base=NUMBER PLUS D sides=NUMBER {
-                baseInit = numberOrMissing($base);
-                diceInit = 1;
-                sidesInit = numberOrMissing($sides);
-            }
-        |   diceNum=NUMBER D sides=NUMBER {
-                diceInit = numberOrMissing($diceNum);
-                sidesInit = numberOrMissing($sides);
-            }
-        |   D sides=NUMBER {
-                diceInit = 1;
-                sidesInit = numberOrMissing($sides);
-            }
-        |   base=DOLLAR_LETTER {
-                baseStr = $base.getText();
-            }
-        |   base=NUMBER {
-                baseInit = numberOrMissing($base);
-            }
-        |   MINUS base=NUMBER {
-                negated = true;
-                baseInit = numberOrMissing($base);
-            }
-        |   diceNum=NUMBER D sides=DOLLAR_LETTER {
-                diceInit = numberOrMissing($diceNum);
-                sidesStr = $sides.getText();
-            }
-        |   MINUS diceNum=NUMBER D sides=NUMBER {
-                negated = true;
-                diceInit = numberOrMissing($diceNum);
-                sidesInit = numberOrMissing($sides);
-            }
-        |   M m_bonus=NUMBER{
-                mBonusInit = numberOrMissing($m_bonus);
-            }) EOF
+        )   SPACE? EOF
         ;
 
-// The dice-count/sides separator, e.g. the 'd' in "2d8".
+// A run of blanks or tabs. The only run that reaches the dice rule as a SPACE is the one at the
+// very end of the string. A run in front of a number belongs to that number's SPACE_NUMBER token.
+SPACE
+        :   ('\t' | ' ')+
+        ;
+
+// The dice-count/sides separator, e.g. the 'd' in "2d8". Lower case only: C refuses a 'D'.
 D
         :   'd'
         ;
 
-// The bonus marker, e.g. the 'M' in "2d8M4" - accepts either case, matching
-// z-dice.c's handling of 'M' and 'm' as equivalent bonus markers.
+// The bonus marker, e.g. the 'M' in "2d8M4". It accepts either case, as z-dice.c does for 'M' and
+// 'm'. parse_random() in parser.c reads only 'M', so a lower-case 'm' is read here and refused
+// there; see "Random" in docs/Accepted_Deviations.md.
 M
         :   'M'
         |   'm'
         ;
 
-// Separator between a base value and a dice expression, e.g. the '+' in
-// "1+2d3".
+// The '+' after a base, e.g. in "1+2d3". A '+' with blanks in front of it, as in " +1", is not this
+// token; it belongs to a SPACE_NUMBER.
 PLUS
         :   '+'
         ;
 
-// Marks a literal base or dice-count as negative, e.g. the '-' in "-1+2d3".
+// The '-' at the very start of the string, which negates the whole value, e.g. in "-1+2d3". A '-'
+// anywhere else is only ever part of a signed zero inside a SPACE_NUMBER, such as "2d-0".
 MINUS
         :   '-'
         ;
 
-// A bound dice-string variable: '$' followed by a single uppercase letter
-// (e.g. "$S", "$D", "$B") - see problem #4 re: the single-letter restriction.
+// A '$' variable such as "$S", "$D" or "$B": '$' and one upper-case letter. No alternative of the
+// dice rule uses it, so a '$' in the string is refused, as parse_random() refuses it.
 DOLLAR_LETTER
         :   '$' ('A'..'Z')
         ;
 
-// A literal non-negative integer, used for any of base/dice/sides/bonus.
+// A number together with the blanks that C's strtoul() would skip in front of it. A SPACE_NUMBER
+// never includes blanks after its digits. There are four forms:
+//
+//   1. blanks, then '-' and zeros, such as " -0": a signed zero, which strtoul() reads as 0. A digit
+//      may not follow, so "-01" is not read as "-0" and then "1".
+//   2. the same with no blanks, such as the "-0" in "2d-0". The predicate on token start stops it
+//      matching at the very start of the string: there the '-' is the negation of the whole value,
+//      which C consumes before it reads any number, so "-0+d00" is MINUS, then the number 0.
+//   3. digits, with any blanks in front of them: the ordinary number, such as "5" or " 5".
+//   4. one or more blanks, then '+' and digits, such as " +1". strtoul() reads the sign, but C
+//      refuses a number that begins with '+' straight after the previous character, because it
+//      checks before any blank is skipped. So a '+' is read as a sign only when a blank comes first.
+//
+// Whether a number is too large is not decided here; numberOrMissing refuses one above INT_MAX.
+// Declared before NUMBER on purpose: a bare digit string matches both, and ANTLR gives a tie to
+// the rule declared first, so such a string lexes as SPACE_NUMBER.
+SPACE_NUMBER
+        :   ('\t' | ' ')+ '-' '0'+ {!Character.isDigit(_input.LA(1))}?
+        |   {_tokenStartCharIndex > 0}? '-' '0'+ {!Character.isDigit(_input.LA(1))}?
+        |   ('\t' | ' ')* ('0'..'9')+
+        |   ('\t' | ' ')+ PLUS ('0'..'9')+
+        ;
+
+// A string of digits. No alternative of the dice rule uses it, and the lexer never produces it:
+// SPACE_NUMBER is declared first and matches the same text, so it wins every tie.
 NUMBER
         :   ('0'..'9')+
         ;
-
-// POTENTIAL SOLUTIONS
-//
-//   1/2. Add the missing diceNum=DOLLAR_LETTER alternatives - at minimum
-//      `diceNum=DOLLAR_LETTER D sides=NUMBER` and
-//      `diceNum=DOLLAR_LETTER D sides=DOLLAR_LETTER` (the "$Dd$S" case),
-//      each also needing a `base=... PLUS` - prefixed and/or
-//      `M m_bonus=...` - suffixed copy to stay consistent with how every
-//      other dice-count form is already duplicated across base/bonus
-//      combinations. That consistency requirement is itself the warning
-//      sign: this rule is already ~25 alternatives for 4 independently
-//      optional fields (base, dice, sides, bonus) x (absent | literal |
-//      variable), and it's still missing combinations. z-dice.c's own doc
-//      comment for dice_parse_string() effectively says the same
-//      permutation space is why the C side uses a flat per-character state
-//      machine instead of a grammar. Worth considering whether `dice`
-//      should be rewritten the same way conceptually: parse base/dice/
-//      sides/bonus as 4 independent, optionally-'$'-prefixed tokens
-//      separated by the fixed '+'/'d'/'M' punctuation, and let the @after
-//      block's existing isEmpty()-based dispatch (already written to
-//      handle "baseStr vs baseInit, sidesStr vs sidesInt") do the
-//      literal-vs-variable decision, rather than hand-enumerating every
-//      legal combination as a separate alternative.
-
-//   4/5. Only worth doing if lib/gamedata ever grows a multi-character dice
-//      variable name or a negative variable base - neither appears today,
-//      so this can stay as a documented gap rather than an active fix.

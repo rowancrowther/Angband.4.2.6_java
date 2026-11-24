@@ -1649,6 +1649,49 @@ C reads with `strtol` or `strtoul` and the lexers read with a token rule, and ab
 - **Pinned by:** `aDirectiveBeforeTheFirstNameIsRefusedHereWhereCCrashes` in `QuestReaderTest`.
 - **Accepted:** 2026-11-18, found while checking `QuestGrammar.g4` against Stage 7a.
 
+## Random
+
+### A lower-case `m` is the bonus marker in a dice string, as `M` is, where `parse_random` refuses it
+
+- **Java:** the `M` token in `Random.g4` (`'M' | 'm'`), read through `RandomReader` and `Random.parseStr`. **C:**
+  `dice_parse_string` and `dice_input_for_char` (`z-dice.c`) against `parse_random` (`parser.c`).
+- **Differs:** `dice_parse_string` takes `m` as a bonus marker equal to `M`; its comment says `m` ought to be the only
+  one. `parse_random` treats only an upper-case `M` as the marker, so `2d6m3` is `PARSE_ERROR_NOT_RANDOM` there. Java
+  has one grammar for both readers and takes `m` in all of them, so `2d6m3` loads as 2d6 with bonus 3, the same as
+  `2d6M3`.
+- **Agrees:** an upper-case `M` everywhere, and a lower-case `m` on the `dice:` and `time:` lines that `z-dice.c`
+  reads.
+- **Why:** narrowing `M` to upper case would break the `dice_parse_string` readers to tidy the `parse_random` ones. The
+  same choice is already recorded for `denominator:` under "Projection", which reaches `DICE_M` in `DiceStrings.g4`.
+- **Reach:** none from shipped data. It takes a modded file that writes `m` in a field C reads with `parse_random`.
+- **Revisit:** if `M` is ever split into an upper-case-only form for the `parse_random` fields. The pin then goes red,
+  which is the prompt to take this entry out.
+- **Pinned by:** `aLowerCaseMIsAcceptedHereWhereParseRandomRefusesIt` in `RandomReaderTest`.
+- **Accepted:** 2026-11-24, from the Stage 8 `Random.g4` entry of `docs/Issue_Approach_Order.md`. Only the lower-case
+  `m` is accepted here. `--1` was fixed, not accepted: `Random.parseStr` now refuses it. A base straight into `M`
+  (`5M3`) and a `$` variable were accepted the same day and retired the same day: the rewritten `dice` rule has no
+  alternative for either, so both are refused as `parse_random` refuses them, and their entries are gone from this
+  register.
+
+### An oversized bonus that a later bonus overwrites loads, where C refuses it
+
+- **Java:** the `bonus` rule in `Random.g4`, and alternatives 4 and 7 of the `dice` rule, which keep the last bonus
+  number in the same way, read through `RandomReader` and `Random.parseStr`. **C:** `parse_random` (`parser.c`).
+- **Differs:** `parse_random` refuses a number above `INT_MAX` as soon as it reads it, so `2d6M3000000000M1`,
+  `M3000000000M1` and `1+M3000000000M1` are `PARSE_ERROR_NOT_RANDOM` there. In Java each bonus number overwrites the one
+  before, and an oversized number is stored as the unusable mark, -1. A later `M1` replaces the mark, so the three
+  strings load with a bonus of 1.
+- **Agrees:** an oversized number in any other slot, and an oversized bonus that is the last number:
+  `2d6M1M3000000000` and `2d6M3000000000` are refused by both. A repeated bonus within range, where the last one wins in
+  both: `1+2d3M4M5` is a bonus of 5.
+- **Why:** accepted by Rowan on 2026-11-24, with no behavioural reason beyond keeping the rule as it is.
+- **Reach:** none from shipped data. No `rand` field in `lib/gamedata` holds a number above `INT_MAX`, and the bonus
+  repeat needs two bonus numbers in one string. It takes a modded file that writes both.
+- **Revisit:** if the bonus rule is ever changed to keep an unusable mark once it has been set. The pin then goes red,
+  which is the prompt to take this entry out.
+- **Pinned by:** `anOversizedBonusThatALaterBonusOverwritesIsLoadedHereWhereCRefusesIt` in `RandomReaderTest`.
+- **Accepted:** 2026-11-24, from the Stage 8 `Random.g4` entry of `docs/Issue_Approach_Order.md`.
+
 ## Where C crashes, Java throws
 
 ### Every input that crashes C is refused in Java with a message that names the line

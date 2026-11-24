@@ -32,13 +32,14 @@ import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 
 /**
- * Turns one dice-notation string (for example {@code "2d6"}, {@code "1+1d3"}, {@code "M80"} or
- * {@code "4d$S"}) into a {@link Random} by driving the generated {@code RandomLexer}/
+ * Turns one dice-notation string (for example {@code "2d6"}, {@code "1+1d3"} or {@code "M80"})
+ * into a {@link Random} by driving the generated {@code RandomLexer}/
  * {@code RandomParser}. It is the thin hand-written bridge between that grammar and
- * {@link Random#parseStr}, the caller that strips any leading {@code -} before handing the text over.
- * A leading {@code -} given to the reader directly is also understood: the grammar flags the value
- * as negated and {@link Random} shifts the base so the whole range flips sign, as the negation block
- * of {@code parse_random} in {@code parser.c} does.
+ * {@link Random#parseStr}, the caller that hands it the whole string, a leading {@code -} included.
+ * The leading {@code -} is the grammar's to read: it flags the value as negated and {@link Random}
+ * shifts the base so the whole range flips sign, as the negation block of {@code parse_random} in
+ * {@code parser.c} does. A second {@code -} is read only as a signed zero, as {@code strtoul} reads
+ * it, so {@code "--0"} loads and {@code "--1"} is refused.
  *
  * <p><b>Why it is not like the other readers.</b> It does not implement {@link Reader}. The input is
  * a string, not a data file, and there is exactly one value to read, not a list, so there is no
@@ -48,14 +49,18 @@ import uk.co.jackoftradesltd.middle.numerics.Random;
  * <p><b>Two C parsers, one grammar.</b> C has two parsers for this notation. {@code parse_random} in
  * {@code parser.c} reads every {@code rand} field of the data files and has no {@code $} variables;
  * {@code dice_parse_string} in {@code z-dice.c} reads the {@code dice:} and {@code time:} lines of an
- * effect and does. This reader serves both through {@code Random.g4}, so it is a superset of the
- * first in places and stricter in others: it accepts a lower-case {@code m}, a base straight into
- * {@code M} ({@code "5M3"}) and {@code $} variables, and it refuses blanks anywhere and a repeated
- * {@code d} or {@code M} ({@code "dd1"}, {@code "M1M2"}), which C's loop lets through. Wherever
- * both accept a string they produce the same four terms. The differences are written up in
- * {@code docs/grammar_issues.md}.
+ * effect and does. This reader serves both through {@code Random.g4}, and differs from
+ * {@code parse_random} in one place: it accepts a lower-case {@code m}, as {@code dice_parse_string}
+ * does. It reads no {@code $} variables, as {@code parse_random} has none, and it refuses a base
+ * straight into {@code M} ({@code "5M3"}), as both C parsers do; the effect lines that use
+ * {@code $} variables are read by the effect-block lexers through {@code DiceStrings}, not here. A
+ * repeated {@code d} or {@code M} ({@code "dd1"}, {@code "M1M2"}) and a run of blanks directly
+ * before a number are read, as C's loop reads them. Wherever both accept a string they produce the
+ * same four terms. The remaining difference is written up in {@code docs/Accepted_Deviations.md},
+ * "Random".
  *
- * <p>Class commented in full on 261019, updated on 261105 for the removal of the soft-error path.
+ * <p>Class commented in full on 261019, updated on 261105 for the removal of the soft-error path
+ * and on 261124 for the whole-string hand-over and the rewritten grammar.
  *
  * @author Rowan Crowther
  */

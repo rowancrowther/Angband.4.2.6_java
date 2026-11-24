@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/Random.g4 by ANTLR 4.13.2
+// Generated from Random.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.random;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,6 +25,16 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link RandomParser}.
  */
 public interface RandomListener extends ParseTreeListener {
+	/**
+	 * Enter a parse tree produced by {@link RandomParser#bonus}.
+	 * @param ctx the parse tree
+	 */
+	void enterBonus(RandomParser.BonusContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link RandomParser#bonus}.
+	 * @param ctx the parse tree
+	 */
+	void exitBonus(RandomParser.BonusContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link RandomParser#dice}.
 	 * @param ctx the parse tree

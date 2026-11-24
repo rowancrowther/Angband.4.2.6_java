@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/Random.g4 by ANTLR 4.13.2
+// Generated from Random.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.random;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -29,6 +29,18 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 @SuppressWarnings("CheckReturnValue")
 public class RandomBaseListener implements RandomListener {
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterBonus(RandomParser.BonusContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitBonus(RandomParser.BonusContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

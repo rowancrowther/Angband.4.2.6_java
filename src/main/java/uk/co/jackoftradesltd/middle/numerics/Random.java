@@ -260,13 +260,21 @@ public class Random {
      * Turns a data-file random string such as {@code "2+1d4M3"} or {@code "-5"} into a
      * {@code Random}, the counterpart of {@code parse_random()} in {@code parser.c}.
      *
-     * <p>A leading {@code -} is stripped before the rest is handed to {@code RandomReader}, then the
-     * result is negated, so the reader only ever sees the positive form, as in C. An empty string, a
-     * lone {@code -}, a reader failure or an empty result all return {@code null}. A negated string
-     * containing {@code $} is refused with a warning, as C has no such form. The grammar rules for the
-     * string itself belong to {@code RandomReader}, not to this method.
+     * <p>The whole string, a leading {@code -} included, is handed to {@code RandomReader}. Its
+     * grammar reads a leading {@code -} as the negation of the whole value, as {@code parse_random}
+     * does, and builds the value already negated, so this method neither strips the sign nor negates
+     * afterwards. An empty string, a lone {@code -} or {@code +}, a reader failure or an empty result
+     * all return {@code null}. A second sign straight after the first is the reader's to judge, and
+     * it judges as {@code strtoul} does: {@code "--0"} is a signed zero and loads as 0, while
+     * {@code "--1"}, {@code "---0"}, {@code "-- 0"}, {@code "-+1"} and {@code "+-1"} are refused.
+     * A single leading {@code +} reaches the reader too, which refuses it, so {@code "+5"} gives
+     * {@code null}. A negated string containing {@code $} is refused here with a warning before the
+     * reader is called, as C has no such form; the reader would refuse any {@code $} anyway. The
+     * grammar rules for the string itself belong to {@code RandomReader}, not to this method.Password1
+     * 
      *
-     * <p>Function parseStr coded before 260815, commented in full on 261005.
+     * <p>Function parseStr coded before 260815, commented in full on 261005; re-commented on 261124
+     * once the string began going to the reader whole.
      *
      * @param randomString the random string to parse
      * @return the parsed value, or {@code null} if the string was empty or could not be read
@@ -275,7 +283,7 @@ public class Random {
     @CheckReturnValue
     public static Random parseStr(@NotNull String randomString) {
         if (randomString.isEmpty()) return null;
-
+        
         boolean negFound = randomString.charAt(0) == '-';
         boolean complex = randomString.contains("$");
 
@@ -284,15 +292,7 @@ public class Random {
             logger.warn("negated complex variable dice not supported: {}", randomString);
             return null;
         }
-
-        // neg & simple
-        if (negFound) {
-            randomString = randomString.substring(1);
-            if (randomString.isEmpty()) return null;
-        }
-
-        // randomString is always positive at this point
-
+        
         RandomReader reader = new RandomReader();
         Random random = null;
         
@@ -301,13 +301,6 @@ public class Random {
         } catch (Exception e) {
             logger.error("Error while parsing random string: {}", randomString, e);
             return null;
-        }
-        
-        if (random == null) return null;
-
-        if (negFound) {
-            random.toNegate = true;
-            random.negate();
         }
 
         return random;

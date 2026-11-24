@@ -32,13 +32,17 @@ import CommentsAndEol;
     private int colons = 0;
 }
 
+COMMENT
+        :   INDENT? '#' (~('\r' | '\n'))* (NL | EOF) -> skip
+        ;
+
 /*
  * @author Rowan Crowther
  *
  * Literal directive keyword introducing every record.
  * cf WorldGrammar.g4's 'line' rule.
  */
-LEVEL   :   'level:' { colons = 0; }
+LEVEL   :   INDENT? 'level:' { colons = 0; }
         ;
 
 /*

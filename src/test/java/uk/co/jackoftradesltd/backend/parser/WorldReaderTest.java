@@ -307,19 +307,131 @@ class WorldReaderTest {
 
     /**
      * A line after a record with a tail is checked as it would be with no tail: an unknown directive is
-     * refused, as C refuses it, and an indented {@code level:} line is refused rather than swallowed into
-     * the tail and lost. C skips the indent and would load that second record; that is the open indent
-     * item for {@code WorldGrammar.g4} in {@code Issue_Approach_Order.md}, so only the refusal, not the
-     * reason, is pinned here.
+     * refused, as C refuses it, and an indented {@code level:} line is read as its own record rather than
+     * swallowed into the tail and lost. C skips the indent and loads that second record.
      *
-     * <p>Function aLineAfterATailIsNeverSwallowed coded on 261124, commented in full on 261124.
+     * <p>Function aLineAfterATailIsNeverSwallowed coded on 261124, commented in full on 261124, and
+     * changed on 261124 once an indented {@code level:} line loaded: the second assertion used to expect
+     * a refusal.
      */
     @Test
-    void aLineAfterATailIsNeverSwallowed() {
+    void aLineAfterATailIsNeverSwallowed() throws IOException {
         assertThrows(ParseCancellationException.class,
                 () -> read("level:0:Town:None:Angband 1:extra\nbogus:line\n"));
+        assertEquals(List.of(new World(0, "Town", "None", "Angband 1"),
+                        new World(1, "Angband 1", "Town", "None")),
+                read("level:0:Town:None:Angband 1:extra\n  level:1:Angband 1:Town:None\n").items());
+    }
+
+    /**
+     * C drops every leading blank of a line before it reads the directive ({@code parser_parse} in
+     * {@code parser.c}), and {@code file_getl} in {@code z-file.c} has already turned a tab into spaces, so
+     * {@code "  level:0:Town:None:None"} loads as {@code "level:0:Town:None:None"}. A plain line still loads,
+     * and a line that is not {@code level:} once the blanks are gone is still refused.
+     *
+     * <p>Function anIndentedLineLoadsAsInC coded on 261124, commented in full on 261124.
+     */
+    @Test
+    void anIndentedLineLoadsAsInC() throws IOException {
+        World town = new World(0, "Town", "None", "None");
+
+        assertEquals(List.of(town), read("level:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read("  level:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read("\tlevel:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read(" \t level:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read("  level:0:Town:None:None").items());
+        assertEquals(List.of(town), read("  level:0:Town:None:None\r\n").items());
+        assertEquals(List.of(town), read("  level:0:Town:None:None:extra\n").items());
+
+        assertEquals(List.of(new World(0, "Town", "None", "Angband 1"),
+                        new World(1, "Angband 1", "Town", "None")),
+                read("  level:0:Town:None:Angband 1\n\tlevel:1:Angband 1:Town:None\n").items());
+
+        assertThrows(ParseCancellationException.class, () -> read("  levelx:0:Town:None:None\n"));
+        assertThrows(ParseCancellationException.class, () -> read("  level :0:Town:None:None\n"));
+        assertThrows(ParseCancellationException.class, () -> read("  bogus:line\n"));
+    }
+
+    /**
+     * The blanks belong to the line start only: a blank in front of {@code level:} inside a name or up
+     * field is part of that field, as in C, and was never taken for a new record.
+     *
+     * <p>Function aBlankBeforeLevelInsideAFieldIsPartOfTheFieldAsInC coded on 261124, commented in full on
+     * 261124.
+     */
+    @Test
+    void aBlankBeforeLevelInsideAFieldIsPartOfTheFieldAsInC() throws IOException {
+        assertEquals(" level", read("level:0: level:None:None\n").items().get(0).levelName());
+        assertEquals("\tlevel", read("level:0:Town:\tlevel:None\n").items().get(0).prevLevel());
+    }
+
+    /**
+     * C reads {@code level:0:level:None:None} as a level called {@code level}, because the field is cut at
+     * the next colon. The lexer takes the text {@code level:} as the start of a record wherever it stands,
+     * so the name or up field is refused. It was refused before the indent change, too.
+     *
+     * <p>Function aNameOrUpOfLevelIsRefusedHereWhereCLoadsIt coded on 261124, commented in full on 261124.
+     */
+    @Test
+    void aNameOrUpOfLevelIsRefusedHereWhereCLoadsIt() {
+        assertThrows(ParseCancellationException.class, () -> read("level:0:level:None:None\n"));
+        assertThrows(ParseCancellationException.class, () -> read("level:0:Town:level:None\n"));
+    }
+
+    /**
+     * C skips a comment whose {@code #} follows blanks, because {@code parser_parse} drops the blanks first
+     * and {@code file_getl} has already turned a tab into spaces. {@code WorldLexer.g4} has its own
+     * {@code COMMENT} rule that takes the indent, because at column 0 {@code NAME} matches the whole line
+     * and is longer than the indent rule, so an indented comment would otherwise reach the parser as a
+     * stray name. A line that is not a comment once the blanks are gone is still refused.
+     *
+     * <p>Function anIndentedCommentIsSkippedAsInC coded on 261124, commented in full on 261124. It
+     * replaces {@code anIndentedCommentIsRefusedHereWhereCSkipsIt}, which asserted the refusal.
+     */
+    @Test
+    void anIndentedCommentIsSkippedAsInC() throws IOException {
+        World town = new World(0, "Town", "None", "None");
+
+        assertEquals(List.of(town), read("  # note\nlevel:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read("\t# note\nlevel:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read(" \t # note\nlevel:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read("  # note\r\nlevel:0:Town:None:None\r\n").items());
+        assertEquals(List.of(town), read("  #\nlevel:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read("  # a:b:c\nlevel:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read("  # level:1:x:y:z\nlevel:0:Town:None:None\n").items());
+        assertEquals(List.of(town), read("level:0:Town:None:None\n  # note").items());
+        assertEquals(List.of(town), read("level:0:Town:None:None\n  # note\n").items());
+
+        assertEquals(List.of(new World(0, "Town", "None", "Angband 1"),
+                        new World(1, "Angband 1", "Town", "None")),
+                read("level:0:Town:None:Angband 1\n  # note\nlevel:1:Angband 1:Town:None\n").items());
+        assertEquals(List.of(new World(0, "Town", "None", "Angband 1"),
+                        new World(1, "Angband 1", "Town", "None")),
+                read("level:0:Town:None:Angband 1:extra\n  # note\nlevel:1:Angband 1:Town:None\n").items());
+
+        // A '#' after a field is part of the field, and an indented line that is no comment is refused.
+        assertEquals("None # c", read("level:0:Town:None:None # c\n").items().get(0).nextLevel());
+        assertThrows(ParseCancellationException.class, () -> read("  x # y\n"));
+        assertThrows(ParseCancellationException.class, () -> read("  bogus:line\n"));
+    }
+
+    /**
+     * C ends a line at {@code \r} and starts the next at once, so a bare {@code \r} followed by an indented
+     * {@code level:} loads two records, and a bare {@code \r} followed by an indented comment skips the
+     * comment. The indent rule only fires at column 0 and ANTLR does not reset the column on {@code \r}, so
+     * the indented line is refused in both cases. A bare {@code \r} before an unindented {@code level:}
+     * loads. Accepted under "World" in {@code Accepted_Deviations.md}.
+     *
+     * <p>Function aBareCarriageReturnBeforeAnIndentedLineIsRefusedHereWhereCLoadsIt coded on 261124,
+     * commented in full on 261124.
+     */
+    @Test
+    void aBareCarriageReturnBeforeAnIndentedLineIsRefusedHereWhereCLoadsIt() throws IOException {
+        assertEquals(2, read("level:0:Town:None:A\rlevel:1:A:Town:None\n").items().size());
         assertThrows(ParseCancellationException.class,
-                () -> read("level:0:Town:None:Angband 1:extra\n  level:1:Angband 1:Town:None\n"));
+                () -> read("level:0:Town:None:A\r  level:1:A:Town:None\n"));
+        assertThrows(ParseCancellationException.class,
+                () -> read("level:0:Town:None:A\r  # note\nlevel:1:A:Town:None\n"));
     }
 
     /**

@@ -39,7 +39,7 @@ public class WorldGrammar extends Parser {
 	protected static final PredictionContextCache _sharedContextCache =
 		new PredictionContextCache();
 	public static final int
-		LEVEL=1, COLON=2, INTEGER=3, NAME=4, COLON_TO_END=5, COMMENT=6, INDENT=7, 
+		COMMENT=1, LEVEL=2, COLON=3, INTEGER=4, NAME=5, COLON_TO_END=6, INDENT=7, 
 		EOL=8;
 	public static final int
 		RULE_levelNum = 0, RULE_levelName = 1, RULE_upAndDown = 2, RULE_line = 3, 
@@ -53,13 +53,12 @@ public class WorldGrammar extends Parser {
 
 	private static String[] makeLiteralNames() {
 		return new String[] {
-			null, "'level:'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
 	private static String[] makeSymbolicNames() {
 		return new String[] {
-			null, "LEVEL", "COLON", "INTEGER", "NAME", "COLON_TO_END", "COMMENT", 
+			null, "COMMENT", "LEVEL", "COLON", "INTEGER", "NAME", "COLON_TO_END", 
 			"INDENT", "EOL"
 		};
 	}
@@ -475,18 +474,18 @@ public class WorldGrammar extends Parser {
 		"\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0004\u0001\u0004\u0001"+
 		"\u0004\u0005\u0004$\b\u0004\n\u0004\f\u0004\'\t\u0004\u0001\u0004\u0001"+
 		"\u0004\u0001\u0004\u0000\u0000\u0005\u0000\u0002\u0004\u0006\b\u0000\u0001"+
-		"\u0001\u0000\u0003\u0004\'\u0000\n\u0001\u0000\u0000\u0000\u0002\u000e"+
+		"\u0001\u0000\u0004\u0005\'\u0000\n\u0001\u0000\u0000\u0000\u0002\u000e"+
 		"\u0001\u0000\u0000\u0000\u0004\u0012\u0001\u0000\u0000\u0000\u0006\u001a"+
-		"\u0001\u0000\u0000\u0000\b%\u0001\u0000\u0000\u0000\n\u000b\u0005\u0003"+
-		"\u0000\u0000\u000b\f\u0005\u0002\u0000\u0000\f\r\u0006\u0000\uffff\uffff"+
+		"\u0001\u0000\u0000\u0000\b%\u0001\u0000\u0000\u0000\n\u000b\u0005\u0004"+
+		"\u0000\u0000\u000b\f\u0005\u0003\u0000\u0000\f\r\u0006\u0000\uffff\uffff"+
 		"\u0000\r\u0001\u0001\u0000\u0000\u0000\u000e\u000f\u0007\u0000\u0000\u0000"+
-		"\u000f\u0010\u0005\u0002\u0000\u0000\u0010\u0011\u0006\u0001\uffff\uffff"+
+		"\u000f\u0010\u0005\u0003\u0000\u0000\u0010\u0011\u0006\u0001\uffff\uffff"+
 		"\u0000\u0011\u0003\u0001\u0000\u0000\u0000\u0012\u0013\u0007\u0000\u0000"+
-		"\u0000\u0013\u0014\u0005\u0002\u0000\u0000\u0014\u0016\u0007\u0000\u0000"+
-		"\u0000\u0015\u0017\u0005\u0005\u0000\u0000\u0016\u0015\u0001\u0000\u0000"+
+		"\u0000\u0013\u0014\u0005\u0003\u0000\u0000\u0014\u0016\u0007\u0000\u0000"+
+		"\u0000\u0015\u0017\u0005\u0006\u0000\u0000\u0016\u0015\u0001\u0000\u0000"+
 		"\u0000\u0016\u0017\u0001\u0000\u0000\u0000\u0017\u0018\u0001\u0000\u0000"+
 		"\u0000\u0018\u0019\u0006\u0002\uffff\uffff\u0000\u0019\u0005\u0001\u0000"+
-		"\u0000\u0000\u001a\u001b\u0005\u0001\u0000\u0000\u001b\u001c\u0003\u0000"+
+		"\u0000\u0000\u001a\u001b\u0005\u0002\u0000\u0000\u001b\u001c\u0003\u0000"+
 		"\u0000\u0000\u001c\u001d\u0003\u0002\u0001\u0000\u001d\u001e\u0003\u0004"+
 		"\u0002\u0000\u001e\u001f\u0006\u0003\uffff\uffff\u0000\u001f\u0007\u0001"+
 		"\u0000\u0000\u0000 !\u0003\u0006\u0003\u0000!\"\u0006\u0004\uffff\uffff"+

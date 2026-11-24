@@ -99,9 +99,9 @@ DESC
         :   'desc:' -> pushMode(FREE_TEXT_MODE)
         ;
 
-// A bare non-negative integer - used by priority:/digging:.
+// A bare negative integer - used by priority:/digging:.
 INTEGER
-        :   '-'? ('0'..'9')+
+        :   ('-' | '+')? ('0' ('x' | 'X')?)? ('a'..'f' | 'A'..'F' | '0'..'9')+
         ;
 
 // One line of arbitrary text (name/messages/description). Consumes everything up

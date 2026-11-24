@@ -809,13 +809,79 @@ class VaultReaderTest {
     }
 
     /**
-     * C reads {@code uint} fields with {@code strtoul} in base zero, so {@code rows:0x3} is 3 there.
-     * The lexer is decimal-only, so it is refused here.
+     * C reads {@code rows:} and {@code columns:} with {@code strtoul} in base zero, so
+     * {@code rows:0x3}, {@code rows:0X3} and {@code rows:03} are all 3 there, and so here.
+     * {@code INTEGER} takes the {@code 0x} and {@code 0X} forms and the assembler reads the figure
+     * through {@code ParseUtils}.
      */
     @Test
-    void aHexadecimalRowCountIsRefusedHereWhereCReadsBaseZero() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> parseVariant("hex.txt", "rows:3", "rows:0x3"));
+    void aHexadecimalOrOctalRowOrColumnCountLoadsAsInC() throws IOException {
+        for (String rows : List.of("rows:0x3", "rows:0X3", "rows:03")) {
+            assertEquals(3, parseVariant("hex-rows.txt", "rows:3", rows).items().getFirst().getHeight(), rows);
+        }
+        for (String columns : List.of("columns:0x3", "columns:0X3", "columns:03")) {
+            assertEquals(3, parseVariant("hex-cols.txt", "columns:3", columns).items().getFirst().getWidth(), columns);
+        }
+    }
 
+    /**
+     * The size cap is applied to the figure C reads, not to the text: 22 is the Lesser vault cap, so
+     * {@code 0x16} loads and {@code 0x17} (23) ends the load, as C's
+     * {@code PARSE_ERROR_VAULT_TOO_BIG} does. Only the rows and columns are checked, so the
+     * layout is left at its three {@code D:} lines.
+     */
+    @Test
+    void aHexadecimalSizeIsHeldToTheCapAsInC() throws IOException {
+        assertEquals(22, parseVariant("hex-cap-r.txt", "rows:3", "rows:0x16").items().getFirst().getHeight());
+        assertThrows(DataFileParseException.class, () -> parseVariant("hex-over-r.txt", "rows:3", "rows:0x17"));
+        assertThrows(DataFileParseException.class, () -> parseVariant("hex-over-c.txt", "columns:3", "columns:0x17"));
+    }
+
+    /**
+     * {@code min-depth:} and {@code max-depth:} are {@code uint} in C and read in base zero, so
+     * {@code 0x1F} is 31 and {@code 010} is 8. A minus on a hexadecimal figure is refused, as C's
+     * {@code parser_getuint} refuses any leading {@code -}.
+     */
+    @Test
+    void aHexadecimalOrOctalDepthLoadsAsInC() throws IOException {
+        Vault min = parseVariant("hex-min.txt", "min-depth:0", "min-depth:0x1F").items().getFirst();
+        assertEquals(31, min.getMinLevel());
+        assertEquals(8, parseVariant("oct-min.txt", "min-depth:0", "min-depth:010").items().getFirst().getMinLevel());
+        assertEquals(31, parseVariant("hex-max.txt", "max-depth:0", "max-depth:0x1F").items().getFirst().getMaxLevel());
+        assertEquals(8, parseVariant("oct-max.txt", "max-depth:0", "max-depth:010").items().getFirst().getMaxLevel());
+        assertThrows(DataFileParseException.class,
+                () -> parseVariant("neg-hex-min.txt", "min-depth:0", "min-depth:-0x5"));
+        assertThrows(DataFileParseException.class,
+                () -> parseVariant("neg-hex-max.txt", "max-depth:0", "max-depth:-0x5"));
+    }
+
+    /**
+     * {@code rating:} is the signed field, read with {@code parser_getint} in base zero: {@code 0x10}
+     * is 16, {@code 010} is 8, {@code +0x10} is 16 and {@code -0x10} is -16, which the byte
+     * stores as 240. Letters after decimal digits are ignored ({@code 3abc} is 3) and letters
+     * with no digit are refused, as in C.
+     */
+    @Test
+    void aHexadecimalOrOctalRatingLoadsAsInC() throws IOException {
+        assertEquals(16, parseVariant("hex-rat.txt", "rating:5", "rating:0x10").items().getFirst().getRating());
+        assertEquals(31, parseVariant("hex-rat-u.txt", "rating:5", "rating:0X1f").items().getFirst().getRating());
+        assertEquals(8, parseVariant("oct-rat.txt", "rating:5", "rating:010").items().getFirst().getRating());
+        assertEquals(16, parseVariant("plus-rat.txt", "rating:5", "rating:+0x10").items().getFirst().getRating());
+        assertEquals(240, parseVariant("neg-rat.txt", "rating:5", "rating:-0x10").items().getFirst().getRating());
+        assertEquals(3, parseVariant("tail-rat.txt", "rating:5", "rating:3abc").items().getFirst().getRating());
+        assertThrows(DataFileParseException.class, () -> parseVariant("abc-rat.txt", "rating:5", "rating:abc"));
+    }
+
+    /**
+     * Pinned difference: a prefix with no digit after it ({@code rows:0x}) or text that is not a
+     * hex digit after a figure ({@code rows:3x}) is a lexer error here, where C's {@code strtoul}
+     * reads the digits it can and ignores the rest. This is the accepted "text after a number"
+     * shape, not a base 0 fault.
+     */
+    @Test
+    void aBarePrefixOrTextAfterTheFigureIsRefusedHereWhereCIgnoresIt() {
+        assertThrows(ParseCancellationException.class, () -> parseVariant("bare-0x.txt", "rows:3", "rows:0x"));
+        assertThrows(ParseCancellationException.class, () -> parseVariant("tail-x.txt", "rows:3", "rows:3x"));
     }
 
     /**

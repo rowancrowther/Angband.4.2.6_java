@@ -53,7 +53,7 @@ COLON   :   ':'
  * cf WorldGrammar.g4's 'levelNum' rule.
  */
 INTEGER
-        :  '-'? ('0'..'9')+
+        :  ('-' | '+')? ('0' ('x' | 'X')?)? ('a'..'f' | 'A'..'F' | '0'..'9')+
         ;
 
 /*

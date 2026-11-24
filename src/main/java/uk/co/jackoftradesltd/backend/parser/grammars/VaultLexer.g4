@@ -82,7 +82,7 @@ D
  * a negative rating is legal input even though the shipped data has none.
  */
 INTEGER
-        :   '-'? ('0'..'9')+
+        :   ('-' | '+')? ('0' ('x' | 'X')?)? ('a'..'f' | 'A'..'F' | '0'..'9')+
         ;
 
 mode FLAG_MODE;

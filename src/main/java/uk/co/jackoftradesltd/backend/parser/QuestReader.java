@@ -49,12 +49,14 @@ import java.util.List;
  * {@code WorldDataLoader.loadQuests} to turn into a fatal error. This class itself only wires the
  * grammar to the driver, so it has no C logic of its own to mismatch.
  *
- * <p><b>Where the grammar is stricter than C</b> (recorded in {@code docs/grammar_issues.md}): C
- * registers four independent one-line directives and so accepts them in any order, missing, repeated,
- * indented or followed by a further {@code :} field, and accepts a file with no quests. {@code QuestGrammar}
- * demands one or more records of exactly {@code name:}, {@code level:}, {@code race:},
- * {@code number:} in that order, and refuses the whole file otherwise. The shipped
- * {@code quest.txt} satisfies all of that.
+ * <p><b>Where the grammar differs from C:</b> C registers four independent one-line directives.
+ * {@code QuestGrammar} groups them as C's {@code parse_quest_name} does: a record is a {@code name:} and
+ * then any number of {@code level:}, {@code race:} and {@code number:} lines in any order, so a missing or
+ * repeated directive loads as in C (the last of a kind wins) and a file with no quests is legal. Numbers
+ * are read in base 0, so {@code 0x10} is 16 and {@code 010} is 8 (since 261124). Two differences remain: a
+ * {@code level:}, {@code race:} or {@code number:} ahead of the file's first {@code name:} is a syntax error
+ * where C asserts (accepted deviation, 261118), and a further {@code :} field after a number
+ * ({@code level:99:7}) is refused where C ignores it. The shipped {@code quest.txt} satisfies all of that.
  *
  * <p><b>Errors:</b> as in C, the first error stops the load and nothing is returned. A syntax error
  * is thrown from {@link #extract} as a {@code ParseCancellationException}, and an unresolved
@@ -62,7 +64,8 @@ import java.util.List;
  * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught here.
  *
  * <p>Class QuestReader coded before 260915, commented in full on 261019, updated on 261105 for the
- * removal of the soft-error path and the {@code record-count:} header.
+ * removal of the soft-error path and the {@code record-count:} header, grammar paragraph corrected on
+ * 261124 for the directive order and base 0.
  *
  * @author Rowan Crowther
  */

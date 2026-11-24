@@ -74,10 +74,15 @@ import java.util.List;
  * They go through {@link ParseUtils#parseIntString(String, String, int, String, String)}, which reads base 0
  * as well, so {@code 010} is 8 and {@code 08} is 0 here as there; {@link ParseUtils#minusFound(String)}
  * is asked first about the raw text because C refuses any token starting with {@code -}, {@code -0}
- * included. The lexer's {@code INTEGER} token is an optional {@code +} or {@code -} and then digits
- * (the {@code +} added 261118, as {@code strtoul} accepts it), so a {@code +5} arrives and
- * {@link ParseUtils#parseIntString(String, String, int, String, String)} strips the sign, while a
- * {@code 0x} prefix cannot arrive.
+ * included. The lexer's {@code INTEGER} token is an optional {@code +} or {@code -}, an optional
+ * {@code 0}, {@code 0x} or {@code 0X} prefix, and then one or more of {@code 0}-{@code 9},
+ * {@code a}-{@code f} and {@code A}-{@code F} (the {@code +} added 261118, as {@code strtoul} accepts it;
+ * the prefix and the letters added 261124). So {@code +5}, {@code 0x1F}, {@code 010} and {@code 12ab}
+ * all arrive as one figure, and
+ * {@link ParseUtils#parseIntString(String, String, int, String, String)} strips the sign, chooses the base
+ * from the prefix and reads the leading digits of that base, as {@code strtoul} does: {@code 0x1F} is 31,
+ * {@code 010} is 8, {@code 12ab} is 12 and {@code 1f} is 1. Letters with no digit in front of them
+ * ({@code ab}) arrive too and are refused there, as C refuses a figure it reads no digits from.
  *
  * <p><b>Accepted deviation</b> (decided 261027; "An integer too big for its C type is clamped, where C
  * wraps it" under ParseUtils in {@code docs/Accepted_Deviations.md}): C keeps the low 32 bits of a figure
@@ -89,7 +94,8 @@ import java.util.List;
  *
  * <p>Class QuestAssembler coded before 261013, commented in full on 261118 (directive-order and
  * directive-before-name paragraphs added; earlier updates 261029 and 261105 for the removal of the
- * soft-error path).
+ * soft-error path; integers paragraph corrected 261124 for the {@code 0x} prefix and letters now
+ * reaching it).
  *
  * @author Rowan Crowther
  */
@@ -122,7 +128,8 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
      *       raw text, before the figure is read.</li>
      *   <li><b>A figure with no digits.</b> {@link ParseUtils#parseIntString(String, String, int, String,
      *       String)} throws for it, as {@code z == tok} gives {@code PARSE_ERROR_NOT_NUMBER}. The lexer
-     *       only ever passes digits, so this cannot be reached from a data file.</li>
+     *       passes letters {@code a}-{@code f} with no digit in front of them (since 261124), so
+     *       {@code level:ab} and {@code number:ab} reach it from a data file.</li>
      *   <li><b>Unknown {@code race}.</b> {@link MonsterRegistry#lookupMonsterRace} returns {@code null}
      *       where C's {@code lookup_monster} does, and {@code parse_quest_race} returns
      *       {@code PARSE_ERROR_INVALID_MONSTER}. The lookup is an exact case-insensitive match first and
@@ -164,7 +171,7 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
      *
      * <p>Function assemble coded before 260915, level and number handling reworked on 261013,
      * soft errors made fatal before 261029, split into per-directive methods before 261118,
-     * commented in full on 261118.
+     * commented in full on 261118, no-digit bullet corrected 261124.
      *
      * @param records  the raw quest records in file order
      * @param filename the file being read, for the messages

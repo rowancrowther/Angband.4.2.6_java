@@ -412,14 +412,53 @@ class QuestReaderTest {
     }
 
     /**
-     * C reads {@code 0x10} as 16 in base 0. {@code INTEGER} stops at the {@code 0}, leaving
-     * {@code x10} that no rule accepts, so the whole file is refused.
+     * C reads {@code 0x10} as 16 in base 0, and so does the port since {@code QuestLexer}'s
+     * {@code INTEGER} took the {@code 0x} and {@code 0X} prefixes and the digits {@code a}-{@code f}
+     * (261124). {@code level:} and {@code number:} both go through the same reading: {@code 0x10} is 16,
+     * {@code 0X0a} is 10 in either case of letter and prefix, and {@code 0xFF} is 255 for a level (the
+     * {@code uint8_t} holds it) and 255 for a number.
      */
     @Test
-    void aHexadecimalLevelIsRefusedHereWhereCReadsBaseZero() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> load("hex.txt",
-                quest("Hex", "0x10", "Sauron, the Sorcerer", "1")));
+    void aHexadecimalLevelOrNumberLoadsAsInC() throws IOException {
+        List<Quest> quests = load("hex.txt",
+                quest("Hex", "0x10", "Sauron, the Sorcerer", "0x1F")
+                        + quest("Upper", "0X0a", "Morgoth, Lord of Darkness", "0XfF")).items();
 
+        assertEquals(16, quests.get(0).getLevel());
+        assertEquals(31, quests.get(0).getMaxNumber());
+        assertEquals(10, quests.get(1).getLevel());
+        assertEquals(255, quests.get(1).getMaxNumber());
+    }
+
+    /**
+     * {@code strtoul} in base 0 reads the leading digits of a figure and ignores the rest, so
+     * {@code 12ab} is 12 and {@code 1f} is 1 (no {@code 0x}, so the {@code f} is not a digit). The lexer
+     * lets the letters {@code a}-{@code f} follow any digit, and {@code parseIntString} cuts the run at the
+     * first character that is not a digit of the base.
+     */
+    @Test
+    void lettersAfterDecimalDigitsAreIgnoredAsInC() throws IOException {
+        List<Quest> quests = load("letters.txt",
+                quest("Letters", "12ab", "Sauron, the Sorcerer", "1f")).items();
+
+        assertEquals(12, quests.get(0).getLevel());
+        assertEquals(1, quests.get(0).getMaxNumber());
+    }
+
+    /**
+     * Letters with no digit in front of them are not a number in C ({@code strtoul} reads nothing, so
+     * {@code z == tok} gives {@code PARSE_ERROR_NOT_NUMBER}). The lexer takes {@code ab} as an
+     * {@code INTEGER}, so it is the assembler that refuses it, for {@code level:} and {@code number:} alike.
+     * A minus ahead of a hex figure is refused as {@code -5} is.
+     */
+    @Test
+    void lettersWithNoDigitAndAMinusOnAHexFigureAreRefusedAsInC() {
+        assertThrows(DataFileParseException.class, () -> load("ab-level.txt",
+                quest("Ab", "ab", "Sauron, the Sorcerer", "1")));
+        assertThrows(DataFileParseException.class, () -> load("ab-number.txt",
+                quest("Ab", "5", "Sauron, the Sorcerer", "ab")));
+        assertThrows(DataFileParseException.class, () -> load("minus-hex.txt",
+                quest("MinusHex", "-0x10", "Sauron, the Sorcerer", "1")));
     }
 
     /**

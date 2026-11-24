@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.backend.parser.world;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.ParseUtils;
 import uk.co.jackoftradesltd.middle.cave.World;
 
 import java.util.ArrayList;
@@ -36,11 +37,14 @@ import java.util.List;
  *
  * <p>Unlike most assemblers in this suite this one has no checks of its own, because every field a
  * record carries is already well-formed by the time it reaches here. The level number is the one
- * value parsed as an integer, and a malformed one would make {@link Integer#parseInt} throw a
- * {@link NumberFormatException}.
+ * value parsed as an integer. It is read in base 0 by {@code ParseUtils.parseIntString} as C's
+ * {@code strtol} reads it ({@code 0x10} is 16, {@code 010} is 8), a figure outside the {@code int}
+ * range is clamped to it, and one with no digits would make that method throw a
+ * {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}; {@code WorldReader} has
+ * already refused it before it gets here.
  *
  * <p>Class WorldAssembler coded before 260915, commented in full on 261014, updated on 261105 for the
- * removal of the soft-error path.
+ * removal of the soft-error path, and on 261124 for the base 0 level number.
  *
  * @author Rowan Crowther
  */
@@ -61,7 +65,7 @@ public class WorldAssembler
                                     String filename) {
         List<World> results = new ArrayList<>();
         for (WorldParseRecord record : records) {
-            int levelNumber = Integer.parseInt(record.getLevelNumber());
+            int levelNumber = ParseUtils.parseIntString("World", record.getLevelNumber(), 0, filename, "level number");
             String levelName = record.getLevelName();
             String up = record.getUp();
             String down = record.getDown();

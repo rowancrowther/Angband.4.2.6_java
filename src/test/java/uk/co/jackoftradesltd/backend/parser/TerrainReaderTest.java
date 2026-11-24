@@ -720,10 +720,31 @@ class TerrainReaderTest {
     // Where the grammar is stricter than C (docs/grammar_issues.md)
     // =====================================================================
 
-    /** C: {@code strtoul(tok, &z, 0)}, so {@code 0x3} is 3. */
+    /** C: {@code strtoul(tok, &z, 0)}, so {@code 0x3} is 3, {@code 0XA} is 10 and {@code 010} is 8. */
     @Test
-    void aHexadecimalPriorityIsAHardErrorHereWhereCReadsBaseZero() throws IOException {
-        assertHardError("hex-priority.txt", VALID_RECORD + "priority:0x3\n");
+    void aHexadecimalOrOctalPriorityLoadsAsInC() throws IOException {
+        assertEquals(3, load("hex-priority.txt", VALID_RECORD + "priority:0x3\n").items().get(0).getPriority());
+        assertEquals(10, load("hex-priority-upper.txt", VALID_RECORD + "priority:0XA\n").items().get(0).getPriority());
+        assertEquals(8, load("octal-priority.txt", VALID_RECORD + "priority:010\n").items().get(0).getPriority());
+    }
+
+    /** C: {@code digging} is an {@code int} read in base 0, so {@code 0x4} is 4 and {@code 05} is 5. */
+    @Test
+    void aHexadecimalOrOctalDiggingLoadsAsInC() throws IOException {
+        assertEquals(4, load("hex-digging.txt", VALID_RECORD + "digging:0x4\n").items().get(0).getDig());
+        assertEquals(5, load("octal-digging.txt", VALID_RECORD + "digging:05\n").items().get(0).getDig());
+    }
+
+    /** C: {@code 0x6} is 6, which is outside the 1 to 5 that {@code digging} allows, so it is refused. */
+    @Test
+    void aHexadecimalDiggingOutOfRangeIsRefusedAsInC() throws IOException {
+        assertFatal("hex-digging-range.txt", VALID_RECORD + "digging:0x6\n", "out of range digging");
+    }
+
+    /** C: a minus on {@code priority} is refused by {@code parser_getuint}, hex or not. */
+    @Test
+    void aMinusOnAHexadecimalPriorityIsRefusedAsInC() throws IOException {
+        assertFatal("minus-hex-priority.txt", VALID_RECORD + "priority:-0x3\n", "negative priority");
     }
 
     /** C: {@code strtoul} stops at the {@code x} and {@code z != tok}, so {@code 3x} is 3. */

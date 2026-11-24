@@ -41,12 +41,14 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code "None"} that C turns into {@code NULL} for a missing neighbour is kept as the literal text
  * by {@link uk.co.jackoftradesltd.backend.parser.world.WorldAssembler}.
  *
- * <p>Every error is hard, as the reader documents it: nothing loads after either of these.
+ * <p>Every error is hard: nothing loads after either of these.
  * <ul>
  *   <li>A grammar error, thrown as a {@code ParseCancellationException}.</li>
- *   <li>A level number that does not fit an {@code int}, thrown as a
- *   {@code DataFileParseException}. C's {@code strtol} would clamp and truncate it instead.</li>
+ *   <li>A level number with no digits, thrown as a {@code DataFileParseException}.</li>
  * </ul>
+ * The level number is read in base 0 as C's {@code strtol} reads it ({@code 0x10} is 16, {@code 010}
+ * is 8), and one outside the {@code int} range is clamped to it. C stores the {@code strtol} result
+ * in an {@code int}; the clamp is an accepted deviation (261124).
  * There is no {@code record-count:} header, as in C.
  *
  * <p>The tests with {@code WhereC} in the name pin a place where this reader refuses input that C
@@ -57,7 +59,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * level's up and down being its neighbours, and the last level's down being {@code None}.
  *
  * <p>Test class WorldReaderTest coded before 261014, commented in full on 261019, and updated on
- * 261122 once a name, up or down made only of digits loaded as in C.
+ * 261122 once a name, up or down made only of digits loaded as in C, and on 261124 for the base 0
+ * level number and its clamp.
  *
  * @author Rowan Crowther
  */
@@ -176,20 +179,37 @@ class WorldReaderTest {
     }
 
     @Test
-    void theLargestIntDepthIsAcceptedAndOneMoreIsHard() throws IOException {
+    void theLargestIntDepthLoadsAndOneMoreClamps() throws IOException {
+        // Accepted 261124: ParseUtils.parseIntString clamps to the int range. C's strtol result is
+        // stored in an int; Java neither wraps it nor refuses it.
         ParseResult<World> ok = read("level:2147483647:Max:None:None\n");
         assertEquals(Integer.MAX_VALUE, ok.items().get(0).levelNumber());
 
-        String message = refusal("level:2147483648:Over:None:None\n");
-        assertTrue(message.contains("illegal level value") && message.contains("2147483648"), message);
+        ParseResult<World> over = read("level:2147483648:Over:None:None\n");
+        assertEquals(Integer.MAX_VALUE, over.items().get(0).levelNumber());
     }
 
     @Test
-    void aLeadingZeroDepthIsReadAsDecimalWhereCReadsItAsOctal() throws IOException {
-        // strtol(tok, &z, 0) reads "010" as 8; the Java INTEGER token and parseInt read 10.
-        ParseResult<World> result = read("level:010:Ten:None:None\n");
+    void theLowestIntDepthLoadsAndOneLessClamps() throws IOException {
+        ParseResult<World> ok = read("level:-2147483648:Min:None:None\n");
+        assertEquals(Integer.MIN_VALUE, ok.items().get(0).levelNumber());
 
-        assertEquals(10, result.items().get(0).levelNumber());
+        ParseResult<World> under = read("level:-2147483649:Under:None:None\n");
+        assertEquals(Integer.MIN_VALUE, under.items().get(0).levelNumber());
+    }
+
+    @Test
+    void aLeadingZeroDepthIsReadAsOctalAsInC() throws IOException {
+        // strtol(tok, &z, 0) reads "010" as 8, and "0010" as 8.
+        assertEquals(8, read("level:010:Eight:None:None\n").items().get(0).levelNumber());
+        assertEquals(8, read("level:0010:Eight:None:None\n").items().get(0).levelNumber());
+        assertEquals(-8, read("level:-010:Minus:None:None\n").items().get(0).levelNumber());
+    }
+
+    @Test
+    void anEightOrNineAfterALeadingZeroEndsTheNumberAsInC() throws IOException {
+        // strtol base 0 reads "08" as the octal 0 and stops at the 8, and the caller ignores the rest.
+        assertEquals(0, read("level:08:Zero:None:None\n").items().get(0).levelNumber());
     }
 
     @Test
@@ -203,11 +223,19 @@ class WorldReaderTest {
     // ---------------------------------------------------------------- hard errors
 
     @Test
-    void anOverflowingLevelNumberIsHardAndNamesTheLine() throws IOException {
-        String message = refusal("level:99999999999:Deep:None:None\n");
+    void anOverflowingLevelNumberClampsToTheIntRange() throws IOException {
+        assertEquals(Integer.MAX_VALUE,
+                read("level:99999999999:Deep:None:None\n").items().get(0).levelNumber());
+        assertEquals(Integer.MIN_VALUE,
+                read("level:-99999999999:Deep:None:None\n").items().get(0).levelNumber());
+    }
 
-        assertTrue(message.contains("line: 1") && message.contains("illegal level value")
-                && message.contains("99999999999"), message);
+    @Test
+    void aDepthWithNoDigitsIsHardAndNamesTheLine() {
+        String message = refusal("level:abc:Deep:None:None\n");
+
+        assertTrue(message.contains("line: 1") && message.contains("invalid level number value")
+                && message.contains("abc"), message);
     }
 
     @Test
@@ -324,9 +352,40 @@ class WorldReaderTest {
     }
 
     @Test
-    void aHexadecimalDepthIsHardHereWhereCReadsBaseZero() throws IOException {
-        // strtol(tok, &z, 0) reads "0x10" as 16.
-        assertThrows(ParseCancellationException.class, () -> read("level:0x10:Town:None:None\n"));
+    void aHexadecimalDepthLoadsAsInC() throws IOException {
+        // strtol(tok, &z, 0) reads "0x10" as 16, in either case of the x and of the digits.
+        assertEquals(16, read("level:0x10:Town:None:None\n").items().get(0).levelNumber());
+        assertEquals(16, read("level:0X10:Town:None:None\n").items().get(0).levelNumber());
+        assertEquals(255, read("level:0xff:Town:None:None\n").items().get(0).levelNumber());
+        assertEquals(255, read("level:0xFF:Town:None:None\n").items().get(0).levelNumber());
+    }
 
+    @Test
+    void aSignedHexadecimalDepthLoadsAsInC() throws IOException {
+        assertEquals(16, read("level:+0x10:Plus:None:None\n").items().get(0).levelNumber());
+        assertEquals(-16, read("level:-0x10:Minus:None:None\n").items().get(0).levelNumber());
+    }
+
+    @Test
+    void aHexadecimalDepthBeyondIntRangeClamps() throws IOException {
+        assertEquals(Integer.MAX_VALUE,
+                read("level:0x7fffffff:Max:None:None\n").items().get(0).levelNumber());
+        assertEquals(Integer.MAX_VALUE,
+                read("level:0x80000000:Over:None:None\n").items().get(0).levelNumber());
+        assertEquals(Integer.MAX_VALUE,
+                read("level:0xFFFFFFFF0:Over:None:None\n").items().get(0).levelNumber());
+    }
+
+    @Test
+    void lettersAfterDecimalDigitsAreIgnoredAsInC() throws IOException {
+        // strtol stops at the "a" and parse_world_level never looks at what follows.
+        assertEquals(12, read("level:12ab:Twelve:None:None\n").items().get(0).levelNumber());
+    }
+
+    @Test
+    void aBarePrefixOrBadHexDigitIsRefusedHereWhereCIgnoresIt() {
+        // Accepted text-after-a-number shape (261112): C reads "0x" as 0 and "0x1G" as 1.
+        assertThrows(ParseCancellationException.class, () -> read("level:0x:Town:None:None\n"));
+        assertThrows(ParseCancellationException.class, () -> read("level:0x1G:Town:None:None\n"));
     }
 }

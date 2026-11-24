@@ -45,19 +45,24 @@ import java.util.List;
  * <ul>
  *   <li>The file must hold at least one level, where C loads an empty file as an empty world. See
  *   {@code docs/grammar_issues.md}.</li>
- *   <li>A level number outside the range of {@code int} ends the load with a
- *   {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. C's {@code strtol} clamps
- *   it to a {@code long} and truncates it to {@code int} without complaint.</li>
+ *   <li>A level number outside the range of {@code int} is clamped to it by
+ *   {@link uk.co.jackoftradesltd.channel.parser.ParseUtils}, where C's {@code strtol} clamps it to a
+ *   {@code long} and truncates it to {@code int}. Accepted 261124.</li>
  *   <li>The {@code "None"} that marks a missing neighbour is passed through as text, not turned into
  *   {@code NULL}; see {@code WorldAssembler}.</li>
  * </ul>
  *
+ * <p>The level number is read in base 0 as C's {@code strtol} reads it: {@code 0x10} is 16, {@code 010}
+ * is 8, and a sign is allowed.
+ *
  * <p>Every error is fatal, as in C: a grammar error is thrown from {@link #extract} as a
- * {@code ParseCancellationException}, and the level-number check above throws as described. Neither
- * is caught here, and no levels are returned.
+ * {@code ParseCancellationException}, and a level number with no digits (such as {@code abc}) is
+ * thrown as a {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. Neither is caught
+ * here, and no levels are returned.
  *
  * <p>Class WorldReader coded before 260915, commented in full on 261019, updated on 261105 for the
- * removal of the soft-error path and the {@code record-count:} header.
+ * removal of the soft-error path and the {@code record-count:} header, and on 261124 for the base 0
+ * level number and its clamp.
  *
  * @author Rowan Crowther
  */
@@ -100,10 +105,12 @@ public class WorldReader implements Reader<World> {
      *   <li>any grammar error, collected by {@code errorCatcher} and thrown as a
      *   {@code ParseCancellationException} by {@link ParseErrors#throwIfAny()} straight after the
      *   parse;</li>
-     *   <li>a level number that does not fit an {@code int}, thrown directly as a
-     *   {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException}. The lexer's
-     *   {@code INTEGER} token lets any run of digits through, so only the overflow can fail here. C
-     *   reads the same field with {@code strtol} and never rejects it.</li>
+     *   <li>a level number with no digits, thrown directly as a
+     *   {@link uk.co.jackoftradesltd.channel.parser.DataFileParseException} by
+     *   {@code ParseUtils.parseIntString}. The lexer's {@code INTEGER} token lets a run of hex
+     *   letters through ({@code abc}), so that is what can fail here. A figure outside the
+     *   {@code int} range does not fail: it is clamped, and {@code WorldAssembler} reads it the same
+     *   way. C reads the same field with {@code strtol} and never rejects it.</li>
      * </ul>
      *
      * <p>Function extract coded before 260915, commented in full on 261019, updated on 261105 for
@@ -121,17 +128,11 @@ public class WorldReader implements Reader<World> {
         List<List<String>> results = output.levels;
         errorCatcher.throwIfAny();
 
-        // A level number that overflows int is a fatal error, like a grammar error.
+        // A level number with no digits is a fatal error, like a grammar error.
         for (List<String> result : results) {
             int line = Integer.parseInt(result.getLast());
-            try {
-                Integer.parseInt(result.getFirst());
-            } catch (NumberFormatException e) {
-                String message = "World reader starting at line: " + line + " of file: " + filename + " has " +
-                        "an illegal level value: " + result.getFirst();
-                logger.fatal(message, e);
-                throw new DataFileParseException(message);
-            }
+            // Throw away the result - we are only using it for the test.
+            ParseUtils.parseIntString("World", result.getFirst(), line, filename, "level number");
         }
         
         for (List<String> result : results) {
@@ -145,7 +146,7 @@ public class WorldReader implements Reader<World> {
     /**
      * Parses {@code filename} and returns the assembled {@link World} levels wrapped in a
      * {@link ParseResult}. {@code WorldAssembler} refuses nothing, so the only errors are the two
-     * from {@link #extract}: a grammar error and an overflowing level number, each of which throws
+     * from {@link #extract}: a grammar error and a level number with no digits, each of which throws
      * and gives no result. A file that cannot be read throws an {@link IOException}, where C quits.
      * {@link #parse} is the items-only convenience over this.
      *

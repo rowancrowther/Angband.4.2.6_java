@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>Test class WorldReaderTest coded before 261014, commented in full on 261019, and updated on
  * 261122 once a name, up or down made only of digits loaded as in C, and on 261124 for the base 0
- * level number and its clamp.
+ * level number and its clamp and for a field after the down name being ignored.
  *
  * @author Rowan Crowther
  */
@@ -269,10 +269,69 @@ class WorldReaderTest {
         assertEquals(0, read("# nothing but a comment\n").items().size());
     }
 
+    /**
+     * The down name is the last field of {@code level int depth sym name sym up sym down}, a {@code sym},
+     * which {@code parser_parse} cuts at the next {@code :}; whatever is left on the line is dropped
+     * without an error. So every tail below loads the same record as the line with no tail.
+     *
+     * <p>Function aFieldAfterTheDownNameIsIgnoredAsInC coded on 261124, commented in full on 261124. It
+     * replaces {@code aFieldAfterTheDownNameIsHardHereWhereCIgnoresIt}, which asserted the refusal.
+     */
     @Test
-    void aFieldAfterTheDownNameIsHardHereWhereCIgnoresIt() throws IOException {
-        assertThrows(ParseCancellationException.class, () -> read("level:0:Town:None:Angband 1:extra\n"));
+    void aFieldAfterTheDownNameIsIgnoredAsInC() throws IOException {
+        List<World> expected = List.of(new World(0, "Town", "None", "Angband 1"));
 
+        for (String tail : new String[]{":extra", ":", "::", ":a:b:c", ":7", ":level:2", ":extra # c"}) {
+            assertEquals(expected, read("level:0:Town:None:Angband 1" + tail + "\n").items(), "tail " + tail);
+        }
+        // No final newline, and a Windows line end after a bare colon.
+        assertEquals(expected, read("level:0:Town:None:Angband 1:extra").items());
+        assertEquals(expected, read("level:0:Town:None:Angband 1:\r\n").items());
+    }
+
+    /**
+     * The tail ends at the end of its line, so the next record is read and keeps its own tail.
+     *
+     * <p>Function aFieldAfterTheDownNameEndsAtTheLineAsInC coded on 261124, commented in full on 261124.
+     */
+    @Test
+    void aFieldAfterTheDownNameEndsAtTheLineAsInC() throws IOException {
+        List<World> expected = List.of(new World(0, "Town", "None", "Angband 1"),
+                new World(1, "Angband 1", "Town", "None"));
+
+        assertEquals(expected, read("level:0:Town:None:Angband 1:extra\nlevel:1:Angband 1:Town:None\n").items());
+        assertEquals(expected, read("level:0:Town:None:Angband 1:\nlevel:1:Angband 1:Town:None\n").items());
+        assertEquals(expected,
+                read("level:0:Town:None:Angband 1:extra\r\nlevel:1:Angband 1:Town:None:more:junk\r\n").items());
+    }
+
+    /**
+     * A line after a record with a tail is checked as it would be with no tail: an unknown directive is
+     * refused, as C refuses it, and an indented {@code level:} line is refused rather than swallowed into
+     * the tail and lost. C skips the indent and would load that second record; that is the open indent
+     * item for {@code WorldGrammar.g4} in {@code Issue_Approach_Order.md}, so only the refusal, not the
+     * reason, is pinned here.
+     *
+     * <p>Function aLineAfterATailIsNeverSwallowed coded on 261124, commented in full on 261124.
+     */
+    @Test
+    void aLineAfterATailIsNeverSwallowed() {
+        assertThrows(ParseCancellationException.class,
+                () -> read("level:0:Town:None:Angband 1:extra\nbogus:line\n"));
+        assertThrows(ParseCancellationException.class,
+                () -> read("level:0:Town:None:Angband 1:extra\n  level:1:Angband 1:Town:None\n"));
+    }
+
+    /**
+     * A field after the down name does not stand in for a missing one: {@code strtok} gives no down name
+     * for {@code level:0:Town:None:}, so C refuses it.
+     *
+     * <p>Function aMissingDownNameIsStillRefusedAsInC coded on 261124, commented in full on 261124.
+     */
+    @Test
+    void aMissingDownNameIsStillRefusedAsInC() {
+        assertThrows(ParseCancellationException.class, () -> read("level:0:Town:None:\n"));
+        assertThrows(ParseCancellationException.class, () -> read("level:0:Town:None\n"));
     }
 
     @Test

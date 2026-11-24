@@ -70,7 +70,7 @@ levelName
  */
 upAndDown
         returns[String up, String down]
-        :   (u=(NAME | INTEGER)) COLON (d=(NAME | INTEGER))
+        :   (u=(NAME | INTEGER)) COLON (d=(NAME | INTEGER)) COLON_TO_END?
             {
                 $up = $u.getText();
                 $down = $d.getText();

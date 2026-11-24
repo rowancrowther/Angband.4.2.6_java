@@ -42,8 +42,8 @@ options { tokenVocab = TerrainFeatureLexer; }
 // list-terrain.h.
 code
         returns[String codeFlag, int lineNo]
-        :   CODE FLAG {
-                $codeFlag = $FLAG.getText();
+        :   CODE NO_SPACE_FLAG {
+                $codeFlag = $NO_SPACE_FLAG.getText();
                 $lineNo = $start.getLine();
             }
         ;
@@ -70,8 +70,8 @@ graphics
 // "mimic:<FEAT_CODE>" - the terrain this one visually/mechanically mimics.
 mimic
         returns[String mimicFlag]
-        :   MIMIC FLAG {
-                $mimicFlag = $FLAG.getText();
+        :   MIMIC NO_SPACE_FLAG {
+                $mimicFlag = $NO_SPACE_FLAG.getText();
             }
         ;
 
@@ -184,7 +184,7 @@ look_in_preposition
 // (e.g. fire-resistant monsters ignoring lava damage).
 resist_flag
         returns[String resistFlag]
-        :   RESIST_FLAG f1=FLAG {
+        :   RESIST_FLAG f1=R_FLAG {
                 $resistFlag = $f1.getText(); }
         ;
 

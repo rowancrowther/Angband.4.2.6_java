@@ -1586,7 +1586,11 @@ C reads with `strtol` or `strtoul` and the lexers read with a token rule, and ab
   `aPowerCutoffWithNoDigitIsRefusedAsInC`, `anEffectYxWithABadOrMissingFieldIsRefusedAsInC` and
   `anEffectRadiusWithNoDigitOrAnExtraFieldIsRefused` in `MonsterSpellReaderTest`, with
   `aTrailingBlankAfterAHitLoadsAsInC` as its boundary. The other two `UINT`-tail lexers (Pain, BlowMethod) are not
-  pinned.
+  pinned. Added 2026-11-24, for the same two shapes in other files: `aFieldAfterTheValueIsRefusedHereWhereCIgnoresIt`
+  (`level:99:7`) in `QuestReaderTest`, and `textAfterThePriorityNumberIsAHardErrorHereWhereCIgnoresIt` (`priority:3x`) and
+  `aSecondFieldAfterTheDiggingNumberIsAHardErrorHereWhereCIgnoresIt` (`digging:2:junk`) in `TerrainReaderTest`. The same
+  `:` after a last field that is a `sym`, not a number (`resist-flag:RAND_50:x` in `terrain.txt`, the down name of a
+  `level:` line in `world.txt`), is not part of this entry: both are fixed to read as C reads them.
 - **Accepted:** 2026-11-12, raised while checking the `UINT` and `PIT_INTEGER` rules of `PitLexer.g4`.
 
 ### An empty `:` field on an effect line, trailing or doubled, is an error, where C skips it

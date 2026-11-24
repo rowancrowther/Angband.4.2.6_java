@@ -40,7 +40,7 @@ import CommentsAndEol, Flags, AngbandDisplayCharacter;
 // CODE through DESC below: one literal directive-keyword token each,
 // matching the rule of the same purpose above.
 CODE
-        :   'code:' -> pushMode(FLAG_MODE)
+        :   'code:' -> pushMode(NO_SPACE_FLAG_MODE)
         ;
 
 NAME
@@ -48,7 +48,7 @@ NAME
         ;
 
 MIMIC
-        :   'mimic:' -> pushMode(FLAG_MODE)
+        :   'mimic:' -> pushMode(NO_SPACE_FLAG_MODE)
         ;
 
 PRIORITY
@@ -92,7 +92,7 @@ LOOK_IN_PREPOSITION
         ;
 
 RESIST_FLAG
-        :   'resist-flag:' -> pushMode(FLAG_MODE)
+        :   'resist-flag:' -> pushMode(R_FLAG_MODE)
         ;
 
 DESC
@@ -132,4 +132,52 @@ FLAG_OR
 
 FLAG_EOL
         :   NL -> skip, popMode
+        ;
+
+// Flag names for code/mimic/flags/resist-flag. FLAG wraps the shared FLAG_BODY
+// fragment. FLAG_OR is C's strtok(s, " |") separator: any run of blanks and bars,
+// split into two alternatives so each takes at least one character; a blank, a
+// bar, a blank and a bar arrive as two FLAG_OR tokens, which the flags rule's
+// (FLAG_OR FLAG?)* loop takes. FLAG_EOL is skipped as well as popping back to the
+// default mode, so no parser rule waits for it and a last line with no final
+// newline needs no EOF alternative.
+mode NO_SPACE_FLAG_MODE;
+
+NO_SPACE_FLAG
+        :   FLAG_BODY
+        ;
+
+NO_SPACE_FLAG_OR
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
+        ;
+
+NO_SPACE_FLAG_EOL
+        :   NEWLINE -> skip, popMode
+        ;
+
+// Flag names for code/mimic/flags/resist-flag. FLAG wraps the shared FLAG_BODY
+// fragment. FLAG_OR is C's strtok(s, " |") separator: any run of blanks and bars,
+// split into two alternatives so each takes at least one character; a blank, a
+// bar, a blank and a bar arrive as two FLAG_OR tokens, which the flags rule's
+// (FLAG_OR FLAG?)* loop takes. FLAG_EOL is skipped as well as popping back to the
+// default mode, so no parser rule waits for it and a last line with no final
+// newline needs no EOF alternative.
+mode R_FLAG_MODE;
+
+R_FLAG
+        :   FLAG_BODY
+        ;
+
+R_FLAG_OR
+        :   ' '+ '|'* ' '*
+        |   ' '* '|'+ ' '*
+        ;
+
+R_FLAG_COLON
+        :   ':' ~('\r' | '\n')* -> skip
+        ;
+
+R_FLAG_EOL
+        :   NEWLINE -> skip, popMode
         ;

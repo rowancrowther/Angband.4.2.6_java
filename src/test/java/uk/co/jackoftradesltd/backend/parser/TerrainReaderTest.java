@@ -759,10 +759,53 @@ class TerrainReaderTest {
         assertHardError("junk-digging.txt", VALID_RECORD + "digging:2:junk\n");
     }
 
+    /**
+     * C: {@code code}, {@code mimic} and {@code flags} are {@code str} fields, which are not tokenised on a
+     * colon, so {@code FLOOR:x} is the whole name and matches nothing. Only {@code resist-flag}, a
+     * {@code sym}, drops what follows its colon.
+     */
+    @Test
+    void aColonInACodeLineIsRefusedAsInC() {
+        assertHardError("colon-code.txt", "code:FLOOR:x\nname:x\ngraphics:.:w\n");
+    }
+
+    /** See {@link #aColonInACodeLineIsRefusedAsInC}: {@code mimic} is a {@code str} too. */
+    @Test
+    void aColonInAMimicLineIsRefusedAsInC() {
+        assertHardError("colon-mimic.txt", VALID_RECORD + "mimic:FLOOR:x\n");
+    }
+
+    /** See {@link #aColonInACodeLineIsRefusedAsInC}: {@code flags} is a {@code ?str} too. */
+    @Test
+    void aColonInAFlagsLineIsRefusedAsInC() {
+        assertHardError("colon-flags.txt", VALID_RECORD + "flags:LOS:x\n");
+    }
+
+    /**
+     * C: {@code code} and {@code mimic} are {@code str} fields looked up with {@code streq}, and
+     * {@code resist-flag} is a {@code sym} looked up with {@code streq}, so a blank or tab after the name
+     * is part of the name and matches nothing. {@code flags} is split with {@code strtok(" |")}, which
+     * skips it, and that case is pinned by {@code aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC}.
+     *
+     * <p>Function aTrailingBlankOnACodeMimicOrResistFlagLineIsRefusedAsInC coded on 261124, commented in
+     * full on 261124.
+     */
+    @Test
+    void aTrailingBlankOnACodeMimicOrResistFlagLineIsRefusedAsInC() {
+        for (String blank : new String[]{" ", "\t"}) {
+            assertHardError("blank-code.txt", "code:FLOOR" + blank + "\nname:x\ngraphics:.:w\n");
+            assertHardError("blank-mimic.txt", VALID_RECORD + "mimic:FLOOR" + blank + "\n");
+            assertHardError("blank-resist.txt", VALID_RECORD + "resist-flag:RAND_50" + blank + "\n");
+        }
+    }
+
     /** C: {@code resist-flag} is a {@code sym}, tokenised on a colon, so the text after it is ignored. */
     @Test
-    void aSecondFieldAfterTheResistFlagIsAHardErrorHereWhereCIgnoresIt() throws IOException {
-        assertHardError("junk-resist.txt", VALID_RECORD + "resist-flag:RAND_50:x\n");
+    void aSecondFieldAfterTheResistFlagIsIgnoredAsInC() throws IOException {
+        Feature feature = load("junk-resist.txt", VALID_RECORD + "resist-flag:RAND_50:x\n").items().get(0);
+        Feature plain = load("plain-resist.txt", VALID_RECORD + "resist-flag:RAND_50\n").items().get(0);
+
+        assertEquals(plain.getResistFlag(), feature.getResistFlag());
     }
 
     /**

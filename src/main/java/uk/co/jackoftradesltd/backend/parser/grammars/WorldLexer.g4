@@ -28,13 +28,17 @@
 lexer grammar WorldLexer;
 import CommentsAndEol;
 
+@members {
+    private int colons = 0;
+}
+
 /*
  * @author Rowan Crowther
  *
  * Literal directive keyword introducing every record.
  * cf WorldGrammar.g4's 'line' rule.
  */
-LEVEL   :   'level:'
+LEVEL   :   'level:' { colons = 0; }
         ;
 
 /*
@@ -43,7 +47,7 @@ LEVEL   :   'level:'
  * Field separator used throughout a "level:" line.
  * cf WorldGrammar.g4's 'levelNum', 'levelName' and 'upAndDown' rules.
  */
-COLON   :   ':'
+COLON   :   {colons < 3}? ':' { colons++; }
         ;
 
 /*
@@ -64,4 +68,8 @@ INTEGER
  * cf WorldGrammar.g4's 'levelName' and 'upAndDown' rules.
  */
 NAME    :   ~('\r' | '\n' | ':')+
+        ;
+
+COLON_TO_END
+        :   {colons == 3}? ':' ~('\r' | '\n')*
         ;

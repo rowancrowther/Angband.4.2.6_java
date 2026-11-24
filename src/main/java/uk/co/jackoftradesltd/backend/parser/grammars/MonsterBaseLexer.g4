@@ -18,8 +18,8 @@
 // Lexer for lib/gamedata/monster_base.txt - the templates that groups of
 // monsters share (display glyph, inherited race flags, pain-message set and
 // lore text), referenced by monster.txt's base: directive. Cf. the C directive
-// table in init_parse_mon_base() (src/mon-init.c:1069) and struct file_parser
-// mon_base_parser (src/mon-init.c:1105).
+// table in init_parse_mon_base() (src/mon-init.c) and struct file_parser
+// mon_base_parser (src/mon-init.c).
 //
 // This lexer only tokenizes; resolving the RF_ race flags, the glyph and the
 // pain: index is left to MonsterBaseAssembler. The glyph, free-text and flag

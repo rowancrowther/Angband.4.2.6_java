@@ -18,7 +18,7 @@
 // Lexer for lib/gamedata/brand.txt - the elemental brands weapons and ammo can
 // carry (each identified by a code referenced from artifact.txt, ego_item.txt,
 // object.txt and player_timed.txt). Cf. the C directive table in
-// init_parse_brand() (src/obj-init.c:959) and struct file_parser brand_parser.
+// init_parse_brand() (src/obj-init.c) and struct file_parser brand_parser.
 //
 // A record is a set of "keyword:value" directives. This lexer only tokenizes;
 // resolving the resist/vuln race flags and parsing the numeric fields is left to

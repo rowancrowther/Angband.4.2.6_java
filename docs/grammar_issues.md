@@ -1851,9 +1851,9 @@ Found 2026-10-19 during `/port TerrainReader.java`. Updated 2026-11-18: the reco
 - `.idea/misc.xml`: the `TerrainFeatureLexer.g4` and `TerrainFeatureGrammar.g4` entries have an empty `outputDir` and `pkg`, though the
   generated parser sits in `grammars/terrainfeature`. The committed parser has the same ATN as a fresh generation.
 
-## `WorldGrammar.g4` and `WorldLexer.g4`: no fields after `down` and base-10 depths differ from C
+## `WorldGrammar.g4` and `WorldLexer.g4`: fields after `down`, base-0 depths and indented lines
 
-Found 2026-10-19 during `/port WorldReader.java`; updated 2026-11-09 after the `record-count:` header and the name restriction were removed. The digit-only name was closed on 2026-11-22; the rest is not fixed.
+Found 2026-10-19 during `/port WorldReader.java`; updated 2026-11-09 after the `record-count:` header and the name restriction were removed. The digit-only name was closed on 2026-11-22. Rewritten 2026-11-24: the base-0 depth, the field after `down`, the indented line and the indented comment are [<span style="color:#006400">**CLOSED**</span> 26-11-24]. Two differences are accepted (see the end of "What Java does"). Nothing is open.
 
 ### What C does
 
@@ -1862,24 +1862,41 @@ Found 2026-10-19 during `/port WorldReader.java`; updated 2026-11-09 after the `
 - Each field is cut at `:` by `strtok`. A `sym` is any text without a colon, and nothing after the last field is looked at.
 - An `int` is read by `strtol(tok, &z, 0)`: base zero, so `0x10` is 16 and `010` is 8, with leading space skipped and trailing text ignored.
   Only a field with no digits at all is `PARSE_ERROR_NOT_NUMBER`.
+- `parser_parse` in `parser.c` drops every leading blank of a line, then ignores the line if it is empty or starts with `#`, and
+  `file_getl` in `z-file.c` has already turned a tab into spaces and ended the line at a bare `\r`. So `  level:0:Town:None:None` and
+  `  # note` are read as if unindented.
 
 ### What Java does
 
-- `WorldGrammar.g4`: `line` ends at `upAndDown`, so `level:0:Town:None:Angband 1:extra` is a syntax error where C ignores `extra`.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-24] `WorldGrammar.g4`: `line` ended at `upAndDown`, so `level:0:Town:None:Angband 1:extra` was a syntax error where C ignores `extra`.
+  `WorldLexer.g4` counts the plain colons of a `level:` line in a `@members` field, and `COLON_TO_END` takes the fourth colon and the rest of its line
+  as one token, which `upAndDown` ends with as an optional part. A tail after the down name is dropped and the next line is still read.
+  Pinned by `aFieldAfterTheDownNameIsIgnoredAsInC`, `aFieldAfterTheDownNameEndsAtTheLineAsInC`, `aLineAfterATailIsNeverSwallowed` and
+  `aMissingDownNameIsStillRefusedAsInC` in `WorldReaderTest`.
 - `WorldLexer.g4`: `NAME` is `~('\r' | '\n' | ':')+`, so a hyphen or apostrophe in a name loads, as in C.
 - [<span style="color:#006400">**CLOSED**</span> 26-11-22] A name, up or down made only of digits. `INTEGER` is listed before `NAME` and wins a tie on length, so `level:5:7:None:None`
   lexes the `7` as `INTEGER`. `levelName` and `upAndDown` in `WorldGrammar.g4` now take `NAME | INTEGER` and read `getText()`, so `7`, `-5` and `007` load
   as written, as C's `sym` does. `WorldLexer.g4` is unchanged. Pinned by `aNameOfOnlyDigitsLoadsAsInC`, `aSignedOrZeroPaddedNameLoadsAsWrittenAsInC`,
   `anUpOrDownNameOfOnlyDigitsLoadsAsInC` and `aDigitOnlyNameBeyondIntRangeLoadsAsInC` in `WorldReaderTest`.
-- `INTEGER` is `'-'? ('0'..'9')+`, so `level:0x10:...` is a syntax error and `010` is 10, not 8.
-- A depth outside `int` is a hard error from `WorldReader`; C clamps it to a `long` and truncates it to `int`.
-- `WorldReaderTest.aFieldAfterTheDownNameIsHardHereWhereCIgnoresIt`, `aHexadecimalDepthIsHardHereWhereCReadsBaseZero` and
-  `aLeadingZeroDepthIsReadAsDecimalWhereCReadsItAsOctal` pin the three that remain. `aHyphenInANameIsKeptAsInC` pins a case that matches C.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-24] `INTEGER` was `'-'? ('0'..'9')+`, so `level:0x10:...` was a syntax error and `010` was 10, not 8. `INTEGER` now takes the `0x` and `0X` forms,
+  and `WorldReader.extract` and `WorldAssembler.assemble` read the depth with `ParseUtils.parseIntString`, so `0x10` is 16, `010` is 8, `-010` is -8 and `12ab` is 12,
+  as in C. Pinned by `aHexadecimalDepthLoadsAsInC`, `aLeadingZeroDepthIsReadAsOctalAsInC` and `aSignedHexadecimalDepthLoadsAsInC` in `WorldReaderTest`.
+- A depth outside `int` is clamped to the `int` range, where C stores a `strtol` result in an `int`. Accepted 26-11-24 under "An integer too big for its C type is clamped,
+  where C wraps it" in `Accepted_Deviations.md`. `0x` and `0x1G` are refused where C reads 0 and 1: the accepted text-after-a-number shape, pinned by
+  `aBarePrefixOrBadHexDigitIsRefusedHereWhereCIgnoresIt`.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-24] An indented line was refused, because `NAME` took the blanks in front of `level:`. `LEVEL` is now `INDENT? 'level:'`, a longer match than `NAME`, and
+  `INDENT` is the column-0 rule imported from `CommentsAndEol.g4`, so a blank in front of `level:` inside a name or up field stays part of that field.
+  Pinned by `anIndentedLineLoadsAsInC` and `aBlankBeforeLevelInsideAFieldIsPartOfTheFieldAsInC`; `aLineAfterATailIsNeverSwallowed` expects an indented record after a tail to load.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-24] An indented comment (`  # note`) was refused, because at column 0 `NAME` matched the whole line and was longer than `INDENT`. `WorldLexer.g4` has its own
+  `COMMENT : INDENT? '#' ... -> skip`, which overrides the imported one. Pinned by `anIndentedCommentIsSkippedAsInC`. Of the 40 lexers, only this one and `LoreLexer` mishandled it; Lore is parked.
+- Accepted 26-11-24, under "World" in `Accepted_Deviations.md`: a name or up of exactly `level` is refused where C loads it (`aNameOrUpOfLevelIsRefusedHereWhereCLoadsIt`), and a bare `\r` followed by
+  an indented `level:` line or comment is refused where C loads it (`aBareCarriageReturnBeforeAnIndentedLineIsRefusedHereWhereCLoadsIt`).
+- `aHyphenInANameIsKeptAsInC` pins a case that matches C.
 
 ### Impact
 
-- None on the shipped data: all 128 levels have plain decimal depths, names of letters, digits and spaces, and four fields.
-- A modded file with a field after `down`, or a hexadecimal depth, loses the whole file.
+- None on the shipped data: all 128 levels have plain decimal depths, names of letters, digits and spaces, and four fields, and `world.txt` loads.
+- The two accepted differences need a modded file that calls a level `level`, or one with classic Mac OS line ends.
 
 ## `GameConstantsGrammar.g4` and `GameConstantsLexer.g4`: an indented line is refused where C skips the indent
 

@@ -20,8 +20,8 @@
  *
  * Parser for lib/gamedata/projection.txt. Every "projection" which includes
  * element damage types, descriptions, damage formula, message types and
- * display colours. Cf. src/obj-init.c: struct file_parser projection_parser
- * (obj-init.c:470), directive table at obj-init.c:400-414 (parse_projection
+ * display colours. Cf. src/obj-init.c: struct file_parser projection_parser,
+ * directive table in obj-init.c (parse_projection
  * _code/_name/_type/_desc/_player_desc/_blind_desc/_lash_desc/_numerator/
  * _denominator/_divisor/_damage_cap/_message_type/_obvious/_wake/_color).
  */

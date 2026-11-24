@@ -16,7 +16,7 @@
  */
 
 // Parser for lib/gamedata/flavor.txt. Pairs with FlavourLexer. Cf. the C
-// directive table in init_parse_flavor() (src/init.c:4242-4249).
+// directive table in init_parse_flavor() (src/init.c).
 //
 // Grammar shape mirrors the file's block structure: a "kind:" line and the run
 // of "flavor:"/"fixed:" lines beneath it form one section, and the file is

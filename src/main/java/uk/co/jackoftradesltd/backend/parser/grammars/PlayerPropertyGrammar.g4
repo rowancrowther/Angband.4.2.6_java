@@ -18,8 +18,8 @@
 // Reader+lexer for lib/gamedata/player_property.txt - the catalogue of every
 // player/object flag and elemental resist/vuln/immunity, each with display
 // name, description, and an optional binding to a UI element (ui_entry.txt).
-// Cf. src/init.c: struct file_parser player_property_parser (init.c:1406),
-// directive table registered in init_parse_player_prop() (init.c:1308-1314):
+// Cf. src/init.c: struct file_parser player_property_parser,
+// directive table registered in init_parse_player_prop():
 // type/code/desc/name/value/bindui -> parse_player_prop_type/_code/_desc/
 // _name/_value/_bindui.
 //

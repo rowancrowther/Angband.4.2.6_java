@@ -21,8 +21,8 @@
  * Reader for lib/gamedata/constants.txt - Angband's miscellaneous
  * engine-tuning constants (level/monster-generation maxima, critical-hit
  * tables, dungeon-generation limits, etc). Cf. the C parser in src/init.c:
- * struct file_parser constants_parser (init.c:1051), whose directive table
- * is registered in init_parse_constants() (init.c:949-980). Every directive
+ * struct file_parser constants_parser, whose directive table
+ * is registered in init_parse_constants(). Every directive
  * there has the shape "<category> sym label int value" EXCEPT the 4
  * critical-hit-level ones, which instead carry several int fields plus a
  * trailing str message.

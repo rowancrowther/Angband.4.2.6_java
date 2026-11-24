@@ -18,7 +18,7 @@
 // Parser for lib/gamedata/brand.txt (see BrandLexer for the token definitions
 // and the C cross-reference). Extraction-only: every rule returns raw strings
 // that BrandAssembler resolves into domain brands (the resist/vuln race flags
-// and the numeric fields). Cf. init_parse_brand() (src/obj-init.c:959).
+// and the numeric fields). Cf. init_parse_brand() (src/obj-init.c).
 //
 // @author Rowan Crowther
 

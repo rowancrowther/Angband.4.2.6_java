@@ -18,7 +18,7 @@
 // Lexer for lib/gamedata/summon.txt - the summon-type definitions (what each
 // summon spell can call up: which monster bases / race flag, whether uniques are
 // allowed, the message type, and a fallback type). Cf. the C directive table in
-// init_parse_summon() (src/mon-summon.c:146) and struct file_parser summon_parser.
+// init_parse_summon() (src/mon-summon.c) and struct file_parser summon_parser.
 //
 // This lexer only tokenizes; resolving the message type, monster bases, race
 // flag and the fallback (a reference to a sibling summon by name) is left to

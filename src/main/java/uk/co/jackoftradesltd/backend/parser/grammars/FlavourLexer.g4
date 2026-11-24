@@ -18,7 +18,7 @@
 // Lexer for lib/gamedata/flavor.txt - the table of randomized "flavours" that
 // disguise unidentified objects (a potion's colour, a ring's material, a
 // scroll's nonsense title) until they are identified. Cf. the C directive table
-// in init_parse_flavor() (src/init.c:4242-4249) and struct flavor (src/object.h).
+// in init_parse_flavor() (src/init.c) and struct flavor (src/object.h).
 //
 // The file is organized into blocks: a "kind:" line names an object type and the
 // glyph its flavours draw with, and every "flavor:"/"fixed:" line that follows

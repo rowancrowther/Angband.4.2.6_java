@@ -19,7 +19,7 @@
 // definitions and the C cross-reference). Extraction-only: every rule returns
 // raw strings which MonsterBaseAssembler resolves into a domain MonsterBase
 // (RF_ race flags, the glyph, and the pain: index looked up against pain.txt).
-// Cf. init_parse_mon_base() (src/mon-init.c:1069).
+// Cf. init_parse_mon_base() (src/mon-init.c).
 //
 // @author Rowan Crowther
 

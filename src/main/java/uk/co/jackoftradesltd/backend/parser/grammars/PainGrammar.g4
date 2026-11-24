@@ -19,7 +19,7 @@
 // the C cross-reference). Extraction-only: each record is returned as its type
 // number plus seven raw message strings; PainAssembler peels the type number
 // off and builds the domain MonsterPain. Cf. init_parse_pain()
-// (src/mon-init.c:516).
+// (src/mon-init.c).
 //
 // @author Rowan Crowther
 

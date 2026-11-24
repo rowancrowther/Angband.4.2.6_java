@@ -23,9 +23,9 @@
  * <integer>, power <integer>, effect (from EffectBlock), and a description
  * <String>.
  *
- * Cf. src/obj-init.c: struct file_parser act_parser (obj-init.c:1678),
- * directive table around obj-init.c:1600-1630, and finish_parse_act
- * (obj-init.c:1635) which assigns each activation a sequential index
+ * Cf. src/obj-init.c: struct file_parser act_parser,
+ * directive table in obj-init.c, and finish_parse_act
+ * (obj-init.c) which assigns each activation a sequential index
  * used for array-based lookups elsewhere in the engine.
  *
  * This index is removed, as in Java we are using the object itself from

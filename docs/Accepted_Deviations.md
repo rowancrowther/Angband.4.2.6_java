@@ -1696,6 +1696,49 @@ C reads with `strtol` or `strtoul` and the lexers read with a token rule, and ab
 - **Pinned by:** `anOversizedBonusThatALaterBonusOverwritesIsLoadedHereWhereCRefusesIt` in `RandomReaderTest`.
 - **Accepted:** 2026-11-24, from the Stage 8 `Random.g4` entry of `docs/Issue_Approach_Order.md`.
 
+## World
+
+### A bare `\r` followed by an indented `level:` line or comment is refused, where C loads both lines
+
+- **Java:** the `LEVEL` rule in `WorldLexer.g4` (`INDENT? 'level:'`) and the `INDENT` rule in
+  `imports/CommentsAndEol.g4`. **C:** `file_getl` (`z-file.c`) and `parser_parse` (`parser.c`).
+- **Differs:** `file_getl` ends a line at a bare `\r`, and `parser_parse` then drops the blanks in front of the next
+  directive, so `level:0:Town:None:A` and `  level:1:A:Town:None` written with only a `\r` between them are two
+  records in C. `INDENT` is guarded by `getCharPositionInLine() == 0`, and ANTLR does not reset the column on `\r`, so
+  after the `\r` the lexer is not at column 0, the blanks are not an indent, and the line is a syntax error. The same
+  goes for an indented comment: `level:0:Town:None:A`, a bare `\r`, then `  # note` and a second record is a syntax
+  error in Java, where C skips the comment.
+- **Agrees:** a bare `\r` before an unindented `level:` or comment (as in C), `\n` and `\r\n` line ends with or
+  without an indent, and an indented line or comment as the first or only line.
+- **Why:** only a classic Mac OS file (version 9 or earlier) or a tool that still writes them ends lines with a bare
+  `\r`. A bare `\r` that is followed by blanks is rarer still.
+- **Reach:** none from shipped data. `world.txt` ends its lines with `\n`. The same limit applies to every lexer that
+  imports `INDENT`; this is the entry for World only.
+- **Revisit:** if `INDENT` is ever changed to test for a preceding `\r` as well as column 0. The pin then goes red,
+  which is the prompt to take this entry out.
+- **Pinned by:** `aBareCarriageReturnBeforeAnIndentedLineIsRefusedHereWhereCLoadsIt` in `WorldReaderTest`, for both
+  the indented `level:` line and the indented comment.
+- **Accepted:** 2026-11-24, decided with you.
+
+### A name or up field of exactly `level` is refused, where C loads it as a name
+
+- **Java:** the `LEVEL` rule in `WorldLexer.g4` (`INDENT? 'level:'`), read by the `levelName` and `upAndDown` rules in
+  `WorldGrammar.g4`. **C:** `parse_world_level` (`init.c`), with `parser_parse` (`parser.c`) cutting each `sym` at the
+  next `:`.
+- **Differs:** `level:0:level:None:None` is a level called `level` in C, and `level:0:Town:level:None` has an up name of
+  `level`. In Java the text `level:` is a `LEVEL` token wherever it stands on the line, and it is longer than a `NAME`
+  over `level`, so the lexer starts a new record in the middle of the line and the parser refuses it. A name such as
+  ` level` (a blank first) or `levels` loads, because `LEVEL` is not a longer match there.
+- **Agrees:** `level` as the down name (`level:0:Town:None:level`) loads, because no colon follows it.
+- **Why:** the keyword and the name are the same text, so a lexer with no line-start test cannot tell them apart.
+  Accepted by Rowan on 2026-11-24, with no behavioural reason beyond the rarity of the name.
+- **Reach:** none from shipped data, where every name is `Town` or `Angband` and a number. It takes a modded file that
+  calls a level, or the level above it, `level`. The refusal was already there before the indent change.
+- **Revisit:** if `LEVEL` is ever given a column-0 test of its own. The pin then goes red, which is the prompt to take
+  this entry out.
+- **Pinned by:** `aNameOrUpOfLevelIsRefusedHereWhereCLoadsIt` in `WorldReaderTest`.
+- **Accepted:** 2026-11-24, decided with you.
+
 ## Where C crashes, Java throws
 
 ### Every input that crashes C is refused in Java with a message that names the line

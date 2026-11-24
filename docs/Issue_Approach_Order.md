@@ -187,9 +187,9 @@ None of these show on the shipped data. Each turns a bad modded line into an exc
 9. A: `playerclass/ClassSpellBookAssembler.java` and `ClassMagicAssembler.java` a class whose books were all dropped loads as a non-caster, and a book keeps more spells than it declares.
    **Reminder (2026-10-22):** the too-many-spells error in `ClassSpellBookAssembler.java` cites the `book:` line, which is the decided
    wording (C stops on the extra `spell:` line, but the book's line is kept). Add the name of the first extra spell to the message as
-   well, so the line and the spell can both be found. That name comes from `record.spells()` at index `noOfSpells`, not from the assembled
-   `spells` list, and `moreSpellsThanDeclaredStopTheLoadAsInC` and `theSpellCapIsPerBookAsInC` in `PlayerClassReaderTest.java` then
-   assert it.
+   well, so the line and the spell can both be found. The reminder said that name should come from `record.spells()` at index `noOfSpells`, and
+   `moreSpellsThanDeclaredStopTheLoadAsInC` and `theSpellCapIsPerBookAsInC` in `PlayerClassReaderTest.java` were then to assert it.
+   [<span style="color:#006400">**CLOSED**</span> 26-11-24: the message ends "First extra spell: <name>", and both tests assert it (`B` and `D`). The code takes the name from the assembled `spells` list at index `noOfSpells`, not from `record.spells()`; the two are the same spell. `PlayerClassReaderTest` passes. See Stage 11.]
 
 ## Stop-the-load sites: every `errors.add` in the assemblers
 
@@ -262,8 +262,6 @@ Paths are under `src/main/java/uk/co/jackoftradesltd/`. The figure in brackets i
 - `frontend/ui/entry/assembler/UIEntryAssembler.java` (10): ~~223, 231, 250, 262, 278, 292, 313, 344, 372, 384~~
 ~~- `frontend/ui/entrybase/assembler/UIEntryBaseAssembler.java` (3): 95, 105, 128~~
 - `frontend/ui/entryrenderer/assembler/UIEntryRendererAssembler.java` (3): ~~63, 91, 104~~
-
-## Stage 2.5: remove soft error functionality ##
 
 ## Stage 3: shared assembler helpers, fixed once and applied everywhere
 
@@ -887,6 +885,16 @@ The full list of parked work across the project, with dates, is in `docs/Parked.
   - Java now: the letter is kept as text and nothing checks it against the dice string. Probed on `CurseGrammar.g4` on 2026-11-11: `dice:$Bd4`, `expr:B:PLAYER_LEVEL:+ 0`, `desc:x`, then `expr:C:PLAYER_HP:* 2` loads with both bindings on the one effect.
   - To close: when the roll engine is written, `EffectAssembler` calls it at load, as `Random.parseStr` is called today. The unmatched letter then fails there with the record's line, along with a bad dice string and a bad operations string. Decided on 2026-10-25 (see `effect-dice-validation-deferred-to-roll-engine`). No test pins it yet; add one named `...HereWhereC...` when the roll engine lands, or sooner if you want the deviation pinned.
 
-## Where to start
+## Stage 11: met in the code, found untagged or stale (26-11-24)
 
-- Make the Stage 0 absent-value decision, then take Stage 1 items 1 to 5.
+**What this is:** items that a check on 26-11-24 found already met in the code but never tagged, or whose text in the stages above
+no longer matches the code. Each was read against the source that day. The full suite ran green the same day (15,172 tests, 19
+skipped, 0 failed). Nothing here changes the stage it points at; this is where the tag lives.
+
+- **Stage 5, unknown `act:` on an ego item and an artifact.** [<span style="color:#006400">**CLOSED**</span> 26-11-24: both load with a `null` activation, as `findact` answers `NULL`. `EgoItemAssembler.java` calls `ObjectRegistry.lookupActivation` and keeps whatever it returns; `lookupActivation` ends in `.orElse(null)`. `ArtifactAssembler.java` does the same and only logs a warning. Pinned by `EgoItemReaderTest.anUnknownActivationLeavesTheEgoWithNoneAsInC` and `ArtifactReaderTest.anUnknownActNameLeavesTheRecordWithNoActivationAsInC`.]
+- **Stage 5, `subtype:` on a non-flag property.** [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ObjectProperty2Assembler.parseSubtype` stores the subtype on whatever kind of property the record is, as C does, and refuses only an unknown value or the wrong number of values.]
+- **Stage 0, "still open for `type-mult:` and `subtype:`" (the Unresolved names answer).** [<span style="color:#006400">**CLOSED**</span> 26-11-24: stale wording. `type-mult:` closed with Stage 7h and `subtype:` with the entry above.]
+- **Stage 2 item 9, the spell name in the "too many spells" message.** [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ClassSpellBookAssembler.java` adds "First extra spell: <name>" to the message, taking the name from the assembled `spells` list at index `noOfSpells`. That is the same spell as `record.spells()` at that index, because `ClassSpellAssembler.java` returns one `MagicSpell` per record in file order and skips none. `moreSpellsThanDeclaredStopTheLoadAsInC` asserts the message ends "First extra spell: B" and `theSpellCapIsPerBookAsInC` asserts "First extra spell: D", both in `PlayerClassReaderTest.java`, and both pass.]
+- **Stage 2 item 8, tunnel and streamer overflow.** The text says an overflowing field "stops the load". The tests now are `DungeonProfileReaderTest.anOverflowingTunnelFieldIsClampedWhereCWraps` and `anOverflowingStreamerFieldIsClampedWhereCWraps`, so the field is clamped, under the accepted "integer too big for its C type" entry in `Accepted_Deviations.md`.
+- **Stage 2 item 2, the friend-count pins.** The pins named there were renamed when soft errors went: they are now `MonsterReaderTest.aFriendCountThatOverflowsIntEndsTheLoadAsInC`, `aFriendBaseCountThatOverflowsIntEndsTheLoadAsInC` and `twoBadFriendsBaseLinesStillEndTheLoadButTheLaterLineIsReportedFirst`.
+- **Stage 2.5 and "Where to start".** The Stage 2.5 heading has no body; the soft-error removal it names is done (`ParseResult` has no errors list). "Where to start" predates the Stage 0 decisions and Stages 1 to 10.

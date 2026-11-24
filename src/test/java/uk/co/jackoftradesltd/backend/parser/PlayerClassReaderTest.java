@@ -1061,6 +1061,7 @@ class PlayerClassReaderTest {
         assertTrue(e.getMessage().contains("2 spells found. 1 declared"), e.getMessage());
         assertTrue(e.getMessage().contains("line: 3"), e.getMessage());
         assertTrue(e.getMessage().contains("extra-spell.txt"), e.getMessage());
+        assertTrue(e.getMessage().endsWith("First extra spell: B"), e.getMessage());
     }
 
     /**
@@ -1107,6 +1108,7 @@ class PlayerClassReaderTest {
 
         assertTrue(e.getMessage().contains("2 spells found. 1 declared"), e.getMessage());
         assertTrue(e.getMessage().contains("line: 10"), e.getMessage());
+        assertTrue(e.getMessage().endsWith("First extra spell: D"), e.getMessage());
     }
 
     /** C: {@code lookup_realm} compares with {@code my_stricmp}, so the realm name is case-blind. */

@@ -226,8 +226,10 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
             int max = ParseUtils.parseIntString("Class spell book", record.max(), line, filename, "maximum");
             List<MagicSpell> spells = new ClassSpellAssembler().assemble(record.spells(), filename);
             if (spells.size() > noOfSpells) {
+                String spellName = spells.get(noOfSpells).getSpellName();
                 String msg = "Class spell book starting at line: " + line + " of file: " + filename + " has " +
-                        "too many spells declared. " + spells.size() + " spells found. " + noOfSpells + " declared";
+                        "too many spells declared. " + spells.size() + " spells found. " + noOfSpells + " declared. " +
+                        "First extra spell: " + spellName;
                 logger.fatal(msg);
                 throw new DataFileParseException(msg);
             }

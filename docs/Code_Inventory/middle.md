@@ -112,115 +112,115 @@
 - **`AllocEntry`** — *public class (top-level)*
   - Outline: One entry in the object/monster allocation table: a plain data holder with no behaviour of its own.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.Index`** → `int` — *private field*
   - Outline: The actual index of the thing this entry allocates, into its own kind table (C field `index`).
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.level`** → `int` — *private field*
   - Outline: Base dungeon level of the thing: the depth at which it naturally appears (C field `level`).
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.prob1`** → `int` — *private field*
   - Outline: Allocation probability for pass 1, determined from the allocation information in the game data (C field `prob1`).
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.prob2`** → `int` — *private field*
   - Outline: Allocation probability for pass 2, determined from the allocation restriction, i.e. the caller's filter (C field `prob2`).
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.prob3`** → `int` — *private field*
   - Outline: Allocation probability for pass 3, determined from the allocation calculation at the level being generated (C field `prob3`).
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.getIndex()`** → `int` — *public method*
   - Outline: Plain getter; no C equivalent, as C reads the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.setIndex(int)`** → `void` — *public method*
   - Outline: Plain setter; no C equivalent, as C writes the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.getLevel()`** → `int` — *public method*
   - Outline: Plain getter; no C equivalent, as C reads the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.setLevel(int)`** → `void` — *public method*
   - Outline: Plain setter; no C equivalent, as C writes the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.getProb1()`** → `int` — *public method*
   - Outline: Plain getter; no C equivalent, as C reads the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.setProb1(int)`** → `void` — *public method*
   - Outline: Plain setter; no C equivalent, as C writes the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [x] Internal comments created and checked
+  - [x] Class javadoc created and checked
 - **`AllocEntry.getProb2()`** → `int` — *public method*
   - Outline: Plain getter; no C equivalent, as C reads the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [x] Onceover by Rowan
+  - [x] Internal comments created and checked
+  - [x] Class javadoc created and checked
 - **`AllocEntry.setProb2(int)`** → `void` — *public method*
   - Outline: Plain setter; no C equivalent, as C writes the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [x] Onceover by Claude
+  - [x] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.getProb3()`** → `int` — *public method*
   - Outline: Plain getter; no C equivalent, as C reads the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`AllocEntry.setProb3(int)`** → `void` — *public method*
   - Outline: Plain setter; no C equivalent, as C writes the struct field directly.
   - Coded: unstamped · Commented: in full 260929
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 
 ## [`Message.java`](../../src/main/java/uk/co/jackoftradesltd/middle/Message.java)
 

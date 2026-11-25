@@ -30,8 +30,19 @@ import java.util.List;
  * typed values on the parser, and passes the parser to the hook function. The three parts of this
  * record match three things the C parser holds at that moment:
  * <ul>
- *   <li>{@link #name()}: the hook's directive name ({@code dir}), spelled as C spells it
- *       (for example {@code "type-mult"}).</li>
+ *   <li>{@link #name()}: the hook's directive name ({@code dir}), which is the keyword the data
+ *       file writes before the colon (for example {@code "type-mult"}). The quest, object-property
+ *       and most vault directives use C's keyword; seven directives in two grammars do not.
+ *       {@code BlowEffect2Grammar} names five differently: {@code base-colour},
+ *       {@code resist-colour} and {@code immune-colour} for C's {@code lore-color-base},
+ *       {@code lore-color-resist} and {@code lore-color-immune}, and {@code effect} and
+ *       {@code lash} for {@code effect-type} and {@code lash-type}. {@code VaultGrammar} names
+ *       two: {@code flag} for C's {@code flags}, and {@code map} for C's {@code D}. The name is
+ *       only a label between the grammar and its assembler, and the data file still has to use C's
+ *       keyword. Both groups are recorded in {@code docs/Accepted_Deviations.md}: the blow effect
+ *       five as "Five directives carry a different name in the parse record from the keyword in
+ *       the data file", and the vault two as "Two directives carry a different name in the parse
+ *       record from the keyword in the data file".</li>
  *   <li>{@link #values()}: the field values. C holds them already converted ({@code int},
  *       {@code uint}, {@code sym}, {@code str}, {@code rand}); here they stay as the text the
  *       lexer matched, in file order, and the assembler converts them. A {@code str} field that C
@@ -45,9 +56,10 @@ import java.util.List;
  * The grammars always pass a list they have just built, so a hand-built {@code Directive} (as the
  * tests build) is the only way to reach an unusual shape.
  *
- * <p>Coded on 261114, commented in full on 261115.
+ * <p>Coded on 261114, commented in full on 261115, name description corrected on 261125 and cross-referenced to the vault entry on 261125.
  *
- * @param name   the directive's name as C spells it, without the colon
+ * @param name   the directive's name without the colon: C's keyword, except for seven directives in
+ *               {@code BlowEffect2Grammar} and {@code VaultGrammar} (see {@link #name()})
  * @param values the directive's values as raw text, in file order; one for most directives, two
  *               for {@code type-mult}
  * @param line   the 1-based line of the directive in its file, used in the assembler's error text

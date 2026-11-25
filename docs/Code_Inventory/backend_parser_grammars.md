@@ -192,38 +192,38 @@
 - **`EffectParseRecord`** — *public record (top-level)*
   - Outline: Immutable extraction record for one parsed `effect:` block (the shared effect/dice grammar reused across many data files): the raw, still-unresolved fields, later turned into the `Effect` domain type by `EffectAssembler`.
   - Coded: before 261119 · Commented: in full 261119
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`EffectParseRecord components`** — *record components (12)*
   - Outline: 12 of 12 have an `@param` in the record's Javadoc. Components: `String typeInit, String subTypeWrapper, String radius, String other, String diceString, String yVal, String xVal, String expressionChars, String expressionBases, String expressionOperations, String effectMessage, int line`.
   - Coded and commented dates: see the record item above.
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`EffectParseRecord.amendYX(String, String)`** → `EffectParseRecord` — *public method*
   - Outline: A copy of this record with the y and x parameters replaced, for an `effect-yx:` line.
   - Coded: before 261119 · Commented: in full 261119
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`EffectParseRecord.amendExpression(String, String, String, String)`** → `EffectParseRecord` — *public method*
   - Outline: A copy of this record with the dice string and the three expression fields replaced as a set, for a `dice:` or `expr:` line.
   - Coded: before 261119 · Commented: in full 261119
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`EffectParseRecord.appendMessage(String)`** → `EffectParseRecord` — *public method*
   - Outline: A copy of this record with `text` added to the end of the message, for an `effect-msg:` line.
   - Coded: before 261119 · Commented: in full 261119
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 
 ## [`EffectParseRecordType.java`](../../src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/EffectParseRecordType.java)
 

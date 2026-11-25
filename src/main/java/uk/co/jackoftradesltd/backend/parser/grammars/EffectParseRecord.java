@@ -22,10 +22,18 @@ package uk.co.jackoftradesltd.backend.parser.grammars;
  * grammar reused across many data files): the raw, still-unresolved fields, later turned into
  * the {@code Effect} domain type by {@link EffectAssembler}.
  *
- * <p>A grammar builds the record when the effect line arrives, with the name and sub-type given and
- * every other field the empty string, then fills the rest in as the lines that follow it are read:
- * {@code effect-yx:} through {@link #amendYX}, {@code dice:} and {@code expr:} through
- * {@link #amendExpression}, and {@code effect-msg:} through {@link #appendMessage}. Each of those
+ * <p>A grammar builds the record when the effect line arrives. The name, sub-type, radius and other
+ * parameter are what that line gave. The dice, {@code effect-yx:} and expression fields are what the
+ * lines straight after it gave: the shared {@code effectBlock} rule takes one {@code effect-yx:}
+ * and one {@code dice:} with its {@code expr:} lines at that point. Each is the empty string where
+ * the data file gave none, and the message starts as {@code null}. Two builders start from
+ * the empty string instead: {@code PlayerTimedGrammar.g4}, which gives the name and sub-type and
+ * leaves every other field empty (the message included), and the extra effects of
+ * {@code TrapGrammar.g4}, whose message is empty.
+ *
+ * <p>The lines that come later fill in the rest: {@code effect-yx:} through {@link #amendYX},
+ * {@code dice:} and {@code expr:} through {@link #amendExpression}, and {@code effect-msg:} through
+ * {@link #appendMessage}. Each of those
  * returns a new record and leaves this one unchanged, so the caller has to write the result back over
  * the old one; dropping it loses the line. Nothing here is validated or resolved: a bad name, a
  * non-numeric {@code radius} or a malformed dice string is only found when {@link EffectAssembler}
@@ -60,10 +68,12 @@ package uk.co.jackoftradesltd.backend.parser.grammars;
  *                              with {@link #expressionChars}
  * @param effectMessage         the message text shown when the effect fires, or {@code null}/empty
  *                              if the line gave none
- * @param line                  the source line the {@code effect:} block starts on, for error
- *                              messages; the assembler's errors cite this line, so a grammar that
- *                              builds the record from a later line than the effect line gives the
- *                              wrong line in them
+ * @param line                  the source line the assembler's errors cite for this effect. Every
+ *                              grammar passes the line the {@code effect:} block starts on, except
+ *                              {@code PlayerTimedGrammar.g4}, which passes the line of the
+ *                              record's {@code name:} (carried through
+ *                              {@link EffectParseRecordType#convertToRecord}), so an error in a
+ *                              timed effect names that line
  * @author Rowan Crowther
  */
 public record EffectParseRecord(String typeInit,

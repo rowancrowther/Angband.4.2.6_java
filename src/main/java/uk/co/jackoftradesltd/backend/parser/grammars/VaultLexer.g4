@@ -11,10 +11,10 @@
  * type: goes to REST_OF_LINE rather than being a set of keywords because the seven vault type
  * names are ordinary prose with spaces and brackets — "Lesser vault", "Interesting room",
  * "Greater vault (new)". Matching one to a RoomType is VaultAssembler's job, mirroring C's
- * streq against room_builders[i].name ([C] src/generate.c:517).
+ * streq against room_builders[i].name ([C] src/generate.c, parse_vault_rows and parse_vault_columns).
  *
  * D: matters more than it looks. C requires every layout line to be exactly `columns` characters
- * (strlen(desc) != v->wid, [C] src/generate.c:588), and the real data pads short rows with
+ * (strlen(desc) != v->wid, [C] src/generate.c, parse_vault_d), and the real data pads short rows with
  * trailing spaces to reach that width. STRING therefore runs to the line ending and keeps that
  * padding verbatim; anything that trimmed it would silently corrupt the vault's shape.
  *
@@ -78,7 +78,7 @@ D
  * @author Rowan Crowther
  *
  * Declared after the directives so the literals win the longest-match tie, and signed because
- * rating: is read with parser_getint in C ([C] src/generate.c:600) rather than parser_getuint —
+ * rating: is read with parser_getint in C ([C] src/generate.c, parse_vault_rating) rather than parser_getuint —
  * a negative rating is legal input even though the shipped data has none.
  */
 INTEGER

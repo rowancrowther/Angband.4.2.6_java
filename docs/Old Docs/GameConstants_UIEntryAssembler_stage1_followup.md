@@ -22,7 +22,7 @@ No, not with the game data currently shipped — but it is a real ordering devia
   bases haven't been loaded yet, a `base:` line would fail to resolve. That's the one dependency the C order (slay
   before monster base)
   would, on the face of it, get backwards.
-- In practice it doesn't come up: `lib/gamedata/slay.txt` (both the upstream C copy and the Java repo's copy) contains
+- In practice it doesn't come up: `../../lib/gamedata/slay.txt` (both the upstream C copy and the Java repo's copy) contains
   no `base:` lines at all — every slay entry uses
   `race-flag:` instead. `parse_slay_base` is registered but never invoked by the shipped data.
 

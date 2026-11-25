@@ -200,7 +200,7 @@ lashType
 /*
  * @author Rowan Crowther
  *
- * One complete record: a mandatory name: followed by one or more directives in
+ * One complete record: a mandatory name: followed by any number of directives in
  * any order.
  *
  * Every directive is added to a list as a Directive, in file order, and the list

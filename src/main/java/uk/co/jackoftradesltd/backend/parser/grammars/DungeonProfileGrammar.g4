@@ -22,7 +22,7 @@
  * DungeonProfileLexer.
  *
  * Cf. the C parser in src/generate.c: struct file_parser profile_parser
- * (generate.c:306). C registers one callback per directive and keeps the
+ * (in generate.c). C registers one callback per directive and keeps the
  * record being built in the parser's priv pointer, so "any directive, any
  * order, until the next name:" falls out of the design. This grammar says the
  * same thing explicitly: 'profile' is one 'name' followed by a repeated choice
@@ -288,7 +288,7 @@ profile
 /*
  * @author Rowan Crowther
  *
- * The whole file: one or more profiles.
+ * The whole file: zero or more profiles.
  * EOF is matched explicitly so trailing rubbish is an error rather than
  * silently ignored.
  *

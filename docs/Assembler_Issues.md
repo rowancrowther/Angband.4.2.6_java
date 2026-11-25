@@ -4,9 +4,183 @@ Differences between the Java assemblers and the C data-file handlers they replac
 during reader ports (`docs/ReaderPort.md`) and left for the separate assembler pass. All assembler paths are under
 `src/main/java/uk/co/jackoftradesltd/backend/parser/`.
 
+Last checked against the code on 2026-11-24. The file runs in four blocks: the open `ObjectProperty` and `Projection` entries,
+the other open entries, the closed `ObjectProperty` and `Projection` entries, then every other closed entry in its original
+order. The entries closed on 2026-11-24 were checked by reading the assembler or its Javadoc that day, and each says which.
+
+# Open: `ObjectProperty` and `Projection`
+
+## `objectproperty/ObjectPropertyAssembler.java`: the sentinel codes resolve, and a missing `code:` skips the record
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Partly fixed 26-11-24: see the last bullet.
+
+- `parse_object_property_code` in `obj-init.c` looks the code up with `code_index_in_array` in `datafile.c`, an exact match
+  against `obj_mods` (the five stats and eleven modifiers, no `NONE` or `MAX`), `obj_flags` (which starts with `NONE` and
+  has no maximum) or `element_names` (neither). Anything else is `PARSE_ERROR_INVALID_OBJ_PROP_CODE`.
+- `ObjectPropertyAssembler.java:120`, `:124` and `:129` use `valueOf("OM_" + code)`, `valueOf("OF_" + code)` and
+  `valueOf("ELEM_" + code)`, which also find `OM_NONE`, `OM_MAX`, `OF_MAX`, `ELEM_NONE` and `ELEM_MAX`. So `code:NONE` on a
+  stat, modifier, resistance, vulnerability, immunity or ignore, and `code:MAX` on anything, load here and fail in C. Only
+  `code:NONE` on a flag is valid in both.
+- The other way round: a record with no `code:` line is valid in C, where `index` stays 0 (`STR` for a stat). Here the code
+  is `""`, `valueOf("OM_")` throws, and the record is skipped with `"has an invalid code: "`, an empty code in the message.
+- `ObjectPropertyReaderTest.sentinelCodesAreAcceptedHereWhereCRejectsAllButFlagNone` and
+  `aRecordWithNoCodeIsSkippedHereWhereCHoldsIndexZero` pin both.
+- None on the shipped data: all 79 records carry a real code.
+- Checked 2026-11-24: `ObjectPropertyAssembler.java` has moved to `unused/`, and `ObjectProperty2Assembler.java` replaces it. The
+  new one refuses `OM_NONE`, `OM_MAX`, `ELEM_NONE` and `ELEM_MAX` (`ObjectProperty2Assembler.java:648` and `:677`). What it does
+  with `code:MAX` on a flag, and with a record that has no `code:` line, was not read. Open for those two.
+
+## `objectproperty/ObjectPropertyAssembler.java` and `ObjectPropertyParseRecord.java`: Javadoc says the assembler looks `bindui:` up in the UI-entry registry, it does not
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed. Checked 2026-11-24: both files have moved to `unused/`. `ObjectProperty2Assembler.java` has a paragraph on the UI
+binding (`:91`); whether it still says the assembler looks `bindui:` up in the UI-entry registry was not read, and neither were
+`ObjectDataLoader.loadObjectProperties` or `GameConstants.java`.
+
+- `ObjectPropertyParseRecord.java` says the assembler turns the raw strings into the typed property, "looking the
+  `bindui` target up in the UI-entry registry". `ObjectPropertyAssembler.java` has that call commented out
+  (`// UIEntry uientry = UIRegistry.getUIEntry(uiEntryName);`) and stores the name in an `ObjectProperty.UIBinding`
+  instead. `ObjectPropertyReaderTest`'s own class block already says so.
+- `ObjectDataLoader.loadObjectProperties` still says it "must run after the UI entries, which the property assembler
+  resolves `bindui` targets against", and `GameConstants.java` marks the call "Dependent on UIEntry". Neither is true while
+  the lookup is commented out.
+- C binds at parse time, using the `prop->index` the record has reached, so a `bindui:` written before `code:` binds index 0.
+  The port stores the binding with the whole property, so the order of the two lines does not matter.
+- Not a behaviour difference in the shipped file; recorded here because the fix is in the Javadoc.
+
+## `projection/ProjectionAssembler.java`: a `numerator:`, `divisor:` or `damage-cap:` above 2147483647 drops the record
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed. Checked 2026-11-24: the three numbers are still read through `ParseUtils.parseIntString` (`ProjectionAssembler.java:233`,
+`:267`, `:283`), so the difference stands as the out-of-`int`-range refusal accepted 261027. `docs/Accepted_Deviations.md` has no
+Projection entry of its own, and what `parseIntString` does on overflow was not read this date. Open until that entry is made.
+
+- C reads these with `parser_getuint` and stores the result in an `int` field, so 2147483648 is kept (as a negative number) and
+  nothing is refused above that.
+- `ProjectionAssembler.java:147`, `:182` and `:201` use `Integer.parseInt`, so the value is an `"invalid ..."` error and the
+  record is skipped. A skipped `type:element` record then fails the file ("Invalid number of elements").
+- `ProjectionReaderTest.aNumeratorAboveIntMaxDropsTheRecordAndFailsTheFileWhereCReadsAnUnsignedInt` pins it for `numerator:`.
+- None on the shipped data, where the largest figure is the 1600 damage cap.
+
+# Open: everything else
+
+## `itemobject/ItemObjectAssembler.java`: an `alloc:` depth of 2147483647 or more loads, C refuses it
+
+Found 2026-11-07 during `/port` of the open assemblers. Not fixed. Line numbers refreshed 2026-11-24.
+
+- C: `parse_object_alloc` calls `grab_int_range` in `datafile.c`, which returns `PARSE_ERROR_INVALID_VALUE` for either end at or beyond `INT_MIN` or `INT_MAX`. `parse_object_alloc` turns that into `PARSE_ERROR_INVALID_ALLOCATION`. There is no 0 to 255 check for objects.
+- Java: `ItemObjectAssembler.java:276-279` reads both ends with `ParseUtils.parseIntString` and never tests for the `Integer.MIN_VALUE`/`Integer.MAX_VALUE` mark that the clamp leaves, so `alloc:1:5 to 2147483647` loads. `EgoItemAssembler.java` and `ArtifactAssembler.java` are not affected, since their 0 to 255 check catches it.
+- None on the shipped data.
+
+## `itemobject/ItemObjectAssembler.java` and `ArtifactAssembler.java`: a tval with no `object_base.txt` record has a `null` base, C has a zeroed one
+
+Found 2026-11-07 during `/port` of the open assemblers. Not fixed. Line numbers refreshed 2026-11-24.
+
+- C: `kb_info` is zero-filled for every tval, so `type:` on a valid tval the file never declares still gives the kind `&kb_info[tval]`. Its `num_svals` counts up and the kind gets a real sval. An artifact's `base-object:` on that tval loads too.
+- Java: `ObjectRegistry.getBaseFromTVal` answers `null`. `ItemObjectAssembler.java:195` then registers the kind as base-less (sval 0, no counter), and `ArtifactAssembler.java:440-446` refuses the record as an unknown object type.
+- None on the shipped data, where `object_base.txt` declares every tval that `object.txt` and `artifact.txt` use.
+
+## `itemobject/ItemObjectAssembler.java` and `egoitem/EgoItemAssembler.java`: a `values:` dice string of 40 characters or more is accepted, C refuses it
+
+Found 2026-11-07 during `/port` of the open assemblers. Not fixed for `ItemObjectAssembler.java`; the ego half is fixed 26-11-24 (`EgoItemAssembler.java:261` refuses a value of 40 characters or more).
+
+- C: `grab_rand_value` in `datafile.c` copies the text between the brackets into a 40-byte `dice_string`, and `find_value_arg` returns false when it does not fit, so the token is `PARSE_ERROR_INVALID_VALUE`.
+- Java: `ItemObjectAssembler.java:388` passes the whole text to `Random.parseStr` with no length test. `EgoItemAssembler.java` had the same gap and now tests the length before parsing.
+- None on the shipped data. Only a modded file with a padded dice string could show it.
+
+# Closed: `ObjectProperty` and `Projection`
+
+## `objectproperty/ObjectPropertyAssembler.java`: a `subtype:` on a record that is not a flag is refused, C stores it
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ObjectPropertyAssembler.java` has moved to `unused/`. Its replacement, `ObjectProperty2Assembler.java`, stores a `subtype:` on any kind of property (comment at `:517-521`). The bullets below describe the state before the fix.]
+
+- `parse_object_property_subtype` in `obj-init.c` sets `prop->subtype` on whatever record is current. The data-file comment
+  says only flags use it, but nothing checks.
+- `ObjectPropertyAssembler.java:94` adds `"a subtype on a non flag type"` to the soft errors and skips the record, so
+  `type:stat` with `subtype:sustain` loads in C and is lost here.
+- `ObjectPropertyReaderTest.aSubtypeOnANonFlagIsASoftErrorHereWhereCAcceptsIt` pins it.
+- None on the shipped data: all 38 subtypes are on flags.
+
+## `objectproperty/ObjectPropertyAssembler.java`: `bindui:` aux is true for any text but exactly `0`, C tests the number
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ObjectPropertyAssembler.java` has moved to `unused/`. Its replacement, `ObjectProperty2Assembler.java`, reads the aux figure through `ParseUtils.isTrue` (Javadoc at `:930-936`). The bullets below describe the state before the fix.]
+
+- `parse_object_property_bindui` in `obj-init.c` runs `bool isaux = (parser_getint(p, "aux") != 0)`. `strtol` reads `00`
+  and `-0` as zero, so both are false.
+- `ObjectPropertyAssembler.java:196`: `boolean isAux = !record.aux().equals("0")` compares the raw text, so both are true.
+- `ObjectPropertyReaderTest.anAuxWrittenAsZeroOtherThanPlainZeroIsTrueHereWhereCReadsFalse` pins it.
+- None on the shipped data, which has only `0` and `1`. Same family as the `ActivationAssembler.java` `aim:` entry above.
+
+## `objectproperty/ObjectPropertyAssembler.java`: an unknown `type-mult:` tval keeps the record, every other bad field skips it
+
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: the `type-mult:` loop in `ObjectPropertyAssembler.java` throws `DataFileParseException` for a tval that resolves to nothing, so the load ends as C's `PARSE_ERROR_UNRECOGNISED_TVAL` does. `ObjectPropertyReaderTest.anUnknownTypeMultTvalEndsTheLoad` passes. The bullets below describe the state before the fix.]
+
+- `parse_object_property_type_mult` returns `PARSE_ERROR_UNRECOGNISED_TVAL`, fatal in C. The assembler's usual rule for a bad
+  field is `continue` out to the next record.
+- `ObjectPropertyAssembler.java:175` and the `NumberFormatException` catch after it add the error and carry on with the next
+  `type-mult:` line, because the `continue` is inside the loop over the record's lines. The record is kept without that line.
+- `ObjectPropertyReaderTest.anUnknownTypeMultTvalIsASoftErrorThatKeepsTheRecord` pins it.
+- Also in that method: the `default ->` branch of the `code:` switch (`ObjectPropertyAssembler.java:132`) can never run,
+  because an unknown, `NONE` or `MAX` type has already skipped the record above it.
+
+## `projection/ProjectionAssembler.java`: a line left out is `""`, C holds `NULL`
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `ProjectionGrammar.g4` fills all 15 slots with `null`, and `ProjectionAssembler.java` tests the optional numeric fields and `msgt` with `!= null` (an absent `msgt` gives `MSG_GENERIC`), so a line left out holds `null` as in C. `ProjectionReaderTest`, `ProjectionAssemblerTest` and `ProjectionGrammarTest` pass with the flipped tests and the full suite is green. The bullets below describe the state before the fix; the pinning test is now `aLineLeftOutIsNullAsCHoldsNull`.]
+
+- `parse_projection_code` zero-fills the record with `mem_zalloc`, so a projection with no `name:`, `player-desc:` or
+  `lash-desc:` has `NULL` in that field (the shipped file has 25 `name:`, 27 `player-desc:` and 23 `lash-desc:` lines in 56 records).
+- `ProjectionAssembler.java:139-143` copies `record.name()`, `playerDesc()` and `lashDesc()` as they come, and the grammar fills
+  an absent directive with `""`. So `Projection.getName()` answers `""` where C has no name.
+- `ProjectionReaderTest.aLineLeftOutIsAnEmptyStringWhereCHoldsNull` pins it.
+- Same family as the `ActivationAssembler.java` entry above. Anything that tests for "no name" has to test for empty.
+
+## `projection/ProjectionAssembler.java`: `msgt:NONE` is accepted, and a numeric `msgt:` is one constant late
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ProjectionAssembler.java:292` gives `MSG_GENERIC` for an absent `msgt:` and `:489` resolves any other through `MessageType.lookupByName`, so `NONE` is refused and a number counts from `GENERIC`. The bullets below describe the state before the fix.]
+
+- `message_lookup_by_name` in `message.c` compares the text with the names built from `list-message.h` (`GENERIC` first, `MAX`
+  last, no `NONE`), or takes a number below `MSG_MAX`, which is 153.
+- `ProjectionAssembler.java:404` is `MessageType.valueOf("MSG_" + ...)`, so `msgt:NONE` gives `MSG_NONE`, an enum constant C
+  does not have (an accepted divergence for the constant itself, but here it makes a line load that C rejects).
+- `ProjectionAssembler.java:411` is `MessageType.values()[msgOrdinal]`, and `MSG_NONE` takes ordinal 0, so `msgt:0` is
+  `MSG_NONE` (C: `GENERIC`), `msgt:1` is `MSG_GENERIC` (C: `BIRTH`), and 153, which C rejects, is `MSG_SCRAMBLE`. The upper bound
+  at `:406` uses `MSG_MAX.ordinal()`, which is one higher than C's `MSG_MAX` for the same reason.
+- A data file cannot reach the numeric path today (`ProjectionLexer.g4` only lexes upper-case names; see `grammar_issues.md`), so
+  only the `NONE` case shows through the reader. `ProjectionReaderTest.msgtNoneIsAcceptedWhereCHasNoSuchName` and
+  `ProjectionAssemblerTest.numericMsgtIsOneConstantLateAndOneNumberTooWideWhereCCountsFromGeneric` pin them.
+- `ProjectionAssemblerTest.numericMsgtBoundsFollowMsgMax` already encodes the shifted bound as correct.
+- Same family as the `BlowMethodAssembler.java` entry above.
+
+## `projection/ProjectionAssembler.java` and `GrammarDriver.java`: a misplaced element gives no projections and no error, and the loader carries on
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `ProjectionAssembler.java` throws `DataFileParseException` for an unknown, empty or misplaced code in the first 25 records, an empty code anywhere, and an element count other than 25. `GrammarDriver.java` catches only `IOException` and `ParseCancellationException`, so the exception leaves `ProjectionReader.parseWithResults` and `WorldDataLoader.loadProjections` with the position, the ordinal and the errors gathered so far in its message, and the registry is never touched. No other assembler throws `ParseCancellationException`; the only throw is `ParseErrors.throwIfAny`, which `GrammarDriver.java` catches and answers with the parser's messages. The bullets below describe the state before the fix; the pinning tests are now `ProjectionReaderTest.aSwappedElementBlockStopsTheLoadWithTheMismatchInTheMessage` and `ProjectionAssemblerTest.swappedElementsStopTheLoadAtTheFirstMismatch`.]
+
+- `parse_projection_code` returns `PARSE_ERROR_ELEMENT_NAME_MISMATCH` when one of the first 25 codes is not the element at that
+  position, and the parse quits.
+- `ProjectionAssembler.java:137` throws a `ParseCancellationException` with the message. `channel/parser/GrammarDriver.java:141`
+  catches it and returns `errorCatcher.getErrors()`, which holds only lexer and grammar errors, so the message goes to the log and
+  never reaches the `ParseResult`. The assembler's Javadoc says the message "carries the errors gathered so far"; it does, to a
+  catch block that discards it.
+- `ErrorParsing.reportAndCheck` answers `true` when there are no errors, whatever the item count, so `WorldDataLoader.loadProjections`
+  registers an empty projection list and start-up carries on, where C quits.
+- `ProjectionReaderTest.aSwappedElementBlockGivesNoProjectionsAndNoErrorMessage` pins the empty, silent result.
+- None on the shipped data, whose element block is in order. Any assembler that throws `ParseCancellationException` is open to
+  the same thing.
+
+## `projection/ProjectionAssembler.java`: an unknown `code:` after the 25 elements skips the record, C never reads it
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `ProjectionAssembler.java` reads the code only for the first 25 records. From the 26th on, a code that resolves is kept, one that does not is stored as `PROJ_NONE` with no error (`resolveCode` takes an `insideCount` flag for this), and an empty code still stops the load, as C's `parser_parse` does for a `code:` with no value. The stored record's code is `PROJ_NONE` where C keeps no code at all. The bullets below describe the state before the fix; the pinning tests are now `ProjectionAssemblerTest.unknownCodeAfterTheElementBlockIsStoredAsProjNoneWithNoError` and `ProjectionReaderTest.unknownCodeAfterTheElementBlockIsStoredWithNoCodeAndNoError`.]
+
+- `parse_projection_code` compares the code with `element_names[index]` only while `index < ELEM_MAX`. After that it stores
+  nothing from the code, so any text loads and the projection is whatever the other directives say.
+- `ProjectionAssembler.java:123-125` resolves every code through `ProjectionEnum` and skips a record whose code is unknown, with
+  an error. The grammar also limits the code to an upper-case identifier.
+- `ProjectionReaderTest.anUnknownCodeBeyondTheElementBlockSkipsTheRecordWhereCNeverReadsTheCode` pins it.
+- None on the shipped data. The assembler's `resolveCode` Javadoc already says C does not look the code up.
+
+# Closed: everything else
+
 ## `blowmethod/BlowMethodAssembler.java`: `msg:` lookup is exact-case and name-only
 
-Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `BlowMethodAssembler.java:220` resolves `msg:` with `MessageType.lookupByName`, the port of C's `message_lookup_by_name`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -35,7 +209,7 @@ Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. Not fixed.
 
 ## `blowmethod/BlowMethodAssembler.java`: Javadoc does not mention the reversed list
 
-Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: the `assemble` block now says the list is in reverse file order and that `addFirst` reproduces C's chain (`BlowMethodAssembler.java:80-84`). The bullets below describe the state before the fix.]
 
 - `BlowMethodAssembler.assemble` now builds the list with `addFirst`, so the result is in reverse file order, as C's
   `blow_methods` is after `finish_parse_meth`.
@@ -46,7 +220,7 @@ Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. Not fixed.
 
 ## `summon/SummonAssembler.java`: `uniques:` is true only for exactly `1`
 
-Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SummonReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `SummonAssembler.java:192-203` reads each `uniques:` figure through `ParseUtils.isTrue`, so any non-zero figure is true; the class block records the rules. The bullets below describe the state before the fix.]
 
 - `parse_summon_unique` in `mon-summon.c` reads an `int` and sets `unique_allowed` when it is non-zero. So `uniques:2`
   and `uniques:-1` are true in C.
@@ -84,7 +258,7 @@ Found 2026-10-17 during `/port backend/parser/SummonReader.java`. [<span style="
 
 ## `summon/SummonAssembler.java`: `base:` order is file order, C's is reversed
 
-Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SummonReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `SummonAssembler.java:215` puts each base at the head of the list with `addFirst`, as `parse_summon_base` does. The bullets below describe the state before the fix.]
 
 - `parse_summon_base` pushes each base on the head of `s->bases`, so a summon with `base:zephyr hound` then
   `base:canine` holds canine first in C and zephyr hound first in Java.
@@ -108,7 +282,7 @@ Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="col
 
 ## `pit/PitAssembler.java`: the `room:` comment says the lexer constrains the digit, it does not
 
-Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: the comment at `PitAssembler.java:165-170` and the class block (`:77-82`) now say any number other than 1 to 3 becomes `PIT_TYPE_NONE`, that C keeps the number as written, and that this is not observable. Neither claims the lexer constrains the digit. The bullets below describe the state before the fix.]
 
 - The comment at `PitAssembler.java:74` says an unrecognized digit falls to `PIT_TYPE_NONE` "since the digit is already
   constrained by the lexer". `PIT_INTEGER` takes any integer, so `room:4`, `room:-1` and `room:99999999999` get here and
@@ -120,7 +294,7 @@ Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
 
 ## `pit/PitAssembler.java`: bases, colours and forbidden monsters are in file order, C's are reversed
 
-Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: the class block (`PitAssembler.java:88`), the `assemble` block (`:141`) and the colour loop (`:308`) say each list is built with `addFirst`, as C's head-pushed chains are. Read as comments; the other two loops were not read. The bullets below describe the state before the fix.]
 
 - `parse_pit_mon_base`, `parse_pit_color` and `parse_pit_mon_ban` each push on the head of their list, so a pit with
   `mon-base:orc` then `mon-base:troll` holds troll first in C and orc first in Java.
@@ -130,7 +304,7 @@ Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
 
 ## `monsterspell/MonsterSpellAssembler.java`: an absent `hit:` drops the record, C leaves it at 0
 
-Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `MonsterSpellAssembler.java:162-170` starts `hit` at 0 and reads it only when the text is present, so an absent `hit:` is 0 as in C. The bullets below describe the state before the fix.]
 
 - `parse_mon_spell_name` in `mon-init.c` allocates the spell with `mem_zalloc`, so a record with no `hit:` line has a
   `hit` of 0. In `mon-spell.c` a hit of 0 means the spell never hits.
@@ -159,7 +333,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span s
 
 ## `monsterspell/MonsterSpellAssembler.java`: `msgt:` lookup is exact-case and name-only
 
-Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `MonsterSpellAssembler.java:154` resolves `msgt:` with `MessageType.lookupByName`, and a `null` result is fatal. The bullets below describe the state before the fix.]
 
 - `parse_mon_spell_message_type` in `mon-init.c` uses `message_lookup_by_name`, the lookup described in the
   `blowmethod/BlowMethodAssembler.java` entry above: case-insensitive, with a numeric form, and no name `NONE`. That
@@ -189,7 +363,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span s
 
 ## `monsterspell/MonsterSpellAssembler.java`: the list is in file order, C's chain is reversed
 
-Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `MonsterSpellAssembler.java:177` puts each spell at the head of `monsterSpellTypes` with `addFirst`, as C's chain is. The bullets below describe the state before the fix.]
 
 - `parse_mon_spell_name` pushes each record on the head of the chain and `finish_parse_mon_spell` keeps it, so
   `monster_spells` starts with the last record in the file. `MonsterSpellAssembler.java:112` appends in file order.
@@ -204,12 +378,12 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixe
 Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
 
 - `MonsterSpellParseRecord.java:58` and `MonsterSpellLevelAssembler.java:34` cite `mon-init.c:596`. Both should name
-  the function (`parse_mon_spell_name`) without a line number. [<span style="color:#006400">**CLOSED**</span> 26-10-27 for `MonsterSpellLevelAssembler.java`: the class Javadoc names `parse_mon_spell_name()` with no line number. Still open for `MonsterSpellParseRecord.java:58`.]
+  the function (`parse_mon_spell_name`) without a line number. [<span style="color:#006400">**CLOSED**</span> 26-10-27 for `MonsterSpellLevelAssembler.java`: the class Javadoc names `parse_mon_spell_name()` with no line number. `MonsterSpellParseRecord.java` also cites none: a search of `monsterspell/` for `mon-init.c:` and a digit found nothing on 26-11-24.]
 - Not a behaviour difference; recorded here because the fix is in comments.
 
 ## `monsterbase/MonsterBaseAssembler.java`: the list is in file order, C's chain is reversed
 
-Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `MonsterBaseAssembler.java:185` puts each base at the head of `results` with `addFirst`. Whether `MonsterRegistry.lookupMonsterBase` now agrees with the reversed list was not checked. The bullets below describe the state before the fix.]
 
 - `parse_mon_base_name` pushes each record on the head of the chain (`rb->next = h`) and `finish_parse_mon_base` keeps it,
   so `rb_info` starts with the last record in the file (`Morgoth`). `MonsterBaseAssembler.java` appends to `results` in
@@ -232,7 +406,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. [<span st
 
 ## `monster/MonsterAssembler.java`: `spell_power` is never defaulted to the level
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [**CLOSED** 26-10-20]
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20]
 
 - `parse_monster_depth` in `mon-init.c` sets `r->spell_power = r->level` ("Level is default spell power"), and
   `parse_monster_spell_power` overrides it only if a `spell-power:` line follows. A `spell-power:` line that comes before
@@ -266,7 +440,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style=
 
 ## `monster/MonsterAssembler.java`: a race with no `color:` is skipped, C leaves `d_attr` at 0
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `MonsterAssembler.java:320-326` gives `COLOUR_DARK` when there is no `color:` line and `COLOUR_WHITE` for an unknown one. The bullets below describe the state before the fix.]
 
 - `color` is optional in C. A race without one keeps the zeroed `d_attr`, which is `COLOUR_DARK`. A value that is not a
   colour is `PARSE_ERROR_INVALID_COLOR`.
@@ -277,7 +451,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `monster/MonsterAssembler.java`: the `drop:` min and max are not bounded, and a negative chance is kept
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `MonsterAssembler.java:410-441` throws for a leading minus on the chance, minimum or maximum, and for a minimum or maximum above 99. The bullets below describe the state before the fix.]
 
 - `parse_monster_drop` and `parse_monster_drop_base` return `PARSE_ERROR_INVALID_ITEM_NUMBER` when `min` or `max` is
   above 99, and the chance is a `uint`, so a negative one is refused by `parser_parse`.
@@ -290,7 +464,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 
 ## `monster/MonsterAssembler.java`: the lists are in file order, C's chains are reversed, and drops are grouped
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `MonsterGrammar.g4:305-336` builds the drop, friends, friends-base, mimic, shape and message lists with `addFirst`, and `drop:` and `drop-base:` share the one list (`dropsList`). The `assemble` block (`MonsterAssembler.java:125`) says the lists keep that order. The bullets below describe the state before the fix.]
 
 - `parse_monster_drop`, `parse_monster_drop_base`, `parse_monster_friends`, `parse_monster_friends_base`,
   `parse_monster_mimic`, `parse_monster_shape` and `add_alternate_spell_message` each push the new entry on the head of
@@ -342,7 +516,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style=
 
 ## `monster/MonsterAssembler.java`: an unknown spell name in `message-vis:`, `message-invis:` or `message-miss:` is ignored
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [**CLOSED** 26-10-20]
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20]
 
 - The three handlers call `grab_name("monster spell", spell, r_info_spell_flags, ...)` and return
   `PARSE_ERROR_INVALID_SPELL_NAME` when the name is not a spell. A message is kept for a spell the race does not cast.
@@ -428,7 +602,7 @@ Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="co
 
 ## `slay/SlayAssembler.java`: no range check on the three numbers
 
-Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `SlayAssembler.java:190-210` refuses a leading minus on `multiplier:`, `o-multiplier:` and `power:`. The bullets below describe the state before the fix.]
 
 - `parser_getuint` refuses a negative value; `SlayAssembler.java` takes whatever `Integer.parseInt` returns, so a
   negative `multiplier:`, `o-multiplier:` or `power:` loads. The token-level cause is in `docs/grammar_issues.md`
@@ -437,7 +611,7 @@ Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
 
 ## `brand/BrandAssembler.java`: `resist-flag:NONE` and `vuln-flag:NONE` are accepted, C rejects them
 
-Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `BrandAssembler.java:142-175` throws for `NONE` in both `resist-flag:` and `vuln-flag:`. The bullets below describe the state before the fix.]
 
 - `parse_brand_resist_flag` and `parse_brand_vuln_flag` call `lookup_flag`, which starts at `FLAG_START` (1), so the
   `NONE` entry at index 0 of `mon_race_flags` is never matched and both return `PARSE_ERROR_INVALID_FLAG`.
@@ -461,7 +635,7 @@ Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="c
 
 ## `brand/BrandAssembler.java`: no range check on the three numbers
 
-Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `BrandAssembler.java:186-207` refuses a leading minus on all three numbers. The bullets below describe the state before the fix.]
 
 - `parser_getuint` refuses a negative value; `BrandAssembler.java` takes whatever `Integer.parseInt` returns, so a
   negative `multiplier:`, `o-multiplier:` or `power:` loads. The token-level cause is in `docs/grammar_issues.md`
@@ -501,7 +675,7 @@ Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span sty
 
 ## `itemobject/ItemObjectAssembler.java`: `HATES_` flags are unknown, C sets `EL_INFO_HATES`
 
-Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ItemObjectAssembler.java:332` calls `ParseUtils.grabElementFlag`, and the class block (`:81-89`) records both prefixes. The bullets below describe the state before the fix.]
 
 - `grab_element_flag` in `obj-init.c` accepts `IGNORE_<element>` and `HATES_<element>`, setting `EL_INFO_IGNORE` or
   `EL_INFO_HATES` on that element of the kind's `el_info`.
@@ -575,7 +749,7 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="c
 
 ## `curse/CurseAssembler.java`: the 254-curse limit throws out of the reader and counts survivors, C counts records
 
-Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `CurseAssembler.java` counts every record before any other check and throws `IllegalArgumentException` on the 255th, with the count and line in the message. The throw is kept because C quits on this error, and the Tier 1 "Bad record" row in `docs/Issue_Approach_Order.md` is decided as stop the load. `CurseAssemblerTest` has `skippedRecordsStillCountTowardsTheCapAsInC`, `CurseReaderTest` passes, and the full suite is green. The bullets below describe the state before the fix.]
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `CurseAssembler.java` counts every record before any other check and throws `IllegalArgumentException` on the 255th, with the count and line in the message. The throw is kept because C quits on this error, and the Tier 1 "Bad record" row in `Old Docs/Issue_Approach_Order.md` is decided as stop the load. `CurseAssemblerTest` has `skippedRecordsStillCountTowardsTheCapAsInC`, `CurseReaderTest` passes, and the full suite is green. The bullets below describe the state before the fix.]
 
 - `finish_parse_curse` in `obj-init.c` counts every `name:` record and stops at 254 with `PARSE_ERROR_TOO_MANY_ENTRIES`.
 - `CurseAssembler.java:370` compares `results.size()` with `MAX_CURSES` after the first pass, so a record skipped for a bad
@@ -588,7 +762,6 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="c
   `twoHundredFiftyFourCursesLoadAndTheLimitIsTheLastOneC` the boundary. The assembler's class block already says the cap
   throws.
 - None on the shipped data, which has 27 curses.
-
 
 ## `activation/ActivationAssembler.java`: `aim:` is true only for exactly `1`, C takes any non-zero number
 
@@ -617,7 +790,7 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span sty
 
 ## `activation/ActivationAssembler.java` and `ActivationParseRecord.java`: Javadoc names a C function that does not exist and misdescribes the others
 
-Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ActivationAssembler.java:36-38` names `parse_act_name`, `parse_act_aim`, `parse_act_level`, `parse_act_power` and `finish_parse_act`, and `ActivationParseRecord.java:35-37` says the handlers convert as they read and `finish_parse_act` only counts, copies and numbers. The bullets below describe the state before the fix.]
 
 - `ActivationAssembler.java:31` calls the class the "Java port of `parse_activation_*` in `src/obj-init.c`". `obj-init.c` has
   no such functions; the handlers are `parse_act_*`.
@@ -626,74 +799,9 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
   read them, and `finish_parse_act` only counts, copies and numbers the records.
 - Not a behaviour difference; recorded here because the fix is in the Javadoc.
 
-## `objectproperty/ObjectPropertyAssembler.java`: a `subtype:` on a record that is not a flag is refused, C stores it
-
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
-
-- `parse_object_property_subtype` in `obj-init.c` sets `prop->subtype` on whatever record is current. The data-file comment
-  says only flags use it, but nothing checks.
-- `ObjectPropertyAssembler.java:94` adds `"a subtype on a non flag type"` to the soft errors and skips the record, so
-  `type:stat` with `subtype:sustain` loads in C and is lost here.
-- `ObjectPropertyReaderTest.aSubtypeOnANonFlagIsASoftErrorHereWhereCAcceptsIt` pins it.
-- None on the shipped data: all 38 subtypes are on flags.
-
-## `objectproperty/ObjectPropertyAssembler.java`: the sentinel codes resolve, and a missing `code:` skips the record
-
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
-
-- `parse_object_property_code` in `obj-init.c` looks the code up with `code_index_in_array` in `datafile.c`, an exact match
-  against `obj_mods` (the five stats and eleven modifiers, no `NONE` or `MAX`), `obj_flags` (which starts with `NONE` and
-  has no maximum) or `element_names` (neither). Anything else is `PARSE_ERROR_INVALID_OBJ_PROP_CODE`.
-- `ObjectPropertyAssembler.java:120`, `:124` and `:129` use `valueOf("OM_" + code)`, `valueOf("OF_" + code)` and
-  `valueOf("ELEM_" + code)`, which also find `OM_NONE`, `OM_MAX`, `OF_MAX`, `ELEM_NONE` and `ELEM_MAX`. So `code:NONE` on a
-  stat, modifier, resistance, vulnerability, immunity or ignore, and `code:MAX` on anything, load here and fail in C. Only
-  `code:NONE` on a flag is valid in both.
-- The other way round: a record with no `code:` line is valid in C, where `index` stays 0 (`STR` for a stat). Here the code
-  is `""`, `valueOf("OM_")` throws, and the record is skipped with `"has an invalid code: "`, an empty code in the message.
-- `ObjectPropertyReaderTest.sentinelCodesAreAcceptedHereWhereCRejectsAllButFlagNone` and
-  `aRecordWithNoCodeIsSkippedHereWhereCHoldsIndexZero` pin both.
-- None on the shipped data: all 79 records carry a real code.
-
-## `objectproperty/ObjectPropertyAssembler.java`: `bindui:` aux is true for any text but exactly `0`, C tests the number
-
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
-
-- `parse_object_property_bindui` in `obj-init.c` runs `bool isaux = (parser_getint(p, "aux") != 0)`. `strtol` reads `00`
-  and `-0` as zero, so both are false.
-- `ObjectPropertyAssembler.java:196`: `boolean isAux = !record.aux().equals("0")` compares the raw text, so both are true.
-- `ObjectPropertyReaderTest.anAuxWrittenAsZeroOtherThanPlainZeroIsTrueHereWhereCReadsFalse` pins it.
-- None on the shipped data, which has only `0` and `1`. Same family as the `ActivationAssembler.java` `aim:` entry above.
-
-## `objectproperty/ObjectPropertyAssembler.java` and `ObjectPropertyParseRecord.java`: Javadoc says the assembler looks `bindui:` up in the UI-entry registry, it does not
-
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
-
-- `ObjectPropertyParseRecord.java` says the assembler turns the raw strings into the typed property, "looking the
-  `bindui` target up in the UI-entry registry". `ObjectPropertyAssembler.java` has that call commented out
-  (`// UIEntry uientry = UIRegistry.getUIEntry(uiEntryName);`) and stores the name in an `ObjectProperty.UIBinding`
-  instead. `ObjectPropertyReaderTest`'s own class block already says so.
-- `ObjectDataLoader.loadObjectProperties` still says it "must run after the UI entries, which the property assembler
-  resolves `bindui` targets against", and `GameConstants.java` marks the call "Dependent on UIEntry". Neither is true while
-  the lookup is commented out.
-- C binds at parse time, using the `prop->index` the record has reached, so a `bindui:` written before `code:` binds index 0.
-  The port stores the binding with the whole property, so the order of the two lines does not matter.
-- Not a behaviour difference in the shipped file; recorded here because the fix is in the Javadoc.
-
-## `objectproperty/ObjectPropertyAssembler.java`: an unknown `type-mult:` tval keeps the record, every other bad field skips it
-
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-08: the `type-mult:` loop in `ObjectPropertyAssembler.java` throws `DataFileParseException` for a tval that resolves to nothing, so the load ends as C's `PARSE_ERROR_UNRECOGNISED_TVAL` does. `ObjectPropertyReaderTest.anUnknownTypeMultTvalEndsTheLoad` passes. The bullets below describe the state before the fix.]
-
-- `parse_object_property_type_mult` returns `PARSE_ERROR_UNRECOGNISED_TVAL`, fatal in C. The assembler's usual rule for a bad
-  field is `continue` out to the next record.
-- `ObjectPropertyAssembler.java:175` and the `NumberFormatException` catch after it add the error and carry on with the next
-  `type-mult:` line, because the `continue` is inside the loop over the record's lines. The record is kept without that line.
-- `ObjectPropertyReaderTest.anUnknownTypeMultTvalIsASoftErrorThatKeepsTheRecord` pins it.
-- Also in that method: the `default ->` branch of the `code:` switch (`ObjectPropertyAssembler.java:132`) can never run,
-  because an unknown, `NONE` or `MAX` type has already skipped the record above it.
-
 ## `egoitem/EgoItemAssembler.java`: an unknown `act:` name skips the record, C keeps it with no activation
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `EgoItemAssembler.java:463-465` keeps the record with a `null` activation when `lookupActivation` finds nothing. The bullets below describe the state before the fix.]
 
 - `parse_ego_act` in `obj-init.c` stores `findact(name)` and returns `PARSE_ERROR_NONE`. `findact` walks the activation chain
   and answers `NULL` when nothing matches, so the ego loads with no activation and no message.
@@ -704,7 +812,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `egoitem/EgoItemAssembler.java`: `alloc:` figures are not checked against 0 to 255
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `EgoItemAssembler.java:379` and `:386` refuse a bound below 0 or above 255. The bullets below describe the state before the fix.]
 
 - `parse_ego_alloc` returns `PARSE_ERROR_OUT_OF_BOUNDS` when either end of the range is above 255 or below 0. The commonness is not
   checked.
@@ -716,7 +824,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `egoitem/EgoItemAssembler.java` and `EgoItemsGrammar.g4`: a later `curse:` line with no power erases the earlier one, C ignores it
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `EgoItemAssembler.java:359-372` applies each `curse:` line in turn and the class block (`:112-114`) says a power of 0 does nothing. The bullets below describe the state before the fix.]
 
 - `parse_ego_curse` adds the curse "only if it has power", so `curse:vulnerability:10` then `curse:vulnerability:0` leaves
   power 10 in C. The zero line does nothing.
@@ -727,7 +835,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `egoitem/EgoItemAssembler.java`: `HATES_<element>` is an unknown flag, C accepts it
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: the class block (`EgoItemAssembler.java:81-83`) records the `IGNORE`/`HATES` prefix rule, including the shortened `IGN_FIRE` and `H_FIRE` forms. The bullets below describe the state before the fix.]
 
 - `grab_element_flag` in `obj-init.c` takes the text after the first underscore as an element name and sets
   `EL_INFO_IGNORE` for an `IGNORE` prefix and `EL_INFO_HATES` for a `HATES` prefix. The prefix test is
@@ -740,7 +848,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `egoitem/EgoItemAssembler.java`: the `NONE` and `MAX` names are accepted for elements and modifiers, C has neither
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `EgoItemAssembler.java:232`, `:277` and `:298` refuse `ELEM_NONE`, `ELEM_MAX`, `OM_NONE` and `OM_MAX`. The bullets below describe the state before the fix.]
 
 - `element_names` and `obj_mods` in `obj-init.c` are the names from `list-elements.h`, `list-stats.h` and
   `list-object-modifiers.h` and nothing more. `grab_element_flag` loops to `ELEM_MAX` exclusive, and `grab_index_and_int` and
@@ -753,7 +861,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `egoitem/EgoItemAssembler.java`: eligible kinds run first to last, C builds the list last to first
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [**CLOSED** 26-10-20]
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20]
 
 - `parse_ego_type` and `parse_ego_item` push each kind on the head of `poss_items`. After `type:sword` and
   `item:light:Lantern` the list is Lantern, then the swords from the highest `kidx` down.
@@ -780,7 +888,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style=
 
 ## `egoitem/EgoItemAssembler.java`: a skipped record takes no `egoIndex`
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `EgoItemAssembler.java:484` increments the index once per record, and a bad record throws, so no record is skipped and the numbers have no gap. The bullets below describe the state before the fix.]
 
 - `finish_parse_ego` numbers every ego by its place in the file, and a parse error in C ends the whole load, so a gap never
   appears there.
@@ -792,7 +900,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `egoitem/EgoItemAssembler.java`: two error messages are misspelled
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: neither string is in `EgoItemAssembler.java` any more (no match for `an malformed` or for `line:" + line`). The bullets below describe the state before the fix.]
 
 - `EgoItemAssembler.java:248` builds `"beginning at line:" + line` with no space after the colon, where every other message
   has one.
@@ -839,7 +947,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style
 
 ## `artifact/ArtifactAssembler.java`: a record with no `base-object:` is rejected, C keeps it with tval 0
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: accepted deviation, entered in `docs/Accepted_Deviations.md` under "Artifact" ("A record with no `base-object:` line is refused, where C loads it as tval 0"). The check is at `ArtifactAssembler.java:410`. The bullets below describe the state before the fix.]
 
 - `parse_artifact_name` zeroes the record. Only `weight:`, `cost:`, `graphics:`, `act:` and `time:` look the kind up, so a record
   with none of them loads in C.
@@ -858,75 +966,9 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style
 - `ArtifactReaderTest.aSecondParseGivesTheSpecialLightsTheirActivationAndTimeHereWhereCKeepsThemOnTheKind` pins it.
 - The kind table is unchanged by the second run (checked), so only the artifact objects differ.
 
-## `projection/ProjectionAssembler.java`: a line left out is `""`, C holds `NULL`
-
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-20: `ProjectionGrammar.g4` fills all 15 slots with `null`, and `ProjectionAssembler.java` tests the optional numeric fields and `msgt` with `!= null` (an absent `msgt` gives `MSG_GENERIC`), so a line left out holds `null` as in C. `ProjectionReaderTest`, `ProjectionAssemblerTest` and `ProjectionGrammarTest` pass with the flipped tests and the full suite is green. The bullets below describe the state before the fix; the pinning test is now `aLineLeftOutIsNullAsCHoldsNull`.]
-
-- `parse_projection_code` zero-fills the record with `mem_zalloc`, so a projection with no `name:`, `player-desc:` or
-  `lash-desc:` has `NULL` in that field (the shipped file has 25 `name:`, 27 `player-desc:` and 23 `lash-desc:` lines in 56 records).
-- `ProjectionAssembler.java:139-143` copies `record.name()`, `playerDesc()` and `lashDesc()` as they come, and the grammar fills
-  an absent directive with `""`. So `Projection.getName()` answers `""` where C has no name.
-- `ProjectionReaderTest.aLineLeftOutIsAnEmptyStringWhereCHoldsNull` pins it.
-- Same family as the `ActivationAssembler.java` entry above. Anything that tests for "no name" has to test for empty.
-
-## `projection/ProjectionAssembler.java`: a `numerator:`, `divisor:` or `damage-cap:` above 2147483647 drops the record
-
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
-
-- C reads these with `parser_getuint` and stores the result in an `int` field, so 2147483648 is kept (as a negative number) and
-  nothing is refused above that.
-- `ProjectionAssembler.java:147`, `:182` and `:201` use `Integer.parseInt`, so the value is an `"invalid ..."` error and the
-  record is skipped. A skipped `type:element` record then fails the file ("Invalid number of elements").
-- `ProjectionReaderTest.aNumeratorAboveIntMaxDropsTheRecordAndFailsTheFileWhereCReadsAnUnsignedInt` pins it for `numerator:`.
-- None on the shipped data, where the largest figure is the 1600 damage cap.
-
-## `projection/ProjectionAssembler.java`: `msgt:NONE` is accepted, and a numeric `msgt:` is one constant late
-
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
-
-- `message_lookup_by_name` in `message.c` compares the text with the names built from `list-message.h` (`GENERIC` first, `MAX`
-  last, no `NONE`), or takes a number below `MSG_MAX`, which is 153.
-- `ProjectionAssembler.java:404` is `MessageType.valueOf("MSG_" + ...)`, so `msgt:NONE` gives `MSG_NONE`, an enum constant C
-  does not have (an accepted divergence for the constant itself, but here it makes a line load that C rejects).
-- `ProjectionAssembler.java:411` is `MessageType.values()[msgOrdinal]`, and `MSG_NONE` takes ordinal 0, so `msgt:0` is
-  `MSG_NONE` (C: `GENERIC`), `msgt:1` is `MSG_GENERIC` (C: `BIRTH`), and 153, which C rejects, is `MSG_SCRAMBLE`. The upper bound
-  at `:406` uses `MSG_MAX.ordinal()`, which is one higher than C's `MSG_MAX` for the same reason.
-- A data file cannot reach the numeric path today (`ProjectionLexer.g4` only lexes upper-case names; see `grammar_issues.md`), so
-  only the `NONE` case shows through the reader. `ProjectionReaderTest.msgtNoneIsAcceptedWhereCHasNoSuchName` and
-  `ProjectionAssemblerTest.numericMsgtIsOneConstantLateAndOneNumberTooWideWhereCCountsFromGeneric` pin them.
-- `ProjectionAssemblerTest.numericMsgtBoundsFollowMsgMax` already encodes the shifted bound as correct.
-- Same family as the `BlowMethodAssembler.java` entry above.
-
-## `projection/ProjectionAssembler.java` and `GrammarDriver.java`: a misplaced element gives no projections and no error, and the loader carries on
-
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `ProjectionAssembler.java` throws `DataFileParseException` for an unknown, empty or misplaced code in the first 25 records, an empty code anywhere, and an element count other than 25. `GrammarDriver.java` catches only `IOException` and `ParseCancellationException`, so the exception leaves `ProjectionReader.parseWithResults` and `WorldDataLoader.loadProjections` with the position, the ordinal and the errors gathered so far in its message, and the registry is never touched. No other assembler throws `ParseCancellationException`; the only throw is `ParseErrors.throwIfAny`, which `GrammarDriver.java` catches and answers with the parser's messages. The bullets below describe the state before the fix; the pinning tests are now `ProjectionReaderTest.aSwappedElementBlockStopsTheLoadWithTheMismatchInTheMessage` and `ProjectionAssemblerTest.swappedElementsStopTheLoadAtTheFirstMismatch`.]
-
-- `parse_projection_code` returns `PARSE_ERROR_ELEMENT_NAME_MISMATCH` when one of the first 25 codes is not the element at that
-  position, and the parse quits.
-- `ProjectionAssembler.java:137` throws a `ParseCancellationException` with the message. `channel/parser/GrammarDriver.java:141`
-  catches it and returns `errorCatcher.getErrors()`, which holds only lexer and grammar errors, so the message goes to the log and
-  never reaches the `ParseResult`. The assembler's Javadoc says the message "carries the errors gathered so far"; it does, to a
-  catch block that discards it.
-- `ErrorParsing.reportAndCheck` answers `true` when there are no errors, whatever the item count, so `WorldDataLoader.loadProjections`
-  registers an empty projection list and start-up carries on, where C quits.
-- `ProjectionReaderTest.aSwappedElementBlockGivesNoProjectionsAndNoErrorMessage` pins the empty, silent result.
-- None on the shipped data, whose element block is in order. Any assembler that throws `ParseCancellationException` is open to
-  the same thing.
-
-## `projection/ProjectionAssembler.java`: an unknown `code:` after the 25 elements skips the record, C never reads it
-
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-10-21: `ProjectionAssembler.java` reads the code only for the first 25 records. From the 26th on, a code that resolves is kept, one that does not is stored as `PROJ_NONE` with no error (`resolveCode` takes an `insideCount` flag for this), and an empty code still stops the load, as C's `parser_parse` does for a `code:` with no value. The stored record's code is `PROJ_NONE` where C keeps no code at all. The bullets below describe the state before the fix; the pinning tests are now `ProjectionAssemblerTest.unknownCodeAfterTheElementBlockIsStoredAsProjNoneWithNoError` and `ProjectionReaderTest.unknownCodeAfterTheElementBlockIsStoredWithNoCodeAndNoError`.]
-
-- `parse_projection_code` compares the code with `element_names[index]` only while `index < ELEM_MAX`. After that it stores
-  nothing from the code, so any text loads and the projection is whatever the other directives say.
-- `ProjectionAssembler.java:123-125` resolves every code through `ProjectionEnum` and skips a record whose code is unknown, with
-  an error. The grammar also limits the code to an upper-case identifier.
-- `ProjectionReaderTest.anUnknownCodeBeyondTheElementBlockSkipsTheRecordWhereCNeverReadsTheCode` pins it.
-- None on the shipped data. The assembler's `resolveCode` Javadoc already says C does not look the code up.
-
 ## `realm/RealmAssembler.java`: `stat:` is matched with case, accepts `NONE`, and a realm with no `stat:` is dropped
 
-Found 2026-10-18 during `/port backend/parser/RealmReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/RealmReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: the class block (`RealmAssembler.java:36-64`) says `stat:` goes through `Stats.statNameToIdx`, which ignores case and refuses `NONE`, and that a realm with no `stat:` line reads as `STAT_STR`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -951,7 +993,7 @@ Found 2026-10-18 during `/port backend/parser/RealmReader.java`. Not fixed.
 
 ## `shape/ShapeAssembler.java`: the list and each shape's blows are in file order, C's chains are reversed
 
-Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ShapeAssembler.java:241` and `:248` put each blow and each shape at the head of its list with `addFirst`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -974,7 +1016,7 @@ Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
 
 ## `shape/ShapeAssembler.java`: the `NONE` and `MAX` names are accepted for modifiers and elements, C has neither
 
-Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ShapeAssembler.java:200-201` and `:219-220` refuse `ELEM_NONE`, `ELEM_MAX`, `OM_NONE` and `OM_MAX`. The bullets below describe the state before the fix.]
 
 - `parse_shape_values` in `init.c` looks each token up with `grab_int_value`, against `obj_mods` (the stats, then
   `list-object-modifiers.h`), and with `grab_index_and_int` against `list_element_names`. Neither table has a `NONE` or `MAX`, so a
@@ -1056,7 +1098,7 @@ Found 2026-10-18 during `/port backend/parser/HistoryReader.java`. Not fixed. [<
 
 ## `body/BodyAssembler.java`: the slot types `NONE` and `MAX` load, and a bad slot type drops the body softly where C stops the load
 
-Found 2026-10-18 during `/port backend/parser/BodyReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/BodyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: the class block (`BodyAssembler.java:68-80`) says `NONE` and `MAX` are refused by name. Read as Javadoc and the `valueOf` call at `:116`; the refusal branch itself was not read. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1077,7 +1119,7 @@ Found 2026-10-18 during `/port backend/parser/BodyReader.java`. Not fixed.
 
 ## `playerrace/PlayerRaceAssembler.java`: the race index is never numbered, a missing or unknown history drops the race, and the flag and resist names `NONE` and `MAX` load
 
-Found 2026-10-18 during `/port backend/parser/PlayerRaceReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/PlayerRaceReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `PlayerRaceAssembler.java:172`, `:190` and `:224` refuse `OF_NONE`, `PF_NONE`, `ELEM_NONE` and `ELEM_MAX`; the index counts up from 0 (`:115`, `:245`); a history that names no chart gives a `null` history (`:204-211`). The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1118,7 +1160,7 @@ Found 2026-10-18 during `/port backend/parser/PlayerRaceReader.java`. Not fixed.
 
 ## `playerclass/ClassSpellBookAssembler.java` and `playerclass/ClassMagicAssembler.java`: a book keeps more spells than it declares, and a class whose books were all dropped loads as a non-caster
 
-Found 2026-10-18 during `/port backend/parser/PlayerClassReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/PlayerClassReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ClassSpellBookAssembler.java:228` throws when a book holds more spells than it declares, and `ClassMagicAssembler.java` throws for a book it cannot build instead of returning an empty list. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1145,7 +1187,7 @@ Found 2026-10-18 during `/port backend/parser/PlayerClassReader.java`. Not fixed
 
 ## `trap/TrapAssembler.java`: a bad effect line keeps the trap with a `null` effect list, and an absent `graphics:` or `visibility:` line gives a `null` display character or power
 
-Found 2026-10-18 during `/port backend/parser/TrapReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/TrapReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: the class block (`TrapAssembler.java:67-101`) says an absent `visibility:` gives `Random.Zero()`, an unknown flag or save flag and a bad effect block throw, and `flags:MAX` and `save:MAX` follow C. Read as Javadoc and the fatal throws at `:151-244`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1189,7 +1231,7 @@ Found 2026-10-18 during `/port backend/parser/TrapReader.java`. Not fixed.
 
 ## `playerproperty/PlayerPropertyAssembler.java`: a `code:` on an element record loads, a `value:` on a player or object record is kept, an `aux` of `00` or `-0` is set, `code:MAX` loads for an object, and an unknown code drops the record
 
-Found 2026-10-18 during `/port PlayerPropertyReader.java`. Not fixed.
+Found 2026-10-18 during `/port PlayerPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: the class block (`PlayerPropertyAssembler.java:41-100`) says a `code:` on an `element` record, a `value:` or aux that is not a number, and an unknown code each end the load, and that only an `element` record's `value:` is kept. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1240,7 +1282,7 @@ Found 2026-10-18 during `/port PlayerPropertyReader.java`. Not fixed.
 
 ## `GameConstantsAssembler`: negative values and overflow differ from C
 
-Found 2026-10-19 during `/port GameConstantsReader.java`. Not fixed.
+Found 2026-10-19 during `/port GameConstantsReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-24: all nine scalar handlers refuse a negative value (`GameConstantsAssembler.java:756-1218` and `:1291`), and the two critical-level handlers refuse a leading minus (`:228`, `:374`). A number outside `int` goes through `ParseUtils.parseIntString` (`:1323`); what that does above `INT_MAX` was not re-read on 26-11-24. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1337,7 +1379,7 @@ Found 2026-10-19 during `/port RoomProfileReader.java`. Not fixed. [<span style=
 
 ## `dungeonprofile/DungeonProfileAssembler.java` and `RoomAssembler.java`: absent lines default to -1, and `pit:01` is not a pit
 
-Found 2026-10-19 during `/port DungeonProfileReader.java`. Partly fixed 26-10-21: the unknown-name and bad-tunnel-or-streamer cases are closed, the rest is not fixed.
+Found 2026-10-19 during `/port DungeonProfileReader.java`. Partly fixed 26-10-21: the unknown-name and bad-tunnel-or-streamer cases are closed. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `DungeonProfileAssembler.java:126-157` gives an absent `params:` or `alloc:` the 0 that `mem_zalloc` leaves, and `RoomAssembler.java:112-113` reads `pit` as a number and compares it with 1, so `pit:01` is a pit. The two bullets under "What Java does" that describe -1 defaults and `equals("1")` are out of date.]
 
 ### What C does
 
@@ -1360,7 +1402,7 @@ Found 2026-10-19 during `/port DungeonProfileReader.java`. Partly fixed 26-10-21
   or `str`. Before the fix an unknown name loaded with no error (a room kept a null `RoomType`) and a bad tunnel or streamer kept the profile.
 - `DungeonProfileAssembler.java`: a `params:`, `min-level:` or `alloc:` value that will not convert is still a soft error that drops the
   profile, and a bad `room:` number still drops only that room. C quits on each. These are on the Stop-the-load list in
-  `Issue_Approach_Order.md`, not closed here.
+  `Old Docs/Issue_Approach_Order.md`, not closed here.
 - `DungeonProfileAssembler.java`: the class Javadoc cites C line numbers (`generate.c:111-204`) and says a failed conversion costs "its own
   profile and no more", which is no longer true: an unknown name, or a bad tunnel or streamer field, stops the load. The `errors` and
   "fails closed" wording in `TunnelAssembler.java` and `StreamerAssembler.java` is stale for the same reason.
@@ -1492,7 +1534,7 @@ Found 2026-10-19 during `/port VisualsReader.java`. [<span style="color:#006400"
 
 ## `artifact/ArtifactAssembler.java`: a special artifact's kind is built bare, C copies the base's flags, kind flags and element info into it
 
-Found 2026-11-07 during `/port` of the open assemblers. Not fixed.
+Found 2026-11-07 during `/port` of the open assemblers. [<span style="color:#006400">**CLOSED**</span> 26-11-24: `ArtifactAssembler.java:453-470` copies the base's element info, object flags and kind flags into the new kind, adds `KF_INSTA_ART` and sets `isSpecialArtifactKind` from the kind index. Whether the kind's dice fields are still `null` was not checked. The bullets below describe the state before the fix.]
 
 - C: `write_dummy_object_record` in `obj-init.c` zeroes the new kind, then copies the tval's object flags (`of_copy`), kind flags (`kf_copy`) and `el_info` (`memcpy`) from `kb_info[tval]`, and adds `KF_INSTA_ART`. Weight, cost, activation and the dice stay zero.
 - Java: `ArtifactAssembler.java:376-384` calls `new ObjectKind()`, then sets the base, tval, sval name, level, glyph and `KF_INSTA_ART`. The object flags stay empty and the kind flags hold `KF_INSTA_ART` alone.
@@ -1500,27 +1542,3 @@ Found 2026-11-07 during `/port` of the open assemblers. Not fixed.
 - The `ObjectKind(Artifact, String, ObjectBase)` constructor in `ObjectKind.java` does what C does: it copies the three sets, takes `KF_INSTA_ART`, zeroes the dice and sets `isSpecialArtifactKind`. Nothing in `src/main` calls it.
 - A kind built the current way has `isSpecialArtifactKind()` false, and `PlayerKnowledge.java`, `ObjectKnowledge.java` and `ObjectUtils.java` all read it. Its dice fields are `null`.
 - Shipped data: 14 special kinds are made on the first load.
-
-## `itemobject/ItemObjectAssembler.java`: an `alloc:` depth of 2147483647 or more loads, C refuses it
-
-Found 2026-11-07 during `/port` of the open assemblers. Not fixed.
-
-- C: `parse_object_alloc` calls `grab_int_range` in `datafile.c`, which returns `PARSE_ERROR_INVALID_VALUE` for either end at or beyond `INT_MIN` or `INT_MAX`. `parse_object_alloc` turns that into `PARSE_ERROR_INVALID_ALLOCATION`. There is no 0 to 255 check for objects.
-- Java: `ItemObjectAssembler.java:242-245` reads both ends with `ParseUtils.parseIntString` and never tests for the `Integer.MIN_VALUE`/`Integer.MAX_VALUE` mark that the clamp leaves, so `alloc:1:5 to 2147483647` loads. `EgoItemAssembler.java` and `ArtifactAssembler.java` are not affected, since their 0 to 255 check catches it.
-- None on the shipped data.
-
-## `itemobject/ItemObjectAssembler.java` and `ArtifactAssembler.java`: a tval with no `object_base.txt` record has a `null` base, C has a zeroed one
-
-Found 2026-11-07 during `/port` of the open assemblers. Not fixed.
-
-- C: `kb_info` is zero-filled for every tval, so `type:` on a valid tval the file never declares still gives the kind `&kb_info[tval]`. Its `num_svals` counts up and the kind gets a real sval. An artifact's `base-object:` on that tval loads too.
-- Java: `ObjectRegistry.getBaseFromTVal` answers `null`. `ItemObjectAssembler.java:159` then registers the kind as base-less (sval 0, no counter), and `ArtifactAssembler.java:389-394` refuses the record as an unknown object type.
-- None on the shipped data, where `object_base.txt` declares every tval that `object.txt` and `artifact.txt` use.
-
-## `itemobject/ItemObjectAssembler.java` and `egoitem/EgoItemAssembler.java`: a `values:` dice string of 40 characters or more is accepted, C refuses it
-
-Found 2026-11-07 during `/port` of the open assemblers. Not fixed.
-
-- C: `grab_rand_value` in `datafile.c` copies the text between the brackets into a 40-byte `dice_string`, and `find_value_arg` returns false when it does not fit, so the token is `PARSE_ERROR_INVALID_VALUE`.
-- Java: `ItemObjectAssembler.java:352` and `EgoItemAssembler.java:256` pass the whole text to `Random.parseStr` with no length test.
-- None on the shipped data. Only a modded file with a padded dice string could show it.

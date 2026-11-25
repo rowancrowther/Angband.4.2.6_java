@@ -56,7 +56,7 @@
 //      this stage looks the name up in the UI-entry registry.
 //
 //   Accepted deviations, recorded in the class Javadoc of
-//   PlayerPropertyAssembler.java: the order of a record's bindings (note 1),
+//   PlayerPropertyAssembler.java: the order of a record's bindings,
 //   and C's NULL for an absent name or desc, which Java holds as the empty
 //   string.
 //

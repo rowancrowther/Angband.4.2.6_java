@@ -99,7 +99,7 @@ realm
         |   bookNoun { bookNounInit = $bookNoun.bookNounStr; } )*
         ;
 
-// The whole file: one or more realm records to end of input.
+// The whole file: zero or more realm records to end of input.
 file
         returns[List<RealmParseRecord> realms]
         @init {

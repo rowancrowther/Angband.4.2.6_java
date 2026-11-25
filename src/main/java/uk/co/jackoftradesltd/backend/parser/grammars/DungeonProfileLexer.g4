@@ -24,8 +24,7 @@
  * the style may contain.
  *
  * Cf. the C parser in src/generate.c: struct file_parser profile_parser
- * (generate.c:306), whose directives are registered in init_parse_profile
- * (generate.c:206-217).
+ * (in generate.c), whose directives are registered in init_parse_profile.
  *
  * The file is two-level: a "name:" line opens a profile record, and any
  * "room:" lines that follow belong to it until the next "name:". Every
@@ -52,7 +51,7 @@ import CommentsAndEol;
  * rest of the line, so the name may contain spaces ("hard centre") - hence the
  * switch into REST_OF_LINE.
  *
- * The name is not free-form: parse_profile_name (generate.c:93) matches it
+ * The name is not free-form: parse_profile_name (generate.c) matches it
  * against the cave_builders[] table and fails the parse if no builder has that
  * name. That check belongs to the assembler, not here.
  * cf DungeonProfileGrammar.g4's 'name' rule.

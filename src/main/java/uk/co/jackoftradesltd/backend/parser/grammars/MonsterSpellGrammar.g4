@@ -311,7 +311,7 @@ powerCutoffBlock
                   $levelDirectives.messageSaveStr, $levelDirectives.line)); } )*                                                                 
         ;
         
-// The whole file: one or more spell records, then EOF (which forces the parser to consume every
+// The whole file: zero or more spell records, then EOF (which forces the parser to consume every
 // record rather than stopping early).
 //
 // Rule file coded before 261112, commented in full on 261112.

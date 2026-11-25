@@ -1,6 +1,6 @@
 # FileHandler.java — `/port` stage 1 findings (2026-10-16)
 
-Checked against `z-file.c`. The file is `src/main/java/uk/co/jackoftradesltd/backend/io/FileHandler.java`.
+Checked against `z-file.c`. The file is `../../src/main/java/uk/co/jackoftradesltd/backend/io/FileHandler.java`.
 
 The earlier six points (`skipBytes` in-bounds and past-the-end, the two stale-stream opens, `fileGetSavefile`'s RNG and
 locale) are closed in the code. `fileGetSavefile`'s `debug` and `seed` fields are test hooks, by Rowan's decision.
@@ -15,7 +15,7 @@ Stages 2 to 5 of `/port` run only after these are cleared.
 - **Explanation:** `putLine`, `write` and `writeCharacter` open the file in append mode when `outputStream` is null.
   On a handle opened with `MODE_READ` that closes the reader and appends to the file.
 - **Explanation:** C's `file_put`, `file_write` and `file_writec` return false there. `AngFile` refuses the write before it
-  gets this far, so nothing reaches it today. `FileHandlerLazyOpenTest` pins the lazy open, but `docs/Accepted_Deviations.md`
+  gets this far, so nothing reaches it today. `FileHandlerLazyOpenTest` pins the lazy open, but `../Accepted_Deviations.md`
   does not record it.
 - **Call to action:** record the lazy open as an accepted deviation, or make the three writers refuse when the handle is in read mode.
 
@@ -24,7 +24,7 @@ Stages 2 to 5 of `/port` run only after these are cleared.
 - **Line:** `FileHandler.java:293`.
 - **Explanation:** C opens a `FTYPE_SAVE` write with `O_CREAT | O_EXCL` and mode `S_IRUSR | S_IWUSR` in `file_open`.
   `openOutputStream(CREATE_NEW, WRITE)` passes no permission attribute, so the file gets `0666` minus the umask, typically `0644`.
-- **Explanation:** `docs/Accepted_Deviations.md` records the same kind of difference for `dirCreate` (`0755`), but nothing for savefiles.
+- **Explanation:** `../Accepted_Deviations.md` records the same kind of difference for `dirCreate` (`0755`), but nothing for savefiles.
 - **Call to action:** apply `0600` where the file system supports POSIX attributes, or record the deviation as the `dirCreate` one is.
 
 ## (3) The `skipBytes` deviation entry is out of date

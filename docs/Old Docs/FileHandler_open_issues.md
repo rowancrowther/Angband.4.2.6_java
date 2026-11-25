@@ -1,6 +1,6 @@
 # FileHandler.java — open issues (2026-10-15 `/port` stage 1)
 
-Checked against `z-file.c`. All paths are `src/main/java/uk/co/jackoftradesltd/backend/io/`.
+Checked against `z-file.c`. All paths are `../../src/main/java/uk/co/jackoftradesltd/backend/io`.
 
 ## Open
 

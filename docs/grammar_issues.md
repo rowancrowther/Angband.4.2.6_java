@@ -1,7 +1,577 @@
 # Grammar issues
 
+*Reorganised 2026-11-25: every entry that is closed, accepted or parked now carries a CLOSED stamp and sits under "Closed entries" at the foot of the file. The entries under "Open entries" each have a Status paragraph that says which of their differences are still live and which test pins them. Cross-references that say "above" or "below" were written before the move and may now point the other way.*
+
 Differences between the ANTLR grammars and the C data-file parsers they replace. All grammar paths are under
 `src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/`.
+
+# Open entries
+
+Each entry below has at least one difference between the grammar and the C parser that is still live. The Status paragraph under its heading is the state of 2026-11-25; the sections after it are the state when the entry was found.
+
+## `SummonLexer.g4`: `msgt:` and `race-flag:` values must be upper-case identifiers, `uniques:` is decimal-only
+
+Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Partly fixed.
+
+**Status 2026-11-25.** The `msgt:` half is closed (stamp below). One difference is open: `INTEGER` in `SummonLexer.g4` is decimal digits with an optional minus, so `uniques:0x1` is a lexer error where C reads base 0. No test pins it. `race-flag:` is not a difference, because C compares the name with `streq`. A field after the `uniques:` number is the accepted "Numbers in every data file" deviation.
+
+- C reads `msgt:` and `race-flag:` as `sym`, which `parser_parse` tokenizes on `:` and nothing else. The lexer's
+  `FLAG` token is `('A'..'Z') ('A'..'Z' | '_' | '0'..'9')*`, so `msgt:sum_monster` and `msgt:12` are lexer errors and
+  the whole file loads as nothing. C accepts both through `message_lookup_by_name` (case-insensitive, and a number
+  below `MSG_MAX`). `SummonReaderTest.lowerCaseMessageTypeIsAHardErrorHereWhereCMatchesCaseInsensitively` and
+  `numericMessageTypeIsAHardErrorHereWhereCAcceptsAMessageNumber` pin this.
+  [<span style="color:#006400">**CLOSED**</span> 26-11-20: the `msgt:` half only. `msgt:` now pushes `MSGT_FREE_TEXT` in `SummonLexer.g4` and reads one `STRING_NO_COLON` (renamed `MSGT_STRING` the same day)
+  (the rest of the line), and `SummonAssembler.assemble` drops leading colons and cuts the value at the next colon before
+  `MessageType.lookupByName`, as `strtok(cline, ":")` does for a `sym`. Checked on 38 values in three layouts (mid-record, last
+  line with and without a final newline): `sum_monster`, `20`, `+20`, `-0`, `152`, `MAX`, `SUM_MONSTER:x`, `::SUM_MONSTER` and
+  `20:x` load; `153`, `-1`, `20x`, `0x14`, `NONE`, `SUM_MONSTER ` (blank kept), `:` and `:x` are refused. The two old pins were
+  rewritten as `lowerCaseOrNumericMessageTypesLoadAsInC` and `aMessageTypeAsTheLastLineWithNoFinalNewlineLoadsAsInC`, with
+  `aNumberOutsideTheMessageRangeOrWithTrailingTextIsRefusedAsInC`, `aBlankInsideAMessageTypeNameIsKeptAndRefusedAsInC`,
+  `aColonEndsTheMessageTypeAndTheRestOfTheLineIsIgnoredAsInC`, `leadingColonsBeforeAMessageTypeAreSkippedAsInC` and
+  `aMessageTypeWithNoTokenBetweenItsColonsIsRefusedAsInC` in `SummonReaderTest`. The `race-flag:` and `uniques:` bullets below
+  are unchanged and still open. The bullet above describes the state before the fix.]
+- C reads `uniques:` as `int`, with `strtol` in base 0. `SummonLexer.g4:89-90` `INTEGER` is `'-'? ('0'..'9')+`, so
+  `uniques:0x1` is a lexer error, and a trailing field (`uniques:1:x`, which C ignores) is too. The meaning of the
+  values the lexer does accept is in `docs/Assembler_Issues.md`.
+- `race-flag:` names are compared with `streq` in C (`lookup_flag`), so the upper-case-only token costs nothing there.
+- None on the shipped data, which uses upper-case names and `0`/`1` only.
+
+## `MonsterLexer.g4`: `plural:`, `flags:` and `flags-off:` cannot be empty, and flag and spell lists must be `CODE | CODE`
+
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Partly fixed.
+
+**Status 2026-11-25.** `flags:`, `flags-off:` and `spells:` closed with Stage 7d: any run of blanks and bars separates codes, and a bare `flags:` or `flags-off:` loads with no flags (`anyRunOfBlanksAndBarsSeparatesFlagsAsInC`, `anyRunOfBlanksAndBarsSeparatesFlagsOffAsInC`, `anyRunOfBlanksAndBarsSeparatesSpellsAsInC`, `aBareFlagsOrFlagsOffLineLoadsWithNoFlagsAsInC` in `MonsterReaderTest`). A bare `spells:` that loads empty where C refuses it is parked (`aBareSpellsLineLoadsWithNoSpellsHereWhereCRefusesIt`, `Parked.md`). One difference is open: an empty `plural:` is a hard error where C takes it as no plural, pinned by `anEmptyPluralIsAHardErrorHereWhereCTakesItAsNoPlural`.
+
+- `init_parse_monster` registers `plural`, `flags` and `flags-off` as `?str`. `parse_monster_plural` leaves
+  `race->plural` NULL for an empty value, and `parse_monster_flags` and `parse_monster_flags_off` return without error
+  when there is no value. Lists are split with `strtok(flags, " |")`, so a space separates codes as well as a bar. This
+  holds for `spells:` too, which is `str` (the value is required) but split the same way.
+- `MonsterLexer.g4`: `STRING` needs at least one character, `FLAG` is one code and `FLAG_OR` is a bar with an optional
+  space either side. `MonsterGrammar.g4`, rules `flags`, `flagsOff` and `spells`, need a `FLAG` straight after the colon.
+- So `plural:`, `flags:` and `flags-off:` with nothing after them, and `flags:MALE FEMALE`, are syntax errors here and
+  load in C. `MonsterReaderTest.anEmptyPluralIsAHardErrorHereWhereCTakesItAsNoPlural`,
+  `anEmptyFlagsValueIsAHardErrorHereWhereCAcceptsIt` and
+  `spaceSeparatedFlagsAreAHardErrorHereWhereCSplitsOnSpaceToo` pin this.
+- None on the shipped data, which writes every list as `CODE | CODE` and never leaves a value empty. Same shape as the
+  `MonsterBaseLexer.g4` and `PitLexer.g4` flag-list entries above, whose fix sections apply here too.
+
+## `BrandLexer.g4`: spaces after a flag are swallowed, C keeps them and fails the lookup
+
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Partly fixed.
+
+**Status 2026-11-25.** Unchanged and live. `spaceAfterAFlagIsIgnoredHereWhereCLooksUpTheTextWithTheSpace` and `aBlankOrTabAfterABrandFlagIsInvisibleHereWhereCKeepsItInTheName` in `BrandReaderTest` both pass, so a blank after `resist-flag:` or `vuln-flag:` is still dropped where C keeps it and refuses the lookup. No entry in `Accepted_Deviations.md` or `Parked.md` records it.
+
+- `parse_brand_resist_flag` and `parse_brand_vuln_flag` take a `sym`, which `parser_parse` splits on `:` only, so
+  `resist-flag:IM_FIRE ` reaches `lookup_flag` as `"IM_FIRE "`, which matches nothing, and the load stops with
+  `PARSE_ERROR_INVALID_FLAG`.
+- `BrandLexer.g4`: `FLAG` pops its mode, and the default-mode `EOL` rule (`' '* '\r'? '\n'`) then eats the trailing
+  spaces, so the same line loads.
+- `BrandReaderTest.spaceAfterAFlagIsIgnoredHereWhereCLooksUpTheTextWithTheSpace` pins it. Lenient rather than harmful.
+- None on the shipped data.
+
+## `ProjectionLexer.g4`: a blank after the `code:` or `msgt:` value is dropped, C keeps it and rejects the line
+
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed for `code:`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: the `msgt:` half only. `msgt:BR_ACID `, ` BR_ACID`, `BR_ACID :x` and `: BR_ACID` are now refused as C refuses them, because `MSGT_FREE_TEXT` keeps the blank in the value; see `aBlankInsideAMsgtNameIsKeptAndRefusedAsInC`. `code:ACID ` still loads, because `code:` still reads through `FLAG_MODE`, and is pinned by `aBlankAfterTheCodeValueIsDroppedWhereCKeepsItAndRejectsTheLine` (the old `aBlankAfterCodeOrMsgtIsDroppedWhereCKeepsItAndRejectsTheLine` is split into the two). The bullets below describe both halves as they stood before the fix.]
+
+- C keeps a trailing blank in a `str` or `sym`. `code:ACID ` is not `element_names[0]` (`PARSE_ERROR_ELEMENT_NAME_MISMATCH`), and
+  `msgt:BR_ACID ` matches no name (`PARSE_ERROR_INVALID_MESSAGE`).
+- After a `FLAG` the `EOL` rule from `imports/CommentsAndEol.g4` takes the blanks before the newline, so both lines load
+  cleanly in Java. Java accepts what C rejects.
+- `type:` and `color:` keep the blank in Java as C does (`element ` is no longer an element; `Slate ` is White), so the two
+  directives that read through `FLAG_MODE` are the only ones that differ.
+- `ProjectionReaderTest.aBlankAfterCodeOrMsgtIsDroppedWhereCKeepsItAndRejectsTheLine` and `aBlankAfterATypeOrColourIsKeptAsCKeepsIt`
+  pin the two sides.
+- None on the shipped data.
+
+## `FlavourGrammar.g4` and `FlavourLexer.g4`: a bare `kind:`, a leading flavour, a colon in a description, a trailing colon, an indented line and text after the glyph differ from C
+
+Found 2026-10-18 during `/port backend/parser/FlavourReader.java`. Partly fixed.
+
+**Status 2026-11-25.** A bare `kind:`, an indented line, an empty file, a colon in the description and a trailing colon after the colour all load as in C (stamp below, `aKindWithNoFlavoursLoadsAsInC`, `anIndentedLineLoadsAsInC`, `anEmptyFileLoadsNothingAsInC`, `aTrailingColonAfterTheColourLoadsWithNoTextAsInC` in `FlavourReaderTest`), and the header no longer cites a C line number. Text after the glyph is the accepted deviation (`textAfterTheGlyphIsRefusedByTheAssemblerHereWhereCIgnoresIt`). One difference is open: a `flavor:` before any `kind:` is a hard error where C accepts it, pinned by `aFlavourBeforeAnyKindIsAHardErrorHereWhereCAcceptsIt`.
+
+### What C does
+
+- `parse_flavor_kind` in `init.c` only sets the static `flavor_tval` and `flavor_glyph`, so a `kind:` line with no `flavor:` or
+  `fixed:` under it is accepted. A `flavor:` line before any `kind:` is accepted too, with both statics still zero.
+- `desc` is a `str`, and `parser_parse` in `parser.c` does not tokenize a `str`, so `flavor:2:Green:A: B` has the description
+  `A: B`. With nothing after the last colon, as in `flavor:2:Green:`, there is no token for the optional `desc`, so the line is a
+  flavour with no description.
+- `glyph` is a `char`: `parser_parse` takes one character, skips a colon after it, and ignores the rest of the line, so
+  `kind:ring:=:extra` has the glyph `=`. A second character that is not a colon is `PARSE_ERROR_FIELD_TOO_LONG`.
+- `parser_parse` skips leading whitespace, so an indented directive is read.
+- An empty file ends with an empty `flavors` list.
+
+### What Java does
+
+- The `section` rule in `FlavourGrammar.g4` is `kind` then `fixedOrFlavourBlock`, which is one or more flavours, and the `file`
+  rule is one or more sections after the header. A bare `kind:`, a leading `flavor:` and `record-count:0` with no sections are
+  hard errors, and so the whole file gives no items.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-22] The colon in a description and the trailing colon: `FlavourLexer.g4` now has a mode per field, so the description is read from the last colon to the end of the line and the `flavour` rule takes it as optional. Text after the glyph's colon is no longer a syntax error either: the glyph is read to the end of the line and `FlavourKindAssembler` refuses `=:extra`, which is accepted (`Accepted_Deviations.md`, "Flavour").
+- `CommentsAndEol.g4` is shared, and does not skip indentation. The gap is written up under `RealmGrammar.g4` and `RealmLexer.g4`.
+- Both `.g4` headers cite `src/init.c:4242-4249` for the directive table; `init_parse_flavor` has moved since, and no line number
+  should be recorded.
+- `FlavourReaderTest.aFlavourBeforeAnyKindIsAHardErrorHereWhereCAcceptsIt` pins the one that is still open. The bare-`kind:`, indented-line and empty-file pins are now `aKindWithNoFlavoursLoadsAsInC`, `anIndentedLineLoadsAsInC` and `anEmptyFileLoadsNothingAsInC`. `aColonInTheDescriptionIsKeptInTheTextAsInC`, `aTrailingColonAfterTheColourLoadsWithNoTextAsInC` and `textAfterTheGlyphIsRefusedByTheAssemblerHereWhereCIgnoresIt` pin the colon and glyph cases.
+- None on the shipped data: eight blocks, each with flavours, no colon in any description, no indentation. A description with a
+  colon is the one most likely to be written by hand.
+
+## `HistoryGrammar.g4` and `HistoryLexer.g4`: a chart with no phrase, a second phrase, a negative chart, text after the roll and indentation differ from C
+
+Found 2026-10-18 during `/port backend/parser/HistoryReader.java`. Partly fixed.
+
+**Status 2026-11-25.** Closed: a chart with no phrase, a second `phrase:` line, a negative chart, an indented line and a file with no records (`aChartWithNoPhraseBetweenTwoRecordsLoadsAsInC`, `aSecondPhraseLineIsJoinedAsInC`, `aNegativeChartNumberStopsTheLoadAsInC`, `anIndentedLineLoadsAsInC`, `aFileWithNoRecordsLoadsNothingAsInC` in `HistoryReaderTest`). A chart repeated with a different successor is accepted (`Accepted_Deviations.md`, "History"). Two differences are open: text after the roll (`textAfterTheRollIsAHardErrorHereWhereCIgnoresIt`) and a hexadecimal roll (`aHexRollIsAHardErrorHereWhereCReadsItInBaseSixteen`).
+
+### What C does
+
+- `init_parse_history` registers `chart uint chart int next int roll` and `phrase str text`. `parse_history_chart` makes a new
+  entry for every `chart:` line, and `parse_history_phrase` does `string_append` onto the newest entry, so a chart line with no
+  phrase gives an entry with NULL text and a second `phrase:` line is joined onto the first.
+- `parser_parse` in `parser.c` tokenizes the int fields on `:` and reads each with `strtol`/`strtoul` base 0 without checking where
+  it stopped, so the text after the last field is dropped (`chart:1:0:10:extra` and `chart:1:0:10abc` both read roll 10), `0x10` is
+  16 and `010` is 8. A `uint` with a leading `-` is `PARSE_ERROR_NOT_NUMBER`. Leading whitespace on a line is skipped. An empty
+  `phrase:` is `PARSE_ERROR_MISSING_FIELD`. A file with no charts is accepted.
+
+### What Java does
+
+- The `record` rule in `HistoryGrammar.g4` is exactly one `chart` then one `phrase`, and `file` is one or more records after the
+  header. A chart line with no phrase, a second `phrase:` line and a header with no records are hard errors, so the whole file
+  gives no items.
+- `INTEGER` in `HistoryLexer.g4` is an optional `-` and decimal digits, so `chart:-1:0:100` reaches the assembler as chart -1 where
+  C rejects it, and anything after the roll (`:extra`, `abc`) or a hex roll is a hard error where C reads it.
+- `CommentsAndEol.g4` is shared, and does not skip indentation. The gap is written up under `RealmGrammar.g4` and `RealmLexer.g4`.
+- An empty `phrase:` is a hard error here as in C, and a phrase keeps its colons, leading spaces and trailing spaces, as C's `str`
+  field does.
+- `HistoryReaderTest.aChartWithNoPhraseBetweenTwoRecordsIsAHardErrorHereWhereCAcceptsIt`,
+  `aSecondPhraseLineIsAHardErrorHereWhereCAppendsItToTheEntry`, `aNegativeChartNumberLoadsHereWhereCRejectsIt`,
+  `textAfterTheRollIsAHardErrorHereWhereCIgnoresIt`, `aHexRollIsAHardErrorHereWhereCReadsItInBaseSixteen`,
+  `anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace` and
+  `aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile` pin them.
+- None on the shipped data: 165 unindented chart/phrase pairs, each chart line ending at the roll. A phrase split over two
+  `phrase:` lines is the one most likely to be written by hand.
+
+## `PlayerRaceGrammar.g4` and `PlayerRaceLexer.g4`: a race with only a name, a file with no races, space-separated flags and values, and text after a number differ from C
+
+Found 2026-10-18 during `/port backend/parser/PlayerRaceReader.java`. Partly fixed.
+
+**Status 2026-11-25.** Closed: a race with only a name, a file with no races, space-separated flags and values, empty flag lines and indented lines (`aNameOnlyRaceLoadsAsInC`, `aFileWithNoRacesLoadsNothingAsInC`, `aLeadingOrTrailingDelimiterOnEveryRaceListLoadsAsInC`, `anEmptyFlagLineLoadsTheRaceWithNoFlagsAsCDoes`, `anIndentedLineLoadsAsInC` in `PlayerRaceReaderTest`). A bare `values:` that loads empty where C refuses it is parked (`aBareValuesLineLoadsWithNoValuesHereWhereCRefusesIt`, `Parked.md`). Two differences are open: text after a number (`textAfterANumberIsAHardErrorHereWhereCIgnoresIt`) and a hexadecimal number (`aHexNumberIsAHardErrorHereWhereCReadsItInBaseSixteen`).
+
+### What C does
+
+- `parse_p_race_name` in `init.c` allocates a zeroed race, and none of the other handlers is required, so a `name:` line alone is a
+  race with every field 0, no flags and a NULL history. A file with no `name:` line leaves `races` empty and loads without error.
+- `parse_p_race_obj_flags`, `parse_p_race_play_flags` and `parse_p_race_values` split their text with `strtok(s, " |")`, so
+  `obj-flags:SUST_STR REGEN` and `values:RES_ACID[1] RES_FIRE[1]` read both entries. An empty `obj-flags:` or `player-flags:` is
+  accepted as no flags; an empty `values:` is `PARSE_ERROR_MISSING_FIELD`.
+- `parser_parse` in `parser.c` reads each int with `strtol` base 0 and does not check where it stopped, so `hitdie:10abc` reads 10
+  and `0x10` is 16. A `history:` is a `uint`, and a leading `-` is `PARSE_ERROR_NOT_NUMBER`. Leading whitespace on a line is skipped.
+
+### What Java does
+
+- `PlayerRaceGrammar.g4`: the `playerRace` rule is a `name` then one or more of the other lines, so `name:Empty` on its own is a
+  syntax error, and the `file` rule is one or more races, so a header with no races is a syntax error too.
+- `PlayerRaceLexer.g4`: `FLAG_OR` and `VALUE_OR` are an optional space, a `|`, and an optional space, so a space on its own between
+  two flags or two values is a lexer error. An empty `values:` is a syntax error, as in C.
+- `INTEGER` is an optional `-` and decimal digits, so text after a number and a hex number are hard errors. `history:-1` is lexed
+  and then dropped by the assembler as an unknown chart, which also rejects it.
+- `CommentsAndEol.g4` is shared, and does not skip indentation. The gap is written up under `RealmGrammar.g4` and `RealmLexer.g4`.
+- All of these are hard errors: nothing loads and the messages come back.
+- `PlayerRaceReaderTest.aNameOnlyRaceIsAHardErrorHereWhereCAcceptsIt`, `aHeaderWithNoRacesIsAHardErrorHereWhereCAcceptsAnEmptyFile`,
+  `objectFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`,
+  `playerFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`,
+  `valuesSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`, `textAfterANumberIsAHardErrorHereWhereCIgnoresIt`,
+  `aHexNumberIsAHardErrorHereWhereCReadsItInBaseSixteen` and `anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace` pin them.
+
+### Impact
+
+- None on the shipped data: all eleven races have a full set of lines, use `|` between flags and values, and have no text after a
+  number. A flag list written with spaces alone is the one most likely to be written by hand.
+
+## `PlayerClassGrammar.g4` and `PlayerClassLexer.g4`: a class with only a name, a file with no classes, a `magic:` with no book, a book with no spell, space-separated flags, an empty flag list and a repeated `magic:` differ from C
+
+Found 2026-10-18 during `/port backend/parser/PlayerClassReader.java`. Partly fixed.
+
+**Status 2026-11-25.** Closed: a class with only a name, a file with no classes, a `magic:` with no book, a book with no spell, an empty flag list, space-separated flags, a `dice:` with no effect and a repeated `magic:` (`aNameOnlyClassLoadsAsInC`, `aFileWithNoClassesLoadsNothingAsInC`, `aMagicLineWithNoBookLoadsAsInC`, `aBookWithNoSpellLineLoadsAsInC`, `aBareOrDelimiterOnlyClassFlagsLineLoadsEmptyAsInC`, `aDiceLineWithNoEffectIsDroppedAsInC`, `aRepeatedMagicLineIsRefusedAsInC` in `PlayerClassReaderTest`). A `magic:` after a zero-book `magic:` is parked (`aMagicLineAfterAZeroBookOneIsRefusedHereWhereCLoadsIt`, `Parked.md`). One difference is open: a line between `magic:` and its first `book:` is a hard error where C accepts it, pinned by `aTitleBetweenMagicAndItsFirstBookIsAHardErrorHereWhereCAcceptsIt`.
+
+### What C does
+
+- `parse_class_name` in `init.c` allocates a zeroed class, and none of the other handlers is required, so a `name:` line alone is a
+  class with every field 0. A file with no `name:` line leaves `classes` empty and loads without error.
+- `parse_class_obj_flags` and `parse_class_play_flags` split their text with `strtok(s, " |")`, so `player-flags:NO_MANA SHIELD_BASH`
+  reads both flags, and the argument is `?str`, so an empty `obj-flags:` or `player-flags:` is accepted as no flags.
+- `parse_class_magic` accepts a `magic:` line followed by no `book:` line, and `parse_class_book` accepts `spells` 0 with no
+  `spell:` line after it. Every directive other than `book:`, `book-graphics:`, `book-properties:`, `spell:` and the effect lines may
+  fall anywhere in the class, including between `magic:` and its first `book:`.
+- A second `magic:` in the same class is `PARSE_ERROR_REPEATED_DIRECTIVE`.
+- `parse_class_dice`, `parse_class_expr`, `parse_class_effect_yx` and `parse_class_effect_msg` return no error when the spell has no
+  effect yet ("assume that this is human and not parser error").
+
+### What Java does
+
+- `PlayerClassGrammar.g4`: the `playerClass` rule is a `name` then one or more of the other lines, so `name:Empty` on its own is a
+  syntax error, and the `file` rule is one or more classes, so a header with no classes is a syntax error too.
+- `PlayerClassLexer.g4`: `FLAG_OR` is an optional space, a `|`, and an optional space, so a space on its own between two flags is a
+  lexer error, and `FLAG_MODE` needs a `FLAG`, so an empty `obj-flags:` or `player-flags:` is a syntax error.
+- `PlayerClassGrammar.g4`: `magicBlock` is `magic (bookBlock)+` and `bookBlock` ends in `(spellBlock)+`, so a `magic:` with no book,
+  a book with no spell, and any line between `magic:` and its first `book:` are syntax errors.
+- `PlayerClassGrammar.g4`: each `magicBlock` in a class overwrites `magicInit`, so a second `magic:` with its own books replaces the
+  first without an error.
+- `PlayerClassGrammar.g4`: `spellBlock` takes `dice:` and its siblings only through the imported `effectBlock` rule, so one with no
+  `effect:` before it is a syntax error.
+- All but the repeated `magic:` are hard errors: nothing loads and the messages come back.
+- `PlayerClassReaderTest.aNameOnlyClassIsAHardErrorHereWhereCAcceptsIt`,
+  `aHeaderWithNoClassesIsAHardErrorHereWhereCAcceptsAnEmptyFile`,
+  `playerFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`,
+  `objectFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`, `anEmptyFlagListIsAHardErrorHereWhereCAcceptsIt`,
+  `aMagicLineWithNoBookIsAHardErrorHereWhereCAcceptsIt`, `aBookWithNoSpellLineIsAHardErrorHereWhereCAcceptsIt`,
+  `aTitleBetweenMagicAndItsFirstBookIsAHardErrorHereWhereCAcceptsIt`, `aDiceLineWithNoEffectIsAHardErrorHereWhereCIgnoresIt` and
+  `aRepeatedMagicLineReplacesTheFirstHereWhereCRejectsIt` pin them.
+
+### Impact
+
+- None on the shipped data: all nine classes have a full set of lines, use `|` between flags, put `book:` straight after `magic:`
+  and give every book at least one spell. A flag list written with spaces alone, and a `magic:` repeated by a copy and paste, are
+  the two most likely to be written by hand; the second is the only one that is silently accepted.
+
+## `TrapGrammar.g4`, `TrapLexer.g4` and `EffectBlock.g4`: a bare `name:`, a colon in the description, space-only and empty flags, the extra-effect lines, spaces in the dice and an unknown colour name differ from C
+
+Found 2026-10-18 during `/port backend/parser/TrapReader.java`. Partly fixed.
+
+**Status 2026-11-25.** Closed: a bare `name:`, a colon in the description, space-only and empty flags, `effect-yx-xtra:`, a `dice:`, `dice-xtra:` or `expr:` with no effect, both `effect-yx:` and `dice:` on one effect, `effect-msg:`, a negative `appear:` and an unknown colour name (`aNameWithNoDescriptionIsRefusedAsInC`, `aFileWithNoRecordsLoadsNothingAsInC`, `aBareOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC`, `aDiceLineInATrapWithNoEffectAtAllIsDroppedAsInC`, `anExprLineWithNoDiceBeforeItIsIgnoredAsInC`, `effectYxThenDiceOnTheSameEffectBothLoadAsInC`, `aNegativeAppearValueStopsTheLoadAsInC`, `anUnknownColourNameDrawsWhiteAsInC` in `TrapReaderTest`). A bare `save:` is parked (`aBareSaveLineLoadsWithNoSaveFlagsHereWhereCRefusesIt`) and a `dice:` of garbage before any effect is accepted (`aDiceLineOfGarbageBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt`). One difference is open: a space inside the visibility dice is a hard error where C skips it, pinned by `aSpaceInsideTheVisibilityDiceIsAHardErrorHereWhereCSkipsIt`.
+
+### What C does
+
+- `init_parse_trap` in `init.c` registers every line as its own handler. After `name:` they come in any order, and a record needs
+  nothing but its `name:` line.
+- `name` is `sym name str desc`, and a `str` takes the rest of the line, so `name:a:b: c` has the description `b: c`.
+- `flags` is `?str flags` and `parse_trap_flags` runs `strtok(flags, " |")`, so the value may be missing, and a space alone
+  separates two flags as well as `|`. `parse_trap_save_flags` splits `save` the same way.
+- `parse_trap_effect_yx_xtra` sets the position of the last extra effect, and `parse_trap_dice`, `parse_trap_dice_xtra`,
+  `parse_trap_expr` and `parse_trap_expr_xtra` return `PARSE_ERROR_NONE` without doing anything when there is no effect (or, for the
+  two `expr` ones, no dice) to act on. `parse_trap_dice` and `parse_trap_expr` walk `t->effect`, so they reach the primary list even
+  after an `effect-xtra:`.
+- `effect-yx` and `dice` both act on the last effect, in either order.
+- `init_parse_trap` registers no `effect-msg`, so C gives `PARSE_ERROR_UNDEFINED_DIRECTIVE`.
+- `appear` is three `uint`s, and `parser_parse` rejects a leading minus.
+- `visibility` is a `str` that `dice_parse_string` reads, and that function skips whitespace, so `2d10 M50` is `2d10M50`.
+- `parse_trap_graphics` sends a colour longer than one character to `color_text_to_attr` in `z-color.c`, which compares with
+  `my_stricmp` and answers white for a name it does not know.
+
+### What Java does
+
+- `TrapGrammar.g4`: `trapRecord` is a `name` then one or more of the other lines, so `name:a:b` on its own is a syntax error, and
+  `file` is one or more records, so a header with no records is one too.
+- `TrapLexer.g4`: in `DELIMITED_MODE`, `DELIMITED_STRING` stops at a colon, and `name` needs `DELIMITED_STRING DELIMITER_COLON
+  DELIMITED_STRING`, so a colon in the description is a syntax error.
+- `TrapLexer.g4`: `FLAG_OR` is an optional space, a `|` and an optional space, so a space on its own between two flags is a lexer
+  error, and `FLAGS_MODE` needs a `FLAG`, so an empty `flags:` is a syntax error. `save:` takes the same path.
+- `TrapGrammar.g4`: `effectXtraBlock` has no `effect-yx-xtra:`, and there is no token for it, so it is a syntax error. Every other
+  line of the group reaches the grammar only through `effectBlock` (`EffectBlock.g4`) or `effectXtraBlock`, which open with
+  `effect:` or `effect-xtra:`. A `dice:`, `dice-xtra:` or `expr:` with no effect of its own kind before it is a syntax error, and so
+  is a `dice:` after an `effect-xtra:`. The `effectBlock` rule takes `effect-yx:` or `dice:` but not both, so both on one effect is
+  a syntax error.
+- `EffectBlock.g4`: `effectBlock` ends in an optional `effect-msg:`, so a trap accepts a directive C does not have.
+- `TrapLexer.g4`: `DELIMITED_INTEGER` is `'-'? ('0'..'9')+`, so `appear:-1:-2:-3` loads as -1, -2 and -3.
+- `EffectBlockLexer.g4`: `DICE_STRING_MODE` has no rule for whitespace inside the value, so `visibility:2d10 M50` is a lexer error.
+- `AngbandDisplayCharacter.g4`: `COLOUR_VALUES` is built from C's colour characters and names, so `graphics:^:nonsense` is a lexer
+  error. C loads it and draws white.
+- All of these are hard errors except the negative `appear:` and `effect-msg:`: nothing loads and the messages come back.
+- `TrapReaderTest.aNameOnlyRecordIsAHardErrorHereWhereCAcceptsIt`, `aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile`,
+  `aColonInTheNameDescriptionIsAHardErrorHereWhereCTakesTheRestOfTheLine`,
+  `flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo`,
+  `saveFlagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo`, `anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt`,
+  `effectYxXtraIsAHardErrorHereWhereCAcceptsIt`, `aDiceLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt`,
+  `aDiceXtraLineBeforeAnyExtraEffectIsAHardErrorHereWhereCIgnoresIt`, `anExprLineWithNoDiceBeforeItIsAHardErrorHereWhereCIgnoresIt`,
+  `aDiceLineAfterAnExtraEffectIsAHardErrorHereWhereCReachesThePrimaryEffect`,
+  `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth`, `effectMsgIsAcceptedHereWhereCHasNoSuchDirective`,
+  `aNegativeAppearValueLoadsHereWhereCRejectsIt`, `aSpaceInsideTheVisibilityDiceIsAHardErrorHereWhereCSkipsIt` and
+  `anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite` pin them.
+- [<span style="color:#006400">**CLOSED**</span> 26-11-09] The `effect-yx` and `dice` on one effect pin: `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth` is now
+  `TrapReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC`, with `diceThenEffectYxOnTheSameEffectBothLoadAsInC`
+  for the other order. The other pins in the list stay open.
+
+### Impact
+
+- None on the shipped data: all forty records have a full set of lines, a colon-free description, `|` between flags, every
+  `dice:` straight after its `effect:`, and a colour from C's table.
+- A flag list written with spaces alone and a description with a colon are the two most likely to be written by hand, and both
+  lose the whole file.
+- A modded file with `effect-msg:` or a negative `appear:` loads in Java and is rejected by C.
+- Indentation is the shared `CommentsAndEol.g4` gap under "Leading whitespace on a line" above;
+  `TrapReaderTest.anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pins it for `TrapLexer`.
+- `EffectBlock.g4` is shared; the `MonsterSpellGrammar.g4`, `ActivationsGrammar.g4` and `ShapeGrammar.g4` entries above describe the
+  same block.
+
+## `PlayerPropertyGrammar.g4` and `PlayerPropertyLexer.g4`: a fixed line order, a required `name:`, repeated and split lines, an unknown `type:`, narrow `bindui:` symbols and base-10 numbers differ from C
+
+Found 2026-10-18 during `/port PlayerPropertyReader.java`. Updated 2026-11-19: the fixed line order, the required `name:`, the
+repeated `code:`, `name:` and `value:`, the split `desc:`, the empty file and indentation are <span style="color:#006400">**CLOSED**</span>
+(Stage 7a of `Old Docs/Issue_Approach_Order.md`): `property` in `PlayerPropertyGrammar.g4` is now `type (code | bindUI | name | desc | value)*`
+and `file` is `property* EOF`. Pinned by `aBindingAfterTheNameLoadsAsInC`, `aDescBeforeTheNameLoadsAsInC`,
+`aValueBeforeTheDescLoadsAsInC`, `aRecordWithNoNameLoadsWithAnEmptyNameHereWhereCHasNull`, `aRepeatedNameKeepsTheLastAsInC`,
+`aRepeatedValueKeepsTheLastAsInC`, `aRepeatedCodeKeepsTheLastAsInC`, `aDescSplitByAnotherLineIsAppendedAsInC`,
+`backToBackDescLinesAreAppendedAsInC`, `bindingsSplitByAnotherLineAreBothKeptInFileOrder`, `aFileWithNoRecordsLoadsNothingAsInC` and
+`anIndentedDirectiveLoadsAsInC` in `PlayerPropertyReaderTest`. The unknown `type:`, the narrow `bindui:` symbols and tags, and the
+base-10 numbers are not fixed. The stale header note is also fixed. The "What Java does" bullets below that describe the old order,
+the required `name:`, the repeats, the split `desc:`, the record count and the header note are the state of 2026-10-18.
+
+**Status 2026-11-25.** Beyond the 2026-11-19 update below, the narrow `bindui:` symbols and tags are closed: an upper-case name, a hyphen, an underscore in a tag and a lower-case tag all load (`anUpperCaseBindingNameLoadsAsInC`, `aBindingNameWithAHyphenLoadsAsInC`, `aBindingTagWithAnUnderscoreLoadsAsInC`, `aLowerCaseBindingTagLoadsAsInC` in `PlayerPropertyReaderTest`). Three differences are open: an unknown `type:` (`anUnknownTypeIsAHardErrorHereWhereCTakesAnyText`), a hexadecimal `value:` (`aHexadecimalValueIsAHardErrorHereWhereCReadsBaseZero`) and text after the `value:` number (`textAfterTheValueNumberIsAHardErrorHereWhereCIgnoresIt`). The "(note 1)" that the header comment of `PlayerPropertyGrammar.g4` cited, which matched no numbered note in `PlayerPropertyAssembler.java`, was removed on 26-11-25, so "The stale header note is also fixed" below is now true.
+
+### What C does
+
+- `init_parse_player_prop` in `init.c` registers `type`, `code`, `desc`, `name`, `value` and `bindui` as six handlers. After a `type:` they
+  come in any order, any number of times, and a record needs nothing but its `type:` line.
+- `parse_player_prop_code`, `parse_player_prop_name` and `parse_player_prop_value` overwrite their field, so a repeat keeps the last.
+  `parse_player_prop_desc` calls `string_append`, so `desc:` lines add on to each other wherever they sit in the record.
+- `type` is `str`, so `parse_player_prop_type` stores any text. `finish_parse_player_prop` treats everything but `element` as one property.
+- `bindui` is `sym ui int aux sym uival`, and `parser_parse` in `parser.c` splits a `sym` or `int` on `:` and takes it whole, so `ui` can
+  be any text without a colon, `<HOLY_ORB>` or lower case included.
+- An `int` is read with `strtol(tok, &z, 0)` and only `z == tok` is an error. `0x3` is 3, `010` is 8 and `1x` is 1.
+- Leading whitespace on a line is skipped.
+- An empty `name:` or `desc:` has no field for `strtok`, so it is `PARSE_ERROR_MISSING_FIELD`, a hard error.
+
+### What Java does
+
+- `PlayerPropertyGrammar.g4`: `property` is `type`, an optional `code`, `bindUI`, `name`, an optional `desc` and an optional `value`, in that
+  order. A `bindui:` after the `name:`, a `desc:` before it and a `value:` before the `desc:` are syntax errors.
+- A record with no `name:` is a syntax error, and so is a second `code:`, `name:` or `value:`. The `desc` rule is a run of `DESC STRING`, so
+  a `desc:` that has another line between it and the last is a syntax error where C appends it.
+- `file` is `recordCount` and one or more `property`, so `record-count:0` with no records is a syntax error where C loads an empty file.
+- `PlayerPropertyLexer.g4`: `TYPE_VALUE` is `player`, `object` or `element`, so any other `type:` is a syntax error.
+- `LCASE` is `[a-z0-9_]+` and `TAG` is `<` and upper-case letters only, so `bindui:A_B`, `bindui:a-b`, `bindui:a_b<dark>` and
+  `bindui:a_b<HOLY_ORB>` are lexer errors. The last matters for a modded file: `HOLY_ORB` is a real element.
+- `INTEGER` is `'-'? [0-9]+`, so `value:0x3` and `value:1x` are syntax errors.
+- Indentation is the shared `CommentsAndEol.g4` gap under "Leading whitespace on a line" above.
+- All of these are hard errors: nothing loads and the messages come back. An empty `name:` or `desc:` and a `value:` or `aux` that is not a
+  number are hard errors in both.
+- The comment at the top of both `.g4` files is stale: its note 1 says `property` matches `bindui` with `?`, but the rule is `bindUI`, which
+  is `binduiEntry*`, so several `bindui:` lines in a row load. It also cites C line numbers.
+- `PlayerPropertyReaderTest.aBindingAfterTheNameIsAHardErrorHereWhereCAcceptsAnyOrder`,
+  `aDescBeforeTheNameIsAHardErrorHereWhereCAcceptsAnyOrder`, `aValueBeforeTheDescIsAHardErrorHereWhereCAcceptsAnyOrder`,
+  `aRecordWithNoNameIsAHardErrorHereWhereCAcceptsIt`, `aRepeatedNameIsAHardErrorHereWhereCKeepsTheLast`,
+  `aRepeatedValueIsAHardErrorHereWhereCKeepsTheLast`, `aRepeatedCodeIsAHardErrorHereWhereCKeepsTheLast`,
+  `aDescSplitByAnotherLineIsAHardErrorHereWhereCAppendsIt`, `aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile`,
+  `anUnknownTypeIsAHardErrorHereWhereCTakesAnyText`, `anUpperCaseBindingNameIsAHardErrorHereWhereCTakesAnySymbol`,
+  `aBindingNameWithAHyphenIsAHardErrorHereWhereCTakesAnySymbol`, `aBindingTagWithAnUnderscoreIsAHardErrorHereWhereCTakesAnySymbol`,
+  `aLowerCaseBindingTagIsAHardErrorHereWhereCTakesAnySymbol`, `anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent`,
+  `aHexadecimalValueIsAHardErrorHereWhereCReadsBaseZero` and `textAfterTheValueNumberIsAHardErrorHereWhereCIgnoresIt` pin them.
+
+### Impact
+
+- None on the shipped data: all 44 records have a `name:`, put their lines in the grammar's order, repeat nothing, and use lower-case
+  symbols, upper-case tags and plain decimal numbers.
+- The order and the missing `name:` are the likeliest to bite a hand-edited file, and each loses the whole file.
+- A tag with an underscore only matters if a `bindui:` is written with an explicit `<HOLY_ORB>`; the shipped file leaves the tag to the
+  expansion, which builds it from the element code in the assembler.
+- Indentation is the shared `CommentsAndEol.g4` gap;
+  `PlayerPropertyReaderTest.anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pins it for `PlayerPropertyLexer`.
+
+## `DungeonProfileGrammar.g4`: no empty list, a bare `name:` is refused, and the shared indent, base-zero and trailing-field cases
+
+Found 2026-10-19 during `/port DungeonProfileReader.java`. Partly fixed.
+
+**Status 2026-11-25.** Closed: a file with no profiles and a bare `name:` (`aFileWithNoProfilesLoadsAnEmptyListAsInC`, `aProfileWithNoDirectivesLoadsAsInC` in `DungeonProfileReaderTest`), and an indented directive (`anIndentedAllocLineLoadsAsInC`). The question under "Question for Rowan" is moot: a bare `name:` loads. One difference is open: a hexadecimal value, which `hexAndTrailingFieldValuesAreRefusedHereWhereCAcceptsThem` pins; its trailing-field half is the accepted "Numbers in every data file" deviation.
+
+### What C does
+
+- `init_parse_profile` in `generate.c` registers seven independent directives. Only `name:` creates a record
+  (`parse_profile_name`); the other six fill in the current one, so they can come in any order after a `name:`, can repeat (the last
+  wins), and can be left out. A directive before any `name:` is `PARSE_ERROR_MISSING_RECORD_HEADER`.
+- A `name:` with nothing after it is a valid record, zeroed apart from its name.
+- `run_parse_profile` accepts a file with no records, and `finish_parse_profile` then sets `z_info->profile_max` to 0.
+- `parser_parse` in `parser.c` skips leading whitespace, reads an `int` with `strtol` in base zero (so `0x10` is 16 and `010` is 8),
+  and ignores anything after the value up to the next `:`. A missing field is `PARSE_ERROR_MISSING_FIELD`.
+
+### What Java does
+
+- `DungeonProfileGrammar.g4`: `file` is `recordCount (profile)+ EOF`, so a file with the header and no profile is a syntax error and
+  `GrammarDriver.run` returns no profiles at all. The `record-count:` header is a Java-only addition that the upstream
+  `dungeon_profile.txt` does not carry.
+- `DungeonProfileGrammar.g4`: `profile` is a `name` followed by `( ... )+`, so a `name:` with no directive after it is a syntax error
+  and the whole file is lost.
+- `DungeonProfileLexer.g4`: `INTEGER` is `'-'? ('0'..'9')+`, so `alloc:0x10` and a field after the value (`alloc:5:junk`) are errors, and an
+  indented directive (`  alloc:5`) is a lexer error.
+- A directive before any `name:` and a `params:` line with a field missing are refused, as in C.
+- `DungeonProfileReaderTest.aFileWithNoProfilesIsRefusedHereWhereCLoadsAnEmptyList`, `aProfileWithNoDirectivesFailsClosed`,
+  `hexIndentedAndTrailingFieldValuesAreRefusedHereWhereCAcceptsThem`, `aDirectiveBeforeAnyNameFailsClosedAsInC` and
+  `aParamsLineWithAFieldMissingFailsClosedAsInC` pin them.
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/dungeon_profile.txt` has 9 profiles, each with `params:` and `alloc:`, no indents, no hex values and
+  nothing after a value.
+- A modded file that empties the list, leaves a `name:` bare, indents a line or writes a value in hex loses the whole file in Java, and the
+  loader then stops start-up, where C would load it.
+
+### Question for Rowan
+
+- Is requiring at least one directive after each `name:` deliberate? C allows it, but a profile with no `params:` has a block size of 0 and
+  no use, so it may be worth refusing on purpose; if so the grammar comment should say so.
+
+## `PlayerTimedGrammar.g4` and `PlayerTimedLexer.g4`: the file needs a `record-count:` header and a record, several lines C reads are refused, and repeated text lines overwrite where C appends
+
+Found 2026-10-19 during `/port PlayerTimedReader.java`. Partly fixed.
+
+**Status 2026-11-25.** Closed: the `record-count:` header and the empty file, repeated `desc:`, `on-end:`, `on-increase:` and `on-decrease:` lines, a repeated `name:`, an `effect-dice:` with a dice string, a bare `flags:`, and an indented directive (`aHeaderWithNoRecordLoadsAnEmptyListAsInC`, `aRepeatedDescLineIsJoinedAsInC`, `aRepeatedEndIncreaseOrDecreaseLineIsJoinedAsInC`, `aRepeatedNameLineContinuesTheFirstEffectAsInC`, `aBareOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC`, `anIndentedDirectiveLoadsAsInC` in `PlayerTimedReaderTest`). Three differences are open: an `on-begin-effect:` with a radius (`anOnBeginEffectWithARadiusIsRefusedHereWhereCReadsIt`), a grade colour written as a word (`aGradeColourWrittenAsAWordIsRefusedHereWhereCReadsIt`) and a hexadecimal lower bound (`aHexadecimalLowerBoundIsRefusedHereWhereCReadsBaseZero`). The question under "Question for Rowan" about `effect-yx`, `effect-expr` and `effect-msg` is still undecided.
+
+### What C does
+
+- `init_parse_player_timed` in `player-timed.c` registers twenty independent directives and no `record-count:`. Only `name:` picks a
+  record (`parse_player_timed_name` points at `timed_effects[index]`); the rest fill it in, in any order, and can be left out. A
+  directive before any `name:` is `PARSE_ERROR_MISSING_RECORD_HEADER`.
+- `desc:`, `on-end:`, `on-increase:`, `on-decrease:` and `effect-msg:` use `string_append`, so a repeated line is joined onto the text
+  already held. A second `name:` for the same effect carries on with the same record, and `on-begin-effect:` and `on-end-effect:`
+  chain a new effect on the end of the list.
+- `on-begin-effect:` and `on-end-effect:` take `eff ?type ?radius ?other` through `grab_effect_data`, and the four `effect-*`
+  directives (`effect-yx`, `effect-dice`, `effect-expr`, `effect-msg`) fill the effect just opened, whichever of the two it was.
+  `effect-dice` takes a dice string such as `1d4`.
+- `flags` is `?str flags`, so a bare `flags:` is legal and does nothing. A `grade:` colour of more than one character is a colour
+  name, read by `color_text_to_attr`.
+- `parser_parse` in `parser.c` reads an `int` with `strtol` in base zero (so `0x10` is 16), skips leading whitespace, and ignores
+  anything after the value up to the next `:`.
+- `run_parse_player_timed` accepts a file with no records.
+- `grab_name` compares with `streq`, so a lower-case `name:fast` is refused in C as well.
+
+### What Java does
+
+- `PlayerTimedGrammar.g4`: `file` is `recordCount (playerTimed)+ EOF`. The upstream `player_timed.txt` has no header, so it is a syntax
+  error here as it stands; `lib/gamedata/player_timed.txt` is the upstream file with `record-count:53` added and nothing else
+  changed. A header with no record is also a syntax error.
+- `PlayerTimedGrammar.g4`: `desc`, `onEnd`, `onIncrease` and `onDecrease` assign to a single local, so the last line wins. Likewise a
+  second `on-begin-effect:` or `on-end-effect:` replaces the first, where C keeps both. A second `name:` opens a second record for the
+  same effect, where C continues the first.
+- `PlayerTimedGrammar.g4`: `onBeginEffect` takes a type and an optional sub-type and nothing more, so a radius or `other` value is a
+  syntax error. `onEndEffectBlock` takes one optional `effect-dice:` followed by a bare `INTEGER`, so `effect-dice:1d4` is an error, and
+  `effect-dice:` after an `on-begin-effect:` is an error. `effect-yx:`, `effect-expr:` and `effect-msg:` are not tokens at all.
+- `PlayerTimedGrammar.g4`: `flags` needs a first `FLAG`, so a bare `flags:` is a syntax error. `PlayerTimedLexer.g4`: the `grade:`
+  colour must be a single colour code, so `grade:Yellow:...` is an error.
+- `PlayerTimedLexer.g4`: `INTEGER` and `DELIM_INTEGER` take no hex or octal, so `lower-bound:0x10` is an error, and an indented
+  directive is an error too.
+- `PlayerTimedReaderTest.aHeaderWithNoRecordIsRefusedHereWhereCLoadsAnEmptyList`, `missingRecordCountHeaderIsAHardError`,
+  `aRepeatedDescLineKeepsTheLastHereWhereCConcatenatesThem`, `aRepeatedEndIncreaseOrDecreaseLineKeepsTheLastHereWhereCConcatenatesThem`,
+  `aRepeatedNameLineMakesASecondRecordHereWhereCContinuesTheFirst`, `anOnBeginEffectWithARadiusIsRefusedHereWhereCReadsIt`,
+  `effectYxEffectExprAndEffectMsgAreRefusedHereWhereCReadsThem`, `anEffectDiceAfterAnOnBeginEffectIsRefusedHereWhereCAcceptsIt`,
+  `aDiceStringInEffectDiceIsRefusedHereWhereCParsesIt`, `aBareFlagsLineIsRefusedHereWhereCAcceptsIt`,
+  `aGradeColourWrittenAsAWordIsRefusedHereWhereCReadsIt`, `aHexadecimalLowerBoundIsRefusedHereWhereCReadsBaseZero` and
+  `anIndentedDirectiveIsRefusedHereWhereCSkipsLeadingWhitespace` pin them. The repeated `on-begin-effect:` and `on-end-effect:` case
+  is read from the grammar and has no test.
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/player_timed.txt` has 53 records, none of which repeats `desc:`, `on-end:`, `on-increase:` or
+  `on-decrease:`, one
+  `on-begin-effect:` and two `on-end-effect:` lines (one with `effect-dice:100`), no `effect-yx`, `effect-expr` or `effect-msg`, colour
+  codes of one character, no hex values and no indents.
+- A modded file that drops the header, empties the list, gives an effect a radius, a dice string or an `effect-msg:`, writes a colour
+  by name, or indents a line loses the whole file in Java, and the loader then stops start-up, where C would load it. A modded file
+  that splits a description over two `desc:` lines, or repeats a `name:`, loads with only the last line, or a split record.
+- Copying the upstream `player_timed.txt` over this one fails until `record-count:53` is added.
+
+### Question for Rowan
+
+- Should `effect-yx`, `effect-expr` and `effect-msg` be supported on timed effects? `EffectParseRecord` already carries those fields for
+  other grammars, and C lets the begin and end effects use them, so the only cost is grammar work. Today no shipped effect needs them.
+
+## `VisualsGrammar.g4` and `VisualsLexer.g4`: a colour is one listed letter, `flicker-color:` and `cycle-color:` must follow their header at once, the name takes the rest of the line, and indented lines are refused
+
+Found 2026-10-19 during `/port VisualsReader.java`. Partly fixed. [The colour part is <span style="color:#006400">**CLOSED**</span> 26-11-20: `COLOUR_LINE` in `VisualsLexer.g4` takes any run up to a colon or the end of the line, and the flicker and cycle assemblers read only its first character, white for a miss and dark for a blank, as C does. So `cycle-color:q` is white, `cycle-color:red` is `r`, and `flicker:dd:name` keys on `d`. Pinned by `anUnlistedColourLetterOnACycleColourReadsAsWhiteAsInC`, `aColourWrittenAsAWordIsItsFirstLetterAsInC`, `aMultiLetterBaseColourOnAFlickerHeaderIsItsFirstLetterAsInC` and `aBlankAfterAColourLetterIsHarmlessAsInC` in `VisualsReaderTest`. Indented lines load as in C too (`anIndentedDirectiveLoadsAsInC`). Left over: `cycle-color::r`, which C reads as `r` (leading colons skipped) and Java refuses for want of a colour token, parked 2026-11-20 for a later release (`Parked.md`); and the three pins still named `...HereWhereC...` in `VisualsReaderTest` (the field after a cycle name, a `flicker-color:` after an intervening `cycle:` block, and a colour line before any header). The bullets below describe the state before the fix.]
+
+### What C does
+
+- `visuals_parse_flicker`, `visuals_parse_flicker_color` and `visuals_parse_cycle_color` in `ui-visuals.c` read the colour as a `sym`
+  and pass only its first character to `color_char_to_attr` in `z-color.c`. That function never fails: a character it does not know is
+  `COLOUR_WHITE`, and a space is `COLOUR_DARK`. The `attr < 0` test that returns `PARSE_ERROR_INVALID_COLOR` cannot fire.
+- So `cycle-color:q`, `cycle-color:red`, `flicker:dd:name` and `flicker-color:d` followed by a blank all load.
+- `cycle sym group sym name` is tokenized on `:`, so a field after the name is dropped: `cycle:fancy:rainbow:junk` is the cycle
+  `rainbow`. `flicker sym color str name` takes the rest of the line as the name.
+- The parse context remembers the last `flicker:` header (`flicker_cycle_index`, `flicker_color_index`). A `flicker-color:` line
+  extends it however many `cycle:` lines came between, a leading `flicker-color:` writes to cycle 0 (dark), and a `flicker:` with no
+  colour lines is legal, its three steps staying at colour 0.
+- A `cycle-color:` before any `cycle:` dereferences `cycles[0]`, which is NULL, so C crashes. A `cycle:` with no `cycle-color:`
+  parses, then fails in `visuals_file_parser_finish` (`visuals_color_cycle_new` refuses zero steps), and so does an empty file (no
+  groups). Java refuses all three too, so those do not differ.
+- `parser_parse` in `parser.c` skips leading whitespace before it looks at the line.
+
+### What Java does (state of 2026-11-25)
+
+- `VisualsLexer.g4`: `COLOUR_LINE` takes any run up to a colon or the end of the line, and the assemblers read its first character, so an unlisted letter, a colour word and a blank after the letter load as C reads them (closed 26-11-20, pinned by `anUnlistedColourLetterOnACycleColourReadsAsWhiteAsInC`, `aColourWrittenAsAWordIsItsFirstLetterAsInC`, `aMultiLetterBaseColourOnAFlickerHeaderIsItsFirstLetterAsInC` and `aBlankAfterAColourLetterIsHarmlessAsInC` in `VisualsReaderTest`).
+- `imports/CommentsAndEol.g4` skips the indent, so an indented directive loads (`anIndentedDirectiveLoadsAsInC`).
+- `VisualsGrammar.g4`: `flickerBlock` is `flicker (flickerColour)+` and `cycleBlock` is `cycle (cycleColour)+`, so a colour line must follow its own header at once, a header with no colour line is a syntax error (`flickerBlockWithNoColourLinesIsAHardError`, `cycleBlockWithNoColourLinesIsAHardError`) and a leading colour line is a syntax error. C refuses the last two as well, and its handling of the first is the open difference below.
+- After `cycle:` the group is `STRING_BETWEEN_COLON`, then `DELIM_COLON`, then `STRING`, which is the rest of the line, so `cycle:fancy:rainbow:junk` is the cycle `rainbow:junk`.
+- Open, pinned by the three `...HereWhereC...` tests in `VisualsReaderTest`: `aFieldAfterTheCycleNameBecomesPartOfTheNameHereWhereCIgnoresIt`, `aFlickerColourAfterAnInterveningCycleBlockIsAHardErrorHereWhereCAttachesIt` and `aColourLineBeforeAnyHeaderIsAHardErrorHereWhereCWritesToCycleZero`. `aLeadingColonOnACycleColourIsRefusedHereWhereCSkipsIt` is the parked colon item.
+- `fileWithNoBlocksIsAHardError` pins the empty file, which C refuses too (see "What C does").
+
+### Impact
+
+- None on the shipped data: `lib/gamedata/visuals.txt` is identical to the upstream file, every colour is one listed letter with
+  nothing after it, no name carries a second `:`, each colour line follows its header, and nothing is indented.
+- A modded file with a colour word, a mistyped colour letter, a trailing blank after a colour, an indented line, or a `flicker-color:`
+  separated from its header loses the whole file in Java and the loader then stops start-up, where C loads it (a mistyped letter as a
+  white step). A stray `:` field after a cycle name loads in both but under a different name.
+- The cycler lookup is by name, so a cycle named `rainbow:junk` is simply never found by `color-cycle:fancy:rainbow` in `monster.txt`.
+
+### Question for Rowan
+
+- [<span style="color:#006400">**CLOSED**</span> 26-11-20: answered by Stage 7f, which follows C: an unlisted letter is white and a blank is dark.]
+
+## `LoreGrammar.g4` and `LoreLexer.g4`: the cast counts are dropped, `base:` and `drop-base:` never match, and `blow:`, `flags:` and `friends:` are narrower than C
+
+Found 2026-10-19 during `/port backend/parser/LoreReader.java`. Not fixed, and parked with the lore reader (line references re-checked 2026-11-25 and still hold): nothing calls it, and no
+parser is generated from this grammar today.
+
+### What C does
+
+- `parse_lore_counts` in `mon-init.c` stores all seven counts, including `cast_innate` and `cast_spell`.
+- `parse_lore_base` sets `all_known` and every race flag, and refuses an unknown base name.
+- `parse_lore_blow` takes `blow:method` with the effect, damage, seen count and index all optional, and records a blow only when the
+  seen count is not zero, at the slot the index names.
+- `parse_lore_flags` splits on any run of spaces and `|`, and a bare `flags:` is accepted.
+- `parse_lore_drop_base` is registered, and `parse_lore_drop`, `parse_lore_drop_base`, `parse_lore_friends`,
+  `parse_lore_friends_base` and `parse_lore_mimic` prepend to their lists, so the lists end up in reverse file order.
+- `parse_lore_friends` and `parse_lore_friends_base` default the role to `MON_GROUP_MEMBER` and accept only `servant` and `bodyguard`.
+- `parse_lore_drop` refuses a `min` or `max` above 99.
+- `init_parse_lore` also registers the monster.txt directives (`plural`, `glyph`, `color`, `speed`, `desc`, `shape` and the rest) and
+  ignores them.
+- An unknown `name:` leaves the private pointer `NULL`, so every following directive of that record is skipped.
+
+### What Java does
+
+- `LoreGrammar.g4:291-299` reads `$counts.innate` and `$counts.spell` into locals called `innate` and `spell`, but the `@after` block at
+  `LoreGrammar.g4:277-289` passes `castInnate` and `castSpell`, which stay 0. The two counts are lost.
+- `LoreGrammar.g4:129-135` matches `BASE MONSTER_NAME`, but `LoreLexer.g4` only produces `MONSTER_NAME` in the mode that `name:` pushes
+  and `BASE` pushes no mode, so by reading the lexer the rule can never match. If it did, it would store the base and neither set
+  `all_known` nor the flags, and an unknown name gives `null` with no error.
+- `LoreGrammar.g4:163-179` builds `dropBase` with no `@after` block, so `$monsterDropBase` is never set, and `monsterLore` at
+  `LoreGrammar.g4:291-324` has no alternative for it. A `drop-base:` line is a syntax error.
+- `LoreLexer.g4` has one token for the whole `blow:` value (`BLOW_MODE_VALUES`), with all five fields, upper-case names and a dice
+  string in the `0+1d10M0` form. `blow:HIT` and `blow:HIT:HURT` are refused, a seen count of 0 is recorded, and the index is read and
+  thrown away.
+- `LoreLexer.g4` takes `flags:` and `spells:` as names joined by exactly ` | `, with at least one name, so a bare `flags:` or a
+  separator without spaces is refused. An unknown name throws from `valueOf` (the parked soft-error gap).
+- `LoreGrammar.g4:187` defaults a `friends:` role to `MON_GROUP_NONE`, and `LoreGrammar.g4:206` and `LoreGrammar.g4:232` accept any
+  `MonsterGroupRole` name, so `leader` and `summon` load where C refuses them.
+- `LoreLexer.g4` takes the `friends:` and `friends-base:` number only as `DICE_STRING`, the `0+2d3M0` form, but `lore_save` in
+  `mon-lore.c` writes it as `2d3`, so a `friends:` or `friends-base:` line from the game is refused.
+- The grammar appends to the drop, friends, friends-base and mimic lists, so they come out in file order, and it has no 99 limit.
+- The lexer has no tokens for the monster.txt directives C ignores, so a file containing one is a syntax error.
+- An unknown `name:` still builds a `MonsterLore` and adds it to `loreEntries`; only the `race.setLore` call is skipped.
+- Found 2026-11-24, in a survey of every lexer for an indented comment: `LoreLexer.g4` mishandles a line indented with spaces. `STRING` takes letters and the space, so at column 0 the blanks are a `STRING` token the same length as `INDENT`, and the importing grammar's rule wins the tie. `  name:Foo` lexes as `STRING COLON STRING` and `  # c` as a lone `STRING`, where C skips the indent. A tab indent is fine, since `STRING` has no tab. The fix is to give `INDENT` priority at line start, as `LEVEL` and `COMMENT` have it in `WorldLexer.g4`; it waits with the rest of the lore work (`Parked.md`).
+- The `@after` block of `monsterLore` calls a 19-argument `MonsterLore` constructor with a `Map<MonsterBlow, Integer>`, and
+  `MonsterLore.java` has only the no-argument and the 25-argument `List<MonsterBlow>` constructors, so the grammar would not compile as
+  it stands (`MonsterLore.java` already says so).
+
+### Impact
+
+- None on the game today: the reader is a stub and `lib/user/lore.txt` only holds `name:`, `counts:`, `blow:` and `flags:` lines.
+- Once the parser is picked up, the cast counts would read back as 0, and a file written by `lore_save` with `base:`, `drop-base:` or
+  a `friends:` line would be refused whole. Lists that C reads in reverse order would come back in file order.
+
+### Question for Rowan
+
+- When the lore parser is picked up, should the grammar follow C's optional `blow:` fields and ignored monster.txt directives, or stay
+  with the shapes `lore_save` writes? Either way the cast counts, `base:`, `drop-base:` and the `friends:` dice want fixing.
+
+# Closed entries
+
+Every entry below is closed, accepted or parked, with the pins and the reasoning kept. Entries are in the order they had in the file before the move.
 
 ## `desc:` appends in C, overwrites in `BlowEffectGrammar.g4`
 
@@ -48,7 +618,7 @@ Found 2026-10-17 during `/port backend/parser/BlowEffectReader.java`. [<span sty
 ### Other grammars to check
 
 - Any other grammar whose rule for a free-text directive assigns where its C handler calls `string_append` has the
-  same fault. [<span style="color:#006400">**CLOSED**</span> 26-11-19: searched. Every `string_append` handler in the C parsers was matched to its grammar, and the faults found are all closed in Stage 7c of `docs/Issue_Approach_Order.md`. The `D:` map rows in `VaultGrammar.g4` were not checked.]
+  same fault. [<span style="color:#006400">**CLOSED**</span> 26-11-19: searched. Every `string_append` handler in the C parsers was matched to its grammar, and the faults found are all closed in Stage 7c of `Old Docs/Issue_Approach_Order.md`. The `D:` map rows in `VaultGrammar.g4` were not checked.]
 
 ## `PainLexer.g4`: a negative `type:` serial is accepted, C rejects it
 
@@ -81,7 +651,7 @@ Found 2026-10-17 during `/port backend/parser/PainReader.java`. [<span style="co
 
 ## Leading whitespace on a line: C skips it, the shared lexer rules do not
 
-Found 2026-10-17 during `/port backend/parser/PainReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PainReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `imports/CommentsAndEol.g4` now has an `INDENT` rule that skips blanks and tabs at column 0, and `COMMENT` ends at a newline or at the end of the file, so an indented directive, an indented comment and a comment on the last line with no newline load as in C in every lexer that imports it. Pinned by `anIndentedDirectiveLoadsAsInC` or `anIndentedLineLoadsAsInC` in 21 reader test classes (for example `MonsterReaderTest`, `ActivationReaderTest`, `ProjectionReaderTest` and `TrapReaderTest`), by `anIndentedCommentIsSkippedAsInC` in `WorldReaderTest` and by `aLastLineCommentWithNoNewlineLoadsAsInC` in `BrandReaderTest`. `PainReaderTest` and `HintReaderTest` have no pin of their own for it. Left over: `LoreLexer.g4` still mishandles an indent, parked with the lore reader (see the Lore entry and `Parked.md`). The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -120,7 +690,7 @@ Found 2026-10-17 during `/port backend/parser/PainReader.java`. Not fixed.
 
 ## `PainLexer.g4` and `PainGrammar.g4` cite C line numbers
 
-Found 2026-10-17 during `/port backend/parser/PainReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PainReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: neither `PainLexer.g4` nor `PainGrammar.g4` cites a C line number any more; a search of every grammar for `<file>.c:<digits>` on 26-11-25 found none in the Pain files. The bullets below describe the state before the fix.]
 
 - `PainLexer.g4:21` cites `src/mon-init.c:516` and `src/mon-init.c:569`, and `PainGrammar.g4:22` cites
   `src/mon-init.c:516`. Both should name the function (`init_parse_pain`, `pain_parser`) without a line number.
@@ -193,7 +763,7 @@ Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. [<span sty
 
 ## `BlowMethodGrammar.g4`: `name:` is trimmed, C keeps trailing blanks
 
-Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: the grammar no longer trims the name, so `name:HIT ` is a method called `HIT ` as in C. Pinned by `aTrailingBlankInTheNameIsKeptAsInC`, `aLeadingBlankInTheNameIsKeptAsInC` and `aNameWithNoBlanksIsUnchangedByKeepingBlanksAsInC` in `BlowMethodReaderTest`. The bullets below describe the state before the fix.]
 
 - `BlowMethodGrammar.g4:122` runs `$name.nameStr.trim()`. C's `parse_meth_name` stores the rest of the line as
   `parser_getstr` returns it, so `name:HIT ` is a method called `"HIT "` that `findmeth("HIT")` never matches.
@@ -202,7 +772,7 @@ Found 2026-10-17 during `/port backend/parser/BlowMethodReader.java`. Not fixed.
 
 ## `SummonGrammar.g4`: a record is a fixed sequence, C takes any directives in any order
 
-Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SummonReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: the `summon` rule in `SummonGrammar.g4` is `name` followed by any mix of the other directives, in any order and any number of times, and `file` takes `*`. `base:` lines accumulate wherever they sit, and a repeated `race-flag:`, `fallback:`, `desc:` or `msgt:` keeps the last. Pinned by `anyDirectiveMayFollowTheNameInAnyOrder`, `raceFlagBeforeBaseIsReadAsCDoesSinceEveryLineIsDispatchedOnItsOwn`, `baseLinesSplitByAnotherDirectiveAccumulateAsInC`, `repeatedRaceFlagKeepsTheLastAsInC`, `repeatedDescKeepsTheLastAsInC`, `missingMsgtGivesTheGenericMessageAsInC`, `aRecordWithOnlyANameLoadsAsInC` and `aFileWithNoRecordsLoadsNothingAsInC` in `SummonReaderTest`. Left over: a record with no `desc:` holds empty text where C holds NULL, pinned by `missingDescGivesEmptyTextHereWhereCLeavesItNull`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -248,34 +818,9 @@ Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
 - `SummonParseRecord.java` and `SummonAssembler.java` would need `msgType`, `uniques` and `desc` to be absent-capable;
   the assembler calls `MessageType.valueOf("MSG_" + rawMsgt)` on a value that is `""` today.
 
-## `SummonLexer.g4`: `msgt:` and `race-flag:` values must be upper-case identifiers, `uniques:` is decimal-only
-
-Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
-
-- C reads `msgt:` and `race-flag:` as `sym`, which `parser_parse` tokenizes on `:` and nothing else. The lexer's
-  `FLAG` token is `('A'..'Z') ('A'..'Z' | '_' | '0'..'9')*`, so `msgt:sum_monster` and `msgt:12` are lexer errors and
-  the whole file loads as nothing. C accepts both through `message_lookup_by_name` (case-insensitive, and a number
-  below `MSG_MAX`). `SummonReaderTest.lowerCaseMessageTypeIsAHardErrorHereWhereCMatchesCaseInsensitively` and
-  `numericMessageTypeIsAHardErrorHereWhereCAcceptsAMessageNumber` pin this.
-  [<span style="color:#006400">**CLOSED**</span> 26-11-20: the `msgt:` half only. `msgt:` now pushes `MSGT_FREE_TEXT` in `SummonLexer.g4` and reads one `STRING_NO_COLON` (renamed `MSGT_STRING` the same day)
-  (the rest of the line), and `SummonAssembler.assemble` drops leading colons and cuts the value at the next colon before
-  `MessageType.lookupByName`, as `strtok(cline, ":")` does for a `sym`. Checked on 38 values in three layouts (mid-record, last
-  line with and without a final newline): `sum_monster`, `20`, `+20`, `-0`, `152`, `MAX`, `SUM_MONSTER:x`, `::SUM_MONSTER` and
-  `20:x` load; `153`, `-1`, `20x`, `0x14`, `NONE`, `SUM_MONSTER ` (blank kept), `:` and `:x` are refused. The two old pins were
-  rewritten as `lowerCaseOrNumericMessageTypesLoadAsInC` and `aMessageTypeAsTheLastLineWithNoFinalNewlineLoadsAsInC`, with
-  `aNumberOutsideTheMessageRangeOrWithTrailingTextIsRefusedAsInC`, `aBlankInsideAMessageTypeNameIsKeptAndRefusedAsInC`,
-  `aColonEndsTheMessageTypeAndTheRestOfTheLineIsIgnoredAsInC`, `leadingColonsBeforeAMessageTypeAreSkippedAsInC` and
-  `aMessageTypeWithNoTokenBetweenItsColonsIsRefusedAsInC` in `SummonReaderTest`. The `race-flag:` and `uniques:` bullets below
-  are unchanged and still open. The bullet above describes the state before the fix.]
-- C reads `uniques:` as `int`, with `strtol` in base 0. `SummonLexer.g4:89-90` `INTEGER` is `'-'? ('0'..'9')+`, so
-  `uniques:0x1` is a lexer error, and a trailing field (`uniques:1:x`, which C ignores) is too. The meaning of the
-  values the lexer does accept is in `docs/Assembler_Issues.md`.
-- `race-flag:` names are compared with `streq` in C (`lookup_flag`), so the upper-case-only token costs nothing there.
-- None on the shipped data, which uses upper-case names and `0`/`1` only.
-
 ## `SummonGrammar.g4` and `SummonLexer.g4` cite a C line number
 
-Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SummonReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: neither `SummonGrammar.g4` nor `SummonLexer.g4` cites a C line number any more (checked by search on 26-11-25). The bullets below describe the state before the fix.]
 
 - `SummonGrammar.g4:22` and `SummonLexer.g4:21` cite `src/mon-summon.c:146`. Both should name the function
   (`init_parse_summon`) without a line number.
@@ -283,7 +828,7 @@ Found 2026-10-17 during `/port backend/parser/SummonReader.java`. Not fixed.
 
 ## `PitGrammar.g4`: a record needs a directive after `name:` and the file needs a record, C accepts neither rule
 
-Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: rule `pitRecord` in `PitGrammar.g4` is `name` then `(...)*`, and `file` takes `*`, so a name-only record and a file with no records load as in C. Pinned by `aRecordWithNoDirectivesLoadsAsInC` and `aFileWithNoRecordsLoadsNothingAsInC` in `PitReaderTest`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -317,7 +862,7 @@ Found 2026-10-17 during `/port backend/parser/PitReader.java`. Not fixed.
 
 ## `PitLexer.g4`: flag and spell lists must be `CODE | CODE`, C splits on spaces and bars and skips padding
 
-Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `FLAG_OR` in `PitLexer.g4` is now a run of blanks and bars, `' '+ '|'* ' '*` or `' '* '|'+ ' '*`, and the four list rules in `PitGrammar.g4` take an empty list, a delimiter-only run, or a first code, with `(FLAG_OR FLAG?)*` after it. `flags-req:`, `flags-ban:`, `spell-req:` and `spell-ban:` now load every shape C's `strtok(s, " |")` does: blanks or bars between codes in any run, leading and trailing delimiters, a bare or delimiter-only value, and a last line with no final newline. Pinned by `anyRunOfBlanksAndBarsSeparatesEveryPitListAsInC`, `aLeadingOrTrailingDelimiterOnEveryPitListLoadsAsInC`, `aBareOrDelimiterOnlyPitListLoadsEmptyAsInC` and `aPitListLineWithNoFinalNewlineLoadsAsInC` in `PitReaderTest`; the two pins named below were removed. The 7d entry in `docs/Issue_Approach_Order.md` has the detail. The bullets below describe the state before the fix.]
+Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `FLAG_OR` in `PitLexer.g4` is now a run of blanks and bars, `' '+ '|'* ' '*` or `' '* '|'+ ' '*`, and the four list rules in `PitGrammar.g4` take an empty list, a delimiter-only run, or a first code, with `(FLAG_OR FLAG?)*` after it. `flags-req:`, `flags-ban:`, `spell-req:` and `spell-ban:` now load every shape C's `strtok(s, " |")` does: blanks or bars between codes in any run, leading and trailing delimiters, a bare or delimiter-only value, and a last line with no final newline. Pinned by `anyRunOfBlanksAndBarsSeparatesEveryPitListAsInC`, `aLeadingOrTrailingDelimiterOnEveryPitListLoadsAsInC`, `aBareOrDelimiterOnlyPitListLoadsEmptyAsInC` and `aPitListLineWithNoFinalNewlineLoadsAsInC` in `PitReaderTest`; the two pins named below were removed. The 7d entry in `Old Docs/Issue_Approach_Order.md` has the detail. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -393,7 +938,7 @@ Found 2026-10-17 during `/port backend/parser/PitReader.java`. [<span style="col
 
 ## `MonsterSpellGrammar.g4`: a record needs a directive after `name:` and the file needs a record, C accepts neither rule
 
-Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `monsterSpell` in `MonsterSpellGrammar.g4` takes its directives after `name:` as a `*` loop and `file` takes `*`. Pinned by `aRecordWithOnlyANameLoadsAsInC` in `MonsterSpellReaderTest`; no test pins the file with no spells. The bullets below describe the state before the fix.]
 
 - `parse_mon_spell_name` in `mon-init.c` builds a complete record from the name alone, and every other handler only
   needs that record to exist. A name-only spell is accepted; a file with no spells loads nothing.
@@ -406,7 +951,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixe
 
 ## `MonsterSpellGrammar.g4`: lore and message lines are split into separate levels when another directive interrupts them
 
-Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: a text directive after `hit:`, `msgt:` or `effect:` now reaches the last level, and two `power-cutoff:` lines in a row give an empty level, as in C. Pinned by `loreAfterAnEffectIsAppendedToTheFirstLevelAsInC`, `aHitOrMsgtLineBetweenTwoLoreLinesAlsoLeavesOneLevelAsInC`, `loreAfterAnEffectInsideAPowerCutoffLevelJoinsThatLevelAsInC` and `twoPowerCutoffsInARowGiveAnEmptyLevelAsInC` in `MonsterSpellReaderTest`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -444,7 +989,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixe
 
 ## `MonsterSpellGrammar.g4` and `EffectBlock.g4`: an effect takes `effect-yx:` or `dice:` but not both, and its lines cannot come first
 
-Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: every case in this entry loads as in C. The shared block takes `effect-yx:` and `dice:` on one effect in either order, and a `dice:`, `effect-yx:` or `expr:` before the first `effect:` is dropped. `effect-msg:` is refused as C refuses it. Pinned by `effectYxThenDiceOnTheSameEffectBothLoadAsInC`, `diceThenEffectYxOnTheSameEffectBothLoadAsInC`, `aDiceLineBeforeAnyEffectIsDroppedAsInC`, `strayEffectLinesAheadOfTheFirstEffectAreDroppedAsInC` and `anEffectMsgIsARefusedLineAsInC` in `MonsterSpellReaderTest`. The bullets below describe the state before the fix.]
 
 - `parse_mon_spell_effect_yx`, `parse_mon_spell_dice` and `parse_mon_spell_expr` in `mon-init.c` each act on the last
   effect, in any order, and return `PARSE_ERROR_NONE` without doing anything when there is no effect yet ("assume that
@@ -460,8 +1005,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. Not fixe
 - None on the shipped data: no spell uses `effect-yx:` or `effect-msg:`, and every `dice:` follows its `effect:`.
 - [<span style="color:#006400">**CLOSED**</span> 26-11-09] The `effect-yx:` and `dice:` on one effect half: `effectBlock` now takes either, both in
   either order, or neither, and `MonsterSpellReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC` and
-  `diceThenEffectYxOnTheSameEffectBothLoadAsInC` pin it. The before-first-`effect:` and `effect-msg:` halves stay open
-  (Stage 6 item 2 in `Issue_Approach_Order.md`).
+  `diceThenEffectYxOnTheSameEffectBothLoadAsInC` pin it. The before-first-`effect:` and `effect-msg:` halves closed later (see the stamp under the heading).
 - The block is shared by every grammar that takes effects, so those grammars have the same shape; the C parsers differ
   from one another in which of the lines they register.
 
@@ -480,7 +1024,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterSpellReader.java`. [<span s
 
 ## `MonsterBaseGrammar.g4`: a record is a fixed sequence, C takes any directives in any order
 
-Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `monsterBase` in `MonsterBaseGrammar.g4` is `name` then `(glyph | pain | flags | desc)*`. Pinned by `directivesOutOfOrderLoadAsInC`, `aTemplateWithNoGlyphLoadsWithGlyphZeroAsInC`, `aTemplateWithNoDescLoadsWithANullDescriptionAsInC`, `aNameOnlyRecordLoadsWithEveryOtherFieldAbsentAsInC` and `everyRecordTakesItsDirectivesInItsOwnOrderAsInC` in `MonsterBaseReaderTest`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -512,7 +1056,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed
 
 ## `MonsterBaseLexer.g4`: `flags:` cannot be empty, and the list must be `CODE | CODE`
 
-Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: an empty `flags:` and a list split on any run of blanks and bars load as in C (Stage 7d). Pinned by `anEmptyFlagsValueLoadsWithNoFlagsAsInC` and `aFlagListSplitOnAnyRunOfBlanksAndBarsLoadsAsInC` in `MonsterBaseReaderTest`. Left over, an accepted deviation (`Accepted_Deviations.md`, "Monster base"): a blank or bar before the first flag, pinned by `aBlankOrBarBeforeTheFirstFlagIsAHardErrorHereWhereCSkipsIt`. The bullets below describe the state before the fix.]
 
 - `init_parse_mon_base` registers `flags` as `?str`, so the value is optional, and `parse_mon_base_flags` returns
   without error when `parser_hasval` is false. Otherwise it splits with `strtok(flags, " |")`, so a space separates
@@ -541,7 +1085,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. [<span st
 
 ## `MonsterBaseGrammar.g4` and `MonsterBaseLexer.g4` cite C line numbers
 
-Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: neither `MonsterBaseGrammar.g4` nor `MonsterBaseLexer.g4` cites a C line number any more (checked by search on 26-11-25). The bullets below describe the state before the fix.]
 
 - `MonsterBaseGrammar.g4` (the header comment) cites `src/mon-init.c:1069`, and `MonsterBaseLexer.g4` (header comment)
   cites `src/mon-init.c:1069` and `src/mon-init.c:1105`. They should name `init_parse_mon_base()` and
@@ -550,7 +1094,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterBaseReader.java`. Not fixed
 
 ## `MonsterGrammar.g4`: a record needs a directive after `name:` and the file needs a record, C accepts neither rule
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `monster` in `MonsterGrammar.g4` is `name` then `(...)*` and `file` takes `*`. Pinned by `aRecordWithOnlyANameLoadsAsInC` and `anEmptyFileLoadsNothingAsInC` in `MonsterReaderTest`. The bullets below describe the state before the fix.]
 
 - `parse_monster_name` in `mon-init.c` only makes the record header, and the other 32 handlers are all optional, so
   `name:Bare` on its own is a monster in C. An empty file is accepted too.
@@ -560,23 +1104,6 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
 - `MonsterReaderTest.aRecordWithOnlyANameIsAHardErrorHereWhereCAcceptsIt` and
   `aFileOfOnlyTheHeaderIsAHardErrorHereWhereCAcceptsAnEmptyFile` pin it.
 - None on the shipped data, where all 624 records carry directives. Same shape as the `PitGrammar.g4` entry above.
-
-## `MonsterLexer.g4`: `plural:`, `flags:` and `flags-off:` cannot be empty, and flag and spell lists must be `CODE | CODE`
-
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
-
-- `init_parse_monster` registers `plural`, `flags` and `flags-off` as `?str`. `parse_monster_plural` leaves
-  `race->plural` NULL for an empty value, and `parse_monster_flags` and `parse_monster_flags_off` return without error
-  when there is no value. Lists are split with `strtok(flags, " |")`, so a space separates codes as well as a bar. This
-  holds for `spells:` too, which is `str` (the value is required) but split the same way.
-- `MonsterLexer.g4`: `STRING` needs at least one character, `FLAG` is one code and `FLAG_OR` is a bar with an optional
-  space either side. `MonsterGrammar.g4`, rules `flags`, `flagsOff` and `spells`, need a `FLAG` straight after the colon.
-- So `plural:`, `flags:` and `flags-off:` with nothing after them, and `flags:MALE FEMALE`, are syntax errors here and
-  load in C. `MonsterReaderTest.anEmptyPluralIsAHardErrorHereWhereCTakesItAsNoPlural`,
-  `anEmptyFlagsValueIsAHardErrorHereWhereCAcceptsIt` and
-  `spaceSeparatedFlagsAreAHardErrorHereWhereCSplitsOnSpaceToo` pin this.
-- None on the shipped data, which writes every list as `CODE | CODE` and never leaves a value empty. Same shape as the
-  `MonsterBaseLexer.g4` and `PitLexer.g4` flag-list entries above, whose fix sections apply here too.
 
 ## `MonsterLexer.g4`: `color:` takes one letter, C also takes a name
 
@@ -592,7 +1119,7 @@ Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style=
 
 ## `MonsterGrammar.g4`: `message-vis:`, `message-invis:` and `message-miss:` need a message with no colon in it
 
-Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/MonsterReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `message-vis:`, `message-invis:` and `message-miss:` take the rest of the line, colons included, and a message with no text loads as empty. Pinned by `aMessageContainingAColonKeepsTheRestOfTheLineAsInC` and `aMessageWithNoTextLoadsAsEmptyAsInC` in `MonsterReaderTest`. The bullets below describe the state before the fix.]
 
 - `init_parse_monster` registers these as `sym spell ?str message`. The message is optional, a missing or blank one is
   stored as `""`, and as the last field it takes the rest of the line, colons included.
@@ -665,7 +1192,7 @@ Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="co
 
 ## `SlayGrammar.g4`: a file with no slay records is a syntax error
 
-Found 2026-10-17 during `/port backend/parser/SlayReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `file` in `SlayGrammar.g4` takes `*`. Pinned by `anEmptyFileLoadsNothingAsInC` in `SlayReaderTest`. The bullets below describe the state before the fix.]
 
 - `run_parse_slay` and `finish_parse_slay` accept a `slay.txt` with no records: the chain is empty and `slay_max` ends
   at 1.
@@ -684,7 +1211,7 @@ Found 2026-10-17 during `/port backend/parser/SlayReader.java`. [<span style="co
 
 ## `BrandGrammar.g4`: directives must come in one fixed order, and a missing or repeated one is a syntax error that costs the whole file
 
-Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `brand` in `BrandGrammar.g4` is `code` then any mix of the other directives, and a left-out one is zero as in C. Pinned by `directivesInAnyOrderLoadAsInC`, `aLeftOutPowerIsZeroAsInC`, `aLeftOutResistFlagIsRfNoneAsInC`, `oneRecordMissingADirectiveDoesNotCostTheFile`, `aRepeatedDirectiveKeepsTheLastValueAsCOverwrites` and `aCodeAloneLoadsWithEveryOtherFieldZeroedAsInC` in `BrandReaderTest`. The bullets below describe the state before the fix.]
 
 - `init_parse_brand` in `obj-init.c` registers each directive on its own, so `parser_parse` runs them in whatever order
   the file gives, a left-out directive leaves the zero-filled field (`power` 0, `resist_flag` 0, `name` and `verb`
@@ -701,7 +1228,7 @@ Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
 
 ## `BrandGrammar.g4`: a file with no brand records is a syntax error
 
-Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `file` in `BrandGrammar.g4` takes `*`. Pinned by `aFileWithNoRecordsLoadsNoBrandsAsInC` in `BrandReaderTest`. The bullets below describe the state before the fix.]
 
 - `run_parse_brand` and `finish_parse_brand` accept a `brand.txt` with no records: the chain is empty and `brand_max`
   ends at 1.
@@ -723,21 +1250,9 @@ Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="c
   and `hexNumberIsAHardErrorHereWhereCReadsItAsSixteen` pin the Java result.
 - None on the shipped data, which writes plain unsigned decimals. Same family as the `SlayLexer.g4` entry above.
 
-## `BrandLexer.g4`: spaces after a flag are swallowed, C keeps them and fails the lookup
-
-Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
-
-- `parse_brand_resist_flag` and `parse_brand_vuln_flag` take a `sym`, which `parser_parse` splits on `:` only, so
-  `resist-flag:IM_FIRE ` reaches `lookup_flag` as `"IM_FIRE "`, which matches nothing, and the load stops with
-  `PARSE_ERROR_INVALID_FLAG`.
-- `BrandLexer.g4`: `FLAG` pops its mode, and the default-mode `EOL` rule (`' '* '\r'? '\n'`) then eats the trailing
-  spaces, so the same line loads.
-- `BrandReaderTest.spaceAfterAFlagIsIgnoredHereWhereCLooksUpTheTextWithTheSpace` pins it. Lenient rather than harmful.
-- None on the shipped data.
-
 ## `BrandGrammar.g4` and `BrandLexer.g4`: comments cite a C line number, already stale
 
-Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: neither `BrandGrammar.g4` nor `BrandLexer.g4` cites a C line number any more (checked by search on 26-11-25). The bullets below describe the state before the fix.]
 
 - `BrandGrammar.g4` cites `init_parse_brand() (src/obj-init.c:959)` and `BrandLexer.g4` cites the same line for the
   directive table. `init_parse_brand` is no longer at 959, and the number moves again whenever a function in
@@ -745,7 +1260,7 @@ Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
 
 ## `BrandGrammar.g4`: the comment on rule `brand` says six of ten brands carry a `vuln-flag:`, it is four
 
-Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/BrandReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: the comment on rule `brand` in `BrandGrammar.g4` no longer says six of ten (a search for the phrase on 26-11-25 finds nothing). The bullets below describe the state before the fix.]
 
 - The comment above rule `brand` reads "only six of ten shipped brands carry a vuln-flag". `brand.txt` has four
   `vuln-flag:` lines (FIRE_3, COLD_3, FIRE_2, COLD_2), in the shipped copy and in the upstream file.
@@ -753,7 +1268,7 @@ Found 2026-10-17 during `/port backend/parser/BrandReader.java`. Not fixed.
 
 ## `ItemObjectGrammar.g4`: a record with only a `name:` line is a syntax error, C accepts it
 
-Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `itemObject` in `ItemObjectGrammar.g4` is `name` then `(...)*`. Pinned by `aRecordWithOnlyANameLoadsAsInC` in `ItemObjectReaderTest`. The bullets below describe the state before the fix.]
 
 - `parse_object_name` in `obj-init.c` starts the record and nothing else is required, so a `name:` line on its own is
   a kind with every field 0.
@@ -765,7 +1280,7 @@ Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
 
 ## `ItemObjectGrammar.g4`: a later `curse:` for the same name replaces an earlier one, C only ever raises it
 
-Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: a later `curse:` with no power leaves an earlier one alone, as C does. Pinned by `aLaterZeroPowerCurseLeavesAnEarlierOneAsInC` and `aZeroPowerCurseBeforeANonZeroOneLeavesTheNonZeroOne` in `ItemObjectReaderTest`. The bullets below describe the state before the fix.]
 
 - `parse_object_curse` in `obj-init.c` writes `k->curses[i] = power` only when `power > 0`, and nothing clears a slot.
   So `curse:teleportation:50` then `curse:teleportation:0` leaves 50, and `0` then `50` leaves 50.
@@ -804,7 +1319,7 @@ Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span sty
 
 ## `ItemObjectGrammar.g4` and `EffectBlock.g4`: `effect-msg:` is accepted on an object, C has no such directive
 
-Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `effect-msg:` is refused on an object, as C refuses it. Pinned by `anEffectMsgIsARefusedLineAsInC` in `ItemObjectReaderTest`. The bullets below describe the state before the fix.]
 
 - `init_parse_object` in `obj-init.c` registers `effect`, `effect-yx`, `dice` and `expr` but no `effect-msg`, so C
   gives `PARSE_ERROR_UNDEFINED_DIRECTIVE`. The object-level texts are `msg:` and `vis-msg:`.
@@ -815,9 +1330,9 @@ Found 2026-10-17 during `/port backend/parser/ItemObjectReader.java`. Not fixed.
 
 ## `ObjectBaseGrammar.g4`: a fixed shape of directives, C takes any order and any omission
 
-Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: every departure in this entry is closed or recorded. A file with no `default:` line, a file with no record, a record with no `graphics:` and a repeated `break:`, `graphics:` or `max-stack:` load as in C, and `flags:` splits on any run of blanks and bars. Pinned by `aFileWithNoDefaultLineLoadsWithZeroDefaultsAsInC`, `aFileWithNoRecordLoadsOnlyTheSyntheticNoneBaseAsInC`, `aRecordWithNoGraphicsLineLoadsWithDarkAsInC`, `aRepeatedBreakLineOverwritesAsInC` and `aRepeatedMaxStackLineOverwritesAsInC` in `ObjectBaseReaderTest`. The `default:` line after the first `name:` is the accepted deviation described below. The bullets below describe the state before the fix.]
 
-**Status 2026-11-13.** The `default:` line placed after the first `name:` is [<span style="color:#006400">**CLOSED**</span> 26-11-13: accepted deviation, parked for a later version, recorded in `docs/Accepted_Deviations.md` under "Object base". Pinned by `aDefaultLineAfterARecordIsAHardErrorHereWhereCAcceptsIt` and `aDefaultLineInsideARecordIsAHardErrorHereWhereCAcceptsIt` in `ObjectBaseReaderTest`; the first is the renamed pin listed below.] The other departures in this entry were not re-checked in this pass, and the rest of the text below is the state of 2026-10-17.
+**Status 2026-11-13.** The `default:` line placed after the first `name:` is [<span style="color:#006400">**CLOSED**</span> 26-11-13: accepted deviation, parked for a later version, recorded in `docs/Accepted_Deviations.md` under "Object base". Pinned by `aDefaultLineAfterARecordIsAHardErrorHereWhereCAcceptsIt` and `aDefaultLineInsideARecordIsAHardErrorHereWhereCAcceptsIt` in `ObjectBaseReaderTest`; the first is the renamed pin listed below.] The other departures were re-checked on 2026-11-25 and are closed (see the stamp under the heading); the rest of the text below is the state of 2026-10-17.
 
 ### What C does
 
@@ -853,7 +1368,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
 
 ## `ObjectBaseLexer.g4`: `flags:` needs a pipe between names, C splits on spaces as well
 
-Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `flags:` splits on any run of blanks and bars (Stage 7d). Pinned by `aDelimiterOrBlankOnlyFlagsLineLoadsWithNoFlagsAsInC`, `aLeadingOrTrailingDelimiterOnFlagsLoadsAsInC` and `aFlagsLineWithNoFinalNewlineLoadsAsInC` in `ObjectBaseReaderTest`. A bare `flags:` that loads empty where C refuses it is parked (`Parked.md`). The bullets below describe the state before the fix.]
 
 - `parse_object_base_flags` in `obj-init.c` runs `strtok(s, " |")`, so `flags:HATES_ACID HATES_FIRE` is two flags in C.
 - `ObjectBaseLexer.g4:124`: `FLAG_OR` is `' '? '|' ' '?`, so a bare space is not a separator; the second name is a
@@ -863,7 +1378,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
 
 ## `ObjectBaseLexer.g4`: the header comment names handlers C does not have
 
-Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectBaseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: the header of `ObjectBaseLexer.g4` now names `parse_object_base_defaults` and the other five handlers `obj-init.c` has, which a search of `obj-init.c` on 26-11-25 confirms. The bullets below describe the state before the fix.]
 
 - `ObjectBaseLexer.g4:23` refers to `parse_object_base_default_*`, which suggests one handler per default. C has a single
   `parse_object_base_defaults` that tests the label (`break-chance` or `max-stack`) and returns
@@ -884,7 +1399,7 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="c
 
 ## `CurseGrammar.g4`: a record needs a directive after `name:` and the file needs a record, C accepts neither rule
 
-Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `curseRecord` in `CurseGrammar.g4` is `name` then `(...)*` and `file` takes `*`. Pinned by `aRecordWithOnlyANameLoadsAsInC` and `aFileWithNoRecordsLoadsNothingAsInC` in `CurseReaderTest`. The bullets below describe the state before the fix.]
 
 - `parse_curse_name` in `obj-init.c` builds a complete record from the name alone, and `finish_parse_curse` copes with an
   empty chain (`curse_max` becomes 1, only the blank slot).
@@ -898,7 +1413,7 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
 
 ## `CurseGrammar.g4` and `EffectBlock.g4`: the effect lines are a fixed block, and a second `dice:` is a syntax error
 
-Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: every case in this entry loads as in C: `effect-yx:` and `dice:` in either order, a second `dice:` replacing the first, a `dice:` before the first `effect:` dropped, and `effect-msg:` refused. Pinned by `effectYxThenDiceOnTheSameEffectBothLoadAsInC`, `diceThenEffectYxOnTheSameEffectBothLoadAsInC`, `aDiceLineBeforeAnyEffectIsDroppedAsInC`, `aSecondDiceLineOnOneEffectReplacesTheFirstAsInC` and `anEffectMsgIsARefusedLineAsInC` in `CurseReaderTest`. The bullets below describe the state before the fix.]
 
 - `parse_curse_effect_yx`, `parse_curse_dice` and `parse_curse_expr` in `obj-init.c` act on the curse's last effect, in any
   order, and return `PARSE_ERROR_NONE` without doing anything when there is no effect yet. `parse_curse_dice` frees the
@@ -915,14 +1430,14 @@ Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
   (`severalEffectsOnOneCurseAllLoadInOrder`).
 - [<span style="color:#006400">**CLOSED**</span> 26-11-09] The `effect-yx:` and `dice:` on one effect case: the pin is now
   `CurseReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC`, with `diceThenEffectYxOnTheSameEffectBothLoadAsInC` for the
-  other order. The `dice:` before the first `effect:`, the second `dice:` and `effect-msg:` cases stay open.
+  other order. The `dice:` before the first `effect:`, the second `dice:` and `effect-msg:` cases closed later (see the stamp under the heading).
 - None on the shipped data: no curse uses `effect-yx:` or `effect-msg:`, and every `dice:` follows its `effect:`.
 - Same shared-block cause as the `MonsterSpellGrammar.g4` and `ItemObjectGrammar.g4` entries above; the second-`dice:`
   case is new to this one.
 
 ## `CurseLexer.g4`: `flags:`, `values:` and `conflict-flags:` need a pipe between names, C splits on spaces as well
 
-Found 2026-10-17 during `/port backend/parser/CurseReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/CurseReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `flags:`, `values:` and `conflict-flags:` split on any run of blanks and bars (Stage 7d). Pinned by `anyRunOfBlanksAndBarsSeparatesFlagsAsInC`, `anyRunOfBlanksAndBarsSeparatesValuesAsInC` and `anyRunOfBlanksAndBarsSeparatesConflictFlagsAsInC` in `CurseReaderTest`. A bare line that loads empty where C refuses it is parked (`Parked.md`). The bullets below describe the state before the fix.]
 
 - `parse_curse_flags`, `parse_curse_values` and `parse_curse_conflict_flags` in `obj-init.c` each run `strtok(s, " |")`, so
   `flags:AGGRAVATE AFRAID` is two flags in C and `values:STR[-1] INT[-1]` is two values.
@@ -969,7 +1484,7 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span sty
 
 ## `ActivationsGrammar.g4`: a record needs a directive after `name:` and the file needs a record, C accepts neither rule
 
-Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `activation` in `ActivationsGrammar.g4` is `name` then `(...)*` and `file` takes `*`. Pinned by `aRecordWithOnlyANameLoadsAsInC` and `aFileWithNoRecordsLoadsNothingAsInC` in `ActivationReaderTest`. The bullets below describe the state before the fix.]
 
 - `parse_act_name` in `obj-init.c` builds a complete record from the name alone, and `finish_parse_act` copes with an
   empty chain (`act_max` becomes 1, only the blank slot).
@@ -1013,7 +1528,7 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span sty
 
 ## `ActivationsGrammar.g4` and `EffectBlock.g4`: an effect takes `effect-yx:` or `dice:` but not both, its lines cannot come first, and `effect-msg:` is accepted
 
-Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: every case in this entry loads as in C: `effect-yx:` and `dice:` in either order, a `dice:`, `effect-yx:` or `expr:` before the first `effect:` dropped, and `effect-msg:` refused. Pinned by `effectYxThenDiceOnTheSameEffectBothLoadAsInC`, `diceThenEffectYxOnTheSameEffectBothLoadAsInC`, `aDiceLineBeforeAnyEffectIsDroppedAsInC`, `anEffectYxLineBeforeAnyEffectIsDroppedAsInC`, `anExprLineBeforeAnyEffectIsDroppedAsInC` and `anEffectMsgIsARefusedLineAsInC` in `ActivationReaderTest`. The bullets below describe the state before the fix.]
 
 - This is the shape described in the `MonsterSpellGrammar.g4` and `EffectBlock.g4` entry above, and it applies to
   `activation.txt` unchanged: `parse_act_effect_yx`, `parse_act_dice` and `parse_act_expr` act on the last effect in any
@@ -1026,14 +1541,13 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
   `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth` and
   `effectMsgIsAcceptedHereWhereCHasNoSuchDirective` pin the four.
 - [<span style="color:#006400">**CLOSED**</span> 26-11-09] The `effect-yx:` and `dice:` on one effect case: the pins are now
-  `ActivationReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC` and `diceThenEffectYxOnTheSameEffectBothLoadAsInC`. The
-  two before-first-`effect:` pins and `effect-msg:` stay open.
+  `ActivationReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC` and `diceThenEffectYxOnTheSameEffectBothLoadAsInC`. The two before-first-`effect:` pins and `effect-msg:` closed later (see the stamp under the heading).
 - None on the shipped data: 11 `effect-yx:` lines and 157 `dice:` lines, every one after its `effect:`, and never both on
   one effect.
 
 ## `ActivationsGrammar.g4` and `ActivationsLexer.g4`: the header comments cite C line numbers, and say the index is removed
 
-Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: neither `ActivationsGrammar.g4` nor `ActivationsLexer.g4` cites a C line number any more, and neither says the index is removed (searches on 26-11-25 find neither). The bullets below describe the state before the fix.]
 
 - Both files open with the same block, `ActivationsGrammar.g4:26-28` and `ActivationsLexer.g4:26-28`, citing
   `obj-init.c:1678`, `obj-init.c:1600-1630` and `obj-init.c:1635`. They should name `act_parser`, `init_parse_act` and
@@ -1045,7 +1559,7 @@ Found 2026-10-17 during `/port backend/parser/ActivationReader.java`. Not fixed.
 
 ## `ObjectPropertyGrammar.g4`: a second `msg:` or `desc:` appends, C replaces it
 
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: the grammar is now `ObjectProperty2Grammar.g4`, and a second `msg:` or `desc:` replaces the first as in C. Pinned by `aSecondMsgOrDescLineReplacesTheFirstAsInC` in `ObjectPropertyReaderTest`. The text below names the retired `ObjectPropertyGrammar.g4`, now under `unused/`. The bullets below describe the state before the fix.]
 
 - `parse_object_property_msg` and `parse_object_property_desc` in `obj-init.c` run `string_free` on the old string and
   `string_make` on the new one, so a second line replaces the first. This is the reverse of the `desc:` entries above,
@@ -1058,7 +1572,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fi
 
 ## `ObjectPropertyGrammar.g4`: a second `bindui:` replaces the first, C binds every line
 
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: the grammar is now `ObjectProperty2Grammar.g4`, and every `bindui:` line binds. Pinned by `aSecondBinduiLineBindsAsWellAsInC` in `ObjectPropertyReaderTest`. The text below names the retired `ObjectPropertyGrammar.g4`. The bullets below describe the state before the fix.]
 
 - The header of `object_property.txt` says `bindui` "can appear multiple times to bind a property to more than one user
   interface element". `parse_object_property_bindui` in `obj-init.c` calls `bind_object_property_to_ui_entry_by_name` for
@@ -1073,7 +1587,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fi
 
 ## `ObjectPropertyGrammar.g4`: a record is `name:` then `type:` then at least one directive, and the file needs a record
 
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: in `ObjectProperty2Grammar.g4` the directives after `name:` come in any order, `type:` may be left out or late, a second `type:` overwrites, and a file with no records loads. Pinned by `directivesAfterTypeMayComeInAnyOrder`, `aMissingOrLateTypeLoadsAsInC`, `aSecondTypeLineOverwritesTheFirstAsInC` and `anEmptyFileLoadsNothingAsInC` in `ObjectPropertyReaderTest`. A `code:` or `bindui:` before `type:` ends the load, as it does in C (`aCodeBeforeTheTypeEndsTheLoadAsInC`). The bullets below describe the state before the fix.]
 
 - C accepts the directives of a record in any order. Only `code:` and `bindui:` need `type:` to have come first, and
   `type:` itself can be left out (the record stays `OBJ_PROPERTY_NONE`) or come after `power:` or `mult:`. A second `type:`
@@ -1092,7 +1606,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fi
 
 ## `ObjectPropertyLexer.g4`: `adjective:` and `neg-adjective:` take one lower-case word, C takes any string
 
-Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `adjective:` and `neg-adjective:` take any string. Pinned by `anAdjectiveWithASpaceOrACapitalLoadsAsInC` in `ObjectPropertyReaderTest`. The bullets below describe the state before the fix.]
 
 - `init_parse_object_property` registers `adjective str adj` and `neg-adjective str neg_adj`, and a `str` field takes the
   whole rest of the line, so `adjective:very strong` and `adjective:Strong` are accepted.
@@ -1129,7 +1643,7 @@ Found 2026-10-17 during `/port backend/parser/ObjectPropertyReader.java`. [<span
 
 ## `EgoItemsGrammar.g4`: a record is `name:` then at least one directive, and the file needs a record
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `egoItem` in `EgoItemsGrammar.g4` is `name` then `(...)*` and `file` takes `*`. Pinned by `aRecordOfOnlyANameLoadsAsInC` and `aFileWithNoRecordsLoadsNothingAsInC` in `EgoItemReaderTest`. The bullets below describe the state before the fix.]
 
 - `parse_ego_name` in `obj-init.c` builds a complete record from the name alone, and `finish_parse_ego` copes with an empty
   chain (`e_max` ends up as 1 with a blank `e_info[0]`).
@@ -1143,7 +1657,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `EgoItemsGrammar.g4`: `flags:` and `flags-off:` need a flag, C takes an empty list
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `flags:` and `flags-off:` with nothing after the colon load with no flags, as in C. Pinned by `aBareOrDelimiterOnlyFlagsAndFlagsOffLoadWithNoFlagsAsInC` in `EgoItemReaderTest`. The bullets below describe the state before the fix.]
 
 - `init_parse_ego` registers `flags ?str flags` and `flags-off ?str flags`. The `?` makes the field optional, and
   `parse_ego_flags` and `parse_ego_flags_off` return no error when `parser_hasval` is false. So `flags:` with nothing after
@@ -1155,7 +1669,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
 
 ## `EgoItemsGrammar.g4` and `EgoItemsLexer.g4`: C splits flags and values on any run of spaces and bars, the grammar wants one bar between two
 
-Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `flags:`, `flags-off:`, `values:` and `min-values:` split on any run of blanks and bars (Stage 7d). Pinned by `aLeadingOrTrailingDelimiterOnFlagsAndFlagsOffLoadsAsInC` and `aLeadingOrTrailingDelimiterOnValuesAndMinValuesLoadsAsInC` in `EgoItemReaderTest`. A bare `values:` that loads empty where C refuses it is parked (`Parked.md`). The bullets below describe the state before the fix.]
 
 - `parse_ego_flags`, `parse_ego_flags_off`, `parse_ego_values` and `parse_ego_min_val` walk the text with
   `strtok(text, " |")`. Any run of spaces and bars is one separator, so `SEE_INVIS FREE_ACT`, `SEE_INVIS || FREE_ACT`, a
@@ -1197,7 +1711,7 @@ Found 2026-10-17 during `/port backend/parser/EgoItemReader.java`. [<span style=
 
 ## `ArtifactGrammar.g4`: a record is `name:` then at least one directive, and the file needs a record
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `artifact` in `ArtifactGrammar.g4` is `name` then `(...)*` and `file` takes `*`. Pinned by `aFileOfNoRecordsLoadsNothingAndANameWithNoBaseObjectIsRefusedByTheAssembler` in `ArtifactReaderTest`. A name-only record is still refused, by the assembler, for want of a `base-object:`, which is an accepted deviation (`Accepted_Deviations.md`, "Artifact"). The bullets below describe the state before the fix.]
 
 - `parse_artifact_name` in `obj-init.c` builds a complete record from the name alone, and `finish_parse_artifact` copes with an
   empty chain (`a_max` ends up as 1).
@@ -1209,7 +1723,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `ArtifactGrammar.g4`: `flags:` needs a flag, C takes an empty list
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `flags:` with nothing after the colon loads with no flags. Pinned by `anEmptyOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC` in `ArtifactReaderTest`. The bullets below describe the state before the fix.]
 
 - `init_parse_artifact` registers `flags ?str flags` and `parse_artifact_flags` returns no error when `parser_hasval` is false.
 - `ArtifactGrammar.g4:80` (`FLAGS f1=FLAG`) needs one `FLAG` token, so `flags:` alone is a syntax error.
@@ -1218,7 +1732,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
 
 ## `ArtifactLexer.g4` and `ArtifactGrammar.g4`: C splits flags and values on any run of spaces and bars, the lexer wants one bar between two
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `flags:` and `values:` split on any run of blanks and bars (Stage 7d). Pinned by `aLeadingDelimiterOnFlagsAndADelimiterOnlyValuesLineLoadAsInC` in `ArtifactReaderTest`. The leading delimiter on `values:` and a blanks-only `values:` are parked (`Parked.md`). The bullets below describe the state before the fix.]
 
 - `parse_artifact_flags` and `parse_artifact_values` use `strtok(s, " |")`, so a space alone, a doubled or a leading bar all
   separate names in C.
@@ -1270,7 +1784,7 @@ Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style
 
 ## `ArtifactGrammar.g4`: a later `curse:` for the same name replaces an earlier one, C only ever raises it
 
-Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. Not fixed.
+Found 2026-10-17 during `/port backend/parser/ArtifactReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: a later `curse:` with no power leaves an earlier one alone. Pinned by `aLaterCurseWithNoPowerLeavesAnEarlierOneAsInC` and `aCurseWithNoPowerIsNotAddedAndALaterPowerReplacesAnEarlierOne` in `ArtifactReaderTest`. The bullets below describe the state before the fix.]
 
 - `parse_artifact_curse` stores a power only above zero, so `curse:air swing:30` then `curse:air swing:0` leaves 30.
 - `ArtifactGrammar.g4:202` does `curseInit.putAll`, keyed by name, so the 0 replaces the 30 and the assembler then drops it.
@@ -1295,7 +1809,7 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span sty
 
 ## `ProjectionGrammar.g4`: the file needs a `record-count:` header and a record, and the upstream file has no header
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `file` in `ProjectionGrammar.g4` takes `*` and there is no `record-count:` header. Pinned by `anEmptyFileStopsTheLoadOnTheElementCountAsInC` in `ProjectionReaderTest`, which shows an empty file failing where C fails it, on the element count. The bullets below describe the state before the fix.]
 
 - The `record-count:` header is a Java addition. The upstream `projection.txt` starts its records with `code:ACID` and has no
   header; `lib/gamedata/projection.txt` here has `record-count:56` added at line 17.
@@ -1322,20 +1836,6 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span sty
 - The number and any-case handling in `ProjectionAssembler.java`'s `resolveMsgt` cannot be reached from a data file.
 - `ProjectionReaderTest.aLowerCaseOrNumericMsgtIsAHardErrorWhereCAcceptsBoth` pins both.
 - None on the shipped data, which uses upper-case names. Same family as the `SummonLexer.g4` entry above.
-
-## `ProjectionLexer.g4`: a blank after the `code:` or `msgt:` value is dropped, C keeps it and rejects the line
-
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed for `code:`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: the `msgt:` half only. `msgt:BR_ACID `, ` BR_ACID`, `BR_ACID :x` and `: BR_ACID` are now refused as C refuses them, because `MSGT_FREE_TEXT` keeps the blank in the value; see `aBlankInsideAMsgtNameIsKeptAndRefusedAsInC`. `code:ACID ` still loads, because `code:` still reads through `FLAG_MODE`, and is pinned by `aBlankAfterTheCodeValueIsDroppedWhereCKeepsItAndRejectsTheLine` (the old `aBlankAfterCodeOrMsgtIsDroppedWhereCKeepsItAndRejectsTheLine` is split into the two). The bullets below describe both halves as they stood before the fix.]
-
-- C keeps a trailing blank in a `str` or `sym`. `code:ACID ` is not `element_names[0]` (`PARSE_ERROR_ELEMENT_NAME_MISMATCH`), and
-  `msgt:BR_ACID ` matches no name (`PARSE_ERROR_INVALID_MESSAGE`).
-- After a `FLAG` the `EOL` rule from `imports/CommentsAndEol.g4` takes the blanks before the newline, so both lines load
-  cleanly in Java. Java accepts what C rejects.
-- `type:` and `color:` keep the blank in Java as C does (`element ` is no longer an element; `Slate ` is White), so the two
-  directives that read through `FLAG_MODE` are the only ones that differ.
-- `ProjectionReaderTest.aBlankAfterCodeOrMsgtIsDroppedWhereCKeepsItAndRejectsTheLine` and `aBlankAfterATypeOrColourIsKeptAsCKeepsIt`
-  pin the two sides.
-- None on the shipped data.
 
 ## `ProjectionLexer.g4`: integers are decimal-only with a leading minus, C reads them with `strtoul` base 0
 
@@ -1367,7 +1867,7 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span sty
 
 ## `ProjectionGrammar.g4` and `ProjectionLexer.g4` cite C line numbers, and one comment points at a note that is not there
 
-Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: neither `ProjectionGrammar.g4` nor `ProjectionLexer.g4` cites a C line number, and neither points at a top-of-file note (searches on 26-11-25 find neither). The bullets below describe the state before the fix.]
 
 - `ProjectionGrammar.g4:23-24` and `ProjectionLexer.g4:25-26` cite `obj-init.c:470` and `obj-init.c:400-414`. Both should name
   `projection_parser` and `init_parse_projection` without a line number.
@@ -1377,7 +1877,7 @@ Found 2026-10-18 during `/port backend/parser/ProjectionReader.java`. Not fixed.
 
 ## `RealmGrammar.g4` and `RealmLexer.g4`: an empty file, indented lines, a second colon and absent directives differ from C
 
-Found 2026-10-18 during `/port backend/parser/RealmReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/RealmReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `file` in `RealmGrammar.g4` takes `*`, an indented line loads, text after a second colon on `stat:` is dropped, and a record with only a name loads. Pinned by `aFileWithNoRealmsLoadsNothingAsInC`, `anIndentedDirectiveLoadsAsInC`, `textAfterASecondColonOnTheStatLineIsDroppedAsInC`, `aRecordWithOnlyANameLoadsAsInC` and `aRealmWithNoStatIsKeptAsStrengthAsCDoes` in `RealmReaderTest`. Left over, an assembler matter (`Assembler_Issues.md`): an absent text is empty in Java where C holds NULL, pinned by `anEmptyTextIsPassedThroughAsEmptyWhereCHoldsNull` in `RealmAssemblerTest`. The bullets below describe the state before the fix.]
 
 - **Empty file.** The `file` rule in `RealmGrammar.g4` needs one or more `realm` records, so `record-count:0` with no
   realms is a hard error. C reads an empty `realm.txt` and ends with an empty `realms` list.
@@ -1395,7 +1895,7 @@ Found 2026-10-18 during `/port backend/parser/RealmReader.java`. Not fixed.
 
 ## `ShapeGrammar.g4`: the file needs a shape, and `obj-flags:` and `player-flags:` need a flag
 
-Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: both halves load as in C. The empty file closed in Stage 7b on 26-11-19: the `file` rule in `ShapeGrammar.g4` takes `*` on its record loop, pinned by `ShapeReaderTest.anEmptyFileLoadsNothingAsInC`. The empty flag lines closed in Stage 7d on 26-11-20: the `objFlags` and `playerFlags` rules take a bare line, a delimiter-only run or a first flag after the directive, so `obj-flags:` and `player-flags:` alone load with no flags, as C's `?str` does. Pinned by `ShapeReaderTest.aBareFlagLineLoadsWithNoFlagsAsInC`; the two pins named below were removed. The 7b and 7d entries in `docs/Issue_Approach_Order.md` have the detail. The bullets below describe the state before the fix.]
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: both halves load as in C. The empty file closed in Stage 7b on 26-11-19: the `file` rule in `ShapeGrammar.g4` takes `*` on its record loop, pinned by `ShapeReaderTest.anEmptyFileLoadsNothingAsInC`. The empty flag lines closed in Stage 7d on 26-11-20: the `objFlags` and `playerFlags` rules take a bare line, a delimiter-only run or a first flag after the directive, so `obj-flags:` and `player-flags:` alone load with no flags, as C's `?str` does. Pinned by `ShapeReaderTest.aBareFlagLineLoadsWithNoFlagsAsInC`; the two pins named below were removed. The 7b and 7d entries in `Old Docs/Issue_Approach_Order.md` have the detail. The bullets below describe the state before the fix.]
 
 - **Empty file.** The `file` rule in `ShapeGrammar.g4` is `recordCount (shape)+ EOF`, so `record-count:0` with no shapes is a
   hard error. C reads an empty `shape.txt` and ends with an empty `shapes` list.
@@ -1410,7 +1910,7 @@ Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="c
 
 ## `ShapeLexer.g4`: flag and value lists need a bar between names, and a blank after `values:` is a lexer error
 
-Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `FLAG_OR`, `VALUE_INTRO_OR` and `VALUE_OR` in `ShapeLexer.g4` are now runs of blanks and bars, `' '+ '|'* ' '*` or `' '* '|'+ ' '*`, and `VALUE_INTRO` has its own end-of-line rule. The `objFlags`, `playerFlags` and `values` rules in `ShapeGrammar.g4` take a delimiter-only run, a leading run with a first item after it, or a first item alone, with the separator loop after it. `obj-flags:`, `player-flags:` and `values:` now load every shape C's `strtok(s, " |")` does: blanks or bars between names in any run, leading and trailing delimiters (`values: STR[3]`, the upstream bear line, included), a delimiter-only value, and a last line with no final newline. `values:` also reads C's brackets: an empty bracket stores 0 and a missing or doubled bracket is refused. Pinned by `anyRunOfBlanksAndBarsSeparatesShapeFlagsAsInC`, `anyRunOfBlanksAndBarsSeparatesShapeValuesAsInC`, `aLeadingOrTrailingDelimiterOnEveryShapeListLoadsAsInC`, `aDelimiterOnlyShapeListLoadsEmptyAsInC`, `aShapeListLineWithNoFinalNewlineLoadsAsInC`, `aValueWithAMissingOrDoubledBracketIsRefusedAsInC` and `anEmptyValuesBracketLoadsAsZeroAsInC` in `ShapeReaderTest`; the two separator pins named below were removed. A bare `values:` loads empty where C refuses it, which is the bare-against-blank item in `docs/Parked.md`, pinned by `aBareValuesLineLoadsWithNoValuesHereWhereCRefusesIt`. The 7d entry in `docs/Issue_Approach_Order.md` has the detail. The bullets below describe the state before the fix.]
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-20: `FLAG_OR`, `VALUE_INTRO_OR` and `VALUE_OR` in `ShapeLexer.g4` are now runs of blanks and bars, `' '+ '|'* ' '*` or `' '* '|'+ ' '*`, and `VALUE_INTRO` has its own end-of-line rule. The `objFlags`, `playerFlags` and `values` rules in `ShapeGrammar.g4` take a delimiter-only run, a leading run with a first item after it, or a first item alone, with the separator loop after it. `obj-flags:`, `player-flags:` and `values:` now load every shape C's `strtok(s, " |")` does: blanks or bars between names in any run, leading and trailing delimiters (`values: STR[3]`, the upstream bear line, included), a delimiter-only value, and a last line with no final newline. `values:` also reads C's brackets: an empty bracket stores 0 and a missing or doubled bracket is refused. Pinned by `anyRunOfBlanksAndBarsSeparatesShapeFlagsAsInC`, `anyRunOfBlanksAndBarsSeparatesShapeValuesAsInC`, `aLeadingOrTrailingDelimiterOnEveryShapeListLoadsAsInC`, `aDelimiterOnlyShapeListLoadsEmptyAsInC`, `aShapeListLineWithNoFinalNewlineLoadsAsInC`, `aValueWithAMissingOrDoubledBracketIsRefusedAsInC` and `anEmptyValuesBracketLoadsAsZeroAsInC` in `ShapeReaderTest`; the two separator pins named below were removed. A bare `values:` loads empty where C refuses it, which is the bare-against-blank item in `docs/Parked.md`, pinned by `aBareValuesLineLoadsWithNoValuesHereWhereCRefusesIt`. The 7d entry in `Old Docs/Issue_Approach_Order.md` has the detail. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1445,7 +1945,7 @@ Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="c
 
 ## `ShapeGrammar.g4` and `EffectBlock.g4`: `effect-msg:`, `dice:` and `expr:` before the first effect are syntax errors, and a second `effect-msg:` is too
 
-Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: an `effect-msg:`, `dice:`, `effect-yx:` or `expr:` before the first effect is dropped, and two `effect-msg:` lines on one effect are joined, as in C. Pinned by `anEffectMessageBeforeTheFirstEffectIsDroppedAsInC`, `diceBeforeTheFirstEffectIsDroppedAsInC`, `effectYxAndExprBeforeTheFirstEffectAreDroppedAsInC` and `twoEffectMessagesOnOneEffectAreAppendedAsInC` in `ShapeReaderTest`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1466,38 +1966,9 @@ Found 2026-10-18 during `/port backend/parser/ShapeReader.java`. Not fixed.
   `theShippedFileDiffersFromUpstreamInThreeLinesThatTheseTestsDependOn` pins the three data edits.
 - `EffectBlock.g4` is shared; the `MonsterSpellGrammar.g4` and `ActivationsGrammar.g4` entries above describe the same block.
 
-## `FlavourGrammar.g4` and `FlavourLexer.g4`: a bare `kind:`, a leading flavour, a colon in a description, a trailing colon, an indented line and text after the glyph differ from C
-
-Found 2026-10-18 during `/port backend/parser/FlavourReader.java`. Not fixed.
-
-### What C does
-
-- `parse_flavor_kind` in `init.c` only sets the static `flavor_tval` and `flavor_glyph`, so a `kind:` line with no `flavor:` or
-  `fixed:` under it is accepted. A `flavor:` line before any `kind:` is accepted too, with both statics still zero.
-- `desc` is a `str`, and `parser_parse` in `parser.c` does not tokenize a `str`, so `flavor:2:Green:A: B` has the description
-  `A: B`. With nothing after the last colon, as in `flavor:2:Green:`, there is no token for the optional `desc`, so the line is a
-  flavour with no description.
-- `glyph` is a `char`: `parser_parse` takes one character, skips a colon after it, and ignores the rest of the line, so
-  `kind:ring:=:extra` has the glyph `=`. A second character that is not a colon is `PARSE_ERROR_FIELD_TOO_LONG`.
-- `parser_parse` skips leading whitespace, so an indented directive is read.
-- An empty file ends with an empty `flavors` list.
-
-### What Java does
-
-- The `section` rule in `FlavourGrammar.g4` is `kind` then `fixedOrFlavourBlock`, which is one or more flavours, and the `file`
-  rule is one or more sections after the header. A bare `kind:`, a leading `flavor:` and `record-count:0` with no sections are
-  hard errors, and so the whole file gives no items.
-- [<span style="color:#006400">**CLOSED**</span> 26-11-22] The colon in a description and the trailing colon: `FlavourLexer.g4` now has a mode per field, so the description is read from the last colon to the end of the line and the `flavour` rule takes it as optional. Text after the glyph's colon is no longer a syntax error either: the glyph is read to the end of the line and `FlavourKindAssembler` refuses `=:extra`, which is accepted (`Accepted_Deviations.md`, "Flavour").
-- `CommentsAndEol.g4` is shared, and does not skip indentation. The gap is written up under `RealmGrammar.g4` and `RealmLexer.g4`.
-- Both `.g4` headers cite `src/init.c:4242-4249` for the directive table; `init_parse_flavor` has moved since, and no line number
-  should be recorded.
-- `FlavourReaderTest.aFlavourBeforeAnyKindIsAHardErrorHereWhereCAcceptsIt` pins the one that is still open. The bare-`kind:`, indented-line and empty-file pins are now `aKindWithNoFlavoursLoadsAsInC`, `anIndentedLineLoadsAsInC` and `anEmptyFileLoadsNothingAsInC`. `aColonInTheDescriptionIsKeptInTheTextAsInC`, `aTrailingColonAfterTheColourLoadsWithNoTextAsInC` and `textAfterTheGlyphIsRefusedByTheAssemblerHereWhereCIgnoresIt` pin the colon and glyph cases.
-- None on the shipped data: eight blocks, each with flavours, no colon in any description, no indentation. A description with a
-  colon is the one most likely to be written by hand.
-
 ## `NamesGrammar.g4` and `NamesLexer.g4`: a `word:` before the first `section:`, a negative section and indented lines differ from C
 
-Found 2026-10-18 during `/port backend/parser/NamesReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/NamesReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: every difference in this entry is closed or accepted: the `word:` before a `section:` (below), the negative section (below), indented lines (`leadingWhitespaceBeforeADirectiveLoadsAsInC` in `NamesReaderTest`, now that `NamesLexer.g4` takes the indent from `CommentsAndEol.g4`) and the repeated section (an accepted deviation). The bullets below describe the state before the fix.]
 
 - **A `word:` before any `section:`.** `init_parse_names` gives `names_parse` a running `section` that starts at 0, so
   `parse_names_word` in `init.c` files such a word under section 0. The `record` rule in `NamesGrammar.g4` starts with
@@ -1519,41 +1990,9 @@ Found 2026-10-18 during `/port backend/parser/NamesReader.java`. Not fixed.
   `NamesReaderTest.aRepeatedSectionGivesTwoRecordsWhereCJoinsThemIntoOneList` pins it.
 - None on the shipped data, which has two unindented sections in order and no word before the first.
 
-## `HistoryGrammar.g4` and `HistoryLexer.g4`: a chart with no phrase, a second phrase, a negative chart, text after the roll and indentation differ from C
-
-Found 2026-10-18 during `/port backend/parser/HistoryReader.java`. Not fixed.
-
-### What C does
-
-- `init_parse_history` registers `chart uint chart int next int roll` and `phrase str text`. `parse_history_chart` makes a new
-  entry for every `chart:` line, and `parse_history_phrase` does `string_append` onto the newest entry, so a chart line with no
-  phrase gives an entry with NULL text and a second `phrase:` line is joined onto the first.
-- `parser_parse` in `parser.c` tokenizes the int fields on `:` and reads each with `strtol`/`strtoul` base 0 without checking where
-  it stopped, so the text after the last field is dropped (`chart:1:0:10:extra` and `chart:1:0:10abc` both read roll 10), `0x10` is
-  16 and `010` is 8. A `uint` with a leading `-` is `PARSE_ERROR_NOT_NUMBER`. Leading whitespace on a line is skipped. An empty
-  `phrase:` is `PARSE_ERROR_MISSING_FIELD`. A file with no charts is accepted.
-
-### What Java does
-
-- The `record` rule in `HistoryGrammar.g4` is exactly one `chart` then one `phrase`, and `file` is one or more records after the
-  header. A chart line with no phrase, a second `phrase:` line and a header with no records are hard errors, so the whole file
-  gives no items.
-- `INTEGER` in `HistoryLexer.g4` is an optional `-` and decimal digits, so `chart:-1:0:100` reaches the assembler as chart -1 where
-  C rejects it, and anything after the roll (`:extra`, `abc`) or a hex roll is a hard error where C reads it.
-- `CommentsAndEol.g4` is shared, and does not skip indentation. The gap is written up under `RealmGrammar.g4` and `RealmLexer.g4`.
-- An empty `phrase:` is a hard error here as in C, and a phrase keeps its colons, leading spaces and trailing spaces, as C's `str`
-  field does.
-- `HistoryReaderTest.aChartWithNoPhraseBetweenTwoRecordsIsAHardErrorHereWhereCAcceptsIt`,
-  `aSecondPhraseLineIsAHardErrorHereWhereCAppendsItToTheEntry`, `aNegativeChartNumberLoadsHereWhereCRejectsIt`,
-  `textAfterTheRollIsAHardErrorHereWhereCIgnoresIt`, `aHexRollIsAHardErrorHereWhereCReadsItInBaseSixteen`,
-  `anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace` and
-  `aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile` pin them.
-- None on the shipped data: 165 unindented chart/phrase pairs, each chart line ending at the roll. A phrase split over two
-  `phrase:` lines is the one most likely to be written by hand.
-
 ## `BodyGrammar.g4`: a body with no `slot:` line, and a file with no bodies, are hard errors, C accepts both
 
-Found 2026-10-18 during `/port backend/parser/BodyReader.java`. Not fixed.
+Found 2026-10-18 during `/port backend/parser/BodyReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `bodyType` in `BodyGrammar.g4` is `body (slot)*` and `file` takes `*`. Pinned by `aBodyWithNoSlotsLoadsWithACountOfZeroAsInC` and `aFileWithNoBodiesLoadsNothingAsInC` in `BodyReaderTest`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1574,218 +2013,12 @@ Found 2026-10-18 during `/port backend/parser/BodyReader.java`. Not fixed.
 - The comment in `body.txt` says each body "must take the form of" a name line followed by slot lines, so a slotless body is
   probably a mistake in a hand-edited file, and failing it is arguably safer than C. It is still a difference.
 
-## `PlayerRaceGrammar.g4` and `PlayerRaceLexer.g4`: a race with only a name, a file with no races, space-separated flags and values, and text after a number differ from C
-
-Found 2026-10-18 during `/port backend/parser/PlayerRaceReader.java`. Not fixed.
-
-### What C does
-
-- `parse_p_race_name` in `init.c` allocates a zeroed race, and none of the other handlers is required, so a `name:` line alone is a
-  race with every field 0, no flags and a NULL history. A file with no `name:` line leaves `races` empty and loads without error.
-- `parse_p_race_obj_flags`, `parse_p_race_play_flags` and `parse_p_race_values` split their text with `strtok(s, " |")`, so
-  `obj-flags:SUST_STR REGEN` and `values:RES_ACID[1] RES_FIRE[1]` read both entries. An empty `obj-flags:` or `player-flags:` is
-  accepted as no flags; an empty `values:` is `PARSE_ERROR_MISSING_FIELD`.
-- `parser_parse` in `parser.c` reads each int with `strtol` base 0 and does not check where it stopped, so `hitdie:10abc` reads 10
-  and `0x10` is 16. A `history:` is a `uint`, and a leading `-` is `PARSE_ERROR_NOT_NUMBER`. Leading whitespace on a line is skipped.
-
-### What Java does
-
-- `PlayerRaceGrammar.g4`: the `playerRace` rule is a `name` then one or more of the other lines, so `name:Empty` on its own is a
-  syntax error, and the `file` rule is one or more races, so a header with no races is a syntax error too.
-- `PlayerRaceLexer.g4`: `FLAG_OR` and `VALUE_OR` are an optional space, a `|`, and an optional space, so a space on its own between
-  two flags or two values is a lexer error. An empty `values:` is a syntax error, as in C.
-- `INTEGER` is an optional `-` and decimal digits, so text after a number and a hex number are hard errors. `history:-1` is lexed
-  and then dropped by the assembler as an unknown chart, which also rejects it.
-- `CommentsAndEol.g4` is shared, and does not skip indentation. The gap is written up under `RealmGrammar.g4` and `RealmLexer.g4`.
-- All of these are hard errors: nothing loads and the messages come back.
-- `PlayerRaceReaderTest.aNameOnlyRaceIsAHardErrorHereWhereCAcceptsIt`, `aHeaderWithNoRacesIsAHardErrorHereWhereCAcceptsAnEmptyFile`,
-  `objectFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`,
-  `playerFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`,
-  `valuesSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`, `textAfterANumberIsAHardErrorHereWhereCIgnoresIt`,
-  `aHexNumberIsAHardErrorHereWhereCReadsItInBaseSixteen` and `anIndentedLineIsAHardErrorHereWhereCSkipsLeadingWhitespace` pin them.
-
-### Impact
-
-- None on the shipped data: all eleven races have a full set of lines, use `|` between flags and values, and have no text after a
-  number. A flag list written with spaces alone is the one most likely to be written by hand.
-
-## `PlayerClassGrammar.g4` and `PlayerClassLexer.g4`: a class with only a name, a file with no classes, a `magic:` with no book, a book with no spell, space-separated flags, an empty flag list and a repeated `magic:` differ from C
-
-Found 2026-10-18 during `/port backend/parser/PlayerClassReader.java`. Not fixed.
-
-### What C does
-
-- `parse_class_name` in `init.c` allocates a zeroed class, and none of the other handlers is required, so a `name:` line alone is a
-  class with every field 0. A file with no `name:` line leaves `classes` empty and loads without error.
-- `parse_class_obj_flags` and `parse_class_play_flags` split their text with `strtok(s, " |")`, so `player-flags:NO_MANA SHIELD_BASH`
-  reads both flags, and the argument is `?str`, so an empty `obj-flags:` or `player-flags:` is accepted as no flags.
-- `parse_class_magic` accepts a `magic:` line followed by no `book:` line, and `parse_class_book` accepts `spells` 0 with no
-  `spell:` line after it. Every directive other than `book:`, `book-graphics:`, `book-properties:`, `spell:` and the effect lines may
-  fall anywhere in the class, including between `magic:` and its first `book:`.
-- A second `magic:` in the same class is `PARSE_ERROR_REPEATED_DIRECTIVE`.
-- `parse_class_dice`, `parse_class_expr`, `parse_class_effect_yx` and `parse_class_effect_msg` return no error when the spell has no
-  effect yet ("assume that this is human and not parser error").
-
-### What Java does
-
-- `PlayerClassGrammar.g4`: the `playerClass` rule is a `name` then one or more of the other lines, so `name:Empty` on its own is a
-  syntax error, and the `file` rule is one or more classes, so a header with no classes is a syntax error too.
-- `PlayerClassLexer.g4`: `FLAG_OR` is an optional space, a `|`, and an optional space, so a space on its own between two flags is a
-  lexer error, and `FLAG_MODE` needs a `FLAG`, so an empty `obj-flags:` or `player-flags:` is a syntax error.
-- `PlayerClassGrammar.g4`: `magicBlock` is `magic (bookBlock)+` and `bookBlock` ends in `(spellBlock)+`, so a `magic:` with no book,
-  a book with no spell, and any line between `magic:` and its first `book:` are syntax errors.
-- `PlayerClassGrammar.g4`: each `magicBlock` in a class overwrites `magicInit`, so a second `magic:` with its own books replaces the
-  first without an error.
-- `PlayerClassGrammar.g4`: `spellBlock` takes `dice:` and its siblings only through the imported `effectBlock` rule, so one with no
-  `effect:` before it is a syntax error.
-- All but the repeated `magic:` are hard errors: nothing loads and the messages come back.
-- `PlayerClassReaderTest.aNameOnlyClassIsAHardErrorHereWhereCAcceptsIt`,
-  `aHeaderWithNoClassesIsAHardErrorHereWhereCAcceptsAnEmptyFile`,
-  `playerFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`,
-  `objectFlagsSeparatedByASpaceAreAHardErrorHereWhereCSplitsOnSpaceToo`, `anEmptyFlagListIsAHardErrorHereWhereCAcceptsIt`,
-  `aMagicLineWithNoBookIsAHardErrorHereWhereCAcceptsIt`, `aBookWithNoSpellLineIsAHardErrorHereWhereCAcceptsIt`,
-  `aTitleBetweenMagicAndItsFirstBookIsAHardErrorHereWhereCAcceptsIt`, `aDiceLineWithNoEffectIsAHardErrorHereWhereCIgnoresIt` and
-  `aRepeatedMagicLineReplacesTheFirstHereWhereCRejectsIt` pin them.
-
-### Impact
-
-- None on the shipped data: all nine classes have a full set of lines, use `|` between flags, put `book:` straight after `magic:`
-  and give every book at least one spell. A flag list written with spaces alone, and a `magic:` repeated by a copy and paste, are
-  the two most likely to be written by hand; the second is the only one that is silently accepted.
-
-## `TrapGrammar.g4`, `TrapLexer.g4` and `EffectBlock.g4`: a bare `name:`, a colon in the description, space-only and empty flags, the extra-effect lines, spaces in the dice and an unknown colour name differ from C
-
-Found 2026-10-18 during `/port backend/parser/TrapReader.java`. Not fixed.
-
-### What C does
-
-- `init_parse_trap` in `init.c` registers every line as its own handler. After `name:` they come in any order, and a record needs
-  nothing but its `name:` line.
-- `name` is `sym name str desc`, and a `str` takes the rest of the line, so `name:a:b: c` has the description `b: c`.
-- `flags` is `?str flags` and `parse_trap_flags` runs `strtok(flags, " |")`, so the value may be missing, and a space alone
-  separates two flags as well as `|`. `parse_trap_save_flags` splits `save` the same way.
-- `parse_trap_effect_yx_xtra` sets the position of the last extra effect, and `parse_trap_dice`, `parse_trap_dice_xtra`,
-  `parse_trap_expr` and `parse_trap_expr_xtra` return `PARSE_ERROR_NONE` without doing anything when there is no effect (or, for the
-  two `expr` ones, no dice) to act on. `parse_trap_dice` and `parse_trap_expr` walk `t->effect`, so they reach the primary list even
-  after an `effect-xtra:`.
-- `effect-yx` and `dice` both act on the last effect, in either order.
-- `init_parse_trap` registers no `effect-msg`, so C gives `PARSE_ERROR_UNDEFINED_DIRECTIVE`.
-- `appear` is three `uint`s, and `parser_parse` rejects a leading minus.
-- `visibility` is a `str` that `dice_parse_string` reads, and that function skips whitespace, so `2d10 M50` is `2d10M50`.
-- `parse_trap_graphics` sends a colour longer than one character to `color_text_to_attr` in `z-color.c`, which compares with
-  `my_stricmp` and answers white for a name it does not know.
-
-### What Java does
-
-- `TrapGrammar.g4`: `trapRecord` is a `name` then one or more of the other lines, so `name:a:b` on its own is a syntax error, and
-  `file` is one or more records, so a header with no records is one too.
-- `TrapLexer.g4`: in `DELIMITED_MODE`, `DELIMITED_STRING` stops at a colon, and `name` needs `DELIMITED_STRING DELIMITER_COLON
-  DELIMITED_STRING`, so a colon in the description is a syntax error.
-- `TrapLexer.g4`: `FLAG_OR` is an optional space, a `|` and an optional space, so a space on its own between two flags is a lexer
-  error, and `FLAGS_MODE` needs a `FLAG`, so an empty `flags:` is a syntax error. `save:` takes the same path.
-- `TrapGrammar.g4`: `effectXtraBlock` has no `effect-yx-xtra:`, and there is no token for it, so it is a syntax error. Every other
-  line of the group reaches the grammar only through `effectBlock` (`EffectBlock.g4`) or `effectXtraBlock`, which open with
-  `effect:` or `effect-xtra:`. A `dice:`, `dice-xtra:` or `expr:` with no effect of its own kind before it is a syntax error, and so
-  is a `dice:` after an `effect-xtra:`. The `effectBlock` rule takes `effect-yx:` or `dice:` but not both, so both on one effect is
-  a syntax error.
-- `EffectBlock.g4`: `effectBlock` ends in an optional `effect-msg:`, so a trap accepts a directive C does not have.
-- `TrapLexer.g4`: `DELIMITED_INTEGER` is `'-'? ('0'..'9')+`, so `appear:-1:-2:-3` loads as -1, -2 and -3.
-- `EffectBlockLexer.g4`: `DICE_STRING_MODE` has no rule for whitespace inside the value, so `visibility:2d10 M50` is a lexer error.
-- `AngbandDisplayCharacter.g4`: `COLOUR_VALUES` is built from C's colour characters and names, so `graphics:^:nonsense` is a lexer
-  error. C loads it and draws white.
-- All of these are hard errors except the negative `appear:` and `effect-msg:`: nothing loads and the messages come back.
-- `TrapReaderTest.aNameOnlyRecordIsAHardErrorHereWhereCAcceptsIt`, `aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile`,
-  `aColonInTheNameDescriptionIsAHardErrorHereWhereCTakesTheRestOfTheLine`,
-  `flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo`,
-  `saveFlagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo`, `anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt`,
-  `effectYxXtraIsAHardErrorHereWhereCAcceptsIt`, `aDiceLineBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt`,
-  `aDiceXtraLineBeforeAnyExtraEffectIsAHardErrorHereWhereCIgnoresIt`, `anExprLineWithNoDiceBeforeItIsAHardErrorHereWhereCIgnoresIt`,
-  `aDiceLineAfterAnExtraEffectIsAHardErrorHereWhereCReachesThePrimaryEffect`,
-  `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth`, `effectMsgIsAcceptedHereWhereCHasNoSuchDirective`,
-  `aNegativeAppearValueLoadsHereWhereCRejectsIt`, `aSpaceInsideTheVisibilityDiceIsAHardErrorHereWhereCSkipsIt` and
-  `anUnknownColourNameIsAHardErrorHereWhereCDrawsItWhite` pin them.
-- [<span style="color:#006400">**CLOSED**</span> 26-11-09] The `effect-yx` and `dice` on one effect pin: `effectYxAndDiceOnTheSameEffectAreAHardErrorHereWhereCTakesBoth` is now
-  `TrapReaderTest.effectYxThenDiceOnTheSameEffectBothLoadAsInC`, with `diceThenEffectYxOnTheSameEffectBothLoadAsInC`
-  for the other order. The other pins in the list stay open.
-
-### Impact
-
-- None on the shipped data: all forty records have a full set of lines, a colon-free description, `|` between flags, every
-  `dice:` straight after its `effect:`, and a colour from C's table.
-- A flag list written with spaces alone and a description with a colon are the two most likely to be written by hand, and both
-  lose the whole file.
-- A modded file with `effect-msg:` or a negative `appear:` loads in Java and is rejected by C.
-- Indentation is the shared `CommentsAndEol.g4` gap under "Leading whitespace on a line" above;
-  `TrapReaderTest.anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pins it for `TrapLexer`.
-- `EffectBlock.g4` is shared; the `MonsterSpellGrammar.g4`, `ActivationsGrammar.g4` and `ShapeGrammar.g4` entries above describe the
-  same block.
-
-## `PlayerPropertyGrammar.g4` and `PlayerPropertyLexer.g4`: a fixed line order, a required `name:`, repeated and split lines, an unknown `type:`, narrow `bindui:` symbols and base-10 numbers differ from C
-
-Found 2026-10-18 during `/port PlayerPropertyReader.java`. Updated 2026-11-19: the fixed line order, the required `name:`, the
-repeated `code:`, `name:` and `value:`, the split `desc:`, the empty file and indentation are <span style="color:#006400">**CLOSED**</span>
-(Stage 7a of `docs/Issue_Approach_Order.md`): `property` in `PlayerPropertyGrammar.g4` is now `type (code | bindUI | name | desc | value)*`
-and `file` is `property* EOF`. Pinned by `aBindingAfterTheNameLoadsAsInC`, `aDescBeforeTheNameLoadsAsInC`,
-`aValueBeforeTheDescLoadsAsInC`, `aRecordWithNoNameLoadsWithAnEmptyNameHereWhereCHasNull`, `aRepeatedNameKeepsTheLastAsInC`,
-`aRepeatedValueKeepsTheLastAsInC`, `aRepeatedCodeKeepsTheLastAsInC`, `aDescSplitByAnotherLineIsAppendedAsInC`,
-`backToBackDescLinesAreAppendedAsInC`, `bindingsSplitByAnotherLineAreBothKeptInFileOrder`, `aFileWithNoRecordsLoadsNothingAsInC` and
-`anIndentedDirectiveLoadsAsInC` in `PlayerPropertyReaderTest`. The unknown `type:`, the narrow `bindui:` symbols and tags, and the
-base-10 numbers are not fixed. The stale header note is also fixed. The "What Java does" bullets below that describe the old order,
-the required `name:`, the repeats, the split `desc:`, the record count and the header note are the state of 2026-10-18.
-
-### What C does
-
-- `init_parse_player_prop` in `init.c` registers `type`, `code`, `desc`, `name`, `value` and `bindui` as six handlers. After a `type:` they
-  come in any order, any number of times, and a record needs nothing but its `type:` line.
-- `parse_player_prop_code`, `parse_player_prop_name` and `parse_player_prop_value` overwrite their field, so a repeat keeps the last.
-  `parse_player_prop_desc` calls `string_append`, so `desc:` lines add on to each other wherever they sit in the record.
-- `type` is `str`, so `parse_player_prop_type` stores any text. `finish_parse_player_prop` treats everything but `element` as one property.
-- `bindui` is `sym ui int aux sym uival`, and `parser_parse` in `parser.c` splits a `sym` or `int` on `:` and takes it whole, so `ui` can
-  be any text without a colon, `<HOLY_ORB>` or lower case included.
-- An `int` is read with `strtol(tok, &z, 0)` and only `z == tok` is an error. `0x3` is 3, `010` is 8 and `1x` is 1.
-- Leading whitespace on a line is skipped.
-- An empty `name:` or `desc:` has no field for `strtok`, so it is `PARSE_ERROR_MISSING_FIELD`, a hard error.
-
-### What Java does
-
-- `PlayerPropertyGrammar.g4`: `property` is `type`, an optional `code`, `bindUI`, `name`, an optional `desc` and an optional `value`, in that
-  order. A `bindui:` after the `name:`, a `desc:` before it and a `value:` before the `desc:` are syntax errors.
-- A record with no `name:` is a syntax error, and so is a second `code:`, `name:` or `value:`. The `desc` rule is a run of `DESC STRING`, so
-  a `desc:` that has another line between it and the last is a syntax error where C appends it.
-- `file` is `recordCount` and one or more `property`, so `record-count:0` with no records is a syntax error where C loads an empty file.
-- `PlayerPropertyLexer.g4`: `TYPE_VALUE` is `player`, `object` or `element`, so any other `type:` is a syntax error.
-- `LCASE` is `[a-z0-9_]+` and `TAG` is `<` and upper-case letters only, so `bindui:A_B`, `bindui:a-b`, `bindui:a_b<dark>` and
-  `bindui:a_b<HOLY_ORB>` are lexer errors. The last matters for a modded file: `HOLY_ORB` is a real element.
-- `INTEGER` is `'-'? [0-9]+`, so `value:0x3` and `value:1x` are syntax errors.
-- Indentation is the shared `CommentsAndEol.g4` gap under "Leading whitespace on a line" above.
-- All of these are hard errors: nothing loads and the messages come back. An empty `name:` or `desc:` and a `value:` or `aux` that is not a
-  number are hard errors in both.
-- The comment at the top of both `.g4` files is stale: its note 1 says `property` matches `bindui` with `?`, but the rule is `bindUI`, which
-  is `binduiEntry*`, so several `bindui:` lines in a row load. It also cites C line numbers.
-- `PlayerPropertyReaderTest.aBindingAfterTheNameIsAHardErrorHereWhereCAcceptsAnyOrder`,
-  `aDescBeforeTheNameIsAHardErrorHereWhereCAcceptsAnyOrder`, `aValueBeforeTheDescIsAHardErrorHereWhereCAcceptsAnyOrder`,
-  `aRecordWithNoNameIsAHardErrorHereWhereCAcceptsIt`, `aRepeatedNameIsAHardErrorHereWhereCKeepsTheLast`,
-  `aRepeatedValueIsAHardErrorHereWhereCKeepsTheLast`, `aRepeatedCodeIsAHardErrorHereWhereCKeepsTheLast`,
-  `aDescSplitByAnotherLineIsAHardErrorHereWhereCAppendsIt`, `aHeaderWithNoRecordsIsAHardErrorHereWhereCAcceptsAnEmptyFile`,
-  `anUnknownTypeIsAHardErrorHereWhereCTakesAnyText`, `anUpperCaseBindingNameIsAHardErrorHereWhereCTakesAnySymbol`,
-  `aBindingNameWithAHyphenIsAHardErrorHereWhereCTakesAnySymbol`, `aBindingTagWithAnUnderscoreIsAHardErrorHereWhereCTakesAnySymbol`,
-  `aLowerCaseBindingTagIsAHardErrorHereWhereCTakesAnySymbol`, `anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent`,
-  `aHexadecimalValueIsAHardErrorHereWhereCReadsBaseZero` and `textAfterTheValueNumberIsAHardErrorHereWhereCIgnoresIt` pin them.
-
-### Impact
-
-- None on the shipped data: all 44 records have a `name:`, put their lines in the grammar's order, repeat nothing, and use lower-case
-  symbols, upper-case tags and plain decimal numbers.
-- The order and the missing `name:` are the likeliest to bite a hand-edited file, and each loses the whole file.
-- A tag with an underscore only matters if a `bindui:` is written with an explicit `<HOLY_ORB>`; the shipped file leaves the tag to the
-  expansion, which builds it from the element code in the assembler.
-- Indentation is the shared `CommentsAndEol.g4` gap;
-  `PlayerPropertyReaderTest.anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pins it for `PlayerPropertyLexer`.
-
 ## `TerrainFeatureGrammar.g4` and `TerrainFeatureLexer.g4`: space-only and empty flags, base-10 numbers with nothing after them, a second field after `resist-flag:` and an unknown colour name differ from C
 
 Found 2026-10-19 during `/port TerrainReader.java`. Updated 2026-11-18: the record order, the absent `name:` and `graphics:`, the repeated
-`graphics:`, the empty file and the repeated `name:` are closed (Stage 7a of `docs/Issue_Approach_Order.md`); the rest is not fixed.
+`graphics:`, the empty file and the repeated `name:` are closed (Stage 7a of `Old Docs/Issue_Approach_Order.md`); the rest closed by 2026-11-25 (see the stamp below).
+
+[<span style="color:#006400">**CLOSED**</span> 26-11-25: every difference in this entry is closed, accepted or parked. The record order, absent `name:` and `graphics:`, repeated lines, empty file and repeated `name:` closed on 26-11-18 and 26-11-19 (stamps below). Empty and space-separated `flags:` closed with Stage 7d (`aBareOrDelimiterOnlyFlagsLineLoadsWithNoFlagsAsInC`), a hexadecimal or octal `priority:` and `digging:` load (`aHexadecimalOrOctalPriorityLoadsAsInC`, `aHexadecimalOrOctalDiggingLoadsAsInC`), a field after `resist-flag:` is ignored (`aSecondFieldAfterTheResistFlagIsIgnoredAsInC`), an unknown colour name is white (`anUnknownColourNameDrawsWhiteAsInC`) and an indented directive loads (`anIndentedDirectiveLoadsAsInC`), all in `TerrainReaderTest`. Text after the `priority:` number and a second field after the `digging:` number are the accepted "Numbers in every data file" deviation, pinned by `textAfterThePriorityNumberIsAHardErrorHereWhereCIgnoresIt` and `aSecondFieldAfterTheDiggingNumberIsAHardErrorHereWhereCIgnoresIt`. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1832,7 +2065,7 @@ Found 2026-10-19 during `/port TerrainReader.java`. Updated 2026-11-18: the reco
 - `AngbandDisplayCharacter.g4`: `COLOUR_VALUES` is built from C's colour characters and names, so `graphics:.:nonsense` is a lexer error.
   C loads it and draws white.
 - Indentation is the shared `CommentsAndEol.g4` gap under "Leading whitespace on a line" above.
-- The ones still open are hard errors: nothing loads and the messages come back.
+- The ones listed as open on 2026-11-18 have since closed or been accepted (see the stamp below); the pins named next are the old ones.
 - `TerrainReaderTest.flagsSeparatedByASpaceAloneAreAHardErrorHereWhereCSplitsOnSpaceToo`,
   `anEmptyFlagsLineIsAHardErrorHereWhereCAcceptsIt`, `aHexadecimalPriorityIsAHardErrorHereWhereCReadsBaseZero`, `textAfterThePriorityNumberIsAHardErrorHereWhereCIgnoresIt`,
   `aSecondFieldAfterTheDiggingNumberIsAHardErrorHereWhereCIgnoresIt`, `aSecondFieldAfterTheResistFlagIsAHardErrorHereWhereCIgnoresIt`,
@@ -1854,6 +2087,8 @@ Found 2026-10-19 during `/port TerrainReader.java`. Updated 2026-11-18: the reco
 ## `WorldGrammar.g4` and `WorldLexer.g4`: fields after `down`, base-0 depths and indented lines
 
 Found 2026-10-19 during `/port WorldReader.java`; updated 2026-11-09 after the `record-count:` header and the name restriction were removed. The digit-only name was closed on 2026-11-22. Rewritten 2026-11-24: the base-0 depth, the field after `down`, the indented line and the indented comment are [<span style="color:#006400">**CLOSED**</span> 26-11-24]. Two differences are accepted (see the end of "What Java does"). Nothing is open.
+
+[<span style="color:#006400">**CLOSED**</span> 26-11-25: nothing in this entry is open. The depth, the field after `down`, the digit-only name and indented lines are closed (stamps below), and the two remaining differences are accepted (`Accepted_Deviations.md`, "World"). The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1900,7 +2135,9 @@ Found 2026-10-19 during `/port WorldReader.java`; updated 2026-11-09 after the `
 
 ## `GameConstantsGrammar.g4` and `GameConstantsLexer.g4`: an indented line is refused where C skips the indent
 
-Found 2026-10-19 during `/port GameConstantsReader.java`; rewritten 2026-11-22 after `GC_MSG` took any text up to a colon and `INTEGER` was removed. Everything but the indent is closed.
+Found 2026-10-19 during `/port GameConstantsReader.java`; rewritten 2026-11-22 after `GC_MSG` took any text up to a colon and `INTEGER` was removed. Closed on 2026-11-25 (see the stamp below).
+
+[<span style="color:#006400">**CLOSED**</span> 26-11-25: both regressions named below are fixed and the indent loads. `anIndentedLineLoadsAsInC` in `GameConstantsReaderTest` and `anIndentBeforeTheCategoryIsSkipped` in `GameConstantsLexerTest` pass, `level-max:monsters:1024` loads (the shipped `constants.txt` loads in `GameConstantsReaderTest`), and neither `GameConstantsGrammar.g4` nor `GameConstantsLexer.g4` cites a C line number or describes an `INTEGER` token that is gone (a search on 26-11-25 finds neither). The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1926,24 +2163,22 @@ Found 2026-10-19 during `/port GameConstantsReader.java`; rewritten 2026-11-22 a
   `aNumericMessageLoadsBelowMsgMaxAsInC`.
 - `GC_NAME` is lower-case letters and hyphens only, so an upper-case category is a syntax error where C reports an undefined directive;
   both refuse the file.
-- Open, a regression from the `GC_MSG` change. An indented line is a syntax error. The imported `INDENT` rule skips blanks at column 0, but
+- [<span style="color:#006400">**CLOSED**</span> 26-11-25] Was open, a regression from the `GC_MSG` change. An indented line is a syntax error. The imported `INDENT` rule skips blanks at column 0, but
   `GC_MSG` takes blanks too, so `  world` is the longer match and the token is `GC_MSG=  world`, where `line` wants a `GC_NAME`. The assembler
   trims the category, but the parser refuses the line first. Red: `anIndentedLineLoadsAsInC` in `GameConstantsReaderTest` and
   `anIndentBeforeTheCategoryIsSkipped` in `GameConstantsLexerTest`.
-- Open, a second regression (21:35 edit on 2026-11-22). `field` takes only `GC_MSG`, but `GC_NAME` is listed first and wins the tie for a field of
+- [<span style="color:#006400">**CLOSED**</span> 26-11-25] Was open, a second regression (21:35 edit on 2026-11-22). `field` takes only `GC_MSG`, but `GC_NAME` is listed first and wins the tie for a field of
   only lower-case letters and hyphens, so `level-max:monsters:1024` fails with "missing GC_MSG at 'monsters'". The shipped file is refused.
 
 ### Impact
 
-- The shipped data: `lib/gamedata/constants.txt` has no indented lines, but the second regression refuses every line of it while the grammar
-  stands as edited at 21:35.
-- A hand-edited or modded file that indents a line loses the whole file, and the lexer message does not say why.
-- Left in the grammars: the lexer's header and `GC_MSG` comments still describe `INTEGER` and an upper-case pattern, and the header comments of
-  both grammars cite C line numbers (`init.c:1051`, `init.c:949-980`).
+- The shipped data: `lib/gamedata/constants.txt` has no indented lines. The second regression refused every line of it while the grammar stood as edited at 21:35; it loads now.
+- A hand-edited or modded file that indents a line loaded as nothing while the regression stood; it loads now.
+- The comment leftovers (the lexer header describing `INTEGER`, and C line numbers in both headers) are gone as of 2026-11-25.
 
 ## `QuestGrammar.g4` and `QuestLexer.g4`: the grammar fixes the directive order and count, and the lexer shares the comment, indent and number differences
 
-Found 2026-10-19 during `/port QuestReader.java`. Not fixed.
+Found 2026-10-19 during `/port QuestReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `quest` in `QuestGrammar.g4` is `name` then `(level | race | number)*` and `file` takes `*`. A hexadecimal or leading-zero level reads in base 0, an indented line loads and a repeated directive keeps the last. Pinned by `aRepeatedDirectiveTakesTheLastOneAsInC`, `aHexadecimalLevelOrNumberLoadsAsInC`, `aLeadingZeroLevelIsReadAsOctalAsInC`, `aFileWithNoQuestsLoadsAnEmptyListAsInC` and `anIndentedLineLoadsAsInC` in `QuestReaderTest`. Two differences are accepted or parked: a field after a value (`aFieldAfterTheValueIsRefusedHereWhereCIgnoresIt`, "Numbers in every data file") and a directive before the first `name:` (`aDirectiveBeforeTheFirstNameIsRefusedHereWhereCCrashes`, "Quest"). The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -1979,7 +2214,7 @@ Found 2026-10-19 during `/port QuestReader.java`. Not fixed.
 
 ## `VaultGrammar.g4` and `VaultLexer.g4`: the grammar fixes the directive order and count, `min-depth:` and `max-depth:` take a minus sign, and the lexer shares the comment, indent and number differences
 
-Found 2026-10-19 during `/port VaultReader.java`. Not fixed.
+Found 2026-10-19 during `/port VaultReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `profileRecord` in `VaultGrammar.g4` is `name` then any mix of the other directives, and `file` takes `*`. A negative depth ends the load, a hexadecimal or octal count loads and an indented line loads. Pinned by `aFileWithNoVaultsLoadsAnEmptyList`, `negativeDepthsEndTheLoadAsInC`, `aHexadecimalOrOctalRowOrColumnCountLoadsAsInC`, `aHexadecimalOrOctalDepthLoadsAsInC` and `anIndentedDirectiveLoadsAsInC` in `VaultReaderTest`. A field after the figure is the accepted "Numbers in every data file" deviation (`aBarePrefixOrTextAfterTheFigureIsRefusedHereWhereCIgnoresIt`). The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -2018,7 +2253,7 @@ Found 2026-10-19 during `/port VaultReader.java`. Not fixed.
 
 ## `RoomProfileGrammar.g4` and `RoomProfileLexer.g4`: the grammar fixes the directive order and count, `flags:` takes one `|`-separated line, `type:` and `doors:` take a minus sign, and the lexer shares the comment, indent and number differences
 
-Found 2026-10-19 during `/port RoomProfileReader.java`. Not fixed.
+Found 2026-10-19 during `/port RoomProfileReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `roomProfile` in `RoomProfileGrammar.g4` is `name` then any mix of the other directives, `file` takes `*`, `flags:` accumulates and splits on any run of blanks and bars, and an indented line loads. Pinned by `aRepeatedFlagsLineAccumulatesAsInC`, `aFileWithNoTemplatesLoadsAnEmptyListAsInC`, `anyRunOfBlanksAndBarsSeparatesFlagsAsInC`, `aNegativeTypeOrDoorCountStopsTheLoadAsInC` and `anIndentedDirectiveLoadsAsInC` in `RoomProfileReaderTest`. Three differences are parked (`Parked.md`): a bad first value of a repeated directive (`aBadFirstValueOfARepeatedDirectiveIsLostHereWhereCRefusesIt`), a hexadecimal row count (`aHexadecimalRowCountIsRefusedHereWhereCReadsBaseZero`) and a field after a value (`aFieldAfterTheValueIsRefusedHereWhereCIgnoresIt`). The question under "Question for Rowan" is moot: `flags:` takes any run of separators now. The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -2065,49 +2300,9 @@ Found 2026-10-19 during `/port RoomProfileReader.java`. Not fixed.
 - `flags:` is the one directive with a free-form value in this file, and C lets a modder write several lines or use spaces. Is the single
   `|`-separated line a deliberate choice for this file (only `FEW_ENTRANCES` exists), as the same lexer shape is for `vault.txt`?
 
-## `DungeonProfileGrammar.g4`: no empty list, a bare `name:` is refused, and the shared indent, base-zero and trailing-field cases
-
-Found 2026-10-19 during `/port DungeonProfileReader.java`. Not fixed.
-
-### What C does
-
-- `init_parse_profile` in `generate.c` registers seven independent directives. Only `name:` creates a record
-  (`parse_profile_name`); the other six fill in the current one, so they can come in any order after a `name:`, can repeat (the last
-  wins), and can be left out. A directive before any `name:` is `PARSE_ERROR_MISSING_RECORD_HEADER`.
-- A `name:` with nothing after it is a valid record, zeroed apart from its name.
-- `run_parse_profile` accepts a file with no records, and `finish_parse_profile` then sets `z_info->profile_max` to 0.
-- `parser_parse` in `parser.c` skips leading whitespace, reads an `int` with `strtol` in base zero (so `0x10` is 16 and `010` is 8),
-  and ignores anything after the value up to the next `:`. A missing field is `PARSE_ERROR_MISSING_FIELD`.
-
-### What Java does
-
-- `DungeonProfileGrammar.g4`: `file` is `recordCount (profile)+ EOF`, so a file with the header and no profile is a syntax error and
-  `GrammarDriver.run` returns no profiles at all. The `record-count:` header is a Java-only addition that the upstream
-  `dungeon_profile.txt` does not carry.
-- `DungeonProfileGrammar.g4`: `profile` is a `name` followed by `( ... )+`, so a `name:` with no directive after it is a syntax error
-  and the whole file is lost.
-- `DungeonProfileLexer.g4`: `INTEGER` is `'-'? ('0'..'9')+`, so `alloc:0x10` and a field after the value (`alloc:5:junk`) are errors, and an
-  indented directive (`  alloc:5`) is a lexer error.
-- A directive before any `name:` and a `params:` line with a field missing are refused, as in C.
-- `DungeonProfileReaderTest.aFileWithNoProfilesIsRefusedHereWhereCLoadsAnEmptyList`, `aProfileWithNoDirectivesFailsClosed`,
-  `hexIndentedAndTrailingFieldValuesAreRefusedHereWhereCAcceptsThem`, `aDirectiveBeforeAnyNameFailsClosedAsInC` and
-  `aParamsLineWithAFieldMissingFailsClosedAsInC` pin them.
-
-### Impact
-
-- None on the shipped data: `lib/gamedata/dungeon_profile.txt` has 9 profiles, each with `params:` and `alloc:`, no indents, no hex values and
-  nothing after a value.
-- A modded file that empties the list, leaves a `name:` bare, indents a line or writes a value in hex loses the whole file in Java, and the
-  loader then stops start-up, where C would load it.
-
-### Question for Rowan
-
-- Is requiring at least one directive after each `name:` deliberate? C allows it, but a profile with no `params:` has a block size of 0 and
-  no use, so it may be worth refusing on purpose; if so the grammar comment should say so.
-
 ## `ChestTrapGrammar.g4` and `ChestTrapLexer.g4`: the file needs a `record-count:` header and a record, `code:` must follow `name:`, and a repeated `msg:` overwrites where C appends
 
-Found 2026-10-19 during `/port ChestTrapReader.java`. Not fixed.
+Found 2026-10-19 during `/port ChestTrapReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: every difference in this entry is closed or recorded. `file` takes `*` and there is no `record-count:` header, a repeated `msg:` or `msg-death:` is joined, a `dice:` or `expr:` before any effect is dropped and a hexadecimal level loads (`aRepeatedMsgLineIsJoinedAsInC`, `aRepeatedMsgDeathLineIsJoinedAsInC`, `anExprLineOnAnEffectWithNoDiceIsDroppedAsInC` and `aHexadecimalLevelIsReadAsInC` in `ChestTrapReaderTest`). A record needs its `code:` and the file must match `ChestTrapCode`, which is an accepted deviation (`Accepted_Deviations.md`, "Chest trap"; `aMissingCodeLineIsAHardParseErrorAndRejectsTheFile` and `aFileWithNoTrapsIsRefusedByTheAssemblerHereWhereCLoadsAnEmptyList`). The bullets below describe the state before the fix.]
 
 ### What C does
 
@@ -2152,73 +2347,11 @@ Found 2026-10-19 during `/port ChestTrapReader.java`. Not fixed.
 - Requiring `code:` is deliberate (the lexer comment says the code is load-bearing here), but should a repeated `msg:` be joined as in
   C, or refused as an error, instead of silently dropping the first line?
 
-## `PlayerTimedGrammar.g4` and `PlayerTimedLexer.g4`: the file needs a `record-count:` header and a record, several lines C reads are refused, and repeated text lines overwrite where C appends
-
-Found 2026-10-19 during `/port PlayerTimedReader.java`. Not fixed.
-
-### What C does
-
-- `init_parse_player_timed` in `player-timed.c` registers twenty independent directives and no `record-count:`. Only `name:` picks a
-  record (`parse_player_timed_name` points at `timed_effects[index]`); the rest fill it in, in any order, and can be left out. A
-  directive before any `name:` is `PARSE_ERROR_MISSING_RECORD_HEADER`.
-- `desc:`, `on-end:`, `on-increase:`, `on-decrease:` and `effect-msg:` use `string_append`, so a repeated line is joined onto the text
-  already held. A second `name:` for the same effect carries on with the same record, and `on-begin-effect:` and `on-end-effect:`
-  chain a new effect on the end of the list.
-- `on-begin-effect:` and `on-end-effect:` take `eff ?type ?radius ?other` through `grab_effect_data`, and the four `effect-*`
-  directives (`effect-yx`, `effect-dice`, `effect-expr`, `effect-msg`) fill the effect just opened, whichever of the two it was.
-  `effect-dice` takes a dice string such as `1d4`.
-- `flags` is `?str flags`, so a bare `flags:` is legal and does nothing. A `grade:` colour of more than one character is a colour
-  name, read by `color_text_to_attr`.
-- `parser_parse` in `parser.c` reads an `int` with `strtol` in base zero (so `0x10` is 16), skips leading whitespace, and ignores
-  anything after the value up to the next `:`.
-- `run_parse_player_timed` accepts a file with no records.
-- `grab_name` compares with `streq`, so a lower-case `name:fast` is refused in C as well.
-
-### What Java does
-
-- `PlayerTimedGrammar.g4`: `file` is `recordCount (playerTimed)+ EOF`. The upstream `player_timed.txt` has no header, so it is a syntax
-  error here as it stands; `lib/gamedata/player_timed.txt` is the upstream file with `record-count:53` added and nothing else
-  changed. A header with no record is also a syntax error.
-- `PlayerTimedGrammar.g4`: `desc`, `onEnd`, `onIncrease` and `onDecrease` assign to a single local, so the last line wins. Likewise a
-  second `on-begin-effect:` or `on-end-effect:` replaces the first, where C keeps both. A second `name:` opens a second record for the
-  same effect, where C continues the first.
-- `PlayerTimedGrammar.g4`: `onBeginEffect` takes a type and an optional sub-type and nothing more, so a radius or `other` value is a
-  syntax error. `onEndEffectBlock` takes one optional `effect-dice:` followed by a bare `INTEGER`, so `effect-dice:1d4` is an error, and
-  `effect-dice:` after an `on-begin-effect:` is an error. `effect-yx:`, `effect-expr:` and `effect-msg:` are not tokens at all.
-- `PlayerTimedGrammar.g4`: `flags` needs a first `FLAG`, so a bare `flags:` is a syntax error. `PlayerTimedLexer.g4`: the `grade:`
-  colour must be a single colour code, so `grade:Yellow:...` is an error.
-- `PlayerTimedLexer.g4`: `INTEGER` and `DELIM_INTEGER` take no hex or octal, so `lower-bound:0x10` is an error, and an indented
-  directive is an error too.
-- `PlayerTimedReaderTest.aHeaderWithNoRecordIsRefusedHereWhereCLoadsAnEmptyList`, `missingRecordCountHeaderIsAHardError`,
-  `aRepeatedDescLineKeepsTheLastHereWhereCConcatenatesThem`, `aRepeatedEndIncreaseOrDecreaseLineKeepsTheLastHereWhereCConcatenatesThem`,
-  `aRepeatedNameLineMakesASecondRecordHereWhereCContinuesTheFirst`, `anOnBeginEffectWithARadiusIsRefusedHereWhereCReadsIt`,
-  `effectYxEffectExprAndEffectMsgAreRefusedHereWhereCReadsThem`, `anEffectDiceAfterAnOnBeginEffectIsRefusedHereWhereCAcceptsIt`,
-  `aDiceStringInEffectDiceIsRefusedHereWhereCParsesIt`, `aBareFlagsLineIsRefusedHereWhereCAcceptsIt`,
-  `aGradeColourWrittenAsAWordIsRefusedHereWhereCReadsIt`, `aHexadecimalLowerBoundIsRefusedHereWhereCReadsBaseZero` and
-  `anIndentedDirectiveIsRefusedHereWhereCSkipsLeadingWhitespace` pin them. The repeated `on-begin-effect:` and `on-end-effect:` case
-  is read from the grammar and has no test.
-
-### Impact
-
-- None on the shipped data: `lib/gamedata/player_timed.txt` has 53 records, none of which repeats `desc:`, `on-end:`, `on-increase:` or
-  `on-decrease:`, one
-  `on-begin-effect:` and two `on-end-effect:` lines (one with `effect-dice:100`), no `effect-yx`, `effect-expr` or `effect-msg`, colour
-  codes of one character, no hex values and no indents.
-- A modded file that drops the header, empties the list, gives an effect a radius, a dice string or an `effect-msg:`, writes a colour
-  by name, or indents a line loses the whole file in Java, and the loader then stops start-up, where C would load it. A modded file
-  that splits a description over two `desc:` lines, or repeats a `name:`, loads with only the last line, or a split record.
-- Copying the upstream `player_timed.txt` over this one fails until `record-count:53` is added.
-
-### Question for Rowan
-
-- Should `effect-yx`, `effect-expr` and `effect-msg` be supported on timed effects? `EffectParseRecord` already carries those fields for
-  other grammars, and C lets the begin and end effects use them, so the only cost is grammar work. Today no shipped effect needs them.
-
 ## `Random.g4`: a lower-case `m`, a base straight into `M` and `$` variables are accepted, and blanks and a repeated `d` or `M` are refused
 
-Found 2026-10-19 during `/port RandomReader.java`. Not fixed, except the number above `INT_MAX` ([<span style="color:#006400">**CLOSED**</span> 26-10-20: `numberOrMissing` in `Random.g4` returns the missing-number marker for a number above `INT_MAX` or too long for a `long`, the `@after` block tests `baseInit` as well as the other three terms, and `RandomReader.parse` logs and returns `null` for the resulting empty `Random`, as C refuses it. `RandomReaderTest` passes (26 tests). The bullets below that mention the overflow describe the state before the fix; the pinning test is now `aNumberAboveIntMaxIsRefusedInEverySlotAsCRefusesIt`.]).
+Found 2026-10-19 during `/port RandomReader.java`. [<span style="color:#006400">**CLOSED**</span> 26-11-25: the differences in this entry are closed or accepted: see the stamps below and `Accepted_Deviations.md`, "Random". The bullets below describe the state before the fix.]
 
-[<span style="color:#006400">**CLOSED**</span> 26-11-24: blanks, a repeated `d` or `M`, a signed zero and a leading `-` before a zero now read as C reads them, and `5M3` and `$` variables are refused as C refuses them; only the lower-case `m` is still accepted, recorded in `Accepted_Deviations.md`, "Random". Two differences are open, listed in `Issue_Approach_Order.md` Stage 8: an oversized bonus that a later bonus overwrites, and `--0` through `Random.parseStr`. The "What Java does" bullets below describe the state before the fix, and the test names in the last bullet are the old ones: `RandomReaderTest` now pins the same strings with `blanksAtEitherEndAndBeforeANumberAreReadAsCReadsThem`, `aRepeatedDOrMIsReadAsCsLoopReadsIt`, `aSignedZeroInsideTheStringIsReadAsStrtoulReadsIt`, `aBaseStraightIntoMIsRefusedAsBothCReadersRefuseIt` and `dollarVariablesAreRefusedAsParseRandomRefusesThem`.]
+[<span style="color:#006400">**CLOSED**</span> 26-11-24: blanks, a repeated `d` or `M`, a signed zero and a leading `-` before a zero now read as C reads them, and `5M3` and `$` variables are refused as C refuses them; only the lower-case `m` is still accepted, recorded in `Accepted_Deviations.md`, "Random". Two differences are open, listed in `Old Docs/Issue_Approach_Order.md` Stage 8: an oversized bonus that a later bonus overwrites, and `--0` through `Random.parseStr`. The "What Java does" bullets below describe the state before the fix, and the test names in the last bullet are the old ones: `RandomReaderTest` now pins the same strings with `blanksAtEitherEndAndBeforeANumberAreReadAsCReadsThem`, `aRepeatedDOrMIsReadAsCsLoopReadsIt`, `aSignedZeroInsideTheStringIsReadAsStrtoulReadsIt`, `aBaseStraightIntoMIsRefusedAsBothCReadersRefuseIt` and `dollarVariablesAreRefusedAsParseRandomRefusesThem`.]
 
 ### What C does
 
@@ -2247,113 +2380,10 @@ Found 2026-10-19 during `/port RandomReader.java`. Not fixed, except the number 
 
 - Should a number above `INT_MAX` return `null` like every other malformed string, so the assemblers record a line-numbered error as C does? [<span style="color:#006400">**CLOSED**</span> 26-10-20: yes. `RandomReader.parse` and `Random.parseStr` return `null`. The dead `catch (NumberFormatException)` and rethrow in `Random.parseStr` has been removed.]
 
-## `VisualsGrammar.g4` and `VisualsLexer.g4`: a colour is one listed letter, `flicker-color:` and `cycle-color:` must follow their header at once, the name takes the rest of the line, and indented lines are refused
+## `BlowMethodGrammar.g4`: a file with no blow methods is a syntax error
 
-Found 2026-10-19 during `/port VisualsReader.java`. Partly fixed. [The colour part is %s 26-11-20: `COLOUR_LINE` in `VisualsLexer.g4` takes any run up to a colon or the end of the line, and the flicker and cycle assemblers read only its first character, white for a miss and dark for a blank, as C does. So `cycle-color:q` is white, `cycle-color:red` is `r`, and `flicker:dd:name` keys on `d`. Pinned by `anUnlistedColourLetterOnACycleColourReadsAsWhiteAsInC`, `aColourWrittenAsAWordIsItsFirstLetterAsInC`, `aMultiLetterBaseColourOnAFlickerHeaderIsItsFirstLetterAsInC` and `aBlankAfterAColourLetterIsHarmlessAsInC` in `VisualsReaderTest`. Indented lines load as in C too (`anIndentedDirectiveLoadsAsInC`). Left over: `cycle-color::r`, which C reads as `r` (leading colons skipped) and Java refuses for want of a colour token, parked 2026-11-20 for a later release (`Parked.md`); and the three pins still named `...HereWhereC...` in `VisualsReaderTest` (the field after a cycle name, a `flicker-color:` after an intervening `cycle:` block, and a colour line before any header). The bullets below describe the state before the fix.]
+Found 2026-11-25 during the check of this file, not listed before. [<span style="color:#006400">**CLOSED**</span> 26-11-25: `file` in `BlowMethodGrammar.g4` is now `(blow)*` where it was `(blow)+`, so a file with no records, or only comments, loads nothing as in C. The committed `BlowMethodGrammar.java` was older than the grammar edit and was regenerated on 26-11-25 (the `while (_la==NAME)` loop replaces the `do ... while`). Probed through `BlowMethodReader` on 26-11-25: an empty file and a comment-only file load 0 methods, a name-only record loads 1, and a `cut:` before any `name:` is still refused. Pinned by `aFileWithNoRecordsLoadsNothingAsInC` in `BlowMethodReaderTest`, added 26-11-25. The bullets below describe the state before the fix.]
 
-### What C does
-
-- `visuals_parse_flicker`, `visuals_parse_flicker_color` and `visuals_parse_cycle_color` in `ui-visuals.c` read the colour as a `sym`
-  and pass only its first character to `color_char_to_attr` in `z-color.c`. That function never fails: a character it does not know is
-  `COLOUR_WHITE`, and a space is `COLOUR_DARK`. The `attr < 0` test that returns `PARSE_ERROR_INVALID_COLOR` cannot fire.
-- So `cycle-color:q`, `cycle-color:red`, `flicker:dd:name` and `flicker-color:d` followed by a blank all load.
-- `cycle sym group sym name` is tokenized on `:`, so a field after the name is dropped: `cycle:fancy:rainbow:junk` is the cycle
-  `rainbow`. `flicker sym color str name` takes the rest of the line as the name.
-- The parse context remembers the last `flicker:` header (`flicker_cycle_index`, `flicker_color_index`). A `flicker-color:` line
-  extends it however many `cycle:` lines came between, a leading `flicker-color:` writes to cycle 0 (dark), and a `flicker:` with no
-  colour lines is legal, its three steps staying at colour 0.
-- A `cycle-color:` before any `cycle:` dereferences `cycles[0]`, which is NULL, so C crashes. A `cycle:` with no `cycle-color:`
-  parses, then fails in `visuals_file_parser_finish` (`visuals_color_cycle_new` refuses zero steps), and so does an empty file (no
-  groups). Java refuses all three too, so those do not differ.
-- `parser_parse` in `parser.c` skips leading whitespace before it looks at the line.
-
-### What Java does
-
-- `VisualsLexer.g4`: after `flicker:`, `flicker-color:` and `cycle-color:` the lexer is in `COLOUR` mode, whose only colour token is
-  `COLOUR_CHAR`, one of the shared 28 letters. A name, an unlisted letter, a second letter, or a blank before the newline is a lexer
-  error and the file loads as nothing.
-- `VisualsGrammar.g4`: `flickerBlock` is `flicker (flickerColour)+` and `cycleBlock` is `cycle (cycleColour)+`, so a colour line must
-  follow its own header at once, and a header with no colour line is a syntax error. A leading colour line is a syntax error too.
-- `VisualsGrammar.g4`: after `cycle:` the group is `STRING_BETWEEN_COLON`, then `DELIM_COLON`, then `STRING`, which is the rest of the
-  line, so `cycle:fancy:rainbow:junk` is the cycle `rainbow:junk`.
-- `imports/CommentsAndEol.g4` does not skip indentation; the gap is written up under "Leading whitespace on a line" above.
-- `VisualsReaderTest.anUnlistedColourLetterOnACycleColourIsAHardErrorHereWhereCReadsItAsWhite`,
-  `aColourWrittenAsAWordIsAHardErrorHereWhereCTakesItsFirstLetter`,
-  `aTwoLetterBaseColourOnAFlickerHeaderIsAHardErrorHereWhereCTakesTheFirst`,
-  `aBlankAfterAColourLetterIsAHardErrorHereWhereCReadsTheLetter`,
-  `aFieldAfterTheCycleNameBecomesPartOfTheNameHereWhereCIgnoresIt`,
-  `aFlickerColourAfterAnInterveningCycleBlockIsAHardErrorHereWhereCAttachesIt`,
-  `aColourLineBeforeAnyHeaderIsAHardErrorHereWhereCWritesToCycleZero` and
-  `anIndentedDirectiveIsAHardErrorHereWhereCSkipsTheIndent` pin them. `flickerBlockWithNoColourLinesIsAHardError` pins the bare
-  `flicker:` header.
-
-### Impact
-
-- None on the shipped data: `lib/gamedata/visuals.txt` is identical to the upstream file, every colour is one listed letter with
-  nothing after it, no name carries a second `:`, each colour line follows its header, and nothing is indented.
-- A modded file with a colour word, a mistyped colour letter, a trailing blank after a colour, an indented line, or a `flicker-color:`
-  separated from its header loses the whole file in Java and the loader then stops start-up, where C loads it (a mistyped letter as a
-  white step). A stray `:` field after a cycle name loads in both but under a different name.
-- The cycler lookup is by name, so a cycle named `rainbow:junk` is simply never found by `color-cycle:fancy:rainbow` in `monster.txt`.
-
-### Question for Rowan
-
-- Should the lexer accept any single character as a colour and map the unlisted ones to white as C does, or stay strict? A typo
-  becoming a silent white step is arguably worse than a refused file, so the strictness may be worth keeping on purpose; if so the
-  grammar comment should say so. Several grammars (`PitLexer.g4` above) share the same question.
-
-## `LoreGrammar.g4` and `LoreLexer.g4`: the cast counts are dropped, `base:` and `drop-base:` never match, and `blow:`, `flags:` and `friends:` are narrower than C
-
-Found 2026-10-19 during `/port backend/parser/LoreReader.java`. Not fixed, and parked with the lore reader: nothing calls it, and no
-parser is generated from this grammar today.
-
-### What C does
-
-- `parse_lore_counts` in `mon-init.c` stores all seven counts, including `cast_innate` and `cast_spell`.
-- `parse_lore_base` sets `all_known` and every race flag, and refuses an unknown base name.
-- `parse_lore_blow` takes `blow:method` with the effect, damage, seen count and index all optional, and records a blow only when the
-  seen count is not zero, at the slot the index names.
-- `parse_lore_flags` splits on any run of spaces and `|`, and a bare `flags:` is accepted.
-- `parse_lore_drop_base` is registered, and `parse_lore_drop`, `parse_lore_drop_base`, `parse_lore_friends`,
-  `parse_lore_friends_base` and `parse_lore_mimic` prepend to their lists, so the lists end up in reverse file order.
-- `parse_lore_friends` and `parse_lore_friends_base` default the role to `MON_GROUP_MEMBER` and accept only `servant` and `bodyguard`.
-- `parse_lore_drop` refuses a `min` or `max` above 99.
-- `init_parse_lore` also registers the monster.txt directives (`plural`, `glyph`, `color`, `speed`, `desc`, `shape` and the rest) and
-  ignores them.
-- An unknown `name:` leaves the private pointer `NULL`, so every following directive of that record is skipped.
-
-### What Java does
-
-- `LoreGrammar.g4:291-299` reads `$counts.innate` and `$counts.spell` into locals called `innate` and `spell`, but the `@after` block at
-  `LoreGrammar.g4:277-289` passes `castInnate` and `castSpell`, which stay 0. The two counts are lost.
-- `LoreGrammar.g4:129-135` matches `BASE MONSTER_NAME`, but `LoreLexer.g4` only produces `MONSTER_NAME` in the mode that `name:` pushes
-  and `BASE` pushes no mode, so by reading the lexer the rule can never match. If it did, it would store the base and neither set
-  `all_known` nor the flags, and an unknown name gives `null` with no error.
-- `LoreGrammar.g4:163-179` builds `dropBase` with no `@after` block, so `$monsterDropBase` is never set, and `monsterLore` at
-  `LoreGrammar.g4:291-324` has no alternative for it. A `drop-base:` line is a syntax error.
-- `LoreLexer.g4` has one token for the whole `blow:` value (`BLOW_MODE_VALUES`), with all five fields, upper-case names and a dice
-  string in the `0+1d10M0` form. `blow:HIT` and `blow:HIT:HURT` are refused, a seen count of 0 is recorded, and the index is read and
-  thrown away.
-- `LoreLexer.g4` takes `flags:` and `spells:` as names joined by exactly ` | `, with at least one name, so a bare `flags:` or a
-  separator without spaces is refused. An unknown name throws from `valueOf` (the parked soft-error gap).
-- `LoreGrammar.g4:187` defaults a `friends:` role to `MON_GROUP_NONE`, and `LoreGrammar.g4:206` and `LoreGrammar.g4:232` accept any
-  `MonsterGroupRole` name, so `leader` and `summon` load where C refuses them.
-- `LoreLexer.g4` takes the `friends:` and `friends-base:` number only as `DICE_STRING`, the `0+2d3M0` form, but `lore_save` in
-  `mon-lore.c` writes it as `2d3`, so a `friends:` or `friends-base:` line from the game is refused.
-- The grammar appends to the drop, friends, friends-base and mimic lists, so they come out in file order, and it has no 99 limit.
-- The lexer has no tokens for the monster.txt directives C ignores, so a file containing one is a syntax error.
-- An unknown `name:` still builds a `MonsterLore` and adds it to `loreEntries`; only the `race.setLore` call is skipped.
-- The `@after` block of `monsterLore` calls a 19-argument `MonsterLore` constructor with a `Map<MonsterBlow, Integer>`, and
-  `MonsterLore.java` has only the no-argument and the 25-argument `List<MonsterBlow>` constructors, so the grammar would not compile as
-  it stands (`MonsterLore.java` already says so).
-
-### Impact
-
-- None on the game today: the reader is a stub and `lib/user/lore.txt` only holds `name:`, `counts:`, `blow:` and `flags:` lines.
-- Once the parser is picked up, the cast counts would read back as 0, and a file written by `lore_save` with `base:`, `drop-base:` or
-  a `friends:` line would be refused whole. Lists that C reads in reverse order would come back in file order.
-
-### Question for Rowan
-
-- When the lore parser is picked up, should the grammar follow C's optional `blow:` fields and ignored monster.txt directives, or stay
-  with the shapes `lore_save` writes? Either way the cast counts, `base:`, `drop-base:` and the `friends:` dice want fixing.
+- `finish_parse_meth` in `mon-init.c` counts the chain, so an empty chain gives `blow_methods_max` 0 and loads without error.
+- Before the edit `file` needed at least one `blow`, so an empty `blow_methods.txt` was a syntax error.
+- None on the shipped data, which has 19 methods.

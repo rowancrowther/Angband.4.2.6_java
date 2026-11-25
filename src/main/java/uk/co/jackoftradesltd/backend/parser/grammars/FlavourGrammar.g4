@@ -94,7 +94,7 @@ section
             })*
         ;
 
-// The whole file: one or more kind sections.
+// The whole file: zero or more kind sections.
 file
         returns[List<FlavourKindParseRecord> sections]
         @init { $sections = new ArrayList<>(); }

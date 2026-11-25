@@ -16,7 +16,6 @@
  */
 
 // Generated from BlowMethodGrammar.g4 by ANTLR 4.13.2
-// Generated from BlowMethodGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.grammars.blowmethod;
 
 import org.antlr.v4.runtime.*;
@@ -740,10 +739,10 @@ public class BlowMethodGrammar extends Parser {
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
-			setState(84); 
+			setState(86);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			do {
+			while (_la==NAME) {
 				{
 				{
 				setState(81);
@@ -751,11 +750,11 @@ public class BlowMethodGrammar extends Parser {
 				 _localctx.records.add(((FileContext)_localctx).blow.record); 
 				}
 				}
-				setState(86); 
+				setState(88);
 				_errHandler.sync(this);
 				_la = _input.LA(1);
-			} while ( _la==NAME );
-			setState(88);
+			}
+			setState(89);
 			match(EOF);
 			}
 		}
@@ -771,7 +770,7 @@ public class BlowMethodGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u000e[\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u0001\u000e\\\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000"+
@@ -783,12 +782,12 @@ public class BlowMethodGrammar extends Parser {
 		"\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001"+
 		"\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001"+
 		"\b\u0001\b\u0001\b\u0001\b\u0005\bM\b\b\n\b\f\bP\t\b\u0001\t\u0001\t\u0001"+
-		"\t\u0004\tU\b\t\u000b\t\f\tV\u0001\t\u0001\t\u0001\t\u0000\u0000\n\u0000"+
-		"\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0000\u0000Y\u0000\u0014\u0001"+
+		"\t\u0005\tU\b\t\n\t\f\tX\t\t\u0001\t\u0001\t\u0001\t\u0000\u0000\n\u0000"+
+		"\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0000\u0000Z\u0000\u0014\u0001"+
 		"\u0000\u0000\u0000\u0002\u0018\u0001\u0000\u0000\u0000\u0004\u001c\u0001"+
 		"\u0000\u0000\u0000\u0006 \u0001\u0000\u0000\u0000\b$\u0001\u0000\u0000"+
 		"\u0000\n(\u0001\u0000\u0000\u0000\f-\u0001\u0000\u0000\u0000\u000e1\u0001"+
-		"\u0000\u0000\u0000\u00105\u0001\u0000\u0000\u0000\u0012T\u0001\u0000\u0000"+
+		"\u0000\u0000\u0000\u00105\u0001\u0000\u0000\u0000\u0012V\u0001\u0000\u0000"+
 		"\u0000\u0014\u0015\u0005\u0001\u0000\u0000\u0015\u0016\u0005\r\u0000\u0000"+
 		"\u0016\u0017\u0006\u0000\uffff\uffff\u0000\u0017\u0001\u0001\u0000\u0000"+
 		"\u0000\u0018\u0019\u0005\u0002\u0000\u0000\u0019\u001a\u0005\t\u0000\u0000"+
@@ -817,10 +816,10 @@ public class BlowMethodGrammar extends Parser {
 		"LI\u0001\u0000\u0000\u0000MP\u0001\u0000\u0000\u0000NL\u0001\u0000\u0000"+
 		"\u0000NO\u0001\u0000\u0000\u0000O\u0011\u0001\u0000\u0000\u0000PN\u0001"+
 		"\u0000\u0000\u0000QR\u0003\u0010\b\u0000RS\u0006\t\uffff\uffff\u0000S"+
-		"U\u0001\u0000\u0000\u0000TQ\u0001\u0000\u0000\u0000UV\u0001\u0000\u0000"+
-		"\u0000VT\u0001\u0000\u0000\u0000VW\u0001\u0000\u0000\u0000WX\u0001\u0000"+
-		"\u0000\u0000XY\u0005\u0000\u0000\u0001Y\u0013\u0001\u0000\u0000\u0000"+
-		"\u0004+LNV";
+		"U\u0001\u0000\u0000\u0000TQ\u0001\u0000\u0000\u0000UX\u0001\u0000\u0000"+
+		"\u0000VT\u0001\u0000\u0000\u0000VW\u0001\u0000\u0000\u0000WY\u0001\u0000"+
+		"\u0000\u0000XV\u0001\u0000\u0000\u0000YZ\u0005\u0000\u0000\u0001Z\u0013"+
+		"\u0001\u0000\u0000\u0000\u0004+LNV";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

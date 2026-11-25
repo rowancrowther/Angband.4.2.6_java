@@ -135,7 +135,7 @@ blow
         |   desc { descInit.append($desc.descStr); } )*
         ;
 
-// Entry rule: one or more blow-method blocks.
+// Entry rule: zero or more blow-method blocks. A file with no blocks loads nothing, as in C.
 //
 // The trailing EOF is what forces the whole file to be consumed, so trailing junk after
 // the last block is a syntax error rather than being silently ignored.
@@ -144,5 +144,5 @@ file
         @init {
             $records = new ArrayList<>();
         }
-        :   (blow { $records.add($blow.record); })+ EOF
+        :   (blow { $records.add($blow.record); })* EOF
         ;

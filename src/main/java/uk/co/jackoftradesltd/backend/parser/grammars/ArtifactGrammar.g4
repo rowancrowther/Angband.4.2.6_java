@@ -229,7 +229,7 @@ desc
         :   DESC d=STRING { $descLine = $d.getText(); }
         ;
 
-// One record: "name:" followed by one or more directives in any order. Each directive's value is
+// One record: "name:" followed by any number of directives in any order. Each directive's value is
 // kept in a local that starts at the grammar's default - "" for a text or number, empty for a
 // list or map - which stands for the zero or NULL that C's zeroed artifact would hold. Two
 // defaults differ: the description starts null, not "", as C's text starts NULL, and the message
@@ -313,7 +313,7 @@ artifact
         |   desc { descSB.append($desc.descLine); }
         )*;
 
-// The whole file: one or more records, then the end of the file. An empty file is a syntax error.
+// The whole file: zero or more records, then the end of the file.
 //
 // Rule file coded before 261112, commented in full on 261112.
 file

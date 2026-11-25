@@ -18,8 +18,8 @@
 // Reader for lib/user/lore.txt - the player's per-save monster-knowledge
 // record (sightings/kills/deaths, which blows/flags/spells/drops/friends/
 // mimicry have been observed for each monster). Paired with LoreLexer.g4.
-// Cf. src/mon-init.c's lore_parser (mon-init.c:2646) and its directive
-// table (~mon-init.c:2520-2540) - this is also the format used by
+// Cf. src/mon-init.c's lore_parser and its directive
+// table in init_parse_lore - this is also the format used by
 // src/tests/parse/lore.c, which reuses monster.txt's own parser with the
 // lore-specific finish/cleanup swapped in.
 

@@ -9,6 +9,7 @@ module uk.co.jackoftradesltd {
     requires org.apache.logging.log4j.core;
     requires org.apache.commons.lang3;
     requires org.apache.commons.text;
+    requires org.jspecify;
 
     exports uk.co.jackoftradesltd;
     exports uk.co.jackoftradesltd.channel;

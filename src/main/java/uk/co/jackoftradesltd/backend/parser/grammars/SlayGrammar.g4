@@ -141,7 +141,7 @@ slay
         |   rangeVerb { rVerbInit = $rangeVerb.rVerb; }
         )*;
 
-// Top-level rule: one or more slay records.
+// Top-level rule: zero or more slay records.
 file
         returns[List<SlayParseRecord> records]
         @init {

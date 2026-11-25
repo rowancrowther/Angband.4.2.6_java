@@ -28,7 +28,7 @@
  * The gamedata contains dice strings validated by TWO different C parsers,
  * which accept overlapping but NOT identical languages:
  *
- *   - parse_random (parser.c:115-203) validates every field the C parser specs
+ *   - parse_random (parser.c) validates every field the C parser specs
  *     declare as `rand` - e.g. artifact.txt's "attack:" damage, and object.txt's
  *     "attack:" damage AND its to-hit/to-dam.
  *   - dice_parse_string / dice_parse_state_transition (z-dice.c) validates the
@@ -50,16 +50,16 @@
  * independently either a literal integer or a '$'-variable, and:
  *
  *   - the leading '-' is a prefix on the WHOLE string, NOT part of the base.
- *     Both C parsers strip it before any structure is parsed (parse_random at
- *     parser.c:122-125; z-dice's state table takes '-' from DICE_STATE_START,
- *     z-dice.c:133). This is why '-' appears on nearly every alternative below
+ *     Both C parsers strip it before any structure is parsed (parse_random in
+ *     parser.c; z-dice's state table takes '-' from DICE_STATE_START,
+ *     in z-dice.c). This is why '-' appears on nearly every alternative below
  *     rather than only the base-bearing ones - see "The leading '-'" for what it
  *     MEANS, and the per-fragment comments for the one deliberate exception;
  *   - a base is ONLY ever present when immediately followed by '+' (a lone
  *     leading number with nothing after it is a base; a leading number
  *     followed by 'd' is a dice COUNT, not a base - this is why the C needs a
  *     lookahead state machine);
- *   - 'd' with no count in front of it means one die (C's z-dice.c:414-419);
+ *   - 'd' with no count in front of it means one die (C's dice_parse_string in z-dice.c);
  *   - the whole thing collapses to a bare base ("5"), a bare bonus ("M4"), or
  *     any combination of the three segments.
  *
@@ -67,7 +67,7 @@
  *
  * A leading '-' does NOT mean "the base is negative". It means NEGATE THE WHOLE
  * RANDOM RESULT - i.e. multiply whatever follows by -1. parse_random back-solves
- * that into the base field (parser.c:196-200):
+ * that into the base field (parse_random in parser.c):
  *
  *     base *= -1;  base -= m_bonus;  base -= dice * (sides + 1);
  *
@@ -77,7 +77,7 @@
  * wrong distribution rather than an error.
  *
  * IMPORTANT EXCEPTION: "values:" lines do NOT go through parse_random, and there
- * a leading '-' DOES simply set the sign of the base (object.txt:44-49). So
+ * a leading '-' DOES simply set the sign of the base (the header comment of object.txt). So
  * "-d4" is meaningful on an "attack:" line but is a data bug on a "values:"
  * line, where "-5+1d4" is the documented spelling. This grammar cannot tell the
  * two apart - the distinction is per-directive and belongs to the consumer.
@@ -139,7 +139,7 @@
  *   -$Dd6    n/a            REJECTS       accepts  (over-permissive)
  *
  * z-dice rejects the last four because '-' lands it in DICE_STATE_BASE_DIGIT,
- * from which 'm' and '$' are both invalid transitions (z-dice.c:134).
+ * from which 'm' and '$' are both invalid transitions (dice_parse_string in z-dice.c).
  *
  * "-M4" is accepted because it MUST be: parse_random allows it, and SIMPLE_* -
  * which serves parse_random - is also what a variable-free z-dice string lands
@@ -153,7 +153,7 @@
  * will fail downstream in dice evaluation rather than being silently mis-read.
  * That is the right direction to err in - a lexer too NARROW splits a valid
  * string into two tokens with NO error at all (as "-3d5" once did to
- * object.txt:2273), which is far harder to diagnose than a loud failure later.
+ * a line of object.txt), which is far harder to diagnose than a loud failure later.
  *
  * Exact per-parser validation therefore belongs to the consumer - Random's
  * parse_random port, and the effect-block dice evaluator - not here.
@@ -195,7 +195,7 @@ fragment DICE_M
  * Literal non-negative (unsigned) DICE_INTEGER.
  *
  * Unsigned is deliberate and matches both C parsers: every numeric slot is read
- * with strtoul, and an embedded sign is rejected outright (parser.c:161). The
+ * with strtoul, and an embedded sign is rejected outright (parse_random in parser.c). The
  * only '-' either parser accepts is the whole-string prefix carried by the
  * alternatives of the two *_DICE_STRING_BODY fragments below.
  */
@@ -251,7 +251,7 @@ fragment DICE_ANY_NUMBER
  * complex" at the top of the file), it can and does follow z-dice exactly on the
  * point where the two C parsers differ: alternative 3 deliberately has NO
  * leading '-', because z-dice refuses 'm' immediately after a '-'
- * (z-dice.c:134). Do not "restore" it for symmetry with
+ * (dice_parse_string in z-dice.c). Do not "restore" it for symmetry with
  * SIMPLE_DICE_STRING_BODY - the asymmetry is the whole point, and it is what
  * makes "-m$M" fail here as C does.
  *
@@ -284,8 +284,8 @@ fragment COMPLEX_DICE_STRING_BODY
  * COMPLEX_DICE_STRING_BODY - the leading '-' appears on ALL FOUR alternatives,
  * including the bonus-only alternative 3 ("-M4"). parse_random negates at
  * str[0] and then parses the remainder with no further restriction
- * (parser.c:122-125), so no alternative may omit it. "-3d5" is not theoretical:
- * object.txt:2273 uses it, and before alternative 2 gained its '-' the lexer
+ * (parse_random in parser.c), so no alternative may omit it. "-3d5" is not theoretical:
+ * object.txt has such a line, and before alternative 2 gained its '-' the lexer
  * split that line into "-3" and "d5" silently.
  *
  * This is also the body that claims variable-free z-dice strings, so it is the

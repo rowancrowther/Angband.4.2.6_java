@@ -21,10 +21,10 @@
  * Parser for lib/gamedata/world.txt - the dungeon's linear sequence of
  * levels (Town, Angband 1..127) and which level is up/down from each.
  * Cf. the C parser in src/init.c: struct file_parser world_parser
- * (init.c:1162), registered directive "level int depth sym name sym up sym
- * down" -> parse_world_level (init.c:1083-1107). "None" is the sentinel for
+ * (in init.c), registered directive "level int depth sym name sym up sym
+ * down" -> parse_world_level. "None" is the sentinel for
  * "no level in that direction" (the top of Town, the bottom of Angband 127)
- * on both sides - C maps it to NULL (init.c:1098-1099). This grammar extracts
+ * on both sides - C maps it to NULL (in parse_world_level). This grammar extracts
  * every field verbatim as a String ("None" included); mapping "None" to null
  * is the reader's job.
  */
@@ -97,7 +97,7 @@ line    returns[List<String> world]
 /*
  * @author Rowan Crowther
  *
- * Top-level rule: one or more level records, in depth order
+ * Top-level rule: zero or more level records, in depth order
  */
 file    returns[List<List<String>> levels]
         @init {

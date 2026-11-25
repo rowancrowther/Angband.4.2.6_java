@@ -164,7 +164,7 @@ pitRecord
         |   spellBan { bannedSpells.addAll($spellBan.spells); })*
         ;
 
-// The whole file: one or more records, then EOF (which
+// The whole file: zero or more records, then EOF (which
 // forces the parser to consume every record rather than stopping early).
 file
         returns[List<PitParseRecord> pits]

@@ -319,6 +319,19 @@ class BlowMethodReaderTest {
         assertTrue(poke.getBlowMessage().isEmpty());
     }
 
+    /**
+     * C's {@code finish_parse_meth} counts the chain, so a {@code blow_methods.txt} with no
+     * records gives {@code blow_methods_max} 0 and loads without error. The {@code file} rule in
+     * {@code BlowMethodGrammar.g4} used to need one record; it takes none now.
+     *
+     * <p>Function aFileWithNoRecordsLoadsNothingAsInC coded on 261125.
+     */
+    @Test
+    void aFileWithNoRecordsLoadsNothingAsInC() throws IOException {
+        assertEquals(0, load("empty.txt", "").items().size());
+        assertEquals(0, load("comments-only.txt", "# nothing here\n\n# still nothing\n").items().size());
+    }
+
     @Test
     void aFlagLineLeftOutDoesNotDisturbTheOthers() throws IOException {
         // Each flag has its own handler in C, so naming one leaves the rest at zero.

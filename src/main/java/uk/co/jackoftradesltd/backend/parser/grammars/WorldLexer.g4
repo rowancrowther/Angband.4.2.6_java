@@ -21,8 +21,8 @@
  * Lexer for lib/gamedata/world.txt - the dungeon's linear sequence of
  * levels (Town, Angband 1..127) and which level is up/down from each.
  * Cf. the C parser in src/init.c: struct file_parser world_parser
- * (init.c:1162), registered directive "level int depth sym name sym up sym
- * down" -> parse_world_level (init.c:1083-1107)
+ * (in init.c), registered directive "level int depth sym name sym up sym
+ * down" -> parse_world_level
  */
 
 lexer grammar WorldLexer;

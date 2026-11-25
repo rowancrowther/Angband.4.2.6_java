@@ -20,7 +20,7 @@
  *
  * Parser for lib/gamedata/chest_trap.txt, producing one
  * ChestTrapParseRecord per trap. Cf. src/obj-chest.c: struct file_parser
- * chest_trap_parser (obj-chest.c:283), directive table at obj-chest.c:245-254
+ * chest_trap_parser, directive table in init_parse_chest_trap
  * (parse_chest_trap_name/_code/_level/_effect/_dice/_expr/_destroy/_magic/
  * _msg/_msg_death).
  *
@@ -160,7 +160,7 @@ msgDeath
  *
  * The shape is "name:, then code:, then any number of the rest in any
  * order". name: has to lead because it is what tells one record from the
- * next - it is the directive C allocates on (obj-chest.c:59-76) - and code:
+ * next - it is the directive C allocates on (parse_chest_trap_name) - and code:
  * is required immediately after it because this port cannot identify a trap
  * without it, where C could carry on regardless.
  *
@@ -265,7 +265,7 @@ chestTrap
 /*
  * @author Rowan Crowther
  *
- * The whole file: one or more traps, then EOF.
+ * The whole file: zero or more traps, then EOF.
  *
  * The list is read by ChestTrapReader and handed to ChestTrapAssembler. Requiring EOF is what stops a trailing malformed
  * record being silently ignored.

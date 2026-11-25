@@ -86,12 +86,12 @@ recorded here as the summary states them; fill in the detail when you next touch
   blank after the colon. A blank or bar elsewhere in the list, and after the last name, loads as in C.
 - **Revisit:** if the `flags` rule is ever changed to take a `FLAG_OR` straight after `FLAGS`. Then the pin below goes
   red, which is the prompt to take this entry out. The same decision applies to the other flag lists when they are
-  brought to the same shape (Stage 7d of `docs/Issue_Approach_Order.md`).
+  brought to the same shape (Stage 7d of `Old Docs/Issue_Approach_Order.md`).
 - **Pinned by:** `aBlankOrBarBeforeTheFirstFlagIsAHardErrorHereWhereCSkipsIt` in `MonsterBaseReaderTest`.
 - **Accepted:** 2026-11-13, decided with you. A list of bars and blanks with no name (`flags:|`) is not part of this
   deviation: the rule takes it as no flags, as C does, and `aFlagListOfOnlyBarsLoadsWithNoFlagsAsInC` pins that. A
   `flags:` line with no final newline is not part of it either: the rule ends in `(FLAG_EOL | EOF)`, and
-  `aFlagsLineWithNoFinalNewlineLoadsAsInC` pins it (Stage 7d of `docs/Issue_Approach_Order.md`).
+  `aFlagsLineWithNoFinalNewlineLoadsAsInC` pins it (Stage 7d of `Old Docs/Issue_Approach_Order.md`).
 
 ## Terrain
 
@@ -226,7 +226,7 @@ recorded here as the summary states them; fill in the detail when you next touch
 - **Revisit:** if a caller ever needs C's whole-second answer, for example to reproduce a C save-and-panic ordering
   exactly. The route is to truncate both times to seconds (`FileTime.to(TimeUnit.SECONDS)`) before the comparison.
 - **Accepted:** 2026-10-16. Already stated in the `fileNewer` Javadoc ("at the full precision the file system reports,
-  with no rounding to whole seconds"). Open issue 11 in `docs/FileHandler_open_issues.md` is ticked on this basis.
+  with no rounding to whole seconds"). Open issue 11 in `Old Docs/FileHandler_open_issues.md` is ticked on this basis.
 
 ### `fileGetSavefile` can repeat a name within one millisecond, and does not cut a long name
 
@@ -603,7 +603,34 @@ recorded here as the summary states them; fill in the detail when you next touch
   the prompt to take this entry out.
 - **Pinned by:** `aDiceLineOfGarbageBeforeAnyEffectIsAHardErrorHereWhereCIgnoresIt` in `TrapReaderTest`, with the
   control `aValidDiceLineBeforeAnyEffectIsDroppedAsInC`.
-- **Accepted:** 2026-11-11, Stage 6 item 2.vi of `docs/Issue_Approach_Order.md`.
+- **Accepted:** 2026-11-11, Stage 6 item 2.vi of `Old Docs/Issue_Approach_Order.md`.
+
+### A sub-type written as a number on an effect line is refused, where C stores the number
+
+- **Java:** the `SUBTYPE` token of `imports/EffectBlockLexer.g4` and the `EFFECT_XTRA_SUBTYPE` token of
+  `TrapLexer.g4`, then `EffectAssembler.getWrapperSubType`. The player-timed grammar reads its effect sub-type as
+  `DELIM_BETWEEN_COLONS`. **C:** `effect_subtype` (`effects.c`), called from `grab_effect_data` (`init.c`).
+- **Differs:** `effect_subtype` reads the second token with `strtol` before it tries any name, and a number that fits
+  an `int` (and is not `INT_MIN` or `INT_MAX`) is stored as the effect's sub-type unchanged. So `effect:BOLT:5` is
+  projection 5, and `effect:ENCHANT:5` is to-hit and armour together, because the enchant handler tests `0x01`, `0x02`
+  and `0x04` bit by bit; `0` and `8` load and enchant nothing. In Java the lexer tokens above hold no digits, and the
+  player-timed lexer sends an all-digit field to its integer token, which its parser refuses, so each of these lines
+  stops the load.
+- **Left in place:** the `onlyDigits` branches of the per-kind `build...` helpers that `getWrapperSubType` calls stay,
+  for when the lexers take digits. They read
+  a number as C's index into the kind's list, and refuse an index past the end where C stores any `int`. The enchant
+  branch reads the number as bits, as C's handler does: the bottom three bits give to-hit, to-damage and armour, and
+  `0`, `8` and `16` give an empty set. They cannot be reached from a data file; a test calls the enchant branch
+  directly.
+- **Why:** no shipped file writes a sub-type as a number, and every sub-type has a name. Accepting digits means
+  widening three lexers and settling what a number past the end of a kind's list should do.
+- **Reach:** none from shipped data. A search of `lib/gamedata` on 2026-11-25 found no `effect:`,
+  `on-begin-effect:` or `on-end-effect:` line whose second field starts with a digit or a sign.
+- **Revisit:** if a modded file is ever expected to write a sub-type as a number. Then the lexers change, and the pin
+  below goes red, which is the prompt to take this entry out.
+- **Pinned by:** `numericSubTypeIsRefusedFromADataFile` in `EffectAssemblerSubTypeTest`. The enchant branch's C
+  behaviour, which the pin does not reach, is covered by `enchantDigitsAreBitFlagsAsInC` in the same file.
+- **Accepted:** 2026-10-25, "for the time being". Written up here 2026-11-25.
 
 ## Flavour
 
@@ -628,7 +655,7 @@ recorded here as the summary states them; fill in the detail when you next touch
   glyph value". A second character that is not a colon is refused by both.
 - **Reach:** none from shipped data. All 8 `kind:` lines in `flavor.txt` end at the glyph.
 - **Revisit:** if a modded `flavor.txt` ever puts a note after the glyph.
-- **Accepted:** 2026-11-22, closing the Flavour bullet of Stage 7i of `docs/Issue_Approach_Order.md`; the exception comes
+- **Accepted:** 2026-11-22, closing the Flavour bullet of Stage 7i of `Old Docs/Issue_Approach_Order.md`; the exception comes
   from the assembler, not the parser. Pinned by `textAfterTheGlyphIsRefusedByTheAssemblerHereWhereCIgnoresIt` in
   `FlavourReaderTest`.
 
@@ -862,10 +889,10 @@ recorded here as the summary states them; fill in the detail when you next touch
   `x<>` rename binds a different entry only if a modded `ui_entry.txt` has an entry named `x`.
 - **Revisit:** if a modded file is ever expected to carry a `<` or `>` in an entry name. Then `BINDUI_STRING` takes
   everything up to the colon, and the tag rules in the lexer and grammar go.
-- **Pinned by:** `scratch/ObjectProperty2BinduiGrammarCheck.java`, which runs 19 lines through the regenerated lexer
+- **Pinned by:** `Old Docs/ObjectProperty2BinduiGrammarCheck.java`, which runs 19 lines through the regenerated lexer
   and parser (lexer errors count as refusals) and parses the shipped file. Gradle does not compile `src/main/gen`, so
   the suite cannot see this half, and `ObjectProperty2AssemblerTest` covers only the assembler.
-- **Accepted:** 2026-11-14, decided with you, while checking item 8 of `scratch/IssuesWithObjectProperty2.md`.
+- **Accepted:** 2026-11-14, decided with you, while checking item 8 of `Old Docs/IssuesWithObjectProperty2.md`.
 
 ## Projection
 
@@ -909,7 +936,7 @@ recorded here as the summary states them; fill in the detail when you next touch
   leading-blank rule. Then the pin below goes red, which is the prompt to take this entry out.
 - **Pinned by:** `aLeadingBlankInADenominatorIsAHardErrorAndALowerCaseMIsAcceptedWhereCTakesTheOpposite` in
   `ProjectionReaderTest`. The agreeing forms are pinned by `denominatorFormsGiveTheValuesOfCsParseRandom`.
-- **Accepted:** 2026-11-12, Stage 6 item 3 of `docs/Issue_Approach_Order.md`.
+- **Accepted:** 2026-11-12, Stage 6 item 3 of `Old Docs/Issue_Approach_Order.md`.
 
 ## Shape
 
@@ -1671,7 +1698,7 @@ C reads with `strtol` or `strtoul` and the lexers read with a token rule, and ab
 - **Revisit:** if `M` is ever split into an upper-case-only form for the `parse_random` fields. The pin then goes red,
   which is the prompt to take this entry out.
 - **Pinned by:** `aLowerCaseMIsAcceptedHereWhereParseRandomRefusesIt` in `RandomReaderTest`.
-- **Accepted:** 2026-11-24, from the Stage 8 `Random.g4` entry of `docs/Issue_Approach_Order.md`. Only the lower-case
+- **Accepted:** 2026-11-24, from the Stage 8 `Random.g4` entry of `Old Docs/Issue_Approach_Order.md`. Only the lower-case
   `m` is accepted here. `--1` was fixed, not accepted: `Random.parseStr` now refuses it. A base straight into `M`
   (`5M3`) and a `$` variable were accepted the same day and retired the same day: the rewritten `dice` rule has no
   alternative for either, so both are refused as `parse_random` refuses them, and their entries are gone from this
@@ -1694,7 +1721,7 @@ C reads with `strtol` or `strtoul` and the lexers read with a token rule, and ab
 - **Revisit:** if the bonus rule is ever changed to keep an unusable mark once it has been set. The pin then goes red,
   which is the prompt to take this entry out.
 - **Pinned by:** `anOversizedBonusThatALaterBonusOverwritesIsLoadedHereWhereCRefusesIt` in `RandomReaderTest`.
-- **Accepted:** 2026-11-24, from the Stage 8 `Random.g4` entry of `docs/Issue_Approach_Order.md`.
+- **Accepted:** 2026-11-24, from the Stage 8 `Random.g4` entry of `Old Docs/Issue_Approach_Order.md`.
 
 ## World
 
@@ -1739,6 +1766,32 @@ C reads with `strtol` or `strtoul` and the lexers read with a token rule, and ab
 - **Pinned by:** `aNameOrUpOfLevelIsRefusedHereWhereCLoadsIt` in `WorldReaderTest`.
 - **Accepted:** 2026-11-24, decided with you.
 
+## Vault
+
+### Two directives carry a different name in the parse record from the keyword in the data file
+
+- **Java:** `VaultGrammar.g4`, which names each `Directive` it builds (the `flag` and `d` rules), and `VaultAssembler`,
+  which switches on that name. **C:** `init_parse_vault` (`generate.c`), which registers the keywords the data file
+  uses.
+- **Differs:** two of the nine directive names are not C's keywords. The other seven (`name`, `type`, `rating`, `rows`,
+  `columns`, `min-depth`, `max-depth`) are the same.
+  - `flags:`    C keyword `flags`, Java directive name `flag`
+  - `D:`    C keyword `D`, Java directive name `map`
+- **Why:** the name is an internal label between the grammar and the assembler. The data file's own text is still the
+  only thing the lexer accepts, so `flags:` and `D:` load and `flag:` is refused. `map` says what a `D:` line is (one row
+  of the layout); `flag` is the singular for one flag per value.
+- **Reach:** none from a data file; nobody outside the parser reads the name. It shows in two `VaultAssembler`
+  messages (`unknown directive` and `a ... directive before a name directive`), and neither can fire for a record
+  the grammar built, because the grammar opens every record with `name:`. A hand-built record is the only way to see
+  one.
+- **Revisit:** if a second reader of `VaultParseRecord` is written that expects C's names, or if the `Directive`
+  Javadoc is read as a promise of them (it now says which names differ).
+- **Pinned by:** `aVaultFlagsLineAndDLineAreNamedFlagAndMapNotFlagsAndD` and `theLabelFlagIsNotAKeywordInAVaultFile` in
+  `DirectiveFromGrammarsTest`; `readsTheFlagsLines` and `interleavedMapLinesStayOneLayoutInOrder` in `VaultReaderTest`
+  for the file text that loads.
+- **Accepted:** 2026-11-25, found during the `Directive.java` onceover. The blow effect equivalent is under "Blow
+  effect" above.
+
 ## Where C crashes, Java throws
 
 ### Every input that crashes C is refused in Java with a message that names the line
@@ -1769,7 +1822,7 @@ above, and **Later** says what the fix is. When one is fixed, delete the entry a
 Move an entry up into its own section instead if you decide to keep the deviation for good.
 
 No entries at present. The World entry (a level, up or down name made only of digits) was closed on 2026-11-22 and
-taken out; see `docs/Issue_Approach_Order.md`, 7i.
+taken out; see `Old Docs/Issue_Approach_Order.md`, 7i.
 
 ## Pending your decision
 

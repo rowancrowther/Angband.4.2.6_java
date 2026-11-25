@@ -22,15 +22,15 @@
  * (the "no trap" locked entry, gas traps, poison needles, summoning
  * runes and the explosion device): name, code, minimum chest level, one
  * or more effect blocks, and the activation/death messages. Cf.
- * src/obj-chest.c: struct file_parser chest_trap_parser (obj-chest.c:283),
- * directive table at obj-chest.c:245-254 (parse_chest_trap_name/_code/
+ * src/obj-chest.c: struct file_parser chest_trap_parser, and its directive
+ * table in init_parse_chest_trap (parse_chest_trap_name/_code/
  * _level/_effect/_dice/_expr/_destroy/_magic/_msg/_msg_death).
  *
  * One note on where this file departs from the C original.
  *
- * The C struct's pval field (object.h:73) has no directive either: it is
- * synthesized while parsing, one bit per record in file order
- * ("t->pval = h->pval * 2", obj-chest.c:64-72). Nothing in this grammar
+ * The C struct's pval field (struct chest_trap in object.h) has no directive
+ * either: it is synthesized while parsing, one bit per record in file order
+ * ("t->pval = h->pval * 2", in parse_chest_trap_name). Nothing in this grammar
  * can see it; ChestTrapCode carries it instead, as 1 << ordinal().
  */
 lexer grammar ChestTrapLexer;
@@ -57,7 +57,7 @@ NAME
  *
  * "code:<CODE>" - the trap's stable identifier, and this port's key for it.
  *
- * The C game stores this string (obj-chest.c:85) but never reads it back:
+ * The C game stores this string (parse_chest_trap_code) but never reads it back:
  * a trap is identified there only by its positional pval bit. This port
  * resolves it to a ChestTrapCode instead, which is what carries the bit, so
  * the code is load-bearing here in a way it is not in C. The data file's
@@ -77,7 +77,7 @@ CODE
  * @author Rowan Crowther
  *
  * "level:<integer>" - the minimum object level of chest this trap can
- * appear on. pick_one_chest_trap (obj-chest.c:359-375) counts only the
+ * appear on. pick_one_chest_trap (obj-chest.c) counts only the
  * traps whose level is at or below the chest's, so this is the sole thing
  * gating which traps a given chest can draw.
  *

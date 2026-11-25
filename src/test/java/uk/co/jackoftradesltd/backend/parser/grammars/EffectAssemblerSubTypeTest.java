@@ -17,9 +17,11 @@
 
 package uk.co.jackoftradesltd.backend.parser.grammars;
 
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.backend.parser.MonsterBaseReader;
 import uk.co.jackoftradesltd.backend.parser.PainReader;
 import uk.co.jackoftradesltd.backend.parser.ShapeReader;
@@ -33,7 +35,10 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonTimed;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -82,7 +87,7 @@ class EffectAssemblerSubTypeTest {
     }
 
     private static EffectSubTypeWrapper sub(EffectSubTypeEnum kind, String value) {
-        return EffectAssembler.getWrapperSubType(kind, value, 1);
+        return EffectAssembler.getWrapperSubType(kind, value);
     }
 
     private static void refused(EffectSubTypeEnum kind, String value) {
@@ -169,7 +174,8 @@ class EffectAssemblerSubTypeTest {
         assertEquals(EffectNourish.EN_INC_BY, valueOf(assembleOne("NOURISH", "", "", "", "")).getNourishWrapper());
         assertEquals(MonTimed.MON_TMD_SLEEP, valueOf(assembleOne("MON_TIMED_INC", "", "", "", "")).getMonTimedWrapper());
         assertEquals(Stats.STAT_STR, valueOf(assembleOne("GAIN_STAT", "", "", "", "")).getStatsWrapper());
-        assertEquals(EffectEnchant.EE_NONE, valueOf(assembleOne("ENCHANT", "", "", "", "")).getEnchantWrapper());
+        // an absent token leaves effect->subtype at 0, which sets none of the three enchant bits
+        assertEquals("", enchantBits(valueOf(assembleOne("ENCHANT", "", "", "", ""))));
         assertEquals(Earthquake.QUAKE_NONE, valueOf(assembleOne("EARTHQUAKE", "", "", "", "")).getQuakeWrapper());
         assertEquals("ANY", valueOf(assembleOne("SUMMON", "", "", "", "")).getSummonWrapper().getName());
         assertEquals("normal", valueOf(assembleOne("SHAPECHANGE", "", "", "", "")).getShapeWrapper().getName());
@@ -200,9 +206,11 @@ class EffectAssemblerSubTypeTest {
 
     @Test
     void enchantAndEarthquakeNamesAreCaseExact() throws Exception {
-        assertEquals(EffectEnchant.EE_TOBOTH, sub(EffectSubTypeEnum.EST_ENCHANT, "TOBOTH").getEnchantWrapper());
-        assertEquals(EffectEnchant.EE_TOHIT, sub(EffectSubTypeEnum.EST_ENCHANT, "TOHIT").getEnchantWrapper());
-        assertEquals(EffectEnchant.EE_TODAM, sub(EffectSubTypeEnum.EST_ENCHANT, "TODAM").getEnchantWrapper());
+        // effect_subtype returns ENCH_TOHIT 0x01, ENCH_TODAM 0x02, ENCH_TOBOTH 0x03, ENCH_TOAC 0x04
+        // (effect-handler.h), and TOBOTH is both bits 0x01 and 0x02
+        assertEquals("TOHIT,TODAM", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "TOBOTH")));
+        assertEquals("TOHIT", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "TOHIT")));
+        assertEquals("TODAM", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "TODAM")));
         refused(EffectSubTypeEnum.EST_ENCHANT, "toac");
         refused(EffectSubTypeEnum.EST_ENCHANT, "MAX");
         assertEquals(Earthquake.QUAKE_TARGETED, sub(EffectSubTypeEnum.EST_EARTHQUAKE, "TARGETED").getQuakeWrapper());
@@ -248,8 +256,8 @@ class EffectAssemblerSubTypeTest {
 
     @Test
     void enchantEarthquakeTeleportAndNone() throws Exception {
-        assertEquals(EffectEnchant.EE_NONE, sub(EffectSubTypeEnum.EST_ENCHANT, "").getEnchantWrapper());
-        assertEquals(EffectEnchant.EE_TOAC, sub(EffectSubTypeEnum.EST_ENCHANT, "TOAC").getEnchantWrapper());
+        assertEquals("", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "")));
+        assertEquals("TOAC", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "TOAC")));
         refused(EffectSubTypeEnum.EST_ENCHANT, "NONE");
         assertNotNull(sub(EffectSubTypeEnum.EST_EARTHQUAKE, "NONE"));
         assertNotNull(sub(EffectSubTypeEnum.EST_EARTHQUAKE, "TARGETED"));
@@ -270,5 +278,115 @@ class EffectAssemblerSubTypeTest {
         assertThrows(DataFileParseException.class, () -> assembleOne("NOTANEFFECT", "", "", "", ""));
         assertNotNull(assembleOne("NONE", "", "", "", ""));
         assertNotNull(assembleOne("MAX", "", "", "", ""));
+    }
+
+    // ---- teleport kinds: effect_subtype accepts exactly one case-exact token each ----
+
+    @Test
+    void teleportKindsRefuseNoneAndWrongCase() {
+        // effect_subtype: EF_TELEPORT takes only "AWAY", EF_TELEPORT_TO only "SELF" (streq), and
+        // both break to the -1 return for anything else, "NONE" included
+        refused(EffectSubTypeEnum.EST_TELEPORT, "NONE");
+        refused(EffectSubTypeEnum.EST_TELEPORT, "away");
+        refused(EffectSubTypeEnum.EST_TELEPORT_TO, "NONE");
+        refused(EffectSubTypeEnum.EST_TELEPORT_TO, "self");
+    }
+
+    // ---- enchant: the sub-type is a set of bits, as effect_handler_ENCHANT reads it ----
+
+    /** The three bits C tests, in C's order, as "TOHIT,TODAM,TOAC" with only the set ones present. */
+    private static String enchantBits(EffectSubTypeWrapper w) throws Exception {
+        var flags = w.getEnchantWrapper();
+        StringBuilder sb = new StringBuilder();
+        for (EffectEnchant e : new EffectEnchant[]{EffectEnchant.EE_TOHIT, EffectEnchant.EE_TODAM,
+                EffectEnchant.EE_TOAC}) {
+            if (!flags.has(e)) continue;
+            if (!sb.isEmpty()) sb.append(',');
+            sb.append(e.name().substring(3));
+        }
+        return sb.toString();
+    }
+
+    @Test
+    void enchantDigitsAreBitFlagsAsInC() throws Exception {
+        // effect_subtype stores the number as it is, and effect_handler_ENCHANT tests
+        // subtype & 0x01 (to-hit), & 0x02 (to-dam) and & 0x04 (armour); a number carries any mix of
+        // the three, and any bit above them is ignored. This path cannot be reached from a data
+        // file (accepted deviation 261025), so the method is called directly.
+        assertEquals("", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "0")));
+        assertEquals("TOHIT", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "1")));
+        assertEquals("TODAM", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "2")));
+        assertEquals("TOHIT,TODAM", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "3")));
+        assertEquals("TOAC", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "4")));
+        assertEquals("TOHIT,TOAC", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "5")));
+        assertEquals("TODAM,TOAC", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "6")));
+        assertEquals("TOHIT,TODAM,TOAC", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "7")));
+        assertEquals("", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "8")));
+        assertEquals("TOHIT", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "9")));
+        assertEquals("TOAC", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "12")));
+        assertEquals("TOHIT,TODAM,TOAC", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "15")));
+        assertEquals("", enchantBits(sub(EffectSubTypeEnum.EST_ENCHANT, "16")));
+    }
+
+    // ---- registries: shapes and summons are resolved against what is loaded ----
+
+    @Test
+    void shapeKindAgainstAnEmptyShapeList() throws Exception {
+        Object saved = set(PlayerRegistry.class, "playerShapes", List.of());
+        try {
+            // a named miss is C's shape_name_to_idx returning -1; an absent token is the first shape
+            // in the list, which an empty list cannot give (C would fail later, the port stops here)
+            refused(EffectSubTypeEnum.EST_SHAPECHANGE, "normal");
+            refused(EffectSubTypeEnum.EST_SHAPECHANGE, "");
+        } finally {
+            set(PlayerRegistry.class, "playerShapes", saved);
+        }
+    }
+
+    @Test
+    void summonKindAgainstAnEmptySummonList() throws Exception {
+        Object saved = set(MonsterRegistry.class, "summons", List.of());
+        try {
+            // a named miss is summon_name_to_idx returning -1, a refused value
+            refused(EffectSubTypeEnum.EST_SUMMON, "ANY");
+            // an absent token reads index 0 of an empty list, which is not a data-file error
+            assertThrows(IllegalStateException.class, () -> sub(EffectSubTypeEnum.EST_SUMMON, ""));
+        } finally {
+            set(MonsterRegistry.class, "summons", saved);
+        }
+    }
+
+    @Test
+    void shapesAndSummonsMustBeLoadedFirst() throws Exception {
+        Object savedShapes = set(PlayerRegistry.class, "playerShapes", null);
+        Object savedSummons = set(MonsterRegistry.class, "summons", null);
+        try {
+            assertThrows(IllegalStateException.class, () -> sub(EffectSubTypeEnum.EST_SHAPECHANGE, "normal"));
+            assertThrows(IllegalStateException.class, () -> sub(EffectSubTypeEnum.EST_SHAPECHANGE, ""));
+            assertThrows(IllegalStateException.class, () -> sub(EffectSubTypeEnum.EST_SUMMON, "ANY"));
+            assertThrows(IllegalStateException.class, () -> sub(EffectSubTypeEnum.EST_SUMMON, ""));
+        } finally {
+            set(PlayerRegistry.class, "playerShapes", savedShapes);
+            set(MonsterRegistry.class, "summons", savedSummons);
+        }
+    }
+
+    // ---- accepted deviation 261025: a numeric sub-type is refused, where C reads it with strtol ----
+
+    @TempDir
+    Path tempDir;
+
+    @Test
+    void numericSubTypeIsRefusedFromADataFile() throws IOException {
+        // effect_subtype reads "5" with strtol and takes it as projection 5; the lexer's sub-type
+        // token has no digits, so the lexer refuses the line before the assembler sees it. The named form of the same
+        // line loads, so it is the digit that is refused.
+        Path named = tempDir.resolve("named.txt");
+        Files.writeString(named, "name:w\neffect:BOLT:ACID\n");
+        assertEquals(1, new ShapeReader().parseWithResults(named.toString()).items().size());
+
+        Path numeric = tempDir.resolve("numeric.txt");
+        Files.writeString(numeric, "name:w\neffect:BOLT:5\n");
+        assertThrows(ParseCancellationException.class, () -> new ShapeReader().parseWithResults(numeric.toString()));
     }
 }

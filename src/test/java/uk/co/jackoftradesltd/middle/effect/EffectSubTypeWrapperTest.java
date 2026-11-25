@@ -37,12 +37,7 @@ import java.security.InvalidParameterException;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests {@link EffectSubTypeWrapper}, the port of the untagged union C keeps in an effect's
@@ -196,10 +191,12 @@ class EffectSubTypeWrapperTest {
         @Test
         @DisplayName("an enchantment payload comes back")
         void enchant() throws Exception {
-            EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(EffectEnchant.EE_TOBOTH);
+            Flag<EffectEnchant> payload = new Flag<>(EffectEnchant.class,
+                    EffectEnchant.EE_TOHIT, EffectEnchant.EE_TODAM);
+            EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(payload);
 
             assertEquals(EffectSubTypeEnum.EST_ENCHANT, wrapper.getSubType());
-            assertEquals(EffectEnchant.EE_TOBOTH, wrapper.getEnchantWrapper());
+            assertSame(payload, wrapper.getEnchantWrapper());
         }
 
         /**

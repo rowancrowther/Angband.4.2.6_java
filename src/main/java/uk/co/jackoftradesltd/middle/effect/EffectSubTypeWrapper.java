@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.middle.effect;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
+import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.EffectEnchant;
 import uk.co.jackoftradesltd.middle.enums.EffectNourish;
 import uk.co.jackoftradesltd.middle.enums.GlyphType;
@@ -136,12 +137,17 @@ public class EffectSubTypeWrapper {
      */
     private Stats statsWrapper;
     /**
-     * Payload for {@code EST_ENCHANT}: the enchant mode. In C the strings {@code TOBOTH},
-     * {@code TOHIT}, {@code TODAM} and {@code TOAC} become the {@code ENCH_*} bit values.
+     * Payload for {@code EST_ENCHANT}: the enchant bits, as a set of {@link EffectEnchant}. In C
+     * the strings {@code TOHIT}, {@code TODAM}, {@code TOBOTH} and {@code TOAC} become the
+     * {@code ENCH_*} values {@code 0x01}, {@code 0x02}, {@code 0x03} and {@code 0x04}, and the
+     * handler tests the bits one by one. So the port holds a set, and {@code TOBOTH} is
+     * {@link EffectEnchant#EE_TOHIT} and {@link EffectEnchant#EE_TODAM} both set. The set is
+     * stored as given, not copied.
      *
-     * <p>Field enchantWrapper coded before 261001, commented in full on 261001.
+     * <p>Field enchantWrapper coded before 261001, commented in full on 261001, updated on 261125
+     * for the move from one mode to a set of bits.
      */
-    private EffectEnchant enchantWrapper;
+    private Flag<EffectEnchant> enchantWrapper;
     /**
      * Payload for {@code EST_SHAPECHANGE}: the target shape. In C this is the result of
      * {@code shape_name_to_idx()}, later looked up with {@code player_shape_by_idx()}. A
@@ -279,14 +285,15 @@ public class EffectSubTypeWrapper {
     }
 
     /**
-     * Create an enchant-payload wrapper, tagged {@code EST_ENCHANT}.
+     * Create an enchant-payload wrapper, tagged {@code EST_ENCHANT}. The set is stored as given,
+     * not copied.
      *
-     * <p>Constructor EffectSubTypeWrapper(EffectEnchant) coded before 261001, commented in full on
-     * 261001.
+     * <p>Constructor EffectSubTypeWrapper(Flag&lt;EffectEnchant&gt;) coded before 261001, commented
+     * in full on 261001, updated on 261125 for the move from one mode to a set of bits.
      *
-     * @param enchantWrapper the enchant mode
+     * @param enchantWrapper the enchant bits to hold
      */
-    public EffectSubTypeWrapper(EffectEnchant enchantWrapper) {
+    public EffectSubTypeWrapper(Flag<EffectEnchant> enchantWrapper) {
         setValue(enchantWrapper);
     }
 
@@ -519,15 +526,45 @@ public class EffectSubTypeWrapper {
 
     /**
      * Store an enchant payload and set the {@code EST_ENCHANT} discriminator. Other payload fields
-     * are left as they were.
+     * are left as they were. The set is stored as given, not copied.
      *
-     * <p>Function setValue(EffectEnchant) coded before 261001, commented in full on 261001.
+     * <p>Function setValue(Flag&lt;EffectEnchant&gt;) coded before 261001, commented in full on
+     * 261001, updated on 261125 for the move from one mode to a set of bits.
      *
-     * @param enchantWrapper the enchant mode
+     * @param enchantWrapper the enchant bits to hold
      */
-    public void setValue(EffectEnchant enchantWrapper) {
+    public void setValue(Flag<EffectEnchant> enchantWrapper) {
         this.enchantWrapper = enchantWrapper;
         this.subType = EffectSubTypeEnum.EST_ENCHANT;
+    }
+
+    /**
+     * Turn one enchant bit on in the held set, making an empty set first if none is held. It
+     * changes the set only: it does not set the {@code EST_ENCHANT} discriminator, so on a wrapper
+     * that was not built with an enchant payload {@link #getEnchantWrapper} still refuses.
+     *
+     * <p>Function setEnchantFlag coded before 261125, commented in full on 261125.
+     *
+     * @param enchantFlag the bit to turn on
+     */
+    public void setEnchantFlag(EffectEnchant enchantFlag) {
+        if (enchantWrapper == null)
+            enchantWrapper = new Flag<>(EffectEnchant.class);
+
+        enchantWrapper.on(enchantFlag);
+    }
+
+    /**
+     * Turn one enchant bit off in the held set. It does nothing if no set is held, and it never
+     * changes the discriminator.
+     *
+     * <p>Function clearEnchantFlag coded before 261125, commented in full on 261125.
+     *
+     * @param enchantFlag the bit to turn off
+     */
+    public void clearEnchantFlag(EffectEnchant enchantFlag) {
+        if (enchantWrapper != null)
+            enchantWrapper.off(enchantFlag);
     }
 
     /**
@@ -804,15 +841,16 @@ public class EffectSubTypeWrapper {
     }
 
     /**
-     * Retrieve the enchant-mode payload, refusing unless the discriminator is
+     * Retrieve the enchant-bits payload, refusing unless the discriminator is
      * {@code EST_ENCHANT}.
      *
-     * <p>Function getEnchantWrapper coded before 261001, commented in full on 261001.
+     * <p>Function getEnchantWrapper coded before 261001, commented in full on 261001, updated on
+     * 261125 for the move from one mode to a set of bits.
      *
-     * @return the stored enchant mode
+     * @return the stored set of enchant bits, not a copy
      * @throws Exception if the live sub-type is not {@code EST_ENCHANT}
      */
-    public EffectEnchant getEnchantWrapper() throws Exception {
+    public Flag<EffectEnchant> getEnchantWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_ENCHANT) {
             String message;
             if (subType == null)

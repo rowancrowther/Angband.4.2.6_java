@@ -23,16 +23,19 @@ package uk.co.jackoftradesltd.backend.parser.grammars;
  *
  * <p>{@code PlayerTimedGrammar.g4} needs this: a timed effect has an {@code on-begin-effect:} chain
  * and an {@code on-end-effect:} chain, and C's {@code effect-dice:} handler puts the dice on the
- * effect opened last, whichever chain that is. The grammar therefore keeps every effect in one list,
- * each tagged with its chain in {@link #type}, attaches {@code effect-dice:} to the last entry with
- * {@link #amendDice}, and at the end of the record splits the list into the two chains with
+ * effect opened last, whichever chain that is, and C's {@code effect-yx:}, {@code effect-expr:} and
+ * {@code effect-msg:} handlers do the same. The grammar therefore keeps every effect in one list,
+ * each tagged with its chain in {@link #type}, attaches each of those four directives to the last
+ * entry with {@link #amendDice}, {@link #amendYX}, {@link #amendExpression} and
+ * {@link #appendMessage}, and at the end of the record splits the list into the two chains with
  * {@link #convertToRecord}, which drops the tag.
  *
  * <p>The components other than {@link #type} are those of {@link EffectParseRecord}, and the amend
- * methods follow its rules: each returns a new record and leaves this one unchanged, so the caller
- * has to write the result back over the old one. Nothing here is validated or resolved.
+ * methods follow its rules, except that {@link #amendDice} also clears the expression fields (see
+ * there): each returns a new record and leaves this one unchanged, so the caller has to write the
+ * result back over the old one. Nothing here is validated or resolved.
  *
- * <p>Class EffectParseRecordType coded on 261119, commented in full on 261119.
+ * <p>Class EffectParseRecordType coded on 261119, updated on 261125, commented in full on 261125.
  *
  * @param type                  which chain the effect belongs to: {@code "begin"} for an
  *                              {@code on-begin-effect:} line and {@code "end"} for an
@@ -83,33 +86,35 @@ public record EffectParseRecordType(String type,
      */
     public EffectParseRecord convertToRecord() {
         return new EffectParseRecord(this.typeInit(), this.subTypeWrapper(), this.radius(),
-                this.other(), this.diceString(), yVal, xVal, this.expressionChars(),
+                this.other(), this.diceString(), this.yVal(), this.xVal(), this.expressionChars(),
                 this.expressionBases(), this.expressionOperations(), this.effectMessage(), this.line());
     }
     
     /**
      * A copy of this effect with the dice string replaced, for an {@code effect-dice:} line. A second
      * {@code effect-dice:} for the same effect replaces the first, as C's handler frees the old dice
-     * and keeps the new. The expression fields are left as they were.
+     * and keeps the new. The three expression fields are cleared to empty, because the dice C frees
+     * take their bound expressions with them and the new dice start with none: an
+     * {@code effect-expr:} line after the second {@code effect-dice:} binds afresh.
      *
-     * <p>Function amendDice coded on 261119, commented in full on 261119.
+     * <p>Function amendDice coded on 261119, updated on 261125, commented in full on 261125.
      *
      * @param diceString the dice string, still as text
      * @return the amended copy; this record is unchanged
      */
     public EffectParseRecordType amendDice(String diceString) {
+        // The "" arguments are the expression fields: C's replacement dice carry no bound expressions.
         return new EffectParseRecordType(this.type(), this.typeInit(), this.subTypeWrapper(), this.radius(),
-                this.other(), diceString, this.yVal(), this.xVal(), this.expressionChars(),
-                this.expressionBases(), this.expressionOperations(), this.effectMessage(), this.line());
+                this.other(), diceString, this.yVal(), this.xVal(), "",
+                "", "", this.effectMessage(), this.line());
     }
     
     /**
      * A copy of this effect with the y and x parameters replaced together, for an {@code effect-yx:}
-     * line, as {@link EffectParseRecord#amendYX} does. Written for the {@code effect-yx:} directive
-     * that Stage 8 of {@code docs/Issue_Approach_Order.md} adds to timed effects; nothing calls it
-     * as of 261119.
+     * line, as {@link EffectParseRecord#amendYX} does. {@code PlayerTimedGrammar.g4} calls it for
+     * its {@code effect-yx:} directive.
      *
-     * <p>Function amendYX coded on 261119, commented in full on 261119.
+     * <p>Function amendYX coded on 261119, updated on 261125, commented in full on 261125.
      *
      * @param yVal the new y parameter, still as text
      * @param xVal the new x parameter, still as text
@@ -125,11 +130,10 @@ public record EffectParseRecordType(String type,
      * A copy of this effect with the dice string and the three expression fields replaced as a set,
      * for an {@code effect-expr:} line, as {@link EffectParseRecord#amendExpression} does: the fields
      * are replaced, not added to, so a caller binding a further expression passes back what is held
-     * with the new part joined on with {@code ^}. Written for the {@code effect-expr:} directive that
-     * Stage 8 of {@code docs/Issue_Approach_Order.md} adds to timed effects; nothing calls it as of
-     * 261119.
+     * with the new part joined on with {@code ^}. {@code PlayerTimedGrammar.g4} calls it for its
+     * {@code effect-expr:} directive, and only once the effect holds dice.
      *
-     * <p>Function amendExpression coded on 261119, commented in full on 261119.
+     * <p>Function amendExpression coded on 261119, updated on 261125, commented in full on 261125.
      *
      * @param diceStr             the dice string, still as text
      * @param expressionChar      the {@code ^}-delimited codes bound within the dice string
@@ -149,16 +153,17 @@ public record EffectParseRecordType(String type,
     /**
      * A copy of this effect with {@code text} added to the end of the message, for an
      * {@code effect-msg:} line, as {@link EffectParseRecord#appendMessage} does: joined on with no
-     * separator, and the text alone when there is no message yet. Written for the {@code effect-msg:}
-     * directive that Stage 8 of {@code docs/Issue_Approach_Order.md} adds to timed effects; nothing
-     * calls it as of 261119.
+     * separator, and the text alone when there is no message yet. {@code PlayerTimedGrammar.g4}
+     * calls it for its {@code effect-msg:} directive.
      *
-     * <p>Function appendMessage coded on 261119, commented in full on 261119.
+     * <p>Function appendMessage coded on 261119, updated on 261125, commented in full on 261125.
      *
      * @param text the message text of the line, to add after any already held
      * @return the amended copy; this record is unchanged
      */
     public EffectParseRecordType appendMessage(String text) {
+        // The null branch is not reached from PlayerTimedGrammar.g4, which seeds the message as "".
+        // It stays to match EffectParseRecord.appendMessage and C's string_append on a NULL message.
         String joined = (this.effectMessage() == null) ? text : this.effectMessage() + text;
         return new EffectParseRecordType(this.type(), this.typeInit(), this.subTypeWrapper(), this.radius(),
                 this.other(), this.diceString(), this.yVal(), this.xVal(),

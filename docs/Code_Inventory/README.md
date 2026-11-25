@@ -12,6 +12,7 @@
 - Enum constants and record components are one grouped item per type, not one item each, with a count of how many are documented.
 - Initialiser blocks are items too; they cannot carry Javadoc.
 - Lambdas and anonymous-class members are not listed.
+- Each package in the list below has its own tick box. It is kept between regenerations, matched by package name.
 
 ## Totals
 
@@ -38,7 +39,7 @@
 - [ ] [`backend/parser/egoitem`](backend_parser_egoitem.md) — 2 files, 7 items
 - [ ] [`backend/parser/flavour`](backend_parser_flavour.md) — 4 files, 12 items
 - [ ] [`backend/parser/gameconstants`](backend_parser_gameconstants.md) — 2 files, 31 items
-- [ ] [`backend/parser/grammars`](backend_parser_grammars.md) — 4 files, 37 items
+- [X] [`backend/parser/grammars`](backend_parser_grammars.md) — 4 files, 37 items
 - [ ] [`backend/parser/hint`](backend_parser_hint.md) — 2 files, 4 items
 - [ ] [`backend/parser/history`](backend_parser_history.md) — 2 files, 5 items
 - [ ] [`backend/parser/itemobject`](backend_parser_itemobject.md) — 2 files, 5 items
@@ -147,6 +148,6 @@
 
 ## Last merge
 
-- 8 ticked boxes carried over onto matching items.
+- 148 ticked boxes carried over onto matching items.
 - 0 ticked items had no match in the new inventory (renamed, moved or deleted); their ticks were dropped.
 - 0 ticked items matched but their outline or stamp dates have changed since they were ticked; the ticks were kept, so re-check these.

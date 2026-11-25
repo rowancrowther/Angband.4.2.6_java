@@ -11,101 +11,101 @@
 - **`Activation`** — *public class (top-level)*
   - Outline: A named, reusable activation (as loaded from `activation.txt`) — the triggerable power shared by artifacts and some items, defined by the list of `Effect`s it runs plus its level, power, aim requirement and flavour messages.
   - Coded: before 261013 · Commented: in full 261013
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.name`** → `String` — *private field*
   - Outline: The activation's name.
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.index`** → `int` — *private field*
   - Outline: Index of this activation in the global activation table — C's `activation->index`.
   - Coded: before 261013 · Commented: in full 261013
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.aim`** → `boolean` — *private field*
   - Outline: Whether using this activation requires aiming at a target.
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.level`** → `int` — *private field*
   - Outline: The minimum level associated with this activation (for rating/value).
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.power`** → `int` — *private field*
   - Outline: The activation's power rating.
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.effects`** → `List<Effect>` — *private field*
   - Outline: The chain of effects this activation runs when used.
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.message`** → `String` — *private field*
   - Outline: The message shown when the activation is used.
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.desc`** → `String` — *private field*
   - Outline: Human-readable description of the activation.
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.Activation(String, int, boolean, int, int, List<Effect>, String, String)`** — *public constructor*
   - Outline: Build an activation from its parsed data-file fields.
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.getName()`** → `String` — *public method*
   - Outline: Getter for this activation's tag - its name
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.copy()`** → `Activation` — *public method*
   - Outline: Returns an independent copy of this activation, effects included.
   - Coded: unstamped · Commented: in full 260827
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.getPower()`** → `int` — *public method*
   - Outline: Javadoc has no description (stamp or tags only).
   - Coded: unstamped · Commented: unstamped
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 - **`Activation.setIndex(int)`** → `void` — *public method*
   - Outline: Sets this activation's slot number — the port of the assignment `activations[count].index = count` in C's `finish_parse_act` (`obj-init.c`), which has no function of its own.
   - Coded: on 261013 · Commented: in full 261013
-  - [ ] Onceover by Claude
-  - [ ] Onceover by Rowan
-  - [ ] Internal comments created and checked
-  - [ ] Class javadoc created and checked
+  - [X] Onceover by Claude
+  - [X] Onceover by Rowan
+  - [X] Internal comments created and checked
+  - [X] Class javadoc created and checked
 
 ## [`AllocEntry.java`](../../src/main/java/uk/co/jackoftradesltd/middle/AllocEntry.java)
 
